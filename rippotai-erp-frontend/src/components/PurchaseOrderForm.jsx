@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { useSearchParams } from 'react-router-dom';
 import { useSharedProjectData } from '../hooks/use-shared-project-data';
 import { toast } from "sonner";
@@ -353,7 +354,7 @@ export default function PurchaseOrderForm({
     () => normalizeArray(materialsResponse),
     [materialsResponse],
   );
-  useSharedProjectData(form.project_id, 'purchaseOrder', form, setForm, !isEdit && !materialsLoading, materials);
+  const prefill = useSharedProjectData(form.project_id, 'purchaseOrder', form, setForm, !isEdit && !materialsLoading, materials);
 
   const selectedProject = useMemo(
     () =>
@@ -984,7 +985,7 @@ export default function PurchaseOrderForm({
           { label: isEdit ? "Edit" : "New" },
         ]}
         title={isEdit ? `Edit purchase order${form.po_number ? ` ${form.po_number}` : ""}` : "New purchase order"}
-        subtitle="Pick the project and vendor, add materials, then review the totals before saving."
+        subtitle={<>Pick the project and vendor, add materials, then review the totals before saving.<PrefillNotice prefill={prefill} /></>}
         actions={
           <Button variant="ghost" icon={ArrowLeft} onClick={onBack} disabled={isSaving}>
             Back to list

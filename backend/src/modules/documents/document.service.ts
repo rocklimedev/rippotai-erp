@@ -126,7 +126,9 @@ export class DocumentsService {
     let fileFields: Partial<Document> = {};
     let requirement: DocumentRequirement | undefined;
     if (file && dto.projectId && dto.documentTypeId) {
-      const documentType = await this.documentTypeModel.findByPk(dto.documentTypeId);
+      const documentType = await this.documentTypeModel.findByPk(
+        dto.documentTypeId,
+      );
       if (!documentType) throw new NotFoundException('Document type not found');
       [requirement] = await this.requirementModel.findOrCreate({
         where: { projectId: dto.projectId, documentTypeId: dto.documentTypeId },
@@ -137,7 +139,9 @@ export class DocumentsService {
         } as any,
       });
       if (dto.requirementId && dto.requirementId !== requirement.id) {
-        throw new BadRequestException('Requirement does not match the selected project and document type');
+        throw new BadRequestException(
+          'Requirement does not match the selected project and document type',
+        );
       }
     }
     let status = dto.status;
@@ -175,7 +179,8 @@ export class DocumentsService {
     if (requirement && document.status === 'approved') {
       await requirement.update({ isCompleted: true, completedAt: new Date() });
     }
-    if (document.projectId) await this.gateEngine.invalidateReadinessCache(document.projectId);
+    if (document.projectId)
+      await this.gateEngine.invalidateReadinessCache(document.projectId);
     return document;
   }
 
@@ -199,15 +204,23 @@ export class DocumentsService {
     const document = await this.findOne(id);
     this.assertNotLocked(document);
     if (!document.storageFilename && !document.url) {
-      throw new BadRequestException('Upload a file before approving this document');
+      throw new BadRequestException(
+        'Upload a file before approving this document',
+      );
     }
     if (document.status === 'archived') {
       throw new BadRequestException('Archived documents cannot be approved');
     }
     if (document.projectId && document.documentTypeId) {
       const latest = await this.documentModel.findOne({
-        where: { projectId: document.projectId, documentTypeId: document.documentTypeId },
-        order: [['created_at', 'DESC'], ['id', 'DESC']],
+        where: {
+          projectId: document.projectId,
+          documentTypeId: document.documentTypeId,
+        },
+        order: [
+          ['created_at', 'DESC'],
+          ['id', 'DESC'],
+        ],
       });
       if (latest?.id !== document.id) {
         throw new BadRequestException('Approve the latest uploaded document');
@@ -215,10 +228,13 @@ export class DocumentsService {
     }
     await document.update({ status: 'approved' });
     if (document.requirementId) {
-      const requirement = await this.requirementModel.findByPk(document.requirementId);
+      const requirement = await this.requirementModel.findByPk(
+        document.requirementId,
+      );
       await requirement?.update({ isCompleted: true, completedAt: new Date() });
     }
-    if (document.projectId) await this.gateEngine.invalidateReadinessCache(document.projectId);
+    if (document.projectId)
+      await this.gateEngine.invalidateReadinessCache(document.projectId);
     return document;
   }
 
@@ -237,7 +253,8 @@ export class DocumentsService {
 
     const previousStorageFilename = document.storageFilename;
     const type = document.documentTypeId
-      ? await this.documentTypeModel.findByPk(document.documentTypeId) : null;
+      ? await this.documentTypeModel.findByPk(document.documentTypeId)
+      : null;
     const status = type && !type.requiresApproval ? 'approved' : 'submitted';
 
     const { filename, url } = await this.cdnService.uploadFile(file);
@@ -252,15 +269,21 @@ export class DocumentsService {
     });
 
     if (document.requirementId) {
-      const requirement = await this.requirementModel.findByPk(document.requirementId);
-      await requirement?.update({ isCompleted: status === 'approved', completedAt: status === 'approved' ? new Date() : null });
+      const requirement = await this.requirementModel.findByPk(
+        document.requirementId,
+      );
+      await requirement?.update({
+        isCompleted: status === 'approved',
+        completedAt: status === 'approved' ? new Date() : null,
+      });
     }
 
     if (previousStorageFilename) {
       await this.cdnService.deleteFile(previousStorageFilename);
     }
 
-    if (document.projectId) await this.gateEngine.invalidateReadinessCache(document.projectId);
+    if (document.projectId)
+      await this.gateEngine.invalidateReadinessCache(document.projectId);
 
     return updated;
   }
@@ -381,7 +404,7 @@ export class DocumentsService {
 
     return this.versionModel.findAll({
       where: { documentId },
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
   }
 
@@ -441,7 +464,7 @@ export class DocumentsService {
 
     return this.attachmentModel.findAll({
       where: { documentId },
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
   }
 

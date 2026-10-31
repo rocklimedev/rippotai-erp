@@ -40,7 +40,10 @@ export function previousDocumentSteps(sequence: string) {
   return index < 0 ? null : DOCUMENT_PREFILL_SEQUENCE.slice(0, index).reverse();
 }
 
-export function boqCategoriesFromPrefill(documents: Record<string, any>) {
+export function boqCategoriesFromPrefill(
+  documents: Record<string, any>,
+  rooms: { name?: string }[] = [],
+) {
   for (const key of [
     'material-procurement-sheet',
     'estimates-quotations',
@@ -91,5 +94,8 @@ export function boqCategoriesFromPrefill(documents: Record<string, any>) {
       .filter((group: any) => group.items.length);
     if (categories.length) return categories;
   }
-  return [];
+  // Nothing priced yet: one empty section per project room / space.
+  return rooms
+    .filter((room) => room?.name)
+    .map((room) => ({ name: String(room.name), items: [] as any[] }));
 }

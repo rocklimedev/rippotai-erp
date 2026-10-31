@@ -74,6 +74,25 @@ export class Project extends Model<Project> {
   @Column({ type: DataType.DATEONLY, allowNull: true })
   declare expected_completion_date: Date | null;
 
+  // Canonical project facts (autofill): read by every document, written back when empty.
+  @Column({ type: DataType.DECIMAL(15, 2), allowNull: true })
+  declare site_area: number | null;
+
+  @Column({ type: DataType.STRING(16), allowNull: true })
+  declare site_area_unit: string | null;
+
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  declare number_of_floors: number | null;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: true })
+  declare lift_available: boolean | null;
+
+  @Column({ type: DataType.DECIMAL(15, 2), allowNull: true })
+  declare client_budget: number | null;
+
+  @Column({ type: DataType.DATEONLY, allowNull: true })
+  declare desired_start_date: string | null;
+
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
   declare quotation_count: number;
 

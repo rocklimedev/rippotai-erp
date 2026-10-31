@@ -215,7 +215,7 @@ export const InventoryByCategory = () => {
 
   return (
     <WidgetShell title="Inventory by Category">
-      <div className="flex flex-col gap-2 mt-1">
+      <div className="flex flex-col gap-2 h-full overflow-y-auto pr-1">
         {categories.map(([category, count]) => (
           <div key={category} className="text-[11.5px]">
             <div className="flex justify-between mb-0.5">
@@ -228,7 +228,7 @@ export const InventoryByCategory = () => {
               <div
                 style={{
                   width: `${(count / max) * 100}%`,
-                  background: "#000",
+                  background: "var(--brand)",
                 }}
                 className="h-full"
               />

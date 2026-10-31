@@ -38,7 +38,7 @@ export const CrmTotalLeads = () => {
   const nav = useNavigate();
   const d = useEndpoint("/crm/dashboard");
   return (
-    <WidgetShell title="Total Leads" onClick={() => nav("/crm/leads")}>
+    <WidgetShell title="Total Leads" onClick={() => nav("/crm/pipeline")}>
       <Stat
         value={d?.leads?.total ?? "—"}
         sub={
@@ -70,7 +70,7 @@ export const CrmActivePlans = () => {
   const nav = useNavigate();
   const d = useEndpoint("/crm/dashboard");
   return (
-    <WidgetShell title="Active Plans" onClick={() => nav("/plan-of-actions")}>
+    <WidgetShell title="Active Plans" onClick={() => nav("/crm/plan-of-action/all")}>
       <Stat
         value={d?.plans_of_action?.active ?? "—"}
         sub={
@@ -117,7 +117,7 @@ export const CrmLeadsBreakdown = () => {
     <WidgetShell title="Leads Pipeline">
       <RowList
         rows={rows}
-        onClick={() => nav("/crm/leads")}
+        onClick={() => nav("/crm/pipeline")}
         empty="No lead data yet"
       />
     </WidgetShell>
@@ -165,7 +165,7 @@ export const CrmSiteRecce = () => {
   const nav = useNavigate();
   const d = useEndpoint("/crm/dashboard");
   return (
-    <WidgetShell title="Site Recce" onClick={() => nav("/site-recce")}>
+    <WidgetShell title="Site Recce" onClick={() => nav("/crm/recce/all")}>
       <Stat
         value={d?.site_recce?.total ?? "—"}
         sub={
@@ -184,7 +184,7 @@ export const CrmPlansOfAction = () => {
   return (
     <WidgetShell
       title="Plans of Action"
-      onClick={() => nav("/plan-of-actions")}
+      onClick={() => nav("/crm/plan-of-action/all")}
     >
       <Stat
         value={d?.plans_of_action?.total ?? "—"}
@@ -202,7 +202,7 @@ export const CrmScopeOfWork = () => {
   const nav = useNavigate();
   const d = useEndpoint("/crm/dashboard");
   return (
-    <WidgetShell title="Scope of Work" onClick={() => nav("/scope-of-work")}>
+    <WidgetShell title="Scope of Work" onClick={() => nav("/crm/scope-of-work/all")}>
       <Stat
         value={d?.scope_of_work?.total ?? "—"}
         sub={

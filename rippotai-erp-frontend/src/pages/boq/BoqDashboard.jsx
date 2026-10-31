@@ -1,6 +1,6 @@
-import { appPrompt, appConfirm } from "@/lib/app-dialog";
-import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { appPrompt, appConfirm } from '@/lib/app-dialog';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import {
   useGetBoqsQuery,
@@ -11,17 +11,17 @@ import {
   useDeleteBoqMutation,
   useGetBoqSummaryQuery,
   boqApi,
-} from "../../api/boq/boq.api";
-import { useDispatch } from "react-redux";
-import BoqDocument, { boqFileName } from "@/components/commerce-documents/BoqDocument";
-import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
+} from '../../api/boq/boq.api';
+import { useDispatch } from 'react-redux';
+import BoqDocument, { boqFileName } from '@/components/commerce-documents/BoqDocument';
+import { downloadWhenReady, OFFSCREEN_STYLE } from '@/components/print-document/commerce';
 
-import { useCreateBudgetEstimateFromBoqMutation } from "../../api/documents/budget-estimates.api";
+import { useCreateBudgetEstimateFromBoqMutation } from '../../api/documents/budget-estimates.api';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
-import { formatINR, relativeTime } from "@/lib/format";
-import { toast } from "sonner";
+import { formatINR, relativeTime } from '@/lib/format';
+import { toast } from 'sonner';
 
 import {
   FileSpreadsheet,
@@ -39,7 +39,7 @@ import {
   Combine,
   Loader2,
   Calculator,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   DropdownMenu,
@@ -47,7 +47,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 // ============================================================
 // STATUS META
@@ -55,45 +55,45 @@ import {
 
 const STATUS_META = {
   draft: {
-    label: "Draft",
-    bg: "#B5C4B6",
-    fg: "#6B7B7C",
+    label: 'Draft',
+    bg: '#B5C4B6',
+    fg: '#6B7B7C',
   },
 
   in_progress: {
-    label: "In Progress",
-    bg: "#EAEEF0",
-    fg: "#1F453B",
+    label: 'In Progress',
+    bg: '#EAEEF0',
+    fg: '#1F453B',
   },
 
   awaiting_approval: {
-    label: "Awaiting Approval",
-    bg: "#EAEEF0",
-    fg: "#1F453B",
+    label: 'Awaiting Approval',
+    bg: '#EAEEF0',
+    fg: '#1F453B',
   },
 
   returned: {
-    label: "Returned for Revision",
-    bg: "#EAEEF0",
-    fg: "#1F453B",
+    label: 'Returned for Revision',
+    bg: '#EAEEF0',
+    fg: '#1F453B',
   },
 
   approved: {
-    label: "Approved",
-    bg: "#EAEEF0",
-    fg: "#1F453B",
+    label: 'Approved',
+    bg: '#EAEEF0',
+    fg: '#1F453B',
   },
 
   final: {
-    label: "Final",
-    bg: "#EAEEF0",
-    fg: "#1F453B",
+    label: 'Final',
+    bg: '#EAEEF0',
+    fg: '#1F453B',
   },
 
   archived: {
-    label: "Archived",
-    bg: "#B5C4B6",
-    fg: "#6B7B7C",
+    label: 'Archived',
+    bg: '#B5C4B6',
+    fg: '#6B7B7C',
   },
 };
 
@@ -101,7 +101,7 @@ const STATUS_META = {
 // LOCKED STATUSES
 // ============================================================
 
-const LOCKED_STATUSES = ["approved", "final", "awaiting_approval"];
+const LOCKED_STATUSES = ['approved', 'final', 'awaiting_approval'];
 
 // ============================================================
 // STATUS CHIP
@@ -136,9 +136,9 @@ export default function BoqDashboard() {
   // ============================================================
 
   const [filters, setFilters] = useState({
-    project_id: "",
-    status: new URLSearchParams(location.search).get("status") || "",
-    q: "",
+    project_id: '',
+    status: new URLSearchParams(location.search).get('status') || '',
+    q: '',
   });
 
   // ============================================================
@@ -162,8 +162,7 @@ export default function BoqDashboard() {
   // ============================================================
 
   useEffect(() => {
-    const statusFromUrl =
-      new URLSearchParams(location.search).get("status") || "";
+    const statusFromUrl = new URLSearchParams(location.search).get('status') || '';
 
     setFilters((f) =>
       f.status === statusFromUrl
@@ -197,11 +196,9 @@ export default function BoqDashboard() {
   // BOQ MUTATIONS
   // ============================================================
 
-  const [duplicateVersion, { isLoading: isDuplicating }] =
-    useDuplicateBoqVersionMutation();
+  const [duplicateVersion, { isLoading: isDuplicating }] = useDuplicateBoqVersionMutation();
 
-  const [createNewVersion, { isLoading: isVersioning }] =
-    useCreateBoqNewVersionMutation();
+  const [createNewVersion, { isLoading: isVersioning }] = useCreateBoqNewVersionMutation();
 
   const [fetchVersionHistory] = useLazyGetBoqVersionHistoryQuery();
 
@@ -218,10 +215,8 @@ export default function BoqDashboard() {
   // BUDGET ESTIMATE CONVERSION
   // ============================================================
 
-  const [
-    createBudgetEstimateFromBoq,
-    { isLoading: isConvertingBudgetEstimate },
-  ] = useCreateBudgetEstimateFromBoqMutation();
+  const [createBudgetEstimateFromBoq, { isLoading: isConvertingBudgetEstimate }] =
+    useCreateBudgetEstimateFromBoqMutation();
 
   // ============================================================
   // LOCAL LOADING STATES
@@ -236,7 +231,7 @@ export default function BoqDashboard() {
   // ============================================================
 
   const filterByStatus = (status) => {
-    const qs = status ? `?status=${status}` : "";
+    const qs = status ? `?status=${status}` : '';
 
     nav(`/ledger/boq/all${qs}`);
   };
@@ -247,38 +242,38 @@ export default function BoqDashboard() {
 
   const summaryCards = [
     {
-      k: "total",
-      l: "Total BOQs",
-      v: summary?.total ?? "—",
-      status: "",
+      k: 'total',
+      l: 'Total BOQs',
+      v: summary?.total ?? '—',
+      status: '',
     },
 
     {
-      k: "drafts",
-      l: "Draft BOQs",
-      v: summary?.drafts ?? "—",
-      status: "draft",
+      k: 'drafts',
+      l: 'Draft BOQs',
+      v: summary?.drafts ?? '—',
+      status: 'draft',
     },
 
     {
-      k: "awaiting",
-      l: "Awaiting Approval",
-      v: summary?.awaiting ?? "—",
-      status: "awaiting_approval",
+      k: 'awaiting',
+      l: 'Awaiting Approval',
+      v: summary?.awaiting ?? '—',
+      status: 'awaiting_approval',
     },
 
     {
-      k: "approved",
-      l: "Approved BOQs",
-      v: summary?.approved ?? "—",
-      status: "approved",
+      k: 'approved',
+      l: 'Approved BOQs',
+      v: summary?.approved ?? '—',
+      status: 'approved',
     },
 
     {
-      k: "templates",
-      l: "Templates",
-      v: summary?.templates ?? "—",
-      href: "/ledger/boq/templates",
+      k: 'templates',
+      l: 'Templates',
+      v: summary?.templates ?? '—',
+      href: '/ledger/boq/templates',
     },
   ];
 
@@ -288,14 +283,14 @@ export default function BoqDashboard() {
 
   const handleCombine = async () => {
     if (selectedBoqs.size < 2) {
-      toast.error("Please select at least 2 BOQs to combine");
+      toast.error('Please select at least 2 BOQs to combine');
       return;
     }
 
-    const title = (await appPrompt(
-      "Enter a name for the combined BOQ:",
+    const title = await appPrompt(
+      'Enter a name for the combined BOQ:',
       `Combined BOQ - ${new Date().toLocaleDateString()}`,
-    ));
+    );
 
     if (title === null) return;
 
@@ -305,7 +300,7 @@ export default function BoqDashboard() {
         title: title.trim() || undefined,
       }).unwrap();
 
-      toast.success("BOQs combined successfully!");
+      toast.success('BOQs combined successfully!');
 
       setSelectedBoqs(new Set());
 
@@ -313,7 +308,7 @@ export default function BoqDashboard() {
         nav(`/ledger/boq/${result.id}`);
       }
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to combine BOQs");
+      toast.error(err?.data?.message || 'Failed to combine BOQs');
     }
   };
 
@@ -350,10 +345,7 @@ export default function BoqDashboard() {
   // ============================================================
 
   const duplicate = async (id) => {
-    const reason = (await appPrompt(
-      "Reason for duplicating this version (optional):",
-      "",
-    ));
+    const reason = await appPrompt('Reason for duplicating this version (optional):', '');
 
     if (reason === null) return;
 
@@ -363,13 +355,13 @@ export default function BoqDashboard() {
         reason: reason || undefined,
       }).unwrap();
 
-      toast.success(`Created v${result?.version ?? "?"} as a new draft`);
+      toast.success(`Created v${result?.version ?? '?'} as a new draft`);
 
       if (result?.id) {
         nav(`/ledger/boq/${result.id}`);
       }
     } catch (e) {
-      toast.error(e?.data?.message || "Failed to duplicate version");
+      toast.error(e?.data?.message || 'Failed to duplicate version');
     }
   };
 
@@ -381,13 +373,13 @@ export default function BoqDashboard() {
     try {
       const result = await createNewVersion({ id }).unwrap();
 
-      toast.success(`Created v${result?.version ?? "?"} draft to edit`);
+      toast.success(`Created v${result?.version ?? '?'} draft to edit`);
 
       if (result?.id) {
         nav(`/ledger/boq/${result.id}`);
       }
     } catch (e) {
-      toast.error(e?.data?.message || "Failed to create a new version");
+      toast.error(e?.data?.message || 'Failed to create a new version');
     }
   };
 
@@ -400,19 +392,17 @@ export default function BoqDashboard() {
       const history = await fetchVersionHistory(id).unwrap();
 
       if (!history?.length) {
-        toast.info("No version history yet");
+        toast.info('No version history yet');
         return;
       }
 
-      const summaryText = history
-        .map((v) => `v${v.version} — ${v.version_name}`)
-        .join("\n");
+      const summaryText = history.map((v) => `v${v.version} — ${v.version_name}`).join('\n');
 
-      toast.message("Version history", {
+      toast.message('Version history', {
         description: summaryText,
       });
     } catch (e) {
-      toast.error("Failed to load version history");
+      toast.error('Failed to load version history');
     }
   };
 
@@ -425,12 +415,12 @@ export default function BoqDashboard() {
     try {
       const full = await dispatch(boqApi.endpoints.getBoqById.initiate(b.id)).unwrap();
       setPdfBoq(full);
-      await downloadWhenReady(() => pdfRef.current, boqFileName(full, "client"), {
-        title: `BOQ — ${full?.project?.name || full?.title || ""}`,
+      await downloadWhenReady(() => pdfRef.current, boqFileName(full, 'client'), {
+        title: `BOQ — ${full?.project?.name || full?.title || ''}`,
       });
-      toast.success("PDF downloaded");
+      toast.success('PDF downloaded');
     } catch (e) {
-      toast.error(e?.data?.message || "Failed to export PDF");
+      toast.error(e?.data?.message || 'Failed to export PDF');
     } finally {
       setPdfBoq(null);
       setExportingId(null);
@@ -443,16 +433,16 @@ export default function BoqDashboard() {
 
   const convertToBudgetEstimate = async (b) => {
     if (!b?.id) {
-      toast.error("Invalid BOQ");
+      toast.error('Invalid BOQ');
       return;
     }
 
-    const label = b.boq_number || b.title || "this BOQ";
+    const label = b.boq_number || b.title || 'this BOQ';
 
-    const confirmed = (await appConfirm(
+    const confirmed = await appConfirm(
       `Convert ${label} into a Budget Estimate?\n\n` +
         `The BOQ categories, items, quantities, rates and project information will be copied into a new Budget Estimate.`,
-    ));
+    );
 
     if (!confirmed) {
       return;
@@ -463,7 +453,7 @@ export default function BoqDashboard() {
     try {
       const result = await createBudgetEstimateFromBoq(b.id).unwrap();
 
-      toast.success("BOQ converted to Budget Estimate successfully");
+      toast.success('BOQ converted to Budget Estimate successfully');
 
       // ========================================================
       // EXPECTED BACKEND RESPONSE
@@ -486,20 +476,14 @@ export default function BoqDashboard() {
       const estimateId = result?.id || result?.estimate?.id || result?.data?.id;
 
       if (estimateId) {
-        nav(`/budget-estimates/${estimateId}`);
+        nav(`/ledger/budget-estimate/${estimateId}`);
       } else {
         // If backend successfully created it but
         // did not return an ID.
-        toast.info(
-          "Budget Estimate created. Open the Budget Estimates module to view it.",
-        );
+        toast.info('Budget Estimate created. Open the Budget Estimates module to view it.');
       }
     } catch (e) {
-      toast.error(
-        e?.data?.message ||
-          e?.error ||
-          "Failed to convert BOQ to Budget Estimate",
-      );
+      toast.error(e?.data?.message || e?.error || 'Failed to convert BOQ to Budget Estimate');
     } finally {
       setConvertingBoqId(null);
     }
@@ -510,18 +494,16 @@ export default function BoqDashboard() {
   // ============================================================
 
   const handleDelete = async (b) => {
-    const label = b.boq_number || b.title || "this BOQ";
+    const label = b.boq_number || b.title || 'this BOQ';
 
-    const confirmed = (await appConfirm(
-      `Delete ${label}? This action cannot be undone.`,
-    ));
+    const confirmed = await appConfirm(`Delete ${label}? This action cannot be undone.`);
 
     if (!confirmed) return;
 
     try {
       await deleteBoq(b.id).unwrap();
 
-      toast.success("BOQ deleted");
+      toast.success('BOQ deleted');
 
       setSelectedBoqs((prev) => {
         if (!prev.has(b.id)) {
@@ -535,7 +517,7 @@ export default function BoqDashboard() {
         return next;
       });
     } catch (e) {
-      toast.error(e?.data?.message || "Failed to delete BOQ");
+      toast.error(e?.data?.message || 'Failed to delete BOQ');
     }
   };
 
@@ -560,8 +542,7 @@ export default function BoqDashboard() {
           </h1>
 
           <p className="text-[13.5px] text-[#6B7B7C] mt-1 max-w-2xl">
-            Create project BOQs in minutes using predefined categories, items,
-            units and rates.
+            Create project BOQs in minutes using predefined categories, items, units and rates.
           </p>
         </div>
 
@@ -576,11 +557,7 @@ export default function BoqDashboard() {
               disabled={isCombining}
               className="h-10 px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm disabled:opacity-50"
             >
-              {isCombining ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Combine size={16} />
-              )}
+              {isCombining ? <Loader2 size={16} className="animate-spin" /> : <Combine size={16} />}
               Combine {selectedBoqs.size} BOQs
             </button>
           )}
@@ -590,7 +567,7 @@ export default function BoqDashboard() {
           ================================================== */}
 
           <button
-            onClick={() => nav("/ledger/boq/templates")}
+            onClick={() => nav('/ledger/boq/templates')}
             className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
           >
             <LayoutTemplate size={15} />
@@ -602,7 +579,8 @@ export default function BoqDashboard() {
           ================================================== */}
 
           <button
-            onClick={() => nav("/ledger/boq/new")}
+            onClick={() => nav('/ledger/boq/new')}
+            data-testid="boq-new-btn"
             className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm"
           >
             <Plus size={15} />
@@ -615,10 +593,7 @@ export default function BoqDashboard() {
           SUMMARY CARDS
       ====================================================== */}
 
-      <section
-        className="grid grid-cols-2 md:grid-cols-5 gap-3"
-        data-testid="boq-summary-strip"
-      >
+      <section className="grid grid-cols-2 md:grid-cols-5 gap-3" data-testid="boq-summary-strip">
         {summaryCards.map((c) => (
           <button
             key={c.k}
@@ -626,13 +601,9 @@ export default function BoqDashboard() {
             onClick={() => (c.href ? nav(c.href) : filterByStatus(c.status))}
             className="bc-card p-4 text-left hover:shadow-sm hover:border-[#1F453B] transition-shadow"
           >
-            <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-              {c.l}
-            </div>
+            <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">{c.l}</div>
 
-            <div className="text-[32px] font-bold text-[#333333] mt-1">
-              {c.v}
-            </div>
+            <div className="text-[32px] font-bold text-[#333333] mt-1">{c.v}</div>
           </button>
         ))}
       </section>
@@ -646,10 +617,7 @@ export default function BoqDashboard() {
           {/* SEARCH */}
 
           <div className="relative flex-1 min-w-[220px]">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B5C4B6]"
-            />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B5C4B6]" />
 
             <input
               className="bc-input pl-8"
@@ -712,9 +680,9 @@ export default function BoqDashboard() {
             className="h-10 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] text-[#6B7B7C] flex items-center gap-1"
             onClick={() =>
               setFilters({
-                project_id: "",
-                status: "",
-                q: "",
+                project_id: '',
+                status: '',
+                q: '',
               })
             }
           >
@@ -736,9 +704,7 @@ export default function BoqDashboard() {
                 <th className="px-3 py-3 w-10">
                   <input
                     type="checkbox"
-                    checked={
-                      selectedBoqs.size === rows.length && rows.length > 0
-                    }
+                    checked={selectedBoqs.size === rows.length && rows.length > 0}
                     onChange={selectAll}
                     className="rounded"
                   />
@@ -788,8 +754,7 @@ export default function BoqDashboard() {
 
               {!isBoqsLoading &&
                 rows.map((b) => {
-                  const isLocked =
-                    b.locked || LOCKED_STATUSES.includes(b.status);
+                  const isLocked = b.locked || LOCKED_STATUSES.includes(b.status);
 
                   const isSelected = selectedBoqs.has(b.id);
 
@@ -799,7 +764,7 @@ export default function BoqDashboard() {
                     <tr
                       key={b.id}
                       className={`border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer ${
-                        isSelected ? "bg-[#F0F7F4]" : ""
+                        isSelected ? 'bg-[#F0F7F4]' : ''
                       }`}
                       onClick={() => nav(`/ledger/boq/${b.id}`)}
                     >
@@ -807,10 +772,7 @@ export default function BoqDashboard() {
                           CHECKBOX
                       ================================================== */}
 
-                      <td
-                        className="px-3 py-3"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -841,12 +803,10 @@ export default function BoqDashboard() {
 
                       <td className="px-4 py-3 min-w-[220px]">
                         <div className="text-[13.5px] font-semibold text-[#333333]">
-                          {b.project?.name || b.project_name || "—"}
+                          {b.project?.name || b.project_name || '—'}
                         </div>
 
-                        <div className="text-[11.5px] text-[#B5C4B6]">
-                          {b.title || "BOQ"}
-                        </div>
+                        <div className="text-[11.5px] text-[#B5C4B6]">{b.title || 'BOQ'}</div>
                       </td>
 
                       {/* ==================================================
@@ -854,7 +814,7 @@ export default function BoqDashboard() {
                       ================================================== */}
 
                       <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C]">
-                        {b.client_name || b.project?.client?.name || "—"}
+                        {b.client_name || b.project?.client?.name || '—'}
                       </td>
 
                       {/* ==================================================
@@ -886,9 +846,7 @@ export default function BoqDashboard() {
                       ================================================== */}
 
                       <td className="px-3 py-3 text-[13px] font-semibold text-[#333333] text-right whitespace-nowrap">
-                        {formatINR(
-                          b.total_value ?? b.final_total ?? b.total_amount ?? 0,
-                        )}
+                        {formatINR(b.total_value ?? b.final_total ?? b.total_amount ?? 0)}
                       </td>
 
                       {/* ==================================================
@@ -903,10 +861,7 @@ export default function BoqDashboard() {
                           ACTIONS
                       ================================================== */}
 
-                      <td
-                        className="px-3 py-3 text-right"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="inline-flex items-center gap-1">
                           {/* ==============================================
                               QUICK PDF
@@ -944,9 +899,7 @@ export default function BoqDashboard() {
                                   OPEN
                               ======================================== */}
 
-                              <DropdownMenuItem
-                                onClick={() => nav(`/ledger/boq/${b.id}`)}
-                              >
+                              <DropdownMenuItem onClick={() => nav(`/ledger/boq/${b.id}`)}>
                                 <Eye size={13} className="mr-2" />
                                 Open BOQ
                               </DropdownMenuItem>
@@ -956,24 +909,17 @@ export default function BoqDashboard() {
                               ======================================== */}
 
                               <DropdownMenuItem
-                                disabled={
-                                  isConvertingBudgetEstimate || isConverting
-                                }
+                                disabled={isConvertingBudgetEstimate || isConverting}
                                 onClick={() => convertToBudgetEstimate(b)}
                                 className="text-[#1F453B] focus:text-[#1F453B]"
                               >
                                 {isConverting ? (
-                                  <Loader2
-                                    size={13}
-                                    className="mr-2 animate-spin"
-                                  />
+                                  <Loader2 size={13} className="mr-2 animate-spin" />
                                 ) : (
                                   <Calculator size={13} className="mr-2" />
                                 )}
 
-                                {isConverting
-                                  ? "Converting..."
-                                  : "Convert to Budget Estimate"}
+                                {isConverting ? 'Converting...' : 'Convert to Budget Estimate'}
                               </DropdownMenuItem>
 
                               <DropdownMenuSeparator />
@@ -1008,9 +954,7 @@ export default function BoqDashboard() {
                                   VERSION HISTORY
                               ======================================== */}
 
-                              <DropdownMenuItem
-                                onClick={() => viewVersionHistory(b.id)}
-                              >
+                              <DropdownMenuItem onClick={() => viewVersionHistory(b.id)}>
                                 <History size={13} className="mr-2" />
                                 Version History
                               </DropdownMenuItem>
@@ -1019,11 +963,7 @@ export default function BoqDashboard() {
                                   PREVIEW
                               ======================================== */}
 
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  nav(`/ledger/boq/${b.id}/preview`)
-                                }
-                              >
+                              <DropdownMenuItem onClick={() => nav(`/ledger/boq/${b.id}/preview`)}>
                                 <Eye size={13} className="mr-2" />
                                 Preview
                               </DropdownMenuItem>
@@ -1037,10 +977,7 @@ export default function BoqDashboard() {
                                 onClick={() => downloadBoq(b)}
                               >
                                 {exportingId === b.id ? (
-                                  <Loader2
-                                    size={13}
-                                    className="mr-2 animate-spin"
-                                  />
+                                  <Loader2 size={13} className="mr-2 animate-spin" />
                                 ) : (
                                   <Download size={13} className="mr-2" />
                                 )}
@@ -1085,7 +1022,8 @@ export default function BoqDashboard() {
                     </div>
 
                     <button
-                      onClick={() => nav("/ledger/boq/new")}
+                      onClick={() => nav('/ledger/boq/new')}
+                      data-testid="boq-new-btn"
                       className="mt-4 h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
                     >
                       Create First BOQ

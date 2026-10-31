@@ -1,4 +1,5 @@
 import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -345,7 +346,7 @@ export function PlanOfActionForm() {
 
     terms_template_id: "",
   });
-  useSharedProjectData(projectId, "plan", values, setValues, !isEditMode);
+  const prefill = useSharedProjectData(projectId, "plan", values, setValues, !isEditMode);
 
   /* ============================================================
      TERMS CREATE / EDIT STATE
@@ -1732,7 +1733,7 @@ Any variation in scope shall be treated as extra work.`,
           title="Failed to load plan of action"
           text="It may have been deleted, or the connection dropped."
           action={
-            <Button onClick={() => navigate("/plan-of-actions")}>
+            <Button onClick={() => navigate("/crm/plan-of-action/all")}>
               Back to plans of action
             </Button>
           }
@@ -1802,11 +1803,10 @@ Any variation in scope shall be treated as extra work.`,
   return (
     <PlanOfActionSectionForm
       title={isEditMode ? "Edit plan of action" : "Plan of action"}
-      subtitle={
+      subtitle={<>{
         isEditMode
           ? "Update the phases, team and terms. Saving updates the plan of action document."
-          : "Set out how the project will run — phases, durations, team and terms. Produces the plan of action document."
-      }
+          : "Set out how the project will run — phases, durations, team and terms. Produces the plan of action document."}<PrefillNotice prefill={prefill} /></>}
       crumbs={[
         { label: "CRM", to: "/crm" },
         { label: "Forms" },

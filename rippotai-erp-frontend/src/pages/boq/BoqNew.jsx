@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useCallback, useState } from "react";
-import { useSharedProjectData } from "../../hooks/use-shared-project-data";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
+import { PrefillNotice } from '@/components/PrefillNotice';
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import {
   Page,
   PageHeader,
@@ -11,16 +12,13 @@ import {
   TextInput,
   SelectInput,
   FormActions,
-} from "@/components/inos";
-import { DocSection, Grid } from "@/components/forms/commerce-form-ui";
+} from '@/components/inos';
+import { DocSection, Grid } from '@/components/forms/commerce-form-ui';
 
-import {
-  useCreateBoqMutation,
-  useGetTemplatesQuery,
-} from "../../api/boq/boq.api";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
-import NewProjectModal from "../../components/projects/CreateNewProject";
-const CREATE_NEW_PROJECT = "__create_new_project__";
+import { useCreateBoqMutation, useGetTemplatesQuery } from '../../api/boq/boq.api';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
+import NewProjectModal from '../../components/projects/CreateNewProject';
+const CREATE_NEW_PROJECT = '__create_new_project__';
 
 export default function BoqNew() {
   const navigate = useNavigate();
@@ -28,16 +26,16 @@ export default function BoqNew() {
 
   // Preselect the project when arriving from a project page (?project_id=…).
   const [projectId, setProjectId] = useState(
-    () => searchParams.get("project_id") || searchParams.get("projectId") || "",
+    () => searchParams.get('project_id') || searchParams.get('projectId') || '',
   );
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const boqValues = useMemo(() => ({ title }), [title]);
   const setBoqValues = useCallback(
     (updater) => setTitle((current) => updater({ title: current }).title),
     [],
   );
-  useSharedProjectData(projectId, "boq", boqValues, setBoqValues);
-  const [templateId, setTemplateId] = useState("");
+  const prefill = useSharedProjectData(projectId, 'boq', boqValues, setBoqValues);
+  const [templateId, setTemplateId] = useState('');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   const {
@@ -56,12 +54,12 @@ export default function BoqNew() {
 
   // Read template_id from URL
   useEffect(() => {
-    const id = searchParams.get("template_id");
+    const id = searchParams.get('template_id');
 
     if (id) {
       setTemplateId(id);
     } else {
-      setTemplateId("");
+      setTemplateId('');
     }
   }, [searchParams]);
 
@@ -76,8 +74,8 @@ export default function BoqNew() {
     }
 
     if (!found) {
-      toast.error("Template not found.");
-      setTemplateId("");
+      toast.error('Template not found.');
+      setTemplateId('');
     }
   }, [templatesLoaded, templates, templateId]);
 
@@ -105,7 +103,7 @@ export default function BoqNew() {
     e.preventDefault();
 
     if (!projectId) {
-      toast.error("Please select a project.");
+      toast.error('Please select a project.');
       return;
     }
 
@@ -116,13 +114,11 @@ export default function BoqNew() {
         source_template_id: templateId || undefined,
       }).unwrap();
 
-      toast.success("BOQ created successfully.");
+      toast.success('BOQ created successfully.');
 
       navigate(`/boq/${boq.id}`);
     } catch (err) {
-      toast.error(
-        err?.data?.message || err?.data?.detail || "Failed to create BOQ.",
-      );
+      toast.error(err?.data?.message || err?.data?.detail || 'Failed to create BOQ.');
     }
   };
 
@@ -134,29 +130,26 @@ export default function BoqNew() {
     <Page width="form">
       <PageHeader
         crumbs={[
-          { label: "Ledger", to: "/ledger" },
-          { label: "BOQs", to: "/ledger/boq/all" },
-          { label: "New" },
+          { label: 'Ledger', to: '/ledger' },
+          { label: 'BOQs', to: '/ledger/boq/all' },
+          { label: 'New' },
         ]}
         title="New bill of quantities"
-        subtitle="Pick the project, optionally start from a template, then continue in the BOQ editor."
+        subtitle={
+          <>
+            Pick the project, optionally start from a template, then continue in the BOQ editor.
+            <PrefillNotice prefill={prefill} />
+          </>
+        }
         actions={
-          <Button
-            variant="ghost"
-            icon={ArrowLeft}
-            onClick={() => navigate("/boq")}
-          >
+          <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/boq')}>
             Back to BOQs
           </Button>
         }
       />
 
       <form onSubmit={submit} className="inos-form">
-        <DocSection
-          step={1}
-          title="Project"
-          description="Every BOQ belongs to one project."
-        >
+        <DocSection step={1} title="Project" description="Every BOQ belongs to one project.">
           <Grid cols={1}>
             <Field
               label="Project"
@@ -164,7 +157,7 @@ export default function BoqNew() {
               htmlFor="boq-project"
               hint="Not listed? Create it without leaving this page."
             >
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <SelectInput
                     id="boq-project"
@@ -174,16 +167,14 @@ export default function BoqNew() {
                     required
                   >
                     <option value="">
-                      {projectsLoading ? "Loading projects…" : "Select project"}
+                      {projectsLoading ? 'Loading projects…' : 'Select project'}
                     </option>
                     {projects.map((project) => (
                       <option key={project.id} value={project.id}>
                         {project.name}
                       </option>
                     ))}
-                    <option value={CREATE_NEW_PROJECT}>
-                      + Create new project…
-                    </option>
+                    <option value={CREATE_NEW_PROJECT}>+ Create new project…</option>
                   </SelectInput>
                 </div>
                 <Button
@@ -216,7 +207,7 @@ export default function BoqNew() {
                 placeholder={
                   selectedProject
                     ? `e.g. ${selectedProject.name} — interiors BOQ`
-                    : "e.g. Interiors BOQ"
+                    : 'e.g. Interiors BOQ'
                 }
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -227,8 +218,8 @@ export default function BoqNew() {
               hint={
                 selectedTemplate?.description ||
                 (templateId
-                  ? "Categories and items are copied from the template."
-                  : "An empty BOQ you fill in yourself.")
+                  ? 'Categories and items are copied from the template.'
+                  : 'An empty BOQ you fill in yourself.')
               }
             >
               <SelectInput
@@ -237,9 +228,7 @@ export default function BoqNew() {
                 disabled={templatesLoading}
                 onChange={(e) => setTemplateId(e.target.value)}
               >
-                <option value="">
-                  {templatesLoading ? "Loading templates…" : "Blank BOQ"}
-                </option>
+                <option value="">{templatesLoading ? 'Loading templates…' : 'Blank BOQ'}</option>
                 {templates.map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name}
@@ -251,14 +240,12 @@ export default function BoqNew() {
         </DocSection>
 
         <FormActions
-          onCancel={() => navigate("/boq")}
+          onCancel={() => navigate('/boq')}
           submitLabel={
             busy ? (
-              "Creating…"
+              'Creating…'
             ) : (
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 Create & open editor <ArrowRight size={16} aria-hidden />
               </span>
             )

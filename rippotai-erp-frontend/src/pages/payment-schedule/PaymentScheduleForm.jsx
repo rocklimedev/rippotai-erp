@@ -1,4 +1,5 @@
 import MonthlyMilestoneBuilder from "@/components/payments/MonthlyMilestoneBuilder";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
@@ -152,7 +153,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   const draftKey = `${SAVE_KEY}.${isEdit ? scheduleId : projectId || 'new'}`;
 
   const [values, setValues, draftStorage] = useAutoSave(draftKey, EMPTY_VALUES);
-  useSharedProjectData(projectId, 'payment', values, setValues, !isEdit);
+  const prefill = useSharedProjectData(projectId, 'payment', values, setValues, !isEdit);
 
   // ============================================================
   // HYDRATE FORM FROM SERVER (edit mode)
@@ -826,7 +827,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
     <>
       <PaymentSectionForm
         title={isEdit ? "Edit payment schedule" : "New payment schedule"}
-        subtitle="Set the contract value and GST, then split payments into milestones that add up to 100%."
+        subtitle={<>Set the contract value and GST, then split payments into milestones that add up to 100%.<PrefillNotice prefill={prefill} /></>}
         crumbs={[
           { label: "Ledger", to: "/ledger" },
           { label: "Payment schedules", to: "/ledger/payment-schedule/all" },

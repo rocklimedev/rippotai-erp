@@ -10,6 +10,7 @@ import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
 import { BulkIndexerService } from './indexing/bulk-indexer.service';
 import { SearchScopeService } from './search-scope.service';
+import { SqlSearchFallbackService } from './sql-search-fallback.service';
 import { TeamMember } from '../users/models/team-member.model';
 
 import { ProjectSearchService } from './services/project-search.service';
@@ -94,6 +95,7 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
   providers: [
     SearchScopeService,
     SearchService,
+    SqlSearchFallbackService,
     GlobalSearchService,
     AutocompleteService,
     BulkIndexerService,

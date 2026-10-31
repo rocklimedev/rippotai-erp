@@ -173,7 +173,7 @@ export default function PlanOfActionList() {
   // ------------------------------------------------------------
 
   const clearProjectFilter = () => {
-    nav("/plan-of-actions");
+    nav("/crm/plan-of-action/all");
   };
 
   // ------------------------------------------------------------

@@ -160,25 +160,47 @@ export const vendorsApi = baseApi.injectEndpoints({
     // Shortlists
     // =====================================
 
+    // Vendor shortlists are the per-project VENDOR shortlists
+    // (/project-shortlists, one per project) with rows in /shortlist-entries.
     getVendorShortlists: builder.query({
-      query: () => "/vendor-shortlists",
+      query: () => ({
+        url: "/project-shortlists",
+        params: { shortlist_type: "VENDOR" },
+      }),
+      transformResponse: (rows) =>
+        (Array.isArray(rows) ? rows : rows?.data || []).map((r) => ({
+          ...r,
+          name: r.title || `${r.project?.name || "Project"} — vendor shortlist`,
+          project_name: r.project?.name || null,
+          vendor_count: (r.entries || []).filter((e) => e.vendor_id).length,
+        })),
       providesTags: ["Shortlists"],
     }),
 
     createVendorShortlist: builder.mutation({
-      query: (body) => ({
-        url: "/vendor-shortlists",
+      query: ({ project_id, name }) => ({
+        url: "/project-shortlists",
         method: "POST",
-        body,
+        body: {
+          project_id,
+          shortlist_type: "VENDOR",
+          ...(name ? { title: name } : {}),
+        },
       }),
       invalidatesTags: ["Shortlists"],
     }),
 
     addVendorToShortlist: builder.mutation({
-      query: ({ shortlistId, ...body }) => ({
-        url: `/vendor-shortlists/${shortlistId}/items`,
+      query: ({ shortlistId, vendor_id, trade, working_type, notes }) => ({
+        url: "/shortlist-entries",
         method: "POST",
-        body,
+        body: {
+          project_shortlist_id: shortlistId,
+          vendor_id,
+          trade,
+          working_type,
+          ...(notes ? { notes } : {}),
+        },
       }),
       invalidatesTags: ["Shortlists"],
     }),

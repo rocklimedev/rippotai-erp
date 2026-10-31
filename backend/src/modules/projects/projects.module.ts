@@ -27,6 +27,8 @@ import {
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ClientsModule } from '../clients/clients.module';
+import { AuthorityController } from './authority.controller';
+import { AuthorityService } from './authority.service';
 
 import { TeamMember } from '../users/models/team-member.model';
 
@@ -111,6 +113,7 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
     ProjectPhaseController,
 
     // Command Center
+    AuthorityController,
     CommandCenterController,
     ProjectOverviewController,
     AppBadgesController,
@@ -125,6 +128,7 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
     // Command Center
     CommandCenterService,
     CommandCenterCacheService,
+    AuthorityService,
   ],
 
   exports: [

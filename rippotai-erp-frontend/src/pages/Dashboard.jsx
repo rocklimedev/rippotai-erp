@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
 import { APP_META, LANDING_ORDER } from "@/config/appNav";
+import { canOpenApp } from "@/lib/permissions";
 import NotificationsBell from "../components/dashboard/NotificationsBell";
 import UserMenu from "../components/users/UserMenu";
 
@@ -108,7 +109,7 @@ export default function Dashboard() {
           className="inos-launcher__grid"
           aria-label="Apps"
         >
-          {LANDING_ORDER.map((key) => {
+          {LANDING_ORDER.filter((key) => canOpenApp(user, key)).map((key) => {
             const Icon = MODULE_ICONS[key];
             const meta = APP_META[key];
             const bkey = BADGE_MAP[key];

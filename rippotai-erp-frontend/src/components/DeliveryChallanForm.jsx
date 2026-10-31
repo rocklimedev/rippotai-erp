@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { useSearchParams } from 'react-router-dom';
 import { useSharedProjectData } from '../hooks/use-shared-project-data';
 import { toast } from "sonner";
@@ -484,7 +485,7 @@ export default function DeliveryChallanForm({
   const [searchParams] = useSearchParams();
 
   const [form, setForm] = useState(() => buildInitialForm(initialData || { project_id: searchParams.get('projectId') || searchParams.get('project_id') || '' }));
-  useSharedProjectData(form.project_id, 'challan', form, setForm, !isEditMode);
+  const prefill = useSharedProjectData(form.project_id, 'challan', form, setForm, !isEditMode);
 
   const [errors, setErrors] = useState({});
 
@@ -1159,7 +1160,7 @@ export default function DeliveryChallanForm({
           { label: isEditMode ? "Edit" : "New" },
         ]}
         title={isEditMode ? "Edit delivery challan" : "New delivery challan"}
-        subtitle="Record what arrived on site — link a purchase order to load its lines automatically."
+        subtitle={<>Record what arrived on site — link a purchase order to load its lines automatically.<PrefillNotice prefill={prefill} /></>}
         actions={
           onCancel && (
             <Button variant="ghost" icon={ArrowLeft} onClick={onCancel} disabled={isSubmitting}>

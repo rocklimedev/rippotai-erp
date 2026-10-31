@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SearchService } from './search.service';
+import { SqlSearchFallbackService } from './sql-search-fallback.service';
 import { SuggestItem } from './interfaces/searchable-document.interface';
 import { SuggestQueryDto } from './dto/global-search.dto';
 import { SearchUserContext } from './global-search.service';
@@ -17,7 +18,10 @@ const SUGGEST_INDICES = [
 
 @Injectable()
 export class AutocompleteService {
-  constructor(private readonly searchService: SearchService) {}
+  constructor(
+    private readonly searchService: SearchService,
+    private readonly sqlFallback: SqlSearchFallbackService,
+  ) {}
 
   async suggest(
     dto: SuggestQueryDto,
@@ -31,39 +35,56 @@ export class AutocompleteService {
 
     const filter: any[] = [{ term: { is_deleted: false } }, scope];
 
-    const response = await this.searchService.search(SUGGEST_INDICES, {
-      size: limit,
-      query: {
-        bool: {
-          must: [
-            {
-              multi_match: {
-                query: q,
-                type: 'bool_prefix',
-                fields: [
-                  'title^4',
-                  'title.keyword^6',
-                  'subtitle',
-                  'boq_number',
-                  'quotation_number',
-                  'drawing_number',
-                  'doc_no',
-                  'client_name',
-                ],
+    let response: any;
+    try {
+      response = await this.searchService.search(SUGGEST_INDICES, {
+        size: limit,
+        query: {
+          bool: {
+            must: [
+              {
+                multi_match: {
+                  query: q,
+                  type: 'bool_prefix',
+                  fields: [
+                    'title^4',
+                    'title.keyword^6',
+                    'subtitle',
+                    'boq_number',
+                    'quotation_number',
+                    'drawing_number',
+                    'doc_no',
+                    'client_name',
+                  ],
+                },
               },
-            },
-          ],
-          filter,
+            ],
+            filter,
+          },
         },
-      },
-      _source: [
-        'entity_type',
-        'title',
-        'subtitle',
-        'client_name',
-        'project_name',
-      ],
-    });
+        _source: [
+          'entity_type',
+          'title',
+          'subtitle',
+          'client_name',
+          'project_name',
+        ],
+      });
+    } catch {
+      response = null;
+    }
+    if (!response || response.noIndices) {
+      const hits = await this.sqlFallback.search(q, user, {
+        entities: ['project', 'client', 'boq', 'quotation', 'vendor'],
+        limit,
+      });
+      return hits.map((h) => ({
+        entity_type: h.entity_type,
+        id: h.id,
+        label: h.title,
+        secondary: h.subtitle ?? null,
+      }));
+    }
 
     return (response.hits?.hits ?? []).map((hit: any) => {
       const src = hit._source ?? {};

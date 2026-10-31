@@ -2912,6 +2912,16 @@
   {
     "module": "material-procurement",
     "controller": "InventoryController",
+    "handler": "openingStock",
+    "method": "POST",
+    "path": "/inventory/opening-stock",
+    "permission": "inventory:adjust",
+    "public": false,
+    "file": "src/modules/material-procurement/controllers/inventory.controller.ts"
+  },
+  {
+    "module": "material-procurement",
+    "controller": "InventoryController",
     "handler": "receive",
     "method": "POST",
     "path": "/inventory/receive",
@@ -2936,6 +2946,16 @@
     "method": "POST",
     "path": "/inventory/return",
     "permission": "inventory:return",
+    "public": false,
+    "file": "src/modules/material-procurement/controllers/inventory.controller.ts"
+  },
+  {
+    "module": "material-procurement",
+    "controller": "InventoryController",
+    "handler": "reverse",
+    "method": "POST",
+    "path": "/inventory/reverse/:id",
+    "permission": "inventory:adjust",
     "public": false,
     "file": "src/modules/material-procurement/controllers/inventory.controller.ts"
   },
@@ -4311,6 +4331,16 @@
   },
   {
     "module": "projects",
+    "controller": "AuthorityController",
+    "handler": "overview",
+    "method": "GET",
+    "path": "/command-center/authority/overview",
+    "permission": "command-center:authority",
+    "public": false,
+    "file": "src/modules/projects/authority.controller.ts"
+  },
+  {
+    "module": "projects",
     "controller": "CommandCenterController",
     "handler": "approveGate",
     "method": "POST",
@@ -5458,6 +5488,46 @@
     "permission": "quotations:restore",
     "public": false,
     "file": "src/modules/quotations/quotation-versions.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "AccessMatrixController",
+    "handler": "catalogue",
+    "method": "GET",
+    "path": "/role-access/catalogue",
+    "permission": "role-permissions:read",
+    "public": false,
+    "file": "src/modules/rbac/access-matrix.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "AccessMatrixController",
+    "handler": "getAppAcrossRoles",
+    "method": "GET",
+    "path": "/role-access/app/:code",
+    "permission": "role-permissions:read",
+    "public": false,
+    "file": "src/modules/rbac/access-matrix.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "AccessMatrixController",
+    "handler": "getForRole",
+    "method": "GET",
+    "path": "/role-access/:role_id",
+    "permission": "role-permissions:read",
+    "public": false,
+    "file": "src/modules/rbac/access-matrix.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "AccessMatrixController",
+    "handler": "setForRole",
+    "method": "PUT",
+    "path": "/role-access/:role_id",
+    "permission": "role-permissions:assign",
+    "public": false,
+    "file": "src/modules/rbac/access-matrix.controller.ts"
   },
   {
     "module": "rbac",

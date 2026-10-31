@@ -41,7 +41,7 @@ export const DesignActiveProjects = () => {
   return (
     <WidgetShell
       title="Active Projects"
-      onClick={() => nav("/crm/design/projects")}
+      onClick={() => nav("/projects")}
     >
       <Stat
         value={d?.overview?.active_projects ?? "—"}
@@ -55,7 +55,7 @@ export const DesignDesignTasks = () => {
   const nav = useNavigate();
   const d = useEndpoint("/design-studio/dashboard");
   return (
-    <WidgetShell title="Design Tasks" onClick={() => nav("/crm/design/tasks")}>
+    <WidgetShell title="Design Tasks" onClick={() => nav("/tasks")}>
       <Stat value={d?.overview?.design_tasks ?? "—"} sub="open design tasks" />
     </WidgetShell>
   );
@@ -114,7 +114,7 @@ export const DesignPipelineStages = () => {
     <WidgetShell title="Design Pipeline">
       <RowList
         rows={rows}
-        onClick={() => nav("/crm/design/projects")}
+        onClick={() => nav("/projects")}
         empty="No pipeline data yet"
       />
     </WidgetShell>
@@ -138,7 +138,7 @@ export const DesignProjectsList = () => {
     <WidgetShell title="Design Projects">
       <RowList
         rows={rows}
-        onClick={() => nav("/crm/design/projects")}
+        onClick={() => nav("/projects")}
         empty="No design projects yet"
       />
     </WidgetShell>
@@ -178,7 +178,7 @@ export const DesignTasksList = () => {
     <WidgetShell title="Design Tasks">
       <RowList
         rows={rows}
-        onClick={() => nav("/crm/design/tasks")}
+        onClick={() => nav("/tasks")}
         empty="No open design tasks"
       />
     </WidgetShell>
@@ -198,7 +198,7 @@ export const DesignUpcomingDeadlines = () => {
     <WidgetShell title="Upcoming Deadlines">
       <RowList
         rows={rows}
-        onClick={() => nav("/crm/calendar")}
+        onClick={() => nav("/calendar")}
         empty="No upcoming deadlines"
       />
     </WidgetShell>

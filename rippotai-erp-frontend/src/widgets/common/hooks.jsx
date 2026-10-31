@@ -66,6 +66,13 @@ export const MONTH_LABEL = (yyyymm) => {
   ][(parseInt(m, 10) || 1) - 1];
 };
 
+// Compact axis tick: "₹1.40 Cr" → "₹1.4Cr", "₹70.00 L" → "₹70L"
+const shortTick = (v) =>
+  String(formatINRShort(v))
+    .replace(/(\.\d*?)0+(?=\D|$)/, "$1")
+    .replace(/\.(?=\D|$)/, "")
+    .replace(/\s+/g, "");
+
 /* -------- Shared widget primitives -------- */
 
 export function WidgetShell({
@@ -98,9 +105,9 @@ export function WidgetShell({
           ? `widget-link-${title.toLowerCase().replace(/\s+/g, "-")}`
           : undefined
       }
-      className={`h-full w-full inos-card p-5 flex flex-col overflow-hidden ${clickable ? "inos-card--interactive" : ""}`}
+      className={`bc-widget h-full w-full inos-card flex flex-col overflow-hidden ${clickable ? "inos-card--interactive" : ""}`}
     >
-      <div className="flex items-start justify-between pb-3 shrink-0 gap-2">
+      <div className="bc-widget__head flex items-start justify-between shrink-0 gap-2">
         <div className="min-w-0 flex-1">
           <div
             title={title}
@@ -129,13 +136,13 @@ export function Stat({ value, delta, deltaDirection, note }) {
     <div className="flex flex-col justify-end h-full min-w-0">
       <div
         title={String(value)}
-        className="bc-stat-number text-[32px] xl:text-[34px] font-bold tabular"
+        className="bc-stat-number bc-fit-number font-bold tabular"
         style={{ color: "var(--text)", letterSpacing: "-0.02em" }}
       >
         {value}
       </div>
       {(delta !== undefined || note) && (
-        <div className="mt-2 flex items-center gap-1.5 text-[15px] min-w-0">
+        <div className="bc-stat-delta mt-2 flex items-center gap-1.5 text-[13px] min-w-0">
           {deltaDirection === "up" && (
             <ArrowUp
               size={15}
@@ -382,25 +389,25 @@ export function HeroAreaChart({
       <div className="flex flex-col h-full">
         <div className="flex items-baseline gap-3 mb-2 shrink-0">
           <div
-            className="text-[44px] font-semibold text-[#333333] tracking-tight leading-none"
-            style={{ fontFamily: "Poppins" }}
+            className="bc-hero-value font-semibold tracking-tight whitespace-nowrap"
+            style={{ color: "var(--text)" }}
             data-testid={`hero-value-${title}`}
           >
             {currency ? formatINRShort(latestValue) : latestValue}
           </div>
           <div
-            className={`inline-flex items-center gap-1 text-[15px] font-semibold ${up ? "text-[#333333]" : "text-[#6B7B7C]"}`}
+            className={`bc-hide-tiny inline-flex items-center gap-1 text-[13px] font-semibold whitespace-nowrap ${up ? "text-[#333333]" : "text-[#6B7B7C]"}`}
           >
-            {up ? <ArrowUp size={15} /> : <ArrowDown size={15} />}{" "}
+            {up ? <ArrowUp size={13} /> : <ArrowDown size={13} />}{" "}
             {Math.abs(deltaPct).toFixed(1)}%
-            <span className="text-[#6B7B7C] font-normal">vs prev</span>
+            <span className="bc-hide-narrow text-[#6B7B7C] font-normal">vs prev</span>
           </div>
         </div>
-        <div className="flex-1 min-h-[130px]">
+        <div className="flex-1 min-h-0">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={series}
-              margin={{ top: 6, right: 8, left: -18, bottom: 0 }}
+              margin={{ top: 6, right: 8, left: 0, bottom: 0 }}
             >
               <defs>
                 <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
@@ -423,16 +430,17 @@ export function HeroAreaChart({
               />
               <XAxis
                 dataKey="label"
-                tick={{ fill: CHART.muted, fontSize: 13 }}
+                tick={{ fill: CHART.muted, fontSize: 11 }}
                 axisLine={{ stroke: CHART.stroke }}
                 tickLine={false}
+                minTickGap={8}
               />
               <YAxis
-                tick={{ fill: CHART.muted, fontSize: 13 }}
+                tick={{ fill: CHART.muted, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(v) => (currency ? formatINRShort(v) : v)}
-                width={50}
+                tickFormatter={(v) => (currency ? shortTick(v) : v)}
+                width={currency ? 58 : 40}
               />
               <Tooltip
                 contentStyle={{
@@ -474,7 +482,8 @@ export function StatCardWithTrend({
     <WidgetShell title={title}>
       <div className="flex flex-col justify-center h-full">
         <div
-          className="text-[28px] font-semibold text-[#333333] leading-tight"
+          className="bc-stat-number bc-fit-number font-semibold text-[#333333]"
+          title={value == null ? undefined : String(value)}
           data-testid={testid}
         >
           {value ?? "—"}
@@ -508,17 +517,14 @@ export function DonutMix({ title, subtitle, data, isLoading }) {
   return (
     <WidgetShell title={title} subtitle={subtitle}>
       <div className="flex gap-4 h-full items-center">
-        <div
-          className="relative flex-shrink-0"
-          style={{ width: 170, height: 170 }}
-        >
+        <div className="bc-donut relative flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={rows}
                 dataKey="value"
-                innerRadius={55}
-                outerRadius={80}
+                innerRadius="68%"
+                outerRadius="98%"
                 paddingAngle={2}
                 stroke="none"
               >
@@ -540,37 +546,36 @@ export function DonutMix({ title, subtitle, data, isLoading }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-[#6B7B7C]">
+            <div className="bc-hide-tiny text-[10.5px] uppercase tracking-[0.14em] text-[#6B7B7C]">
               Total
             </div>
-            <div
-              className="text-[32px] font-semibold text-[#333333] leading-none"
-              style={{ fontFamily: "Poppins" }}
-            >
+            <div className="bc-donut__total font-semibold text-[#333333] leading-tight">
               {total}
             </div>
           </div>
         </div>
-        <div className="flex-1 flex flex-col gap-2 overflow-y-auto max-h-full pr-1">
+        <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-y-auto max-h-full pr-1">
           {rows.map((r, i) => {
             const pct = total ? ((r.value / total) * 100).toFixed(0) : 0;
             return (
               <div
                 key={r.name}
-                className="flex items-center gap-2 text-[14px]"
+                className="flex items-center gap-2 text-[13px] min-w-0"
+                title={`${String(r.name).replace(/_/g, " ")}: ${r.value} (${pct}%)`}
                 data-testid={`donut-legend-${r.name}`}
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-sm"
+                  className="w-2.5 h-2.5 rounded-sm shrink-0"
                   style={{
                     background: DONUT_SEGMENTS[i % DONUT_SEGMENTS.length],
                   }}
                 />
-                <span className="flex-1 text-[#333333] capitalize truncate">
+                <span className="flex-1 min-w-0 text-[#333333] capitalize truncate">
                   {String(r.name).replace(/_/g, " ")}
                 </span>
-                <span className="text-[#6B7B7C]">
-                  {r.value} · {pct}%
+                <span className="text-[#6B7B7C] shrink-0 tabular">
+                  {r.value}
+                  <span className="bc-hide-narrow"> · {pct}%</span>
                 </span>
               </div>
             );
@@ -620,7 +625,7 @@ export function BarChartWidget({
 
   return (
     <WidgetShell title={title} subtitle={subtitle}>
-      <div className="h-full min-h-[140px]">
+      <div className="h-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={rows}
@@ -647,11 +652,11 @@ export function BarChartWidget({
                   tick={{ fill: CHART.muted, fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
-                  width={140}
+                  width={110}
                   interval={0}
                   tickFormatter={(v) =>
-                    typeof v === "string" && v.length > 18
-                      ? v.slice(0, 17) + "…"
+                    typeof v === "string" && v.length > 15
+                      ? v.slice(0, 14) + "…"
                       : v
                   }
                 />
@@ -663,7 +668,8 @@ export function BarChartWidget({
                   tick={{ fill: CHART.muted, fontSize: 12 }}
                   axisLine={{ stroke: CHART.stroke }}
                   tickLine={false}
-                  interval={0}
+                  interval="preserveStartEnd"
+                  minTickGap={6}
                   tickFormatter={(v) =>
                     typeof v === "string" && v.length > 12
                       ? v.slice(0, 11) + "…"

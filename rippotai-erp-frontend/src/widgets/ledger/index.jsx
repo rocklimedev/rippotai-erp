@@ -105,11 +105,15 @@ export const LedgerOutstanding = () => {
       title="Outstanding"
       onClick={() => nav("/ledger/payment-schedule/all")}
     >
-      <div className="h-full flex flex-col items-center justify-center">
-        <div className="text-[28px] font-bold text-[#9B3D3D] leading-none">
+      <div className="h-full flex flex-col justify-end min-w-0">
+        <div
+          className="bc-stat-number bc-fit-number font-bold tabular"
+          style={{ color: "var(--bad-fg)", letterSpacing: "-0.02em" }}
+          title={String(formatCurrency(d?.summary?.outstanding))}
+        >
           {formatCurrency(d?.summary?.outstanding)}
         </div>
-        <div className="text-[11px] text-[#6B7B7C] mt-1">
+        <div className="bc-stat-delta text-[12px] text-[#6B7B7C] mt-1 truncate">
           {d?.summary?.overdue_payments != null
             ? `${d.summary.overdue_payments} overdue payments`
             : "outstanding balance"}

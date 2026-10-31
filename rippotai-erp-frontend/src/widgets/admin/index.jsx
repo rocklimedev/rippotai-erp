@@ -42,7 +42,7 @@ export const AdminOpenLeads = () => {
   const nav = useNavigate();
   const d = useEndpoint("/admin/dashboard");
   return (
-    <WidgetShell title="Open Leads" onClick={() => nav("/crm/leads")}>
+    <WidgetShell title="Open Leads" onClick={() => nav("/crm/pipeline")}>
       <Stat value={d?.stats?.open_leads ?? "—"} sub="across all stages" />
     </WidgetShell>
   );
@@ -68,7 +68,7 @@ export const AdminTeamMembers = () => {
   const nav = useNavigate();
   const d = useEndpoint("/admin/dashboard");
   return (
-    <WidgetShell title="Team Members" onClick={() => nav("/admin/team")}>
+    <WidgetShell title="Team Members" onClick={() => nav("/console/users")}>
       <Stat value={d?.stats?.team_members ?? "—"} sub="active users" />
     </WidgetShell>
   );
@@ -130,7 +130,7 @@ export const AdminLeadPipeline = () => {
     <WidgetShell title="Lead Pipeline">
       <RowList
         rows={rows}
-        onClick={() => nav("/crm/leads")}
+        onClick={() => nav("/crm/pipeline")}
         empty="No pipeline data yet"
       />
     </WidgetShell>
@@ -165,7 +165,7 @@ export const AdminTeamList = () => {
     <WidgetShell title="Team Overview">
       <RowList
         rows={rows}
-        onClick={() => nav("/admin/team")}
+        onClick={() => nav("/console/users")}
         empty="No team members found"
       />
     </WidgetShell>

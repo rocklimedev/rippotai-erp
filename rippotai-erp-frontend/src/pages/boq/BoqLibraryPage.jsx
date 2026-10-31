@@ -1,22 +1,22 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useState } from "react";
-import { formatINR } from "@/lib/format";
-import { toast } from "sonner";
-import { Plus, Edit3, Trash2, Search } from "lucide-react";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useState } from 'react';
+import { formatINR } from '@/lib/format';
+import { toast } from 'sonner';
+import { Plus, Edit3, Trash2, Search } from 'lucide-react';
 
-import LibraryItemModal from "../../components/boqs/LibraryItemModal";
+import LibraryItemModal from '../../components/boqs/LibraryItemModal';
 
 import {
   useGetLibraryItemsQuery,
   useGetLibraryCategoriesQuery,
   useDeleteLibraryItemMutation,
   useUpdateLibraryItemMutation,
-} from "../../api/boq/boq.api";
+} from '../../api/boq/boq.api';
 
 /* ============ Rate & Item Library ============ */
 
 export function BoqLibraryPage() {
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState('');
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
 
@@ -39,12 +39,12 @@ export function BoqLibraryPage() {
       toast.success(
         data?.referenced_by
           ? `Deleted (was used in ${data.referenced_by} BOQ line(s) — snapshots preserved)`
-          : "Deleted",
+          : 'Deleted',
       );
 
       refetchItems();
     } catch (err) {
-      toast.error(err?.data?.message || "Delete failed");
+      toast.error(err?.data?.message || 'Delete failed');
     }
   };
 
@@ -58,11 +58,11 @@ export function BoqLibraryPage() {
         category_name: cats.find((c) => c.id === category_id)?.name,
       }).unwrap();
 
-      toast.success("Moved");
+      toast.success('Moved');
 
       refetchItems();
     } catch (err) {
-      toast.error(err?.data?.message || "Move failed");
+      toast.error(err?.data?.message || 'Move failed');
     }
   };
 
@@ -74,13 +74,11 @@ export function BoqLibraryPage() {
             BOQ · Management
           </div>
 
-          <h1 className="text-[34px] font-bold text-[#333333]">
-            Rate &amp; Item Library
-          </h1>
+          <h1 className="text-[34px] font-bold text-[#333333]">Rate &amp; Item Library</h1>
 
           <p className="text-[13.5px] text-[#6B7B7C] mt-1">
-            Central library used by templates and new BOQs. Edits here
-            don&apos;t rewrite existing BOQ line-item snapshots.
+            Central library used by templates and new BOQs. Edits here don&apos;t rewrite existing
+            BOQ line-item snapshots.
           </p>
         </div>
 
@@ -125,27 +123,17 @@ export function BoqLibraryPage() {
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-10 text-center text-[#6B7B7C]"
-                >
-                  No library items{q ? " for this search" : ""}.
+                <td colSpan={5} className="px-4 py-10 text-center text-[#6B7B7C]">
+                  No library items{q ? ' for this search' : ''}.
                 </td>
               </tr>
             )}
 
             {items.map((it) => (
-              <tr
-                key={it.id}
-                className="border-b border-[#EAEEF0] hover:bg-[#FAF8F5]"
-              >
-                <td className="px-4 py-3 text-[13.5px] font-semibold">
-                  {it.name}
-                </td>
+              <tr key={it.id} className="border-b border-[#EAEEF0] hover:bg-[#FAF8F5]">
+                <td className="px-4 py-3 text-[13.5px] font-semibold">{it.name}</td>
 
-                <td className="px-3 py-3 text-[#6B7B7C]">
-                  {it.category_name || "—"}
-                </td>
+                <td className="px-3 py-3 text-[#6B7B7C]">{it.category_name || '—'}</td>
 
                 <td className="px-3 py-3">{it.unit}</td>
 

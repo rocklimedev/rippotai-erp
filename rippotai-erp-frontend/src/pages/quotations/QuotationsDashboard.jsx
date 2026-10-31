@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
+import { Button, PageHeader, StatTile, Stats } from "@/components/inos";
 import { useGetQuotationsQuery } from "../../api/procuerment/quotation.api";
 import {
   useSoftDeleteQuotationMutation,
@@ -39,48 +40,6 @@ const TABS = [
   { k: "approved", l: "Approved" },
   { k: "cancelled", l: "Cancelled" },
 ];
-
-function SummaryCard({ label, value, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      data-testid={`summary-card-${label.replace(/\s+/g, "-").toLowerCase()}`}
-      className="text-left bg-white border border-[#B5C4B6] rounded-xl p-4 hover:border-[#B5C4B6] hover:shadow-sm transition-all"
-    >
-      <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6] mb-1">
-        {label}
-      </div>
-      <div className="text-[36px] font-bold leading-none text-[#333333]">
-        {value}
-      </div>
-    </button>
-  );
-}
-
-function ActionCard({ icon: Icon, label, count, tone, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      data-testid={`action-${label.replace(/\s+/g, "-").toLowerCase()}`}
-      className="text-left bg-white border border-[#B5C4B6] rounded-xl p-4 hover:border-[#1F453B] hover:shadow-sm transition-all flex items-start gap-3"
-    >
-      <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: tone.bg, color: tone.fg }}
-      >
-        <Icon size={18} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[13.5px] font-semibold text-[#333333]">
-          {label}
-        </div>
-        <div className="text-[36px] font-bold text-[#333333] mt-0.5">
-          {count}
-        </div>
-      </div>
-    </button>
-  );
-}
 
 function isExpiringSoon(q) {
   if (!q?.validUntil) return false;
@@ -264,125 +223,83 @@ export default function QuotationsDashboard() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-[34px] font-bold text-[#333333] tracking-tight">
-            Quotations
-          </h1>
-          <p className="text-[13.5px] text-[#6B7B7C] mt-1 max-w-[600px]">
-            Create, upload, compare and approve project quotations in one
-            structured workspace.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {selectedIds.size > 0 && (
-            <button
-              onClick={handleCompare}
-              className="px-4 py-2 rounded-lg border border-[#1F453B] text-[#1F453B] text-[13px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#1F453B] hover:text-white transition-all"
+    <div className="max-w-[1360px] mx-auto px-4 py-6 md:px-6 space-y-6">
+      <PageHeader
+        title="Quotations"
+        subtitle="Create, upload, compare and approve project quotations."
+        actions={
+          <>
+            {selectedIds.size > 0 && (
+              <Button icon={Scale} onClick={handleCompare}>
+                Compare ({selectedIds.size})
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => nav("/procurement/estimates/new")}
+              data-testid="btn-create-quotation"
             >
-              <Scale size={14} />
-              Compare ({selectedIds.size})
-            </button>
-          )}
+              Create Estimate
+            </Button>
+          </>
+        }
+      />
 
-          <button
-            onClick={() => nav("/procurement/estimates/new")}
-            data-testid="btn-create-quotation"
-            className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold inline-flex items-center gap-1.5"
+      {/* Summary — the four states people act on; the rest live in tabs */}
+      <Stats>
+        {[
+          ["Total", summary.total, "all"],
+          ["Drafts", summary.drafts, "draft"],
+          ["Awaiting approval", summary.awaiting_approval, "awaiting_approval"],
+          ["Approved", summary.approved, "approved"],
+        ].map(([label, value, k]) => (
+          <StatTile
+            key={k}
+            label={label}
+            value={value}
+            active={tab === k}
+            onClick={() => setTab(k)}
+          />
+        ))}
+      </Stats>
+
+      {/* Needs attention — only the non-zero items, as one quiet row */}
+      {(() => {
+        const items = [
+          ["Needs review", awaiting.needs_review, Clock, "under_review"],
+          ["Returned", awaiting.returned, AlertTriangle, "returned"],
+          ["Expiring soon", awaiting.expiring, Clock, null],
+          ["Missing response", awaiting.missing_response, Send, "requested"],
+          ["Received", summary.received, CheckCircle2, "received"],
+        ].filter(([, n]) => Number(n) > 0);
+        if (!items.length) return null;
+        return (
+          <div
+            className="flex flex-wrap items-center gap-2"
+            data-testid="quotations-attention"
           >
-            <Plus size={14} /> Create Estimate
-          </button>
-        </div>
-      </div>
-
-      {/* Summary strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <SummaryCard
-          label="Total"
-          value={summary.total}
-          onClick={() => setTab("all")}
-        />
-        <SummaryCard
-          label="Drafts"
-          value={summary.drafts}
-          onClick={() => setTab("draft")}
-        />
-        <SummaryCard
-          label="Requested"
-          value={summary.requested}
-          onClick={() => setTab("requested")}
-        />
-        <SummaryCard
-          label="Received"
-          value={summary.received}
-          onClick={() => setTab("received")}
-        />
-        <SummaryCard
-          label="Under Review"
-          value={summary.under_review}
-          onClick={() => setTab("under_review")}
-        />
-        <SummaryCard
-          label="Awaiting Approval"
-          value={summary.awaiting_approval}
-          onClick={() => setTab("awaiting_approval")}
-        />
-        <SummaryCard
-          label="Approved"
-          value={summary.approved}
-          onClick={() => setTab("approved")}
-        />
-        <SummaryCard label="Expiring Soon" value={summary.expiring_soon} />
-      </div>
-
-      {/* Awaiting Action */}
-      <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
-        <h2 className="text-[15px] font-bold text-[#333333] mb-3">
-          Awaiting Action
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <ActionCard
-            icon={Clock}
-            label="Needs Review"
-            count={awaiting.needs_review}
-            tone={{ bg: "#EAEEF0", fg: "#1F453B" }}
-            onClick={() => setTab("under_review")}
-          />
-          <ActionCard
-            icon={AlertTriangle}
-            label="Returned"
-            count={awaiting.returned}
-            tone={{ bg: "#EAEEF0", fg: "#1F453B" }}
-            onClick={() => setTab("returned")}
-          />
-          <ActionCard
-            icon={Clock}
-            label="Expiring Soon"
-            count={awaiting.expiring}
-            tone={{ bg: "#EAEEF0", fg: "#1F453B" }}
-          />
-          <ActionCard
-            icon={Send}
-            label="Missing Response"
-            count={awaiting.missing_response}
-            tone={{ bg: "#EAEEF0", fg: "#1F453B" }}
-            onClick={() => setTab("requested")}
-          />
-          <ActionCard
-            icon={CheckCircle2}
-            label="Pending Approval"
-            count={awaiting.pending_approval}
-            tone={{ bg: "#EAEEF0", fg: "#1F453B" }}
-            onClick={() => setTab("awaiting_approval")}
-          />
-        </div>
-      </div>
+            <span className="text-[12.5px] font-semibold text-[var(--text-3)] mr-1">
+              Needs attention
+            </span>
+            {items.map(([label, n, Icon, k]) => (
+              <Button
+                key={label}
+                size="sm"
+                variant="secondary"
+                icon={Icon}
+                onClick={k ? () => setTab(k) : undefined}
+              >
+                {label} · {n}
+              </Button>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Main Table */}
-      <div className="bg-white border border-[#B5C4B6] rounded-xl">
-        <div className="border-b border-[#B5C4B6] overflow-x-auto">
+      <div className="bg-white border border-[var(--line)] rounded-xl">
+        <div className="border-b border-[var(--line)] overflow-x-auto">
           <div className="flex gap-1 p-2 min-w-max">
             {TABS.map((t) => (
               <button
@@ -409,7 +326,7 @@ export default function QuotationsDashboard() {
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search quotations…"
                 data-testid="quotation-search"
-                className="w-full pl-9 pr-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+                className="w-full pl-9 pr-3 py-2 border border-[var(--line)] rounded-lg text-[13px] bg-white"
               />
             </div>
             <button
@@ -421,7 +338,7 @@ export default function QuotationsDashboard() {
           </form>
 
           {selectedIds.size > 0 && (
-            <div className="flex items-center justify-between bg-[#EAEEF0] border border-[#B5C4B6] rounded-lg px-4 py-2 mb-3 text-[13px]">
+            <div className="flex items-center justify-between bg-[#EAEEF0] border border-[var(--line)] rounded-lg px-4 py-2 mb-3 text-[13px]">
               <div className="font-medium">
                 {selectedIds.size} quotation{selectedIds.size > 1 ? "s" : ""}{" "}
                 selected
@@ -459,7 +376,7 @@ export default function QuotationsDashboard() {
                 <col className="w-10" /> {/* Actions */}
               </colgroup>
               <thead className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
-                <tr className="border-b border-[#B5C4B6]">
+                <tr className="border-b border-[var(--line)]">
                   <th className="w-8 py-2">
                     <input
                       type="checkbox"

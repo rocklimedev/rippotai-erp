@@ -1,4 +1,5 @@
 import { termsToText, textToTermsHtml } from "@/lib/terms";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import React, { useEffect, useMemo, useRef } from "react";
 import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -296,7 +297,7 @@ export function BudgetEstimateForm() {
   );
 
   const projectId = values?.project_id || "";
-  useSharedProjectData(
+  const prefill = useSharedProjectData(
     projectId,
     "budget",
     values,
@@ -992,7 +993,7 @@ export function BudgetEstimateForm() {
           ? `Edit ${existing?.estimate_number || "budget estimate"}`
           : "New budget estimate"
       }
-      subtitle="Headline amounts, category lines and charges — totals update as you type."
+      subtitle={<>Headline amounts, category lines and charges — totals update as you type.<PrefillNotice prefill={prefill} /></>}
       crumbs={[
         { label: "Ledger", to: "/ledger" },
         { label: "Budget estimates", to: "/ledger/budget-estimates/all" },

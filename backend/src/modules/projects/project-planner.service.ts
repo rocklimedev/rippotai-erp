@@ -167,10 +167,14 @@ export class ProjectPlannerService {
         );
         const brief = context.documents['client-brief'];
         const timeline: Record<string, string> = {};
-        if (!planner.planned_start_date && brief?.desiredStartDate)
-          timeline.planned_start_date = brief.desiredStartDate;
-        if (!planner.planned_end_date && brief?.targetCompletionDate)
-          timeline.planned_end_date = brief.targetCompletionDate;
+        // Canonical project facts cover projects whose brief left the dates blank.
+        const start = (brief?.desiredStartDate ||
+          context.shared?.desiredStartDate) as string | undefined;
+        const end = (brief?.targetCompletionDate ||
+          context.shared?.targetCompletionDate) as string | undefined;
+        if (!planner.planned_start_date && start)
+          timeline.planned_start_date = start;
+        if (!planner.planned_end_date && end) timeline.planned_end_date = end;
         if (Object.keys(timeline).length)
           await planner.update(timeline, { transaction });
         const existingLocations = await this.locationModel.findAll({
@@ -183,13 +187,18 @@ export class ProjectPlannerService {
           const spaces = (scope?.items || [])
             .map((item: any) => item.projectSpace?.name)
             .filter(Boolean);
+          const rooms = ((context.shared?.rooms as { name?: string }[]) || [])
+            .map((room) => room.name)
+            .filter(Boolean);
           const names = spaces.length
             ? spaces
-            : recce?.rooms?.length
-              ? recce.rooms.map((room: any) => room.room_name)
-              : (brief?.spaceRequirements || []).map(
-                  (room: any) => room.spaceName,
-                );
+            : rooms.length
+              ? rooms
+              : recce?.rooms?.length
+                ? recce.rooms.map((room: any) => room.room_name)
+                : (brief?.spaceRequirements || []).map(
+                    (room: any) => room.spaceName,
+                  );
           if (names.length) {
             const floor = await this.locationModel.create(
               {

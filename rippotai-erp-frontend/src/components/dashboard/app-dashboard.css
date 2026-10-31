@@ -41,6 +41,8 @@
 .dash-item__body {
   height: 100%;
   width: 100%;
+  /* size container for widgets that don't use WidgetShell */
+  container: widget / size;
 }
 .dash-grid.is-editing .dash-item__body {
   pointer-events: none;

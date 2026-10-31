@@ -179,7 +179,7 @@ export default function UserMenu() {
             <DropdownMenuItem
               className="py-2.5 px-3 text-[14px]"
               data-testid="menu-roles-permissions"
-              onClick={() => nav("/settings/roles-permissions")}
+              onClick={() => nav("/console/roles-permissions")}
             >
               <Settings size={15} className="mr-2" />
               Roles &amp; Permissions

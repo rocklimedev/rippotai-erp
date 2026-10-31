@@ -21,7 +21,7 @@ function ApproveDrawingButton({ drawing }) {
       ["Approved", "Superseded"].includes(drawing.status) ||
       (!revision?.url && !revision?.storageFilename)) return null;
   return (
-    <Button size="sm" variant="primary" icon={CheckCircle2} disabled={isLoading}
+    <Button size="sm" variant="soft" icon={CheckCircle2} disabled={isLoading}
       onKeyDown={(event) => event.stopPropagation()}
       onClick={async (event) => {
         event.stopPropagation();

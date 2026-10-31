@@ -191,7 +191,7 @@ export default function ScopeOfWorkList() {
   // ============================================================
 
   const clearProjectFilter = () => {
-    nav("/scope-of-work");
+    nav("/crm/scope-of-work/all");
   };
 
   // ============================================================

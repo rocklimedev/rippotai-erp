@@ -1,4 +1,5 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { summarizeAccess } from '../rbac/access-catalogue';
 import { Public } from '@/common/decorator/public.decorator';
 import { AuthThrottle } from '@/common/security/auth-throttle.decorator';
 import {
@@ -95,7 +96,8 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: RequestWithUser) {
-    return { user: req.user };
+    const permissions = (req.user as any)?.permissions ?? [];
+    return { user: { ...req.user, access: summarizeAccess(permissions) } };
   }
 
   @RequirePermission('account:logout')

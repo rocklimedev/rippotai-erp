@@ -134,11 +134,12 @@ export const deliveryChallanApi = baseApi.injectEndpoints({
      *   remarks: "All materials verified"
      * })
      */
+    // Backend exposes completion as POST /delivery-challans/:id/receive
+    // (posts accepted quantities to inventory and closes the challan).
     completeDeliveryChallan: builder.mutation({
-      query: ({ id, ...body }) => ({
-        url: `/delivery-challans/${id}/complete`,
+      query: ({ id }) => ({
+        url: `/delivery-challans/${id}/receive`,
         method: "POST",
-        ...(Object.keys(body).length > 0 ? { body } : {}),
       }),
 
       invalidatesTags: (result, error, { id }) => [

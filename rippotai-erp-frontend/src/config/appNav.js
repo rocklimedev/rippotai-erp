@@ -2,6 +2,10 @@
 // Slugs are relative to the app's base route. A slug starting with "/" is
 // treated as an absolute path.
 
+// Developer-controlled availability. Role permissions cannot override this.
+// Set to true only when the Automation app is ready to be exposed again.
+export const AUTOMATION_APP_ENABLED = false;
+
 export const APP_META = {
   // Internal module keys still identify saved dashboards and permissions.
   design_studio: { name: "Drawings", base: "/design-studio" },
@@ -81,7 +85,7 @@ export const LANDING_ORDER = [
   "calendar",
   "commandCenter",
   "adminConsole",
-  "automation",
+  ...(AUTOMATION_APP_ENABLED ? ["automation"] : []),
 ];
 
 const I = (label, slug) => ({ label, slug });

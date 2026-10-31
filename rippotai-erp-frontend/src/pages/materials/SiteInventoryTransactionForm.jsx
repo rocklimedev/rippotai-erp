@@ -405,9 +405,9 @@ export default function SiteInventoryTransactionForm() {
       const createdId = response?.id || response?.data?.id;
 
       if (createdId) {
-        nav(`/procurement/site-inventory/transactions/${createdId}?project_id=${form.project_id}`);
+        nav(`/inventory/site-inventory/transactions/${createdId}?project_id=${form.project_id}`);
       } else {
-        nav(`/procurement/site-inventory?project_id=${form.project_id}`);
+        nav(`/inventory/site-inventory/all?project_id=${form.project_id}`);
       }
     } catch (error) {
       const message =

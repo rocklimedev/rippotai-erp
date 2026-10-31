@@ -327,6 +327,7 @@ export default function DeliveryChallanList() {
             )
           }
           className="h-10 bg-[#1F453B] hover:bg-[#16372F]"
+          data-testid="delivery-challan-new-btn"
         >
           <Plus size={16} />
           New Delivery Challan

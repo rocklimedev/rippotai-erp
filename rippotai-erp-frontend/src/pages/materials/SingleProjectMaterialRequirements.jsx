@@ -282,7 +282,7 @@ export default function SingleProjectMaterialRequirements() {
       return;
     }
 
-    nav(`/procurement/requirements/${id}`);
+    nav(`/procurement/${projectId}/material-requirements?requirementId=${id}`);
   };
 
   const handleEdit = (requirement) => {
@@ -292,7 +292,7 @@ export default function SingleProjectMaterialRequirements() {
       return;
     }
 
-    nav(`/procurement/requirements/${id}/edit`);
+    nav(`/procurement/${projectId}/material-requirements?requirementId=${id}`);
   };
 
   /* ==========================================================

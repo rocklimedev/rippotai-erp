@@ -15,14 +15,46 @@ export const FORM_SEQUENCE = {
   challan: "delivery-challan",
 };
 
+/** Human names for the documents a value can come from (shown in the "Filled from" hint). */
+export const SOURCE_LABELS = {
+  project: "Project details",
+  client: "Client details",
+  "client-brief": "Client Brief",
+  "site-recce": "Site Recce",
+  "scope-of-work": "Scope of Work",
+  "business-proposal": "Budget Estimate",
+  "planner-consultancy": "Project Planner",
+  "planner-pmc": "Project Planner",
+  "planner-procurement": "Project Planner",
+  "payment-schedule": "Payment Schedule",
+  "plan-of-action": "Plan of Action",
+  "estimates-quotations": "Quotation",
+  "material-procurement-sheet": "Material Procurement",
+  boq: "BOQ",
+  "purchase-order": "Purchase Order",
+  "work-order": "Work Order",
+};
+
+// form field -> canonical project fact (see backend SHARED_PROJECT_FIELDS)
 const scalarMaps = {
-  brief: { siteAddress: "siteAddress", projectType: "projectTypeId" },
+  brief: {
+    siteAddress: "siteAddress",
+    projectType: "projectTypeId",
+    siteArea: "siteArea",
+    siteAreaUnit: "siteAreaUnit",
+    numberOfFloors: "numberOfFloors",
+    initialClientBudget: "budget",
+    desiredStartDate: "desiredStartDate",
+    targetCompletionDate: "targetCompletionDate",
+  },
   recce: {
     site_address: "siteAddress",
     project_name: "projectName",
     client_name: "clientName",
     number_of_floors: "numberOfFloors",
     lift_available: "liftAvailable",
+    carpet_area_sqft: "siteAreaSqft",
+    number_of_rooms: "roomCount",
   },
   budget: { location: "siteAddress", client_name: "clientName" },
   boq: { location: "siteAddress", client_name: "clientName" },
@@ -63,30 +95,49 @@ const slug = (name) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-/** Create independent receiving rows; never reuse a predecessor's row identity. */
-export function applyDocumentPrefill(current, context, type) {
+const roomSize = (room) =>
+  room.length && room.width
+    ? `${Number(room.length)} x ${Number(room.width)}${room.unit ? ` ${String(room.unit).toLowerCase()}` : ""}`
+    : room.area
+      ? `${Number(room.area)} sq ft`
+      : "";
+
+/**
+ * Create independent receiving rows; never reuse a predecessor's row identity.
+ * `trace` (optional) receives { field: sourceSequence } for every value filled.
+ */
+export function applyDocumentPrefill(current, context, type, trace = {}) {
   if (!context) return current;
   const shared = context.shared || {};
   const docs = context.documents || {};
+  const sourceOf = (key) => context.sources?.[key]?.sequence || "project";
+  // Canonical rooms list (project spaces + earlier documents), oldest API falls back below.
+  const rooms = Array.isArray(shared.rooms)
+    ? shared.rooms.filter((room) => room?.name)
+    : null;
+  const roomsSource = rooms?.[0]?.source || "project";
   let next = current;
-  const set = (field, value) => {
+  const set = (field, value, source) => {
     if (!missingSharedValue(current[field]) || missingSharedValue(value))
       return;
     if (next === current) next = { ...current };
     next[field] = value;
+    if (source) trace[field] = source;
   };
-  const overview = (field, value) => {
+  const overview = (field, value, source) => {
     if (
       !missingSharedValue(current.Overview?.[field]) ||
       missingSharedValue(value)
     )
       return;
     next = { ...next, Overview: { ...next.Overview, [field]: value } };
+    if (source) trace[`Overview.${field}`] = source;
   };
-  const collection = (field, rows, empty = !current[field]?.length) => {
+  const collection = (field, rows, empty = !current[field]?.length, source) => {
     if (!empty || !rows?.length) return;
     if (next === current) next = { ...current };
     next[field] = rows;
+    if (source) trace[field] = source;
   };
   for (const [field, key] of Object.entries(scalarMaps[type] || {})) {
     if (
@@ -95,7 +146,29 @@ export function applyDocumentPrefill(current, context, type) {
       String(shared[key] ?? "").length > 255
     )
       continue;
-    set(field, shared[key]);
+    let value = shared[key];
+    // Decimal columns arrive as "250.00"; numeric inputs want plain numbers.
+    if (
+      ["siteArea", "siteAreaSqft", "budget"].includes(key) &&
+      !missingSharedValue(value) &&
+      Number.isFinite(Number(value))
+    )
+      value = String(Number(value));
+    set(field, value, sourceOf(key));
+  }
+  if (type === "brief" && !missingSharedValue(shared.liftAvailable))
+    set("liftAvailable", shared.liftAvailable ? "Yes" : "No", sourceOf("liftAvailable"));
+  if (type === "brief" && rooms?.length && !current.spaceRequirements?.length) {
+    collection(
+      "spaceRequirements",
+      rooms.map((room) => ({
+        spaceName: room.name,
+        requirements: room.notes || "",
+      })),
+      true,
+      roomsSource,
+    );
+    next = { ...next, hasSpaceRequirements: "Yes" };
   }
   const brief = docs["client-brief"];
   const recce = docs["site-recce"];
@@ -115,14 +188,16 @@ export function applyDocumentPrefill(current, context, type) {
       VILLA: "KOTHI",
     };
     if (["FLAT", "FLOOR", "KOTHI", "RAW"].includes(brief.siteType))
-      set("site_type", brief.siteType);
-    else set("site_type", siteTypes[brief.siteType]);
-    if (brief.siteAreaUnit === "SQ_FT") set("carpet_area_sqft", brief.siteArea);
+      set("site_type", brief.siteType, "client-brief");
+    else set("site_type", siteTypes[brief.siteType], "client-brief");
+    if (brief.siteAreaUnit === "SQ_FT")
+      set("carpet_area_sqft", brief.siteArea, "client-brief");
     set(
       "existing_condition",
       brief.siteCondition === "OTHER"
         ? brief.siteConditionOther
         : brief.siteCondition?.replaceAll("_", " "),
+      "client-brief",
     );
     const restrictions = [...(brief.siteRestrictions || [])].sort(
       (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
@@ -135,10 +210,12 @@ export function applyDocumentPrefill(current, context, type) {
     set(
       "working_hours_allowed",
       restrictionText(["societyRwaPermittedWorkTimings"]),
+      "client-brief",
     );
     set(
       "material_movement_rule",
       restrictionText(["materialMovementRestrictions"]),
+      "client-brief",
     );
     set(
       "society_rwa_restrictions",
@@ -147,7 +224,28 @@ export function applyDocumentPrefill(current, context, type) {
         "structuralChangesPermitted",
         "neighbourSensitivities",
       ]),
+      "client-brief",
     );
+  }
+  if (type === "recce" && rooms?.length) {
+    collection(
+      "rooms",
+      rooms.map((room, index) => ({
+        id: `room-prefill-${index}`,
+        room_name: room.name,
+        room_type: "OTHER",
+        room_type_other: room.name,
+        measurement_unit: ["FT", "M", "IN", "CM"].includes(room.unit) ? room.unit : "FT",
+        notes: room.notes || "",
+        sort_order: index,
+        length: room.length ?? "",
+        width: room.width ?? "",
+        height: room.height ?? "",
+      })),
+      !current.rooms?.length,
+      roomsSource,
+    );
+  } else if (type === "recce" && brief) {
     const requirements = brief.spaceRequirements || [];
     collection(
       "rooms",
@@ -169,12 +267,18 @@ export function applyDocumentPrefill(current, context, type) {
           height: "",
         })),
       !current.rooms?.length,
+      "client-brief",
     );
   }
   if (type === "scope") {
-    overview("scope_summary", brief?.areasIncludedInScope);
-    overview("specific_exclusions", brief?.areasExcludedFromScope);
-    const rooms = recce?.rooms?.length
+    overview("scope_summary", brief?.areasIncludedInScope, "client-brief");
+    overview("specific_exclusions", brief?.areasExcludedFromScope, "client-brief");
+    const spaces = rooms?.length
+      ? rooms.map((room) => ({
+          name: room.name,
+          description: [room.notes, roomSize(room)].filter(Boolean).join(" · "),
+        }))
+      : recce?.rooms?.length
       ? recce.rooms.map((room) => ({
           name: room.room_name,
           description: room.notes || "",
@@ -186,7 +290,7 @@ export function applyDocumentPrefill(current, context, type) {
     const seen = new Set();
     collection(
       "Spaces",
-      rooms
+      spaces
         .filter(
           (room) =>
             room.name &&
@@ -199,6 +303,22 @@ export function applyDocumentPrefill(current, context, type) {
           slug: slug(room.name),
           sort_order: index + 1,
         })),
+      undefined,
+      rooms?.length ? roomsSource : recce ? "site-recce" : "client-brief",
+    );
+  }
+  if (type === "budget" && !scope?.items?.length && rooms?.length) {
+    // No scope yet: one section per room so lines are entered against the right space.
+    collection(
+      "categories",
+      rooms.map((room, index) => ({
+        id: `prefill-room-${index}`,
+        name: room.name,
+        sort_order: index,
+        items: [],
+      })),
+      undefined,
+      roomsSource,
     );
   }
   if (type === "budget" && scope?.items?.length) {
@@ -227,14 +347,14 @@ export function applyDocumentPrefill(current, context, type) {
         sort_order: categories.get(name).items.length,
       });
     }
-    collection("categories", [...categories.values()]);
+    collection("categories", [...categories.values()], undefined, "scope-of-work");
   }
   if (type === "payment") {
-    overview("total_contract_value", budget?.total_amount);
-    overview("gst_rate", budget?.tax_percentage);
+    overview("total_contract_value", budget?.total_amount, "business-proposal");
+    overview("gst_rate", budget?.tax_percentage, "business-proposal");
   }
   if (type === "plan") {
-    overview("execution_description", scope?.scopeSummary);
+    overview("execution_description", scope?.scopeSummary, "scope-of-work");
     const phases = new Map();
     for (const item of planner?.items || []) {
       if (!item.phase_id) continue;
@@ -256,7 +376,7 @@ export function applyDocumentPrefill(current, context, type) {
           sort_order: phases.size + 1,
         });
     }
-    collection("phases", [...phases.values()]);
+    collection("phases", [...phases.values()], undefined, "planner-pmc");
   }
   if (type === "quotation") {
     const sourceLines = lines(budget);
@@ -268,9 +388,10 @@ export function applyDocumentPrefill(current, context, type) {
         qty: Number(item.quantity ?? 0),
         rate: Number(item.rate ?? 0),
         unit_id: item.unit_id || null,
-        remarks: item.notes || "",
+        remarks: [item.location, item.notes].filter(Boolean).join(" — "),
       })),
       emptyLines(current.items),
+      "business-proposal",
     );
   }
   if (type === "procurement") {
@@ -304,12 +425,14 @@ export function applyDocumentPrefill(current, context, type) {
         };
       }),
       emptyLines(current.items),
+      "estimates-quotations",
     );
   }
   if (type === "purchaseOrder") {
     const source = boq || quotation;
     const sourceLines = lines(source);
     if (sourceLines.length && emptyLines(current.items)) {
+      trace.items = boq ? "boq" : "estimates-quotations";
       next = {
         ...next,
         source_type: boq ? "BOQ" : "QUOTATION",
@@ -344,7 +467,7 @@ export function applyDocumentPrefill(current, context, type) {
       };
     }
     // The quotation's vendor is valid only when that quotation supplies the lines.
-    if (!boq) set("vendor_id", quotation?.vendorId);
+    if (!boq) set("vendor_id", quotation?.vendorId, "estimates-quotations");
   }
   if (type === "workOrder") {
     const sourceLines = lines(boq || quotation);
@@ -361,9 +484,14 @@ export function applyDocumentPrefill(current, context, type) {
         sort_order: index + 1,
       })),
       emptyLines(current.items),
+      boq ? "boq" : "estimates-quotations",
     );
-    set("working_hours", recce?.working_hours_allowed);
-    set("target_completion_date", brief?.targetCompletionDate);
+    set("working_hours", recce?.working_hours_allowed, "site-recce");
+    set(
+      "target_completion_date",
+      brief?.targetCompletionDate || shared.targetCompletionDate,
+      brief?.targetCompletionDate ? "client-brief" : sourceOf("targetCompletionDate"),
+    );
   }
   if (
     type === "challan" &&
@@ -371,6 +499,7 @@ export function applyDocumentPrefill(current, context, type) {
     emptyLines(current.items) &&
     missingSharedValue(current.purchase_order_id)
   ) {
+    trace.items = "purchase-order";
     next = {
       ...next,
       purchase_order_id: po.id,

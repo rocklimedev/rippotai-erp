@@ -451,7 +451,7 @@ export default function CRMDashboard() {
             subtitle={`${data.leads.new} new this period`}
             icon={Users}
             trend={10.3}
-            href="/crm/leads"
+            href="/crm/pipeline"
           />
 
           <StatCard
@@ -469,7 +469,7 @@ export default function CRMDashboard() {
             subtitle={`${data.plansOfAction.overduePhases} overdue phases`}
             icon={ClipboardList}
             trend={4.2}
-            href="/plan-of-actions"
+            href="/crm/plan-of-action/all"
           />
 
           <StatCard
@@ -493,7 +493,7 @@ export default function CRMDashboard() {
             <SectionHeader
               title="Leads"
               subtitle="Current sales pipeline"
-              href="/crm/leads"
+              href="/crm/pipeline"
             />
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -732,7 +732,7 @@ export default function CRMDashboard() {
 
             <button
               type="button"
-              onClick={() => nav("/site-recce")}
+              onClick={() => nav("/crm/recce/all")}
               className="text-left rounded-xl border border-[#E5EBE7] p-4 hover:bg-[#F8FAF9] transition-colors"
             >
               <div className="flex items-center justify-between">
@@ -779,7 +779,7 @@ export default function CRMDashboard() {
 
             <button
               type="button"
-              onClick={() => nav("/plan-of-actions")}
+              onClick={() => nav("/crm/plan-of-action/all")}
               className="text-left rounded-xl border border-[#E5EBE7] p-4 hover:bg-[#F8FAF9] transition-colors"
             >
               <div className="flex items-center justify-between">
@@ -822,7 +822,7 @@ export default function CRMDashboard() {
 
             <button
               type="button"
-              onClick={() => nav("/scope-of-work")}
+              onClick={() => nav("/crm/scope-of-work/all")}
               className="text-left rounded-xl border border-[#E5EBE7] p-4 hover:bg-[#F8FAF9] transition-colors"
             >
               <div className="flex items-center justify-between">

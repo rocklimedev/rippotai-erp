@@ -1,0 +1,867 @@
+-- Named access levels (View only / View & Edit / Create / Full access) — default grants per role.
+-- Generated from backend/src/modules/rbac/access-catalogue.ts. Additive and idempotent:
+-- INSERT IGNORE only, roles matched by NAME, nothing is ever revoked.
+-- Roles or permissions that do not exist in a database are simply skipped.
+
+INSERT IGNORE INTO apps (code, name, is_active) VALUES
+  ('dashboard', 'Dashboard', 1),
+  ('projects', 'Projects', 1),
+  ('design', 'Design', 1),
+  ('build', 'Build', 1),
+  ('tasks', 'Tasks', 1),
+  ('calendar', 'Calendar', 1),
+  ('commandCenter', 'Command Center', 1),
+  ('adminConsole', 'Admin Console', 1),
+  ('automation', 'Automation', 1),
+  ('settings', 'Workspace & connectors', 1);
+
+-- ADMIN: 411 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'activity-logs:create', 'activity-logs:read', 'apps:create', 'apps:delete',
+    'apps:read', 'apps:update', 'architect-quality:create', 'architect-quality:delete',
+    'architect-quality:read', 'architect-quality:update', 'architect-snags:create', 'architect-snags:delete',
+    'architect-snags:read', 'architect-snags:update', 'architect-visit-stages:create', 'architect-visit-stages:delete',
+    'architect-visit-stages:read', 'architect-visit-stages:update', 'auth-google:connect', 'auth-google:delete',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:delete', 'auth-microsoft:read',
+    'auth-tokens:delete', 'auth-zoho:connect', 'auth-zoho:delete', 'auth-zoho:read',
+    'automation:create', 'automation:delete', 'automation:execute', 'automation:read',
+    'automation:update', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:create',
+    'boq-templates:delete', 'boq-templates:read', 'boq-templates:update', 'boq:approve',
+    'boq:create', 'boq:delete', 'boq:export', 'boq:read',
+    'boq:submit', 'boq:update', 'budget-estimates:create', 'budget-estimates:delete',
+    'budget-estimates:lock', 'budget-estimates:read', 'budget-estimates:recalculate', 'budget-estimates:update',
+    'budget-guides:create', 'budget-guides:delete', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:delete', 'calendar-events:read', 'calendar-events:update', 'cdn:upload',
+    'client-portal:create', 'client-portal:deliver', 'client-portal:prepare', 'client-portal:read',
+    'client-portal:revoke', 'clients:create', 'clients:delete', 'clients:read',
+    'clients:restore', 'clients:update', 'command-center:approve', 'command-center:authority',
+    'command-center:complete', 'command-center:read', 'command-center:refresh', 'command-center:review',
+    'command-center:upload', 'dashboard:read', 'dashboards:read', 'dashboards:reset',
+    'dashboards:update', 'delivery-challans:create', 'delivery-challans:delete', 'delivery-challans:read',
+    'delivery-challans:receive', 'delivery-challans:update', 'document-requirements:create', 'document-requirements:delete',
+    'document-requirements:read', 'document-requirements:update', 'document-types:create', 'document-types:delete',
+    'document-types:read', 'document-types:update', 'documents:approve', 'documents:create',
+    'documents:delete', 'documents:deliver', 'documents:read', 'documents:update',
+    'dpr-admin-documents:create', 'dpr-admin-documents:delete', 'dpr-admin-documents:export', 'dpr-admin-documents:read',
+    'dpr-admin-logs:create', 'dpr-admin-logs:delete', 'dpr-admin-logs:read', 'dpr-admin-logs:update',
+    'dpr-admin-reports:create', 'dpr-admin-reports:delete', 'dpr-admin-reports:export', 'dpr-admin-reports:read',
+    'dpr-admin-reports:update', 'drawings:create', 'drawings:delete', 'drawings:read',
+    'drawings:update', 'gates:clear', 'gates:create', 'gates:override',
+    'gates:read', 'gates:reopen', 'google-calendar:create', 'google-calendar:delete',
+    'google-calendar:read', 'google-calendar:update', 'google-tasks:complete', 'google-tasks:create',
+    'google-tasks:delete', 'google-tasks:read', 'google-tasks:update', 'inventory:adjust',
+    'inventory:create', 'inventory:deliver', 'inventory:issue', 'inventory:read',
+    'inventory:return', 'inventory:transfer', 'leads:create', 'leads:delete',
+    'leads:read', 'leads:sync', 'leads:update', 'library:create',
+    'library:delete', 'library:read', 'library:update', 'material-procurement:create',
+    'material-procurement:delete', 'material-procurement:read', 'material-procurement:submit', 'material-procurement:update',
+    'materials:create', 'materials:delete', 'materials:read', 'materials:update',
+    'notes:create', 'notes:delete', 'notes:read', 'notes:update',
+    'notifications:delete', 'notifications:read', 'notifications:update', 'onedrive:create',
+    'onedrive:delete', 'onedrive:read', 'onedrive:update', 'onedrive:upload',
+    'payment-schedules:create', 'payment-schedules:delete', 'payment-schedules:read', 'payment-schedules:update',
+    'permissions:create', 'permissions:delete', 'permissions:read', 'permissions:update',
+    'phase-definitions:read', 'plan-of-actions:create', 'plan-of-actions:delete', 'plan-of-actions:publish',
+    'plan-of-actions:read', 'plan-of-actions:update', 'procurement-estimates:approve', 'procurement-estimates:create',
+    'procurement-estimates:read', 'procurement-estimates:reject', 'procurement-quotations:accept', 'procurement-quotations:create',
+    'procurement-quotations:read', 'procurement-quotations:reject', 'procurement-quotations:send', 'procurement-rate-sheets:approve',
+    'procurement-rate-sheets:create', 'procurement-rate-sheets:delete', 'procurement-rate-sheets:read', 'procurement-rate-sheets:reject',
+    'procurement-requirements:create', 'procurement-requirements:delete', 'procurement-requirements:read', 'procurement-requirements:update',
+    'procurement-sample-boards:approve', 'procurement-sample-boards:create', 'procurement-sample-boards:delete', 'procurement-sample-boards:read',
+    'procurement-sample-boards:reject', 'project-briefs:create', 'project-briefs:delete', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:delete', 'project-planners:generate', 'project-planners:read', 'project-planners:update',
+    'project-shortlists:create', 'project-shortlists:delete', 'project-shortlists:export', 'project-shortlists:read',
+    'project-shortlists:update', 'project-types:create', 'project-types:delete', 'project-types:read',
+    'project-types:update', 'projects-phases:create', 'projects-phases:delete', 'projects-phases:read',
+    'projects-phases:update', 'projects:create', 'projects:delete', 'projects:read',
+    'projects:restore', 'projects:update', 'purchase-orders:approve', 'purchase-orders:cancel',
+    'purchase-orders:create', 'purchase-orders:delete', 'purchase-orders:read', 'purchase-orders:update',
+    'quality-checklists:create', 'quality-checklists:delete', 'quality-checklists:export', 'quality-checklists:read',
+    'quality-checklists:update', 'quotation-items:create', 'quotation-items:delete', 'quotation-items:read',
+    'quotation-items:update', 'quotations:approve', 'quotations:create', 'quotations:delete',
+    'quotations:export', 'quotations:read', 'quotations:restore', 'quotations:select',
+    'quotations:submit', 'quotations:update', 'rbac:create', 'rbac:delete',
+    'rbac:read', 'rbac:update', 'reports:read', 'role-apps:assign',
+    'role-apps:grant', 'role-apps:read', 'role-apps:revoke', 'role-apps:update',
+    'role-permissions:assign', 'role-permissions:grant', 'role-permissions:read', 'role-permissions:revoke',
+    'scope-of-work:create', 'scope-of-work:delete', 'scope-of-work:read', 'scope-of-work:update',
+    'search:read', 'search:reindex', 'sessions:read-any', 'sessions:revoke-any',
+    'settings:create', 'settings:delete', 'settings:read', 'settings:update',
+    'shortlist-entries:create', 'shortlist-entries:delete', 'shortlist-entries:read', 'shortlist-entries:select',
+    'shortlist-entries:update', 'shortlist-packages:apply', 'shortlist-packages:create', 'shortlist-packages:delete',
+    'shortlist-packages:read', 'site-ops-checklists:create', 'site-ops-checklists:read', 'site-ops-daily-reports:create',
+    'site-ops-daily-reports:delete', 'site-ops-daily-reports:read', 'site-ops-daily-reports:share', 'site-ops-daily-reports:update',
+    'site-ops-daily-reports:upload', 'site-ops-mockups:create', 'site-ops-mockups:read', 'site-ops-mockups:update',
+    'site-ops-qc:read', 'site-ops-qc:sign-off', 'site-ops-rfis:create', 'site-ops-rfis:read',
+    'site-ops-rfis:update', 'site-ops-snag-lists:create', 'site-ops-snag-lists:delete', 'site-ops-snag-lists:export',
+    'site-ops-snag-lists:read', 'site-ops-snag-lists:update', 'site-ops-snag-lists:upload', 'site-ops-visits:assign',
+    'site-ops-visits:check-in', 'site-ops-visits:create', 'site-ops-visits:read', 'site-ops-visits:update',
+    'site-ops:read', 'site-recces:create', 'site-recces:delete', 'site-recces:read',
+    'site-recces:restore', 'site-recces:update', 'site-recces:upload', 'sync:read',
+    'sync:sync', 'sync:update', 'system:read', 'tasks:create',
+    'tasks:delete', 'tasks:read', 'tasks:update', 'team:create',
+    'team:delete', 'team:read', 'team:update', 'terms-templates:create',
+    'terms-templates:delete', 'terms-templates:read', 'terms-templates:update', 'units:create',
+    'units:delete', 'units:read', 'units:update', 'user-signatures:delete',
+    'user-signatures:read', 'user-signatures:upload', 'users:create', 'users:delete',
+    'users:read', 'users:update', 'vendor-business-types:create', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendor-rate-comparisons:create', 'vendor-rate-comparisons:delete', 'vendor-rate-comparisons:read',
+    'vendor-rate-comparisons:update', 'vendors-saved-searches:create', 'vendors-saved-searches:delete', 'vendors-saved-searches:read',
+    'vendors:create', 'vendors:delete', 'vendors:read', 'vendors:update',
+    'work-orders:approve', 'work-orders:create', 'work-orders:delete', 'work-orders:read',
+    'work-orders:reject', 'work-orders:update', 'workflow-library:assign', 'workflow-library:create',
+    'workflow-library:delete', 'workflow-library:deliver', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:create', 'workflow-progress:read', 'workflow-progress:sign-off', 'workflow-progress:update',
+    'workflow-timeline:read', 'workflow:create', 'workflow:read', 'workflow:update',
+    'workspace:read', 'zoho-bigin:create', 'zoho-bigin:delete', 'zoho-bigin:read',
+    'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:delete', 'zoho-calendar:read',
+    'zoho-calendar:update', 'zoho-cliq:read', 'zoho-cliq:send', 'zoho-cliq:upload',
+    'zoho-projects:create', 'zoho-projects:delete', 'zoho-projects:read', 'zoho-projects:update',
+    'zoho-workdrive:create', 'zoho-workdrive:read', 'zoho-workdrive:upload'
+  )
+WHERE r.name = 'ADMIN';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'adminConsole', 'automation', 'settings')
+WHERE r.name = 'ADMIN';
+
+-- SUPERADMIN: 411 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'activity-logs:create', 'activity-logs:read', 'apps:create', 'apps:delete',
+    'apps:read', 'apps:update', 'architect-quality:create', 'architect-quality:delete',
+    'architect-quality:read', 'architect-quality:update', 'architect-snags:create', 'architect-snags:delete',
+    'architect-snags:read', 'architect-snags:update', 'architect-visit-stages:create', 'architect-visit-stages:delete',
+    'architect-visit-stages:read', 'architect-visit-stages:update', 'auth-google:connect', 'auth-google:delete',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:delete', 'auth-microsoft:read',
+    'auth-tokens:delete', 'auth-zoho:connect', 'auth-zoho:delete', 'auth-zoho:read',
+    'automation:create', 'automation:delete', 'automation:execute', 'automation:read',
+    'automation:update', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:create',
+    'boq-templates:delete', 'boq-templates:read', 'boq-templates:update', 'boq:approve',
+    'boq:create', 'boq:delete', 'boq:export', 'boq:read',
+    'boq:submit', 'boq:update', 'budget-estimates:create', 'budget-estimates:delete',
+    'budget-estimates:lock', 'budget-estimates:read', 'budget-estimates:recalculate', 'budget-estimates:update',
+    'budget-guides:create', 'budget-guides:delete', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:delete', 'calendar-events:read', 'calendar-events:update', 'cdn:upload',
+    'client-portal:create', 'client-portal:deliver', 'client-portal:prepare', 'client-portal:read',
+    'client-portal:revoke', 'clients:create', 'clients:delete', 'clients:read',
+    'clients:restore', 'clients:update', 'command-center:approve', 'command-center:authority',
+    'command-center:complete', 'command-center:read', 'command-center:refresh', 'command-center:review',
+    'command-center:upload', 'dashboard:read', 'dashboards:read', 'dashboards:reset',
+    'dashboards:update', 'delivery-challans:create', 'delivery-challans:delete', 'delivery-challans:read',
+    'delivery-challans:receive', 'delivery-challans:update', 'document-requirements:create', 'document-requirements:delete',
+    'document-requirements:read', 'document-requirements:update', 'document-types:create', 'document-types:delete',
+    'document-types:read', 'document-types:update', 'documents:approve', 'documents:create',
+    'documents:delete', 'documents:deliver', 'documents:read', 'documents:update',
+    'dpr-admin-documents:create', 'dpr-admin-documents:delete', 'dpr-admin-documents:export', 'dpr-admin-documents:read',
+    'dpr-admin-logs:create', 'dpr-admin-logs:delete', 'dpr-admin-logs:read', 'dpr-admin-logs:update',
+    'dpr-admin-reports:create', 'dpr-admin-reports:delete', 'dpr-admin-reports:export', 'dpr-admin-reports:read',
+    'dpr-admin-reports:update', 'drawings:create', 'drawings:delete', 'drawings:read',
+    'drawings:update', 'gates:clear', 'gates:create', 'gates:override',
+    'gates:read', 'gates:reopen', 'google-calendar:create', 'google-calendar:delete',
+    'google-calendar:read', 'google-calendar:update', 'google-tasks:complete', 'google-tasks:create',
+    'google-tasks:delete', 'google-tasks:read', 'google-tasks:update', 'inventory:adjust',
+    'inventory:create', 'inventory:deliver', 'inventory:issue', 'inventory:read',
+    'inventory:return', 'inventory:transfer', 'leads:create', 'leads:delete',
+    'leads:read', 'leads:sync', 'leads:update', 'library:create',
+    'library:delete', 'library:read', 'library:update', 'material-procurement:create',
+    'material-procurement:delete', 'material-procurement:read', 'material-procurement:submit', 'material-procurement:update',
+    'materials:create', 'materials:delete', 'materials:read', 'materials:update',
+    'notes:create', 'notes:delete', 'notes:read', 'notes:update',
+    'notifications:delete', 'notifications:read', 'notifications:update', 'onedrive:create',
+    'onedrive:delete', 'onedrive:read', 'onedrive:update', 'onedrive:upload',
+    'payment-schedules:create', 'payment-schedules:delete', 'payment-schedules:read', 'payment-schedules:update',
+    'permissions:create', 'permissions:delete', 'permissions:read', 'permissions:update',
+    'phase-definitions:read', 'plan-of-actions:create', 'plan-of-actions:delete', 'plan-of-actions:publish',
+    'plan-of-actions:read', 'plan-of-actions:update', 'procurement-estimates:approve', 'procurement-estimates:create',
+    'procurement-estimates:read', 'procurement-estimates:reject', 'procurement-quotations:accept', 'procurement-quotations:create',
+    'procurement-quotations:read', 'procurement-quotations:reject', 'procurement-quotations:send', 'procurement-rate-sheets:approve',
+    'procurement-rate-sheets:create', 'procurement-rate-sheets:delete', 'procurement-rate-sheets:read', 'procurement-rate-sheets:reject',
+    'procurement-requirements:create', 'procurement-requirements:delete', 'procurement-requirements:read', 'procurement-requirements:update',
+    'procurement-sample-boards:approve', 'procurement-sample-boards:create', 'procurement-sample-boards:delete', 'procurement-sample-boards:read',
+    'procurement-sample-boards:reject', 'project-briefs:create', 'project-briefs:delete', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:delete', 'project-planners:generate', 'project-planners:read', 'project-planners:update',
+    'project-shortlists:create', 'project-shortlists:delete', 'project-shortlists:export', 'project-shortlists:read',
+    'project-shortlists:update', 'project-types:create', 'project-types:delete', 'project-types:read',
+    'project-types:update', 'projects-phases:create', 'projects-phases:delete', 'projects-phases:read',
+    'projects-phases:update', 'projects:create', 'projects:delete', 'projects:read',
+    'projects:restore', 'projects:update', 'purchase-orders:approve', 'purchase-orders:cancel',
+    'purchase-orders:create', 'purchase-orders:delete', 'purchase-orders:read', 'purchase-orders:update',
+    'quality-checklists:create', 'quality-checklists:delete', 'quality-checklists:export', 'quality-checklists:read',
+    'quality-checklists:update', 'quotation-items:create', 'quotation-items:delete', 'quotation-items:read',
+    'quotation-items:update', 'quotations:approve', 'quotations:create', 'quotations:delete',
+    'quotations:export', 'quotations:read', 'quotations:restore', 'quotations:select',
+    'quotations:submit', 'quotations:update', 'rbac:create', 'rbac:delete',
+    'rbac:read', 'rbac:update', 'reports:read', 'role-apps:assign',
+    'role-apps:grant', 'role-apps:read', 'role-apps:revoke', 'role-apps:update',
+    'role-permissions:assign', 'role-permissions:grant', 'role-permissions:read', 'role-permissions:revoke',
+    'scope-of-work:create', 'scope-of-work:delete', 'scope-of-work:read', 'scope-of-work:update',
+    'search:read', 'search:reindex', 'sessions:read-any', 'sessions:revoke-any',
+    'settings:create', 'settings:delete', 'settings:read', 'settings:update',
+    'shortlist-entries:create', 'shortlist-entries:delete', 'shortlist-entries:read', 'shortlist-entries:select',
+    'shortlist-entries:update', 'shortlist-packages:apply', 'shortlist-packages:create', 'shortlist-packages:delete',
+    'shortlist-packages:read', 'site-ops-checklists:create', 'site-ops-checklists:read', 'site-ops-daily-reports:create',
+    'site-ops-daily-reports:delete', 'site-ops-daily-reports:read', 'site-ops-daily-reports:share', 'site-ops-daily-reports:update',
+    'site-ops-daily-reports:upload', 'site-ops-mockups:create', 'site-ops-mockups:read', 'site-ops-mockups:update',
+    'site-ops-qc:read', 'site-ops-qc:sign-off', 'site-ops-rfis:create', 'site-ops-rfis:read',
+    'site-ops-rfis:update', 'site-ops-snag-lists:create', 'site-ops-snag-lists:delete', 'site-ops-snag-lists:export',
+    'site-ops-snag-lists:read', 'site-ops-snag-lists:update', 'site-ops-snag-lists:upload', 'site-ops-visits:assign',
+    'site-ops-visits:check-in', 'site-ops-visits:create', 'site-ops-visits:read', 'site-ops-visits:update',
+    'site-ops:read', 'site-recces:create', 'site-recces:delete', 'site-recces:read',
+    'site-recces:restore', 'site-recces:update', 'site-recces:upload', 'sync:read',
+    'sync:sync', 'sync:update', 'system:read', 'tasks:create',
+    'tasks:delete', 'tasks:read', 'tasks:update', 'team:create',
+    'team:delete', 'team:read', 'team:update', 'terms-templates:create',
+    'terms-templates:delete', 'terms-templates:read', 'terms-templates:update', 'units:create',
+    'units:delete', 'units:read', 'units:update', 'user-signatures:delete',
+    'user-signatures:read', 'user-signatures:upload', 'users:create', 'users:delete',
+    'users:read', 'users:update', 'vendor-business-types:create', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendor-rate-comparisons:create', 'vendor-rate-comparisons:delete', 'vendor-rate-comparisons:read',
+    'vendor-rate-comparisons:update', 'vendors-saved-searches:create', 'vendors-saved-searches:delete', 'vendors-saved-searches:read',
+    'vendors:create', 'vendors:delete', 'vendors:read', 'vendors:update',
+    'work-orders:approve', 'work-orders:create', 'work-orders:delete', 'work-orders:read',
+    'work-orders:reject', 'work-orders:update', 'workflow-library:assign', 'workflow-library:create',
+    'workflow-library:delete', 'workflow-library:deliver', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:create', 'workflow-progress:read', 'workflow-progress:sign-off', 'workflow-progress:update',
+    'workflow-timeline:read', 'workflow:create', 'workflow:read', 'workflow:update',
+    'workspace:read', 'zoho-bigin:create', 'zoho-bigin:delete', 'zoho-bigin:read',
+    'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:delete', 'zoho-calendar:read',
+    'zoho-calendar:update', 'zoho-cliq:read', 'zoho-cliq:send', 'zoho-cliq:upload',
+    'zoho-projects:create', 'zoho-projects:delete', 'zoho-projects:read', 'zoho-projects:update',
+    'zoho-workdrive:create', 'zoho-workdrive:read', 'zoho-workdrive:upload'
+  )
+WHERE r.name = 'SUPERADMIN';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'adminConsole', 'automation', 'settings')
+WHERE r.name = 'SUPERADMIN';
+
+-- PRINCIPAL_ARCHITECT: 372 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'activity-logs:read', 'apps:read', 'architect-quality:create', 'architect-quality:delete',
+    'architect-quality:read', 'architect-quality:update', 'architect-snags:create', 'architect-snags:delete',
+    'architect-snags:read', 'architect-snags:update', 'architect-visit-stages:create', 'architect-visit-stages:delete',
+    'architect-visit-stages:read', 'architect-visit-stages:update', 'auth-google:connect', 'auth-google:delete',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:delete', 'auth-microsoft:read',
+    'auth-tokens:delete', 'auth-zoho:connect', 'auth-zoho:delete', 'auth-zoho:read',
+    'automation:read', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:create',
+    'boq-templates:delete', 'boq-templates:read', 'boq-templates:update', 'boq:approve',
+    'boq:create', 'boq:delete', 'boq:export', 'boq:read',
+    'boq:submit', 'boq:update', 'budget-estimates:create', 'budget-estimates:delete',
+    'budget-estimates:lock', 'budget-estimates:read', 'budget-estimates:recalculate', 'budget-estimates:update',
+    'budget-guides:create', 'budget-guides:delete', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:delete', 'calendar-events:read', 'calendar-events:update', 'cdn:upload',
+    'client-portal:create', 'client-portal:deliver', 'client-portal:prepare', 'client-portal:read',
+    'client-portal:revoke', 'clients:create', 'clients:delete', 'clients:read',
+    'clients:restore', 'clients:update', 'command-center:approve', 'command-center:authority',
+    'command-center:complete', 'command-center:read', 'command-center:refresh', 'command-center:review',
+    'command-center:upload', 'dashboard:read', 'dashboards:read', 'dashboards:reset',
+    'dashboards:update', 'delivery-challans:create', 'delivery-challans:delete', 'delivery-challans:read',
+    'delivery-challans:receive', 'delivery-challans:update', 'document-requirements:create', 'document-requirements:delete',
+    'document-requirements:read', 'document-requirements:update', 'document-types:create', 'document-types:read',
+    'document-types:update', 'documents:approve', 'documents:create', 'documents:delete',
+    'documents:deliver', 'documents:read', 'documents:update', 'dpr-admin-documents:create',
+    'dpr-admin-documents:delete', 'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:create',
+    'dpr-admin-logs:delete', 'dpr-admin-logs:read', 'dpr-admin-logs:update', 'dpr-admin-reports:create',
+    'dpr-admin-reports:delete', 'dpr-admin-reports:export', 'dpr-admin-reports:read', 'dpr-admin-reports:update',
+    'drawings:create', 'drawings:delete', 'drawings:read', 'drawings:update',
+    'gates:clear', 'gates:create', 'gates:override', 'gates:read',
+    'gates:reopen', 'google-calendar:create', 'google-calendar:delete', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:delete',
+    'google-tasks:read', 'google-tasks:update', 'inventory:adjust', 'inventory:create',
+    'inventory:deliver', 'inventory:issue', 'inventory:read', 'inventory:return',
+    'inventory:transfer', 'leads:create', 'leads:delete', 'leads:read',
+    'leads:sync', 'leads:update', 'library:create', 'library:delete',
+    'library:read', 'library:update', 'material-procurement:create', 'material-procurement:delete',
+    'material-procurement:read', 'material-procurement:submit', 'material-procurement:update', 'materials:create',
+    'materials:delete', 'materials:read', 'materials:update', 'notes:create',
+    'notes:delete', 'notes:read', 'notes:update', 'notifications:delete',
+    'notifications:read', 'notifications:update', 'onedrive:create', 'onedrive:delete',
+    'onedrive:read', 'onedrive:update', 'onedrive:upload', 'payment-schedules:create',
+    'payment-schedules:delete', 'payment-schedules:read', 'payment-schedules:update', 'permissions:read',
+    'phase-definitions:read', 'plan-of-actions:create', 'plan-of-actions:delete', 'plan-of-actions:publish',
+    'plan-of-actions:read', 'plan-of-actions:update', 'procurement-estimates:approve', 'procurement-estimates:create',
+    'procurement-estimates:read', 'procurement-estimates:reject', 'procurement-quotations:accept', 'procurement-quotations:create',
+    'procurement-quotations:read', 'procurement-quotations:reject', 'procurement-quotations:send', 'procurement-rate-sheets:approve',
+    'procurement-rate-sheets:create', 'procurement-rate-sheets:delete', 'procurement-rate-sheets:read', 'procurement-rate-sheets:reject',
+    'procurement-requirements:create', 'procurement-requirements:delete', 'procurement-requirements:read', 'procurement-requirements:update',
+    'procurement-sample-boards:approve', 'procurement-sample-boards:create', 'procurement-sample-boards:delete', 'procurement-sample-boards:read',
+    'procurement-sample-boards:reject', 'project-briefs:create', 'project-briefs:delete', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:delete', 'project-planners:generate', 'project-planners:read', 'project-planners:update',
+    'project-shortlists:create', 'project-shortlists:delete', 'project-shortlists:export', 'project-shortlists:read',
+    'project-shortlists:update', 'project-types:create', 'project-types:read', 'project-types:update',
+    'projects-phases:create', 'projects-phases:delete', 'projects-phases:read', 'projects-phases:update',
+    'projects:create', 'projects:delete', 'projects:read', 'projects:restore',
+    'projects:update', 'purchase-orders:approve', 'purchase-orders:cancel', 'purchase-orders:create',
+    'purchase-orders:delete', 'purchase-orders:read', 'purchase-orders:update', 'quality-checklists:create',
+    'quality-checklists:delete', 'quality-checklists:export', 'quality-checklists:read', 'quality-checklists:update',
+    'quotation-items:create', 'quotation-items:delete', 'quotation-items:read', 'quotation-items:update',
+    'quotations:approve', 'quotations:create', 'quotations:delete', 'quotations:export',
+    'quotations:read', 'quotations:restore', 'quotations:select', 'quotations:submit',
+    'quotations:update', 'rbac:read', 'reports:read', 'role-apps:read',
+    'role-permissions:read', 'scope-of-work:create', 'scope-of-work:delete', 'scope-of-work:read',
+    'scope-of-work:update', 'search:read', 'sessions:read-any', 'settings:read',
+    'shortlist-entries:create', 'shortlist-entries:delete', 'shortlist-entries:read', 'shortlist-entries:select',
+    'shortlist-entries:update', 'shortlist-packages:apply', 'shortlist-packages:create', 'shortlist-packages:delete',
+    'shortlist-packages:read', 'site-ops-checklists:create', 'site-ops-checklists:read', 'site-ops-daily-reports:create',
+    'site-ops-daily-reports:delete', 'site-ops-daily-reports:read', 'site-ops-daily-reports:share', 'site-ops-daily-reports:update',
+    'site-ops-daily-reports:upload', 'site-ops-mockups:create', 'site-ops-mockups:read', 'site-ops-mockups:update',
+    'site-ops-qc:read', 'site-ops-qc:sign-off', 'site-ops-rfis:create', 'site-ops-rfis:read',
+    'site-ops-rfis:update', 'site-ops-snag-lists:create', 'site-ops-snag-lists:delete', 'site-ops-snag-lists:export',
+    'site-ops-snag-lists:read', 'site-ops-snag-lists:update', 'site-ops-snag-lists:upload', 'site-ops-visits:assign',
+    'site-ops-visits:check-in', 'site-ops-visits:create', 'site-ops-visits:read', 'site-ops-visits:update',
+    'site-ops:read', 'site-recces:create', 'site-recces:delete', 'site-recces:read',
+    'site-recces:restore', 'site-recces:update', 'site-recces:upload', 'sync:read',
+    'sync:sync', 'sync:update', 'tasks:create', 'tasks:delete',
+    'tasks:read', 'tasks:update', 'team:read', 'terms-templates:create',
+    'terms-templates:read', 'terms-templates:update', 'units:create', 'units:read',
+    'units:update', 'user-signatures:read', 'users:read', 'vendor-business-types:create',
+    'vendor-business-types:read', 'vendor-categories:read', 'vendor-rate-comparisons:create', 'vendor-rate-comparisons:delete',
+    'vendor-rate-comparisons:read', 'vendor-rate-comparisons:update', 'vendors-saved-searches:create', 'vendors-saved-searches:delete',
+    'vendors-saved-searches:read', 'vendors:create', 'vendors:delete', 'vendors:read',
+    'vendors:update', 'work-orders:approve', 'work-orders:create', 'work-orders:delete',
+    'work-orders:read', 'work-orders:reject', 'work-orders:update', 'workflow-library:assign',
+    'workflow-library:create', 'workflow-library:delete', 'workflow-library:deliver', 'workflow-library:read',
+    'workflow-library:update', 'workflow-progress:create', 'workflow-progress:read', 'workflow-progress:sign-off',
+    'workflow-progress:update', 'workflow-timeline:read', 'workflow:create', 'workflow:read',
+    'workflow:update', 'workspace:read', 'zoho-bigin:create', 'zoho-bigin:delete',
+    'zoho-bigin:read', 'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:delete',
+    'zoho-calendar:read', 'zoho-calendar:update', 'zoho-cliq:read', 'zoho-cliq:send',
+    'zoho-cliq:upload', 'zoho-projects:create', 'zoho-projects:delete', 'zoho-projects:read',
+    'zoho-projects:update', 'zoho-workdrive:create', 'zoho-workdrive:read', 'zoho-workdrive:upload'
+  )
+WHERE r.name = 'PRINCIPAL_ARCHITECT';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'adminConsole', 'automation', 'settings')
+WHERE r.name = 'PRINCIPAL_ARCHITECT';
+
+-- PROJECT_LEAD: 271 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:create', 'architect-quality:read', 'architect-quality:update', 'architect-snags:create',
+    'architect-snags:read', 'architect-snags:update', 'architect-visit-stages:create', 'architect-visit-stages:read',
+    'architect-visit-stages:update', 'auth-google:connect', 'auth-google:read', 'auth-microsoft:connect',
+    'auth-microsoft:read', 'auth-zoho:connect', 'auth-zoho:read', 'automation:read',
+    'boq-activity:read', 'boq-catalog:read', 'boq-templates:create', 'boq-templates:read',
+    'boq-templates:update', 'boq:create', 'boq:export', 'boq:read',
+    'boq:submit', 'boq:update', 'budget-estimates:create', 'budget-estimates:read',
+    'budget-estimates:recalculate', 'budget-estimates:update', 'budget-guides:create', 'budget-guides:read',
+    'budget-guides:update', 'business-proposals:create', 'business-proposals:read', 'business-proposals:update',
+    'calendar-events:create', 'calendar-events:read', 'calendar-events:update', 'cdn:upload',
+    'client-portal:create', 'client-portal:deliver', 'client-portal:prepare', 'client-portal:read',
+    'clients:create', 'clients:read', 'clients:update', 'command-center:complete',
+    'command-center:read', 'command-center:refresh', 'command-center:review', 'command-center:upload',
+    'dashboard:read', 'dashboards:read', 'dashboards:update', 'delivery-challans:create',
+    'delivery-challans:read', 'delivery-challans:receive', 'delivery-challans:update', 'document-requirements:create',
+    'document-requirements:read', 'document-requirements:update', 'document-types:read', 'documents:create',
+    'documents:deliver', 'documents:read', 'documents:update', 'dpr-admin-documents:create',
+    'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:create', 'dpr-admin-logs:read',
+    'dpr-admin-logs:update', 'dpr-admin-reports:create', 'dpr-admin-reports:export', 'dpr-admin-reports:read',
+    'dpr-admin-reports:update', 'drawings:create', 'drawings:read', 'drawings:update',
+    'gates:create', 'gates:read', 'google-calendar:create', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:read',
+    'google-tasks:update', 'inventory:adjust', 'inventory:create', 'inventory:deliver',
+    'inventory:issue', 'inventory:read', 'inventory:return', 'inventory:transfer',
+    'leads:create', 'leads:read', 'leads:sync', 'leads:update',
+    'library:create', 'library:read', 'library:update', 'material-procurement:create',
+    'material-procurement:read', 'material-procurement:submit', 'material-procurement:update', 'materials:create',
+    'materials:read', 'materials:update', 'notes:create', 'notes:read',
+    'notes:update', 'notifications:read', 'notifications:update', 'onedrive:create',
+    'onedrive:read', 'onedrive:update', 'onedrive:upload', 'payment-schedules:create',
+    'payment-schedules:read', 'payment-schedules:update', 'phase-definitions:read', 'plan-of-actions:create',
+    'plan-of-actions:publish', 'plan-of-actions:read', 'plan-of-actions:update', 'procurement-estimates:create',
+    'procurement-estimates:read', 'procurement-quotations:accept', 'procurement-quotations:create', 'procurement-quotations:read',
+    'procurement-quotations:send', 'procurement-rate-sheets:create', 'procurement-rate-sheets:read', 'procurement-requirements:create',
+    'procurement-requirements:read', 'procurement-requirements:update', 'procurement-sample-boards:create', 'procurement-sample-boards:read',
+    'project-briefs:create', 'project-briefs:read', 'project-briefs:update', 'project-briefs:upload',
+    'project-dashboard:read', 'project-planners:create', 'project-planners:generate', 'project-planners:read',
+    'project-planners:update', 'project-shortlists:create', 'project-shortlists:export', 'project-shortlists:read',
+    'project-shortlists:update', 'project-types:read', 'projects-phases:create', 'projects-phases:read',
+    'projects-phases:update', 'projects:create', 'projects:read', 'projects:update',
+    'purchase-orders:create', 'purchase-orders:read', 'purchase-orders:update', 'quality-checklists:create',
+    'quality-checklists:export', 'quality-checklists:read', 'quality-checklists:update', 'quotation-items:create',
+    'quotation-items:read', 'quotation-items:update', 'quotations:create', 'quotations:export',
+    'quotations:read', 'quotations:select', 'quotations:submit', 'quotations:update',
+    'reports:read', 'scope-of-work:create', 'scope-of-work:read', 'scope-of-work:update',
+    'search:read', 'sessions:read-any', 'shortlist-entries:create', 'shortlist-entries:read',
+    'shortlist-entries:select', 'shortlist-entries:update', 'shortlist-packages:apply', 'shortlist-packages:create',
+    'shortlist-packages:read', 'site-ops-checklists:create', 'site-ops-checklists:read', 'site-ops-daily-reports:create',
+    'site-ops-daily-reports:read', 'site-ops-daily-reports:share', 'site-ops-daily-reports:update', 'site-ops-daily-reports:upload',
+    'site-ops-mockups:create', 'site-ops-mockups:read', 'site-ops-mockups:update', 'site-ops-qc:read',
+    'site-ops-rfis:create', 'site-ops-rfis:read', 'site-ops-rfis:update', 'site-ops-snag-lists:create',
+    'site-ops-snag-lists:export', 'site-ops-snag-lists:read', 'site-ops-snag-lists:update', 'site-ops-snag-lists:upload',
+    'site-ops-visits:assign', 'site-ops-visits:check-in', 'site-ops-visits:create', 'site-ops-visits:read',
+    'site-ops-visits:update', 'site-ops:read', 'site-recces:create', 'site-recces:read',
+    'site-recces:update', 'site-recces:upload', 'sync:read', 'sync:sync',
+    'sync:update', 'tasks:create', 'tasks:read', 'tasks:update',
+    'team:read', 'terms-templates:read', 'units:read', 'user-signatures:read',
+    'users:read', 'vendor-business-types:create', 'vendor-business-types:read', 'vendor-categories:read',
+    'vendor-rate-comparisons:create', 'vendor-rate-comparisons:read', 'vendor-rate-comparisons:update', 'vendors-saved-searches:create',
+    'vendors-saved-searches:read', 'vendors:create', 'vendors:read', 'vendors:update',
+    'work-orders:create', 'work-orders:read', 'work-orders:update', 'workflow-library:assign',
+    'workflow-library:create', 'workflow-library:deliver', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:create', 'workflow-progress:read', 'workflow-progress:update', 'workflow-timeline:read',
+    'workflow:create', 'workflow:read', 'workflow:update', 'workspace:read',
+    'zoho-bigin:create', 'zoho-bigin:read', 'zoho-bigin:update', 'zoho-calendar:create',
+    'zoho-calendar:read', 'zoho-calendar:update', 'zoho-cliq:read', 'zoho-cliq:send',
+    'zoho-cliq:upload', 'zoho-projects:create', 'zoho-projects:read', 'zoho-projects:update',
+    'zoho-workdrive:create', 'zoho-workdrive:read', 'zoho-workdrive:upload'
+  )
+WHERE r.name = 'PROJECT_LEAD';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'adminConsole', 'automation', 'settings')
+WHERE r.name = 'PROJECT_LEAD';
+
+-- Project Lead: 271 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:create', 'architect-quality:read', 'architect-quality:update', 'architect-snags:create',
+    'architect-snags:read', 'architect-snags:update', 'architect-visit-stages:create', 'architect-visit-stages:read',
+    'architect-visit-stages:update', 'auth-google:connect', 'auth-google:read', 'auth-microsoft:connect',
+    'auth-microsoft:read', 'auth-zoho:connect', 'auth-zoho:read', 'automation:read',
+    'boq-activity:read', 'boq-catalog:read', 'boq-templates:create', 'boq-templates:read',
+    'boq-templates:update', 'boq:create', 'boq:export', 'boq:read',
+    'boq:submit', 'boq:update', 'budget-estimates:create', 'budget-estimates:read',
+    'budget-estimates:recalculate', 'budget-estimates:update', 'budget-guides:create', 'budget-guides:read',
+    'budget-guides:update', 'business-proposals:create', 'business-proposals:read', 'business-proposals:update',
+    'calendar-events:create', 'calendar-events:read', 'calendar-events:update', 'cdn:upload',
+    'client-portal:create', 'client-portal:deliver', 'client-portal:prepare', 'client-portal:read',
+    'clients:create', 'clients:read', 'clients:update', 'command-center:complete',
+    'command-center:read', 'command-center:refresh', 'command-center:review', 'command-center:upload',
+    'dashboard:read', 'dashboards:read', 'dashboards:update', 'delivery-challans:create',
+    'delivery-challans:read', 'delivery-challans:receive', 'delivery-challans:update', 'document-requirements:create',
+    'document-requirements:read', 'document-requirements:update', 'document-types:read', 'documents:create',
+    'documents:deliver', 'documents:read', 'documents:update', 'dpr-admin-documents:create',
+    'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:create', 'dpr-admin-logs:read',
+    'dpr-admin-logs:update', 'dpr-admin-reports:create', 'dpr-admin-reports:export', 'dpr-admin-reports:read',
+    'dpr-admin-reports:update', 'drawings:create', 'drawings:read', 'drawings:update',
+    'gates:create', 'gates:read', 'google-calendar:create', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:read',
+    'google-tasks:update', 'inventory:adjust', 'inventory:create', 'inventory:deliver',
+    'inventory:issue', 'inventory:read', 'inventory:return', 'inventory:transfer',
+    'leads:create', 'leads:read', 'leads:sync', 'leads:update',
+    'library:create', 'library:read', 'library:update', 'material-procurement:create',
+    'material-procurement:read', 'material-procurement:submit', 'material-procurement:update', 'materials:create',
+    'materials:read', 'materials:update', 'notes:create', 'notes:read',
+    'notes:update', 'notifications:read', 'notifications:update', 'onedrive:create',
+    'onedrive:read', 'onedrive:update', 'onedrive:upload', 'payment-schedules:create',
+    'payment-schedules:read', 'payment-schedules:update', 'phase-definitions:read', 'plan-of-actions:create',
+    'plan-of-actions:publish', 'plan-of-actions:read', 'plan-of-actions:update', 'procurement-estimates:create',
+    'procurement-estimates:read', 'procurement-quotations:accept', 'procurement-quotations:create', 'procurement-quotations:read',
+    'procurement-quotations:send', 'procurement-rate-sheets:create', 'procurement-rate-sheets:read', 'procurement-requirements:create',
+    'procurement-requirements:read', 'procurement-requirements:update', 'procurement-sample-boards:create', 'procurement-sample-boards:read',
+    'project-briefs:create', 'project-briefs:read', 'project-briefs:update', 'project-briefs:upload',
+    'project-dashboard:read', 'project-planners:create', 'project-planners:generate', 'project-planners:read',
+    'project-planners:update', 'project-shortlists:create', 'project-shortlists:export', 'project-shortlists:read',
+    'project-shortlists:update', 'project-types:read', 'projects-phases:create', 'projects-phases:read',
+    'projects-phases:update', 'projects:create', 'projects:read', 'projects:update',
+    'purchase-orders:create', 'purchase-orders:read', 'purchase-orders:update', 'quality-checklists:create',
+    'quality-checklists:export', 'quality-checklists:read', 'quality-checklists:update', 'quotation-items:create',
+    'quotation-items:read', 'quotation-items:update', 'quotations:create', 'quotations:export',
+    'quotations:read', 'quotations:select', 'quotations:submit', 'quotations:update',
+    'reports:read', 'scope-of-work:create', 'scope-of-work:read', 'scope-of-work:update',
+    'search:read', 'sessions:read-any', 'shortlist-entries:create', 'shortlist-entries:read',
+    'shortlist-entries:select', 'shortlist-entries:update', 'shortlist-packages:apply', 'shortlist-packages:create',
+    'shortlist-packages:read', 'site-ops-checklists:create', 'site-ops-checklists:read', 'site-ops-daily-reports:create',
+    'site-ops-daily-reports:read', 'site-ops-daily-reports:share', 'site-ops-daily-reports:update', 'site-ops-daily-reports:upload',
+    'site-ops-mockups:create', 'site-ops-mockups:read', 'site-ops-mockups:update', 'site-ops-qc:read',
+    'site-ops-rfis:create', 'site-ops-rfis:read', 'site-ops-rfis:update', 'site-ops-snag-lists:create',
+    'site-ops-snag-lists:export', 'site-ops-snag-lists:read', 'site-ops-snag-lists:update', 'site-ops-snag-lists:upload',
+    'site-ops-visits:assign', 'site-ops-visits:check-in', 'site-ops-visits:create', 'site-ops-visits:read',
+    'site-ops-visits:update', 'site-ops:read', 'site-recces:create', 'site-recces:read',
+    'site-recces:update', 'site-recces:upload', 'sync:read', 'sync:sync',
+    'sync:update', 'tasks:create', 'tasks:read', 'tasks:update',
+    'team:read', 'terms-templates:read', 'units:read', 'user-signatures:read',
+    'users:read', 'vendor-business-types:create', 'vendor-business-types:read', 'vendor-categories:read',
+    'vendor-rate-comparisons:create', 'vendor-rate-comparisons:read', 'vendor-rate-comparisons:update', 'vendors-saved-searches:create',
+    'vendors-saved-searches:read', 'vendors:create', 'vendors:read', 'vendors:update',
+    'work-orders:create', 'work-orders:read', 'work-orders:update', 'workflow-library:assign',
+    'workflow-library:create', 'workflow-library:deliver', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:create', 'workflow-progress:read', 'workflow-progress:update', 'workflow-timeline:read',
+    'workflow:create', 'workflow:read', 'workflow:update', 'workspace:read',
+    'zoho-bigin:create', 'zoho-bigin:read', 'zoho-bigin:update', 'zoho-calendar:create',
+    'zoho-calendar:read', 'zoho-calendar:update', 'zoho-cliq:read', 'zoho-cliq:send',
+    'zoho-cliq:upload', 'zoho-projects:create', 'zoho-projects:read', 'zoho-projects:update',
+    'zoho-workdrive:create', 'zoho-workdrive:read', 'zoho-workdrive:upload'
+  )
+WHERE r.name = 'Project Lead';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'adminConsole', 'automation', 'settings')
+WHERE r.name = 'Project Lead';
+
+-- SENIOR_ARCHITECT: 169 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:read', 'architect-snags:read', 'architect-visit-stages:read', 'auth-google:connect',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:read', 'auth-zoho:connect',
+    'auth-zoho:read', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:read',
+    'boq:create', 'boq:export', 'boq:read', 'boq:submit',
+    'boq:update', 'budget-estimates:create', 'budget-estimates:read', 'budget-estimates:recalculate',
+    'budget-estimates:update', 'budget-guides:create', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:read', 'calendar-events:update', 'cdn:upload', 'client-portal:read',
+    'clients:read', 'command-center:complete', 'command-center:read', 'command-center:refresh',
+    'command-center:review', 'command-center:upload', 'dashboard:read', 'dashboards:read',
+    'dashboards:update', 'delivery-challans:read', 'document-requirements:create', 'document-requirements:read',
+    'document-requirements:update', 'documents:create', 'documents:deliver', 'documents:read',
+    'documents:update', 'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:read',
+    'dpr-admin-reports:export', 'dpr-admin-reports:read', 'drawings:create', 'drawings:read',
+    'drawings:update', 'gates:read', 'google-calendar:create', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:read',
+    'google-tasks:update', 'inventory:read', 'leads:create', 'leads:read',
+    'leads:sync', 'leads:update', 'library:read', 'material-procurement:read',
+    'materials:read', 'notes:create', 'notes:read', 'notes:update',
+    'notifications:read', 'notifications:update', 'onedrive:create', 'onedrive:read',
+    'onedrive:update', 'onedrive:upload', 'payment-schedules:create', 'payment-schedules:read',
+    'payment-schedules:update', 'plan-of-actions:create', 'plan-of-actions:publish', 'plan-of-actions:read',
+    'plan-of-actions:update', 'procurement-estimates:read', 'procurement-quotations:read', 'procurement-rate-sheets:read',
+    'procurement-requirements:read', 'procurement-sample-boards:read', 'project-briefs:create', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:generate', 'project-planners:read', 'project-planners:update', 'project-shortlists:export',
+    'project-shortlists:read', 'projects-phases:read', 'projects:read', 'purchase-orders:read',
+    'quality-checklists:export', 'quality-checklists:read', 'quotation-items:read', 'quotations:export',
+    'quotations:read', 'reports:read', 'scope-of-work:create', 'scope-of-work:read',
+    'scope-of-work:update', 'search:read', 'shortlist-entries:read', 'shortlist-packages:read',
+    'site-ops-checklists:read', 'site-ops-daily-reports:read', 'site-ops-mockups:read', 'site-ops-qc:read',
+    'site-ops-rfis:read', 'site-ops-snag-lists:export', 'site-ops-snag-lists:read', 'site-ops-visits:read',
+    'site-ops:read', 'site-recces:create', 'site-recces:read', 'site-recces:update',
+    'site-recces:upload', 'sync:read', 'sync:sync', 'sync:update',
+    'tasks:create', 'tasks:read', 'tasks:update', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendor-rate-comparisons:read', 'vendors-saved-searches:read', 'vendors:read',
+    'work-orders:read', 'workflow-library:assign', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:read', 'workflow-progress:update', 'workflow-timeline:read', 'workflow:read',
+    'workflow:update', 'workspace:read', 'zoho-bigin:create', 'zoho-bigin:read',
+    'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:read', 'zoho-calendar:update',
+    'zoho-cliq:read', 'zoho-cliq:send', 'zoho-cliq:upload', 'zoho-projects:create',
+    'zoho-projects:read', 'zoho-projects:update', 'zoho-workdrive:create', 'zoho-workdrive:read',
+    'zoho-workdrive:upload'
+  )
+WHERE r.name = 'SENIOR_ARCHITECT';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'settings')
+WHERE r.name = 'SENIOR_ARCHITECT';
+
+-- SENIOR_INTERIOR_DESIGNER: 169 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:read', 'architect-snags:read', 'architect-visit-stages:read', 'auth-google:connect',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:read', 'auth-zoho:connect',
+    'auth-zoho:read', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:read',
+    'boq:create', 'boq:export', 'boq:read', 'boq:submit',
+    'boq:update', 'budget-estimates:create', 'budget-estimates:read', 'budget-estimates:recalculate',
+    'budget-estimates:update', 'budget-guides:create', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:read', 'calendar-events:update', 'cdn:upload', 'client-portal:read',
+    'clients:read', 'command-center:complete', 'command-center:read', 'command-center:refresh',
+    'command-center:review', 'command-center:upload', 'dashboard:read', 'dashboards:read',
+    'dashboards:update', 'delivery-challans:read', 'document-requirements:create', 'document-requirements:read',
+    'document-requirements:update', 'documents:create', 'documents:deliver', 'documents:read',
+    'documents:update', 'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:read',
+    'dpr-admin-reports:export', 'dpr-admin-reports:read', 'drawings:create', 'drawings:read',
+    'drawings:update', 'gates:read', 'google-calendar:create', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:read',
+    'google-tasks:update', 'inventory:read', 'leads:create', 'leads:read',
+    'leads:sync', 'leads:update', 'library:read', 'material-procurement:read',
+    'materials:read', 'notes:create', 'notes:read', 'notes:update',
+    'notifications:read', 'notifications:update', 'onedrive:create', 'onedrive:read',
+    'onedrive:update', 'onedrive:upload', 'payment-schedules:create', 'payment-schedules:read',
+    'payment-schedules:update', 'plan-of-actions:create', 'plan-of-actions:publish', 'plan-of-actions:read',
+    'plan-of-actions:update', 'procurement-estimates:read', 'procurement-quotations:read', 'procurement-rate-sheets:read',
+    'procurement-requirements:read', 'procurement-sample-boards:read', 'project-briefs:create', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:generate', 'project-planners:read', 'project-planners:update', 'project-shortlists:export',
+    'project-shortlists:read', 'projects-phases:read', 'projects:read', 'purchase-orders:read',
+    'quality-checklists:export', 'quality-checklists:read', 'quotation-items:read', 'quotations:export',
+    'quotations:read', 'reports:read', 'scope-of-work:create', 'scope-of-work:read',
+    'scope-of-work:update', 'search:read', 'shortlist-entries:read', 'shortlist-packages:read',
+    'site-ops-checklists:read', 'site-ops-daily-reports:read', 'site-ops-mockups:read', 'site-ops-qc:read',
+    'site-ops-rfis:read', 'site-ops-snag-lists:export', 'site-ops-snag-lists:read', 'site-ops-visits:read',
+    'site-ops:read', 'site-recces:create', 'site-recces:read', 'site-recces:update',
+    'site-recces:upload', 'sync:read', 'sync:sync', 'sync:update',
+    'tasks:create', 'tasks:read', 'tasks:update', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendor-rate-comparisons:read', 'vendors-saved-searches:read', 'vendors:read',
+    'work-orders:read', 'workflow-library:assign', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:read', 'workflow-progress:update', 'workflow-timeline:read', 'workflow:read',
+    'workflow:update', 'workspace:read', 'zoho-bigin:create', 'zoho-bigin:read',
+    'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:read', 'zoho-calendar:update',
+    'zoho-cliq:read', 'zoho-cliq:send', 'zoho-cliq:upload', 'zoho-projects:create',
+    'zoho-projects:read', 'zoho-projects:update', 'zoho-workdrive:create', 'zoho-workdrive:read',
+    'zoho-workdrive:upload'
+  )
+WHERE r.name = 'SENIOR_INTERIOR_DESIGNER';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'settings')
+WHERE r.name = 'SENIOR_INTERIOR_DESIGNER';
+
+-- ARCHITECT: 169 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:read', 'architect-snags:read', 'architect-visit-stages:read', 'auth-google:connect',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:read', 'auth-zoho:connect',
+    'auth-zoho:read', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:read',
+    'boq:create', 'boq:export', 'boq:read', 'boq:submit',
+    'boq:update', 'budget-estimates:create', 'budget-estimates:read', 'budget-estimates:recalculate',
+    'budget-estimates:update', 'budget-guides:create', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:read', 'calendar-events:update', 'cdn:upload', 'client-portal:read',
+    'clients:read', 'command-center:complete', 'command-center:read', 'command-center:refresh',
+    'command-center:review', 'command-center:upload', 'dashboard:read', 'dashboards:read',
+    'dashboards:update', 'delivery-challans:read', 'document-requirements:create', 'document-requirements:read',
+    'document-requirements:update', 'documents:create', 'documents:deliver', 'documents:read',
+    'documents:update', 'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:read',
+    'dpr-admin-reports:export', 'dpr-admin-reports:read', 'drawings:create', 'drawings:read',
+    'drawings:update', 'gates:read', 'google-calendar:create', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:read',
+    'google-tasks:update', 'inventory:read', 'leads:create', 'leads:read',
+    'leads:sync', 'leads:update', 'library:read', 'material-procurement:read',
+    'materials:read', 'notes:create', 'notes:read', 'notes:update',
+    'notifications:read', 'notifications:update', 'onedrive:create', 'onedrive:read',
+    'onedrive:update', 'onedrive:upload', 'payment-schedules:create', 'payment-schedules:read',
+    'payment-schedules:update', 'plan-of-actions:create', 'plan-of-actions:publish', 'plan-of-actions:read',
+    'plan-of-actions:update', 'procurement-estimates:read', 'procurement-quotations:read', 'procurement-rate-sheets:read',
+    'procurement-requirements:read', 'procurement-sample-boards:read', 'project-briefs:create', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:generate', 'project-planners:read', 'project-planners:update', 'project-shortlists:export',
+    'project-shortlists:read', 'projects-phases:read', 'projects:read', 'purchase-orders:read',
+    'quality-checklists:export', 'quality-checklists:read', 'quotation-items:read', 'quotations:export',
+    'quotations:read', 'reports:read', 'scope-of-work:create', 'scope-of-work:read',
+    'scope-of-work:update', 'search:read', 'shortlist-entries:read', 'shortlist-packages:read',
+    'site-ops-checklists:read', 'site-ops-daily-reports:read', 'site-ops-mockups:read', 'site-ops-qc:read',
+    'site-ops-rfis:read', 'site-ops-snag-lists:export', 'site-ops-snag-lists:read', 'site-ops-visits:read',
+    'site-ops:read', 'site-recces:create', 'site-recces:read', 'site-recces:update',
+    'site-recces:upload', 'sync:read', 'sync:sync', 'sync:update',
+    'tasks:create', 'tasks:read', 'tasks:update', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendor-rate-comparisons:read', 'vendors-saved-searches:read', 'vendors:read',
+    'work-orders:read', 'workflow-library:assign', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:read', 'workflow-progress:update', 'workflow-timeline:read', 'workflow:read',
+    'workflow:update', 'workspace:read', 'zoho-bigin:create', 'zoho-bigin:read',
+    'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:read', 'zoho-calendar:update',
+    'zoho-cliq:read', 'zoho-cliq:send', 'zoho-cliq:upload', 'zoho-projects:create',
+    'zoho-projects:read', 'zoho-projects:update', 'zoho-workdrive:create', 'zoho-workdrive:read',
+    'zoho-workdrive:upload'
+  )
+WHERE r.name = 'ARCHITECT';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'settings')
+WHERE r.name = 'ARCHITECT';
+
+-- JUNIOR_ARCHITECT: 165 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:read', 'architect-snags:read', 'architect-visit-stages:read', 'auth-google:connect',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:read', 'auth-zoho:connect',
+    'auth-zoho:read', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:read',
+    'boq:create', 'boq:export', 'boq:read', 'boq:submit',
+    'boq:update', 'budget-estimates:create', 'budget-estimates:read', 'budget-estimates:recalculate',
+    'budget-estimates:update', 'budget-guides:create', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:read', 'calendar-events:update', 'cdn:upload', 'client-portal:read',
+    'clients:read', 'command-center:read', 'dashboard:read', 'dashboards:read',
+    'dashboards:update', 'delivery-challans:read', 'document-requirements:create', 'document-requirements:read',
+    'document-requirements:update', 'documents:create', 'documents:deliver', 'documents:read',
+    'documents:update', 'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:read',
+    'dpr-admin-reports:export', 'dpr-admin-reports:read', 'drawings:create', 'drawings:read',
+    'drawings:update', 'gates:read', 'google-calendar:create', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:read',
+    'google-tasks:update', 'inventory:read', 'leads:create', 'leads:read',
+    'leads:sync', 'leads:update', 'library:read', 'material-procurement:read',
+    'materials:read', 'notes:create', 'notes:read', 'notes:update',
+    'notifications:read', 'notifications:update', 'onedrive:create', 'onedrive:read',
+    'onedrive:update', 'onedrive:upload', 'payment-schedules:create', 'payment-schedules:read',
+    'payment-schedules:update', 'plan-of-actions:create', 'plan-of-actions:publish', 'plan-of-actions:read',
+    'plan-of-actions:update', 'procurement-estimates:read', 'procurement-quotations:read', 'procurement-rate-sheets:read',
+    'procurement-requirements:read', 'procurement-sample-boards:read', 'project-briefs:create', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:generate', 'project-planners:read', 'project-planners:update', 'project-shortlists:export',
+    'project-shortlists:read', 'projects-phases:read', 'projects:read', 'purchase-orders:read',
+    'quality-checklists:export', 'quality-checklists:read', 'quotation-items:read', 'quotations:export',
+    'quotations:read', 'reports:read', 'scope-of-work:create', 'scope-of-work:read',
+    'scope-of-work:update', 'search:read', 'shortlist-entries:read', 'shortlist-packages:read',
+    'site-ops-checklists:read', 'site-ops-daily-reports:read', 'site-ops-mockups:read', 'site-ops-qc:read',
+    'site-ops-rfis:read', 'site-ops-snag-lists:export', 'site-ops-snag-lists:read', 'site-ops-visits:read',
+    'site-ops:read', 'site-recces:create', 'site-recces:read', 'site-recces:update',
+    'site-recces:upload', 'sync:read', 'sync:sync', 'sync:update',
+    'tasks:create', 'tasks:read', 'tasks:update', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendor-rate-comparisons:read', 'vendors-saved-searches:read', 'vendors:read',
+    'work-orders:read', 'workflow-library:assign', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:read', 'workflow-progress:update', 'workflow-timeline:read', 'workflow:read',
+    'workflow:update', 'workspace:read', 'zoho-bigin:create', 'zoho-bigin:read',
+    'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:read', 'zoho-calendar:update',
+    'zoho-cliq:read', 'zoho-cliq:send', 'zoho-cliq:upload', 'zoho-projects:create',
+    'zoho-projects:read', 'zoho-projects:update', 'zoho-workdrive:create', 'zoho-workdrive:read',
+    'zoho-workdrive:upload'
+  )
+WHERE r.name = 'JUNIOR_ARCHITECT';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'settings')
+WHERE r.name = 'JUNIOR_ARCHITECT';
+
+-- JUNIOR_INTERIOR_DESIGNER: 165 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:read', 'architect-snags:read', 'architect-visit-stages:read', 'auth-google:connect',
+    'auth-google:read', 'auth-microsoft:connect', 'auth-microsoft:read', 'auth-zoho:connect',
+    'auth-zoho:read', 'boq-activity:read', 'boq-catalog:read', 'boq-templates:read',
+    'boq:create', 'boq:export', 'boq:read', 'boq:submit',
+    'boq:update', 'budget-estimates:create', 'budget-estimates:read', 'budget-estimates:recalculate',
+    'budget-estimates:update', 'budget-guides:create', 'budget-guides:read', 'budget-guides:update',
+    'business-proposals:create', 'business-proposals:read', 'business-proposals:update', 'calendar-events:create',
+    'calendar-events:read', 'calendar-events:update', 'cdn:upload', 'client-portal:read',
+    'clients:read', 'command-center:read', 'dashboard:read', 'dashboards:read',
+    'dashboards:update', 'delivery-challans:read', 'document-requirements:create', 'document-requirements:read',
+    'document-requirements:update', 'documents:create', 'documents:deliver', 'documents:read',
+    'documents:update', 'dpr-admin-documents:export', 'dpr-admin-documents:read', 'dpr-admin-logs:read',
+    'dpr-admin-reports:export', 'dpr-admin-reports:read', 'drawings:create', 'drawings:read',
+    'drawings:update', 'gates:read', 'google-calendar:create', 'google-calendar:read',
+    'google-calendar:update', 'google-tasks:complete', 'google-tasks:create', 'google-tasks:read',
+    'google-tasks:update', 'inventory:read', 'leads:create', 'leads:read',
+    'leads:sync', 'leads:update', 'library:read', 'material-procurement:read',
+    'materials:read', 'notes:create', 'notes:read', 'notes:update',
+    'notifications:read', 'notifications:update', 'onedrive:create', 'onedrive:read',
+    'onedrive:update', 'onedrive:upload', 'payment-schedules:create', 'payment-schedules:read',
+    'payment-schedules:update', 'plan-of-actions:create', 'plan-of-actions:publish', 'plan-of-actions:read',
+    'plan-of-actions:update', 'procurement-estimates:read', 'procurement-quotations:read', 'procurement-rate-sheets:read',
+    'procurement-requirements:read', 'procurement-sample-boards:read', 'project-briefs:create', 'project-briefs:read',
+    'project-briefs:update', 'project-briefs:upload', 'project-dashboard:read', 'project-planners:create',
+    'project-planners:generate', 'project-planners:read', 'project-planners:update', 'project-shortlists:export',
+    'project-shortlists:read', 'projects-phases:read', 'projects:read', 'purchase-orders:read',
+    'quality-checklists:export', 'quality-checklists:read', 'quotation-items:read', 'quotations:export',
+    'quotations:read', 'reports:read', 'scope-of-work:create', 'scope-of-work:read',
+    'scope-of-work:update', 'search:read', 'shortlist-entries:read', 'shortlist-packages:read',
+    'site-ops-checklists:read', 'site-ops-daily-reports:read', 'site-ops-mockups:read', 'site-ops-qc:read',
+    'site-ops-rfis:read', 'site-ops-snag-lists:export', 'site-ops-snag-lists:read', 'site-ops-visits:read',
+    'site-ops:read', 'site-recces:create', 'site-recces:read', 'site-recces:update',
+    'site-recces:upload', 'sync:read', 'sync:sync', 'sync:update',
+    'tasks:create', 'tasks:read', 'tasks:update', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendor-rate-comparisons:read', 'vendors-saved-searches:read', 'vendors:read',
+    'work-orders:read', 'workflow-library:assign', 'workflow-library:read', 'workflow-library:update',
+    'workflow-progress:read', 'workflow-progress:update', 'workflow-timeline:read', 'workflow:read',
+    'workflow:update', 'workspace:read', 'zoho-bigin:create', 'zoho-bigin:read',
+    'zoho-bigin:update', 'zoho-calendar:create', 'zoho-calendar:read', 'zoho-calendar:update',
+    'zoho-cliq:read', 'zoho-cliq:send', 'zoho-cliq:upload', 'zoho-projects:create',
+    'zoho-projects:read', 'zoho-projects:update', 'zoho-workdrive:create', 'zoho-workdrive:read',
+    'zoho-workdrive:upload'
+  )
+WHERE r.name = 'JUNIOR_INTERIOR_DESIGNER';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'settings')
+WHERE r.name = 'JUNIOR_INTERIOR_DESIGNER';
+
+-- SITE_ENGINEER: 93 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:read', 'architect-snags:read', 'architect-visit-stages:read', 'boq-activity:read',
+    'boq:export', 'boq:read', 'calendar-events:create', 'calendar-events:read',
+    'calendar-events:update', 'cdn:upload', 'command-center:read', 'dashboard:read',
+    'dashboards:read', 'dashboards:update', 'delivery-challans:read', 'delivery-challans:receive',
+    'delivery-challans:update', 'document-requirements:read', 'documents:read', 'dpr-admin-documents:export',
+    'dpr-admin-documents:read', 'dpr-admin-logs:read', 'dpr-admin-reports:export', 'dpr-admin-reports:read',
+    'drawings:read', 'gates:read', 'inventory:adjust', 'inventory:create',
+    'inventory:deliver', 'inventory:issue', 'inventory:read', 'inventory:return',
+    'inventory:transfer', 'materials:read', 'notes:create', 'notes:read',
+    'notes:update', 'notifications:read', 'notifications:update', 'plan-of-actions:read',
+    'procurement-requirements:create', 'procurement-requirements:read', 'procurement-requirements:update', 'project-briefs:read',
+    'project-dashboard:read', 'project-planners:read', 'projects-phases:read', 'projects:read',
+    'purchase-orders:read', 'quality-checklists:create', 'quality-checklists:export', 'quality-checklists:read',
+    'quality-checklists:update', 'scope-of-work:read', 'search:read', 'site-ops-checklists:create',
+    'site-ops-checklists:read', 'site-ops-daily-reports:create', 'site-ops-daily-reports:read', 'site-ops-daily-reports:share',
+    'site-ops-daily-reports:update', 'site-ops-daily-reports:upload', 'site-ops-mockups:create', 'site-ops-mockups:read',
+    'site-ops-mockups:update', 'site-ops-qc:read', 'site-ops-rfis:create', 'site-ops-rfis:read',
+    'site-ops-rfis:update', 'site-ops-snag-lists:create', 'site-ops-snag-lists:export', 'site-ops-snag-lists:read',
+    'site-ops-snag-lists:update', 'site-ops-snag-lists:upload', 'site-ops-visits:assign', 'site-ops-visits:check-in',
+    'site-ops-visits:read', 'site-ops-visits:update', 'site-ops:read', 'site-recces:read',
+    'tasks:create', 'tasks:read', 'tasks:update', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendors-saved-searches:read', 'vendors:read', 'work-orders:read',
+    'workflow-library:read', 'workflow-progress:read', 'workflow-timeline:read', 'workflow:read',
+    'workspace:read'
+  )
+WHERE r.name = 'SITE_ENGINEER';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'settings')
+WHERE r.name = 'SITE_ENGINEER';
+
+-- SITE_SUPERVISOR: 93 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'architect-quality:read', 'architect-snags:read', 'architect-visit-stages:read', 'boq-activity:read',
+    'boq:export', 'boq:read', 'calendar-events:create', 'calendar-events:read',
+    'calendar-events:update', 'cdn:upload', 'command-center:read', 'dashboard:read',
+    'dashboards:read', 'dashboards:update', 'delivery-challans:read', 'delivery-challans:receive',
+    'delivery-challans:update', 'document-requirements:read', 'documents:read', 'dpr-admin-documents:export',
+    'dpr-admin-documents:read', 'dpr-admin-logs:read', 'dpr-admin-reports:export', 'dpr-admin-reports:read',
+    'drawings:read', 'gates:read', 'inventory:adjust', 'inventory:create',
+    'inventory:deliver', 'inventory:issue', 'inventory:read', 'inventory:return',
+    'inventory:transfer', 'materials:read', 'notes:create', 'notes:read',
+    'notes:update', 'notifications:read', 'notifications:update', 'plan-of-actions:read',
+    'procurement-requirements:create', 'procurement-requirements:read', 'procurement-requirements:update', 'project-briefs:read',
+    'project-dashboard:read', 'project-planners:read', 'projects-phases:read', 'projects:read',
+    'purchase-orders:read', 'quality-checklists:create', 'quality-checklists:export', 'quality-checklists:read',
+    'quality-checklists:update', 'scope-of-work:read', 'search:read', 'site-ops-checklists:create',
+    'site-ops-checklists:read', 'site-ops-daily-reports:create', 'site-ops-daily-reports:read', 'site-ops-daily-reports:share',
+    'site-ops-daily-reports:update', 'site-ops-daily-reports:upload', 'site-ops-mockups:create', 'site-ops-mockups:read',
+    'site-ops-mockups:update', 'site-ops-qc:read', 'site-ops-rfis:create', 'site-ops-rfis:read',
+    'site-ops-rfis:update', 'site-ops-snag-lists:create', 'site-ops-snag-lists:export', 'site-ops-snag-lists:read',
+    'site-ops-snag-lists:update', 'site-ops-snag-lists:upload', 'site-ops-visits:assign', 'site-ops-visits:check-in',
+    'site-ops-visits:read', 'site-ops-visits:update', 'site-ops:read', 'site-recces:read',
+    'tasks:create', 'tasks:read', 'tasks:update', 'vendor-business-types:read',
+    'vendor-categories:read', 'vendors-saved-searches:read', 'vendors:read', 'work-orders:read',
+    'workflow-library:read', 'workflow-progress:read', 'workflow-timeline:read', 'workflow:read',
+    'workspace:read'
+  )
+WHERE r.name = 'SITE_SUPERVISOR';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'projects', 'design', 'build', 'tasks', 'calendar', 'commandCenter', 'settings')
+WHERE r.name = 'SITE_SUPERVISOR';
+
+-- USER: 12 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'calendar-events:read', 'dashboard:read', 'dashboards:read', 'dashboards:update',
+    'notes:create', 'notes:read', 'notes:update', 'notifications:read',
+    'notifications:update', 'tasks:create', 'tasks:read', 'tasks:update'
+  )
+WHERE r.name = 'USER';
+
+INSERT IGNORE INTO role_apps (role_id, app_code)
+SELECT r.id, a.code FROM roles r JOIN apps a ON a.code IN ('dashboard', 'tasks', 'calendar')
+WHERE r.name = 'USER';
+
+-- CLIENT: 2 permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r JOIN permissions p
+  ON CONCAT(p.resource, ':', p.action) IN (
+    'notifications:read', 'notifications:update'
+  )
+WHERE r.name = 'CLIENT';
+

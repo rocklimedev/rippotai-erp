@@ -1,5 +1,12 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { ActivityLogsService } from './activity-logs.service';
 import { CreateActivityLogDto } from './dto/activity-log.dto';
 import { ActivityAction } from '../../common/enums';
@@ -32,6 +39,9 @@ export class ActivityLogsController {
   @RequirePermission('activity-logs:read')
   @Get('entity-label')
   async getByEntityLabel(@Query('entityLabel') entityLabel: string) {
+    if (!entityLabel?.trim()) {
+      throw new BadRequestException('entityLabel is required');
+    }
     return this.activityLogsService.getActivityLogsByEntityLabel(entityLabel);
   }
 }

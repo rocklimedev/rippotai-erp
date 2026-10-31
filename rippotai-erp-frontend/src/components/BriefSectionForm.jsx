@@ -43,8 +43,14 @@ export function BriefSectionForm({
   onCancel,
   onReferenceImagesUpload,
   uploadingReferences = false,
+  prefill,
 }) {
   const navigate = useNavigate();
+  // "Filled from <document>" replaces the field hint while the inherited value is kept.
+  const hintFor = (field, fallback) =>
+    prefill?.filled?.[field.key]
+      ? `Filled from ${prefill.filled[field.key]}`
+      : fallback;
 
   const filledCount = useMemo(() => {
     let count = 0;
@@ -158,7 +164,7 @@ export function BriefSectionForm({
         );
 
       return (
-        <Field key={field.key} label={field.label} hint={field.description} full>
+        <Field key={field.key} label={field.label} hint={hintFor(field, field.description)} full>
           {rows.length > 0 && (
             <div className="crmf-table-wrap">
               <table className="crmf-table">
@@ -295,7 +301,7 @@ export function BriefSectionForm({
       const options = field.options || [];
       const allSelected = options.length > 0 && options.every((option) => selected.includes(option.value));
       return (
-        <Field key={field.key} label={field.label} required={field.required} hint={field.description || "Select all that apply."} full>
+        <Field key={field.key} label={field.label} required={field.required} hint={hintFor(field, field.description || "Select all that apply.")} full>
           {field.selectAll && (
             <label className="crmf-check">
               <input
@@ -315,7 +321,7 @@ export function BriefSectionForm({
     // ---- CHECKBOX ----
     if (field.type === "checkbox") {
       return (
-        <Field key={field.key} label={field.label} hint={field.description} full={field.fullWidth}>
+        <Field key={field.key} label={field.label} hint={hintFor(field, field.description)} full={field.fullWidth}>
           <label className="crmf-check" style={{ height: 40 }}>
             <input type="checkbox" checked={Boolean(fieldValue)} onChange={(e) => set(e.target.checked)} />
             {field.checkboxLabel || field.label}
@@ -331,7 +337,7 @@ export function BriefSectionForm({
       const setSelected = (value) => set(field.arrayValue ? (value ? [String(value)] : []) : String(value));
       const small = !field.dropdown && options.length > 0 && options.length <= 4;
       return (
-        <Field key={field.key} label={field.label} required={field.required} hint={field.description} full={field.fullWidth}>
+        <Field key={field.key} label={field.label} required={field.required} hint={hintFor(field, field.description)} full={field.fullWidth}>
           {small ? (
             <Choices name={field.label} value={selectedValue} options={options} columns={options.length} onChange={setSelected} />
           ) : (

@@ -140,7 +140,7 @@ export default function MaterialProcurementSheetView() {
             </p>
             <Button
               variant="outline"
-              onClick={() => navigate("/material-procurement")}
+              onClick={() => navigate("/procurement/material-procurement/list")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Procurement
@@ -300,7 +300,7 @@ export default function MaterialProcurementSheetView() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/material-procurement")}
+          onClick={() => navigate("/procurement/material-procurement/list")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
@@ -317,7 +317,7 @@ export default function MaterialProcurementSheetView() {
           {procurement.status === "DRAFT" && (
             <>
               <Button variant="outline" asChild>
-                <Link to={`/material-procurement/new?id=${procurement.id}`}>
+                <Link to={`/procurement/material-procurement/${procurement.id}/edit`}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Link>

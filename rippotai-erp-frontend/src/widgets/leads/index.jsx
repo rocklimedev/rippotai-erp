@@ -195,7 +195,7 @@ export const LeadsStuckLeads = () => {
     <WidgetShell title="Stuck Leads" subtitle=">7 days">
       <RowList
         rows={rows}
-        onClick={(r) => nav(`/leads/${r.id}`)}
+        onClick={(r) => nav(`/crm/pipeline?deal=${r.id}`)}
         empty="No stuck leads"
       />
     </WidgetShell>

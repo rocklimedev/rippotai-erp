@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useGetDocumentPrefillQuery } from "../api/documents/shared-project-data.api";
-import { applyDocumentPrefill, FORM_SEQUENCE } from "./document-prefill";
+import { applyDocumentPrefill, FORM_SEQUENCE, SOURCE_LABELS } from "./document-prefill";
 
 export function useSharedProjectData(
   projectId,
@@ -13,6 +13,11 @@ export function useSharedProjectData(
   materials,
 ) {
   const inherited = useRef({ projectId, fields: {} });
+  // { field: { value, source } } this hook filled; drives the "Filled from" hint.
+  const [inheritedFields, recordInherited] = useReducer(
+    (current, action) => (action === null ? {} : { ...current, ...action }),
+    {},
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     if (!enabled || !projectId) return;
@@ -55,6 +60,7 @@ export function useSharedProjectData(
     const previous = inherited.current;
     if (previous.projectId !== projectId) {
       inherited.current = { projectId, fields: {} };
+      recordInherited(null);
       setValues((current) => {
         const next = { ...current };
         for (const [field, entry] of Object.entries(previous.fields)) {
@@ -65,21 +71,51 @@ export function useSharedProjectData(
       return;
     }
     if (!currentData || currentData.projectId !== projectId) return;
+    const context = materials ? { ...currentData, materials } : currentData;
+    const trace = {};
+    const proposed = applyDocumentPrefill(values || {}, context, type, trace);
+    // Each field is filled at most once per project, so clearing a value sticks.
+    const discovered = {};
+    for (const field of Object.keys(proposed))
+      if (
+        proposed[field] !== values?.[field] &&
+        !inherited.current.fields[field]
+      )
+        discovered[field] = {
+          value: proposed[field],
+          original: values?.[field],
+          source:
+            trace[field] ||
+            Object.entries(trace).find(([path]) =>
+              path.startsWith(`${field}.`),
+            )?.[1] ||
+            Object.values(trace)[0] ||
+            null,
+        };
+    if (!Object.keys(discovered).length) return;
+    Object.assign(inherited.current.fields, discovered);
+    recordInherited(discovered);
     setValues((current) => {
-      const next = applyDocumentPrefill(
-        current,
-        materials ? { ...currentData, materials } : currentData,
-        type,
-      );
-      for (const field of Object.keys(next)) {
-        if (next[field] !== current[field])
-          inherited.current.fields[field] = {
-            value: next[field],
-            original: current[field],
-          };
+      let next = current;
+      for (const [field, entry] of Object.entries(discovered)) {
+        // Never overwrite something the user typed since this render.
+        if (current[field] !== entry.original) continue;
+        if (next === current) next = { ...current };
+        next[field] = entry.value;
       }
       return next;
     });
   }, [projectId, type, currentData, values, setValues, enabled, materials]);
-  return { context: currentData, isFetching, error };
+  // Fields still holding the inherited value (a user edit removes the hint).
+  const filled = {};
+  for (const [field, entry] of Object.entries(inheritedFields))
+    if (values?.[field] === entry.value)
+      filled[field] = SOURCE_LABELS[entry.source] || "an earlier document";
+  return {
+    context: currentData,
+    isFetching,
+    error,
+    filled,
+    filledFrom: [...new Set(Object.values(filled))],
+  };
 }

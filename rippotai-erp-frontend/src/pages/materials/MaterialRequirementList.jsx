@@ -928,7 +928,12 @@ export default function MaterialRequirementList() {
       return;
     }
 
-    nav(`/procurement/requirements/${id}`);
+    const projectId = getRequirementProjectId(requirement);
+    nav(
+      projectId
+        ? `/procurement/${projectId}/material-requirements?requirementId=${id}`
+        : "/procurement/requirements",
+    );
   };
 
   /* ==========================================================
@@ -942,7 +947,13 @@ export default function MaterialRequirementList() {
       return;
     }
 
-    nav(`/procurement/requirements/${id}/edit`);
+    // No separate edit form: open the requirement on its project sheet.
+    const projectId = getRequirementProjectId(requirement);
+    nav(
+      projectId
+        ? `/procurement/${projectId}/material-requirements?requirementId=${id}`
+        : "/procurement/requirements",
+    );
   };
 
   /* ==========================================================

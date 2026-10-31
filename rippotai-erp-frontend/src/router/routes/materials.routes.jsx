@@ -193,6 +193,10 @@ export const materialsRoutes = [
         element: <DeliveryChallanView />,
       },
       {
+        path: "delivery-challans/:id/edit",
+        element: <CreateDeliveryChallanPage />,
+      },
+      {
         path: "work-order/all",
         element: <WorkOrderList />,
       },

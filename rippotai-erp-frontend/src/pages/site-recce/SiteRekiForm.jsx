@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Trash2, Upload, X, Loader2 } from "lucide-react";
@@ -591,7 +592,7 @@ export function SiteRekiForm() {
   // LOAD EXISTING SITE RECCE INTO FORM
   // ==========================================================
 
-  useSharedProjectData(projectId, 'recce', values, setValues, !isEditMode || Boolean(existingSiteRecce));
+  const prefill = useSharedProjectData(projectId, 'recce', values, setValues, !isEditMode || Boolean(existingSiteRecce));
 
   useEffect(() => {
     if (!isEditMode) return;
@@ -644,7 +645,7 @@ export function SiteRekiForm() {
 
     toast.error("Failed to load Site Recce.");
 
-    navigate("/site-recce");
+    navigate("/crm/recce/all");
   }, [isSiteRecceError, navigate]);
 
   // ==========================================================
@@ -1457,7 +1458,7 @@ export function SiteRekiForm() {
 
         draftStorage.removeItem(draftKey);
 
-        navigate(`/site-recce/${siteRecceId}`);
+        navigate(`/crm/recce/${siteRecceId}`);
 
         return;
       }
@@ -1472,7 +1473,7 @@ export function SiteRekiForm() {
 
       draftStorage.removeItem(draftKey);
 
-      navigate(`/site-recce/${recce.id}`);
+      navigate(`/crm/recce/${recce.id}`);
     } catch (error) {
       console.error("SITE RECCE SAVE ERROR:", error);
 
@@ -1511,11 +1512,10 @@ export function SiteRekiForm() {
   return (
     <SiteRecceSectionForm
       title={isEditMode ? "Edit site recce" : "Site recce"}
-      subtitle={
+      subtitle={<>{
         isEditMode
           ? "Update the site inspection record for this project."
-          : "Record what you found on the site visit — rooms, measurements, photos and site rules. Produces the site recce report."
-      }
+          : "Record what you found on the site visit — rooms, measurements, photos and site rules. Produces the site recce report."}<PrefillNotice prefill={prefill} /></>}
       crumbs={[
         { label: "CRM", to: "/crm" },
         { label: "Forms" },
