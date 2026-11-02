@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Save } from "lucide-react";
-import { Shell, Card, Input, TextArea } from "../hooks/shared";
+import React, { useState } from 'react';
+import { Save } from 'lucide-react';
+import { Shell, Card, Input, TextArea } from '../hooks/shared';
 
 export function SectionForm({
   title,
@@ -25,15 +25,11 @@ export function SectionForm({
     Object.values(values || {}).forEach((val) => {
       if (Array.isArray(val)) {
         count += val.length > 0 ? 1 : 0;
-      } else if (typeof val === "object" && val !== null) {
+      } else if (typeof val === 'object' && val !== null) {
         count += Object.values(val).filter(
-          (v) =>
-            v !== "" &&
-            v !== null &&
-            v !== undefined &&
-            !(Array.isArray(v) && v.length === 0),
+          (v) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0),
         ).length;
-      } else if (val !== "" && val !== null && val !== undefined) {
+      } else if (val !== '' && val !== null && val !== undefined) {
         count++;
       }
     });
@@ -45,25 +41,19 @@ export function SectionForm({
       title={title}
       subtitle={subtitle}
       action={
-        <button
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="inos-btn inos-btn--primary"
-        >
+        <button onClick={onSubmit} disabled={isSubmitting} className="inos-btn inos-btn--primary">
           <Save size={15} />
           {isSubmitting
-            ? "Saving…"
-            : title.includes("Recce")
-              ? "Save site recce"
-              : "Generate brief"}
+            ? 'Saving…'
+            : title.includes('Recce')
+              ? 'Save site recce'
+              : 'Generate brief'}
         </button>
       }
     >
       {/* Project Selector */}
       <Card>
-        <label className="text-[13px] font-semibold text-[var(--text)] mb-1 block">
-          Project
-        </label>
+        <label className="text-[13px] font-semibold text-[var(--text)] mb-1 block">Project</label>
         <select
           className="inos-select max-w-lg"
           value={projectId}
@@ -81,9 +71,7 @@ export function SectionForm({
       <div className="grid md:grid-cols-[240px_1fr] gap-5">
         {/* Sidebar */}
         <Card>
-          <div className="inos-section-title mb-3">
-            Sections
-          </div>
+          <div className="inos-section-title mb-3">Sections</div>
           <div className="flex flex-col gap-1">
             {sections.map((section, index) => (
               <button
@@ -91,8 +79,8 @@ export function SectionForm({
                 onClick={() => setActive(index)}
                 className={`text-left rounded-lg px-3 py-2 text-sm transition ${
                   active === index
-                    ? "bg-[var(--brand-50)] text-[var(--brand)] font-semibold"
-                    : "hover:bg-[var(--sage-50)] text-[var(--text-2)]"
+                    ? 'bg-[var(--brand-50)] text-[var(--brand)] font-semibold'
+                    : 'hover:bg-[var(--sage-50)] text-[var(--text-2)]'
                 }`}
               >
                 {index + 1}. {section.title}
@@ -116,7 +104,7 @@ export function SectionForm({
               {(currentSection?.fields || []).map((field) => {
                 // Support nested structure used by BriefForm
                 const sectionData = values?.[currentSection.title] || {};
-                const fieldValue = sectionData?.[field.key] ?? "";
+                const fieldValue = sectionData?.[field.key] ?? '';
 
                 return (
                   <div key={field.key}>
@@ -124,52 +112,36 @@ export function SectionForm({
                       {field.label}
                     </label>
 
-                    {field.type === "textarea" ? (
+                    {field.type === 'textarea' ? (
                       <TextArea
                         rows={field.rows || 4}
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
+                          onFieldChange(currentSection.title, field.key, e.target.value)
                         }
                       />
-                    ) : field.type === "date" ? (
+                    ) : field.type === 'date' ? (
                       <Input
                         type="date"
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
+                          onFieldChange(currentSection.title, field.key, e.target.value)
                         }
                       />
-                    ) : field.type === "time" ? (
+                    ) : field.type === 'time' ? (
                       <Input
                         type="time"
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
+                          onFieldChange(currentSection.title, field.key, e.target.value)
                         }
                       />
-                    ) : field.type === "select" ? (
+                    ) : field.type === 'select' ? (
                       <select
                         className="inos-select"
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
+                          onFieldChange(currentSection.title, field.key, e.target.value)
                         }
                       >
                         <option value="">Select...</option>
@@ -181,14 +153,10 @@ export function SectionForm({
                       </select>
                     ) : (
                       <Input
-                        type={field.type || "text"}
+                        type={field.type || 'text'}
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
+                          onFieldChange(currentSection.title, field.key, e.target.value)
                         }
                       />
                     )}
@@ -221,7 +189,7 @@ export function SectionForm({
 
           <div className="mt-4 text-xs text-[var(--text-3)]">
             Draft autosaved locally • {filledCount} field
-            {filledCount !== 1 ? "s" : ""} completed
+            {filledCount !== 1 ? 's' : ''} completed
           </div>
         </Card>
       </div>

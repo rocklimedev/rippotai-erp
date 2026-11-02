@@ -1,13 +1,10 @@
-import { RichTextEditor } from "./RichTextEditor";
-import React, { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
-import {
-  useGetLibraryItemsQuery,
-  useCreateLibraryItemMutation,
-} from "../../api/boq/boq.api";
+import { RichTextEditor } from './RichTextEditor';
+import React, { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { useGetLibraryItemsQuery, useCreateLibraryItemMutation } from '../../api/boq/boq.api';
 
-const CREATE_NEW = "__new__";
+const CREATE_NEW = '__new__';
 
 export function AddItemPicker({
   open,
@@ -17,16 +14,16 @@ export function AddItemPicker({
   defaultCategoryId,
   saveToLibrary = false,
 }) {
-  const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
+  const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [creating, setCreating] = useState(false);
   const [newItem, setNewItem] = useState({
-    name: "",
-    unit: "Nos.",
+    name: '',
+    unit: 'Nos.',
     default_rate: 0,
-    notes: "",
-    category_id: "",
-    new_category_name: "",
+    notes: '',
+    category_id: '',
+    new_category_name: '',
   });
 
   useEffect(() => {
@@ -45,18 +42,18 @@ export function AddItemPicker({
     if (open) {
       setNewItem((v) => ({
         ...v,
-        category_id: defaultCategoryId || categories[0]?.id || "",
+        category_id: defaultCategoryId || categories[0]?.id || '',
       }));
     } else {
-      setQ("");
+      setQ('');
       setCreating(false);
       setNewItem({
-        name: "",
-        unit: "Nos.",
+        name: '',
+        unit: 'Nos.',
         default_rate: 0,
-        notes: "",
-        category_id: "",
-        new_category_name: "",
+        notes: '',
+        category_id: '',
+        new_category_name: '',
       });
     }
     // eslint-disable-next-line
@@ -67,34 +64,46 @@ export function AddItemPicker({
   const pickFromLibrary = async (it) => {
     if (saving) return;
     setSaving(true);
-    try { await onPick({
-      payload: {
-        name: it.name, // ✅ was `description: it.name`
-        unit: it.unit || "Nos.",
-        quantity: 1,
-        rate: Number(it.default_rate) || 0,
-        calc_type: "M",
-        library_item_id: it.id,
-        notes: it.notes || "",
-      },
-    }); } catch { toast.error("Could not add item. Please retry."); } finally { setSaving(false); }
+    try {
+      await onPick({
+        payload: {
+          name: it.name, // ✅ was `description: it.name`
+          unit: it.unit || 'Nos.',
+          quantity: 1,
+          rate: Number(it.default_rate) || 0,
+          calc_type: 'M',
+          library_item_id: it.id,
+          notes: it.notes || '',
+        },
+      });
+    } catch {
+      toast.error('Could not add item. Please retry.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const createInline = async () => {
     if (saving) return;
-    if (!newItem.name.trim()) return toast.error("Name required");
+    if (!newItem.name.trim()) return toast.error('Name required');
     const isNewCat = newItem.category_id === CREATE_NEW;
-    if (!isNewCat && !newItem.category_id)
-      return toast.error("Category required");
+    if (!isNewCat && !newItem.category_id) return toast.error('Category required');
     if (isNewCat && !newItem.new_category_name.trim())
-      return toast.error("New category name required");
+      return toast.error('New category name required');
 
     try {
       setSaving(true);
-      const libraryItem = saveToLibrary ? await createLibraryItem({
-        name: newItem.name.trim(), unit: newItem.unit, default_rate: Number(newItem.default_rate) || 0,
-        notes: newItem.notes, category_name: isNewCat ? newItem.new_category_name.trim() : categories.find((c) => c.id === newItem.category_id)?.name,
-      }).unwrap() : null;
+      const libraryItem = saveToLibrary
+        ? await createLibraryItem({
+            name: newItem.name.trim(),
+            unit: newItem.unit,
+            default_rate: Number(newItem.default_rate) || 0,
+            notes: newItem.notes,
+            category_name: isNewCat
+              ? newItem.new_category_name.trim()
+              : categories.find((c) => c.id === newItem.category_id)?.name,
+          }).unwrap()
+        : null;
       await onPick({
         payload: {
           ...(libraryItem ? { library_item_id: libraryItem.id } : {}),
@@ -102,14 +111,14 @@ export function AddItemPicker({
           unit: newItem.unit,
           quantity: 1,
           rate: Number(newItem.default_rate) || 0,
-          calc_type: "M",
-          notes: newItem.notes || "",
+          calc_type: 'M',
+          notes: newItem.notes || '',
         },
         targetCategoryId: isNewCat ? null : newItem.category_id,
         newCategoryName: isNewCat ? newItem.new_category_name.trim() : null,
       });
     } catch {
-      toast.error("Could not save item. Your entries have been kept.");
+      toast.error('Could not save item. Your entries have been kept.');
     } finally {
       setSaving(false);
     }
@@ -125,9 +134,7 @@ export function AddItemPicker({
         className="bg-white rounded-2xl w-[560px] max-w-[95vw] max-h-[90vh] overflow-y-auto p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-[16px] font-semibold text-[#333333] mb-3">
-          Add BOQ Item
-        </div>
+        <div className="text-[16px] font-semibold text-[#333333] mb-3">Add BOQ Item</div>
         <div className="flex items-center gap-2 mb-3">
           <input
             autoFocus
@@ -158,17 +165,13 @@ export function AddItemPicker({
               <input
                 placeholder="Name *"
                 value={newItem.name}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, name: e.target.value })
-                }
+                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                 className="h-9 px-2 rounded-lg border border-[#DDD8CE] bg-white text-[13px] col-span-2"
                 data-testid="picker-new-name"
               />
               <select
                 value={newItem.category_id}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, category_id: e.target.value })
-                }
+                onChange={(e) => setNewItem({ ...newItem, category_id: e.target.value })}
                 className="h-9 px-2 rounded-lg border border-[#DDD8CE] bg-white text-[13px] col-span-2"
                 data-testid="picker-new-category"
               >
@@ -199,9 +202,7 @@ export function AddItemPicker({
               <input
                 placeholder="Unit"
                 value={newItem.unit}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, unit: e.target.value })
-                }
+                onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
                 className="h-9 px-2 rounded-lg border border-[#DDD8CE] bg-white text-[13px]"
               />
               <input
@@ -216,7 +217,13 @@ export function AddItemPicker({
                 }
                 className="h-9 px-2 rounded-lg border border-[#DDD8CE] bg-white text-[13px]"
               />
-              <div className="col-span-2"><RichTextEditor value={newItem.notes} onChange={(notes) => setNewItem((current) => ({ ...current, notes }))} label="New item notes" /></div>
+              <div className="col-span-2">
+                <RichTextEditor
+                  value={newItem.notes}
+                  onChange={(notes) => setNewItem((current) => ({ ...current, notes }))}
+                  label="New item notes"
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2 mt-2">
               <button
@@ -231,7 +238,7 @@ export function AddItemPicker({
                 className="h-8 px-3 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
                 data-testid="picker-new-save"
               >
-                {saving ? "Saving…" : "Save & Add"}
+                {saving ? 'Saving…' : 'Save & Add'}
               </button>
             </div>
           </div>
@@ -242,7 +249,7 @@ export function AddItemPicker({
         >
           {results.length === 0 && (
             <div className="p-4 text-center text-[13px] text-[#6B7B7C]">
-              No matches{q ? " — click + to create" : ""}.
+              No matches{q ? ' — click + to create' : ''}.
             </div>
           )}
           {results.map((it) => (
@@ -254,15 +261,13 @@ export function AddItemPicker({
               data-testid={`item-picker-row-${it.id}`}
             >
               <div>
-                <div className="text-[13.5px] font-semibold text-[#333333]">
-                  {it.name}
-                </div>
+                <div className="text-[13.5px] font-semibold text-[#333333]">{it.name}</div>
                 <div className="text-[11.5px] text-[#6B7B7C]">
-                  {it.category_name || "—"} · {it.unit}
+                  {it.category_name || '—'} · {it.unit}
                 </div>
               </div>
               <div className="text-[12.5px] font-semibold text-[#333333]">
-                ₹{(it.default_rate || 0).toLocaleString("en-IN")}
+                ₹{(it.default_rate || 0).toLocaleString('en-IN')}
               </div>
             </button>
           ))}

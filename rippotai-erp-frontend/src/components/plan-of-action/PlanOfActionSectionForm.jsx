@@ -1,7 +1,7 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { Button, Field, TextInput, TextArea, FormActions } from "@/components/inos";
+import { Button, Field, TextInput, TextArea, FormActions } from '@/components/inos';
 import {
   DocFormLayout,
   DocSection,
@@ -10,7 +10,7 @@ import {
   isFilled,
   slugId,
   useAutosaveNote,
-} from "@/components/forms/crm-form-ui";
+} from '@/components/forms/crm-form-ui';
 
 /**
  * Shared multi-section form shell used by Plan of Action (and similar docs).
@@ -52,15 +52,11 @@ export function PlanOfActionSectionForm({
     Object.values(values || {}).forEach((val) => {
       if (Array.isArray(val)) {
         count += val.length > 0 ? 1 : 0;
-      } else if (typeof val === "object" && val !== null) {
+      } else if (typeof val === 'object' && val !== null) {
         count += Object.values(val).filter(
-          (v) =>
-            v !== "" &&
-            v !== null &&
-            v !== undefined &&
-            !(Array.isArray(v) && v.length === 0),
+          (v) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0),
         ).length;
-      } else if (val !== "" && val !== null && val !== undefined) {
+      } else if (val !== '' && val !== null && val !== undefined) {
         count++;
       }
     });
@@ -73,9 +69,9 @@ export function PlanOfActionSectionForm({
     <div className="inos-form-grid">
       {(section?.fields || []).map((field) => {
         const sectionData = values?.[section.title] || {};
-        const fieldValue = sectionData?.[field.key] ?? "";
+        const fieldValue = sectionData?.[field.key] ?? '';
         const set = (v) => onFieldChange(section.title, field.key, v);
-        const wide = field.type === "textarea" || field.type === "text" || field.fullWidth;
+        const wide = field.type === 'textarea' || field.type === 'text' || field.fullWidth;
 
         return (
           <Field
@@ -85,26 +81,26 @@ export function PlanOfActionSectionForm({
             hint={field.hint}
             full={wide}
           >
-            {field.type === "textarea" ? (
+            {field.type === 'textarea' ? (
               <TextArea
                 rows={field.rows || 4}
                 value={fieldValue}
-                placeholder={field.placeholder || ""}
+                placeholder={field.placeholder || ''}
                 onChange={(e) => set(e.target.value)}
               />
-            ) : field.type === "date" ? (
+            ) : field.type === 'date' ? (
               <TextInput type="date" value={fieldValue} onChange={(e) => set(e.target.value)} />
-            ) : field.type === "time" ? (
+            ) : field.type === 'time' ? (
               <TextInput type="time" value={fieldValue} onChange={(e) => set(e.target.value)} />
-            ) : field.type === "select" ? (
+            ) : field.type === 'select' ? (
               <OptionSelect value={fieldValue} options={field.options || []} onChange={set} />
             ) : (
               <TextInput
-                type={field.type || "text"}
-                inputMode={field.type === "number" ? "numeric" : undefined}
-                min={field.type === "number" ? 0 : undefined}
+                type={field.type || 'text'}
+                inputMode={field.type === 'number' ? 'numeric' : undefined}
+                min={field.type === 'number' ? 0 : undefined}
                 value={fieldValue}
-                placeholder={field.placeholder || ""}
+                placeholder={field.placeholder || ''}
                 onChange={(e) => set(e.target.value)}
               />
             )}
@@ -128,9 +124,9 @@ export function PlanOfActionSectionForm({
     return (section?.fields || []).some((f) => isFilled(values?.[section.title]?.[f.key]));
   };
 
-  const projectSectionId = "sec-project";
+  const projectSectionId = 'sec-project';
   const nav = [
-    { id: projectSectionId, label: "Project", done: Boolean(projectId) },
+    { id: projectSectionId, label: 'Project', done: Boolean(projectId) },
     ...(sections || []).map((section, i) => {
       const meta = sectionMeta[section.title] || {};
       return {
@@ -172,7 +168,7 @@ export function PlanOfActionSectionForm({
       })}
 
       <FormActions
-        note={autosaveNote || `${filledCount} field${filledCount !== 1 ? "s" : ""} completed`}
+        note={autosaveNote || `${filledCount} field${filledCount !== 1 ? 's' : ''} completed`}
         extra={
           onSaveDraft && (
             <Button variant="secondary" onClick={onSaveDraft}>
@@ -181,7 +177,7 @@ export function PlanOfActionSectionForm({
           )
         }
         onCancel={onCancel || (() => navigate(-1))}
-        submitLabel={isSubmitting ? "Saving…" : submitLabel || "Save plan of action"}
+        submitLabel={isSubmitting ? 'Saving…' : submitLabel || 'Save plan of action'}
         submitDisabled={isSubmitting}
         onSubmit={onSubmit}
       />

@@ -1,23 +1,18 @@
-export const WORKBOOK_VIEWS = [
-  "Overview",
-  "Consultancy",
-  "Vendor & Procurement",
-  "PMC",
-];
+export const WORKBOOK_VIEWS = ['Overview', 'Consultancy', 'Vendor & Procurement', 'PMC'];
 const PHASES = [
-  "PRE-DESIGN",
-  "DESIGN",
-  "MATERIAL SELECTION",
-  "TENDER DRAWINGS",
-  "WORKING DRAWINGS",
-  "SITE PREPARATION",
-  "CIVIL WORK",
-  "FIT OUTS",
-  "FINISHING",
-  "SNAG & HANDOVER",
+  'PRE-DESIGN',
+  'DESIGN',
+  'MATERIAL SELECTION',
+  'TENDER DRAWINGS',
+  'WORKING DRAWINGS',
+  'SITE PREPARATION',
+  'CIVIL WORK',
+  'FIT OUTS',
+  'FINISHING',
+  'SNAG & HANDOVER',
 ];
 const phaseOrder = (phase) => {
-  const rank = PHASES.indexOf(String(phase?.title || "").toUpperCase());
+  const rank = PHASES.indexOf(String(phase?.title || '').toUpperCase());
   return rank === -1 ? 100 + Number(phase?.sort_order || 0) : rank;
 };
 export function workbookRows(planners = []) {
@@ -25,9 +20,7 @@ export function workbookRows(planners = []) {
     .flatMap((p) => p.items || [])
     .sort(
       (a, b) =>
-        String(a.phase?.module || "").localeCompare(
-          String(b.phase?.module || ""),
-        ) ||
+        String(a.phase?.module || '').localeCompare(String(b.phase?.module || '')) ||
         phaseOrder(a.phase) - phaseOrder(b.phase) ||
         Number(a.sort_order || 0) - Number(b.sort_order || 0),
     );

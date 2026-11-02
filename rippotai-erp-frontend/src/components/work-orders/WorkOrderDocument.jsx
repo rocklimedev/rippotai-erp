@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import logo from "../../assets/rippotai_logo.png";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import logo from '../../assets/rippotai_logo.png';
 import {
   currency,
   formatDate,
@@ -12,26 +12,23 @@ import {
   getTerms,
   getUnitName,
   getUnitCode,
-} from "./workOrderFormat";
-import "./WorkOrderDocument.css";
+} from './workOrderFormat';
+import './WorkOrderDocument.css';
 const PAGE_HEIGHT = 1123;
 const PAGE_INSET = 9;
-const blank = (value) => (value === "-" || value == null ? "" : value);
+const blank = (value) => (value === '-' || value == null ? '' : value);
 const sortRows = (rows) =>
-  [...rows].sort(
-    (a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0),
-  );
+  [...rows].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 function termHtml(value) {
-  const doc = new DOMParser().parseFromString(value || "", "text/html");
+  const doc = new DOMParser().parseFromString(value || '', 'text/html');
   doc
-    .querySelectorAll("script,style,iframe,object,embed,link,meta")
+    .querySelectorAll('script,style,iframe,object,embed,link,meta')
     .forEach((node) => node.remove());
-  doc.querySelectorAll("*").forEach((node) =>
+  doc.querySelectorAll('*').forEach((node) =>
     Array.from(node.attributes).forEach((attribute) => {
       if (
         /^on/i.test(attribute.name) ||
-        (/^(href|src)$/i.test(attribute.name) &&
-          /^\s*javascript:/i.test(attribute.value))
+        (/^(href|src)$/i.test(attribute.name) && /^\s*javascript:/i.test(attribute.value))
       ) {
         node.removeAttribute(attribute.name);
       }
@@ -47,9 +44,7 @@ function Header({ workOrder, pageNumber, totalPages }) {
     workOrder.created_at ||
     workOrder.createdAt;
   const completionDate =
-    workOrder.target_completion_date ||
-    workOrder.expected_end_date ||
-    workOrder.expectedEndDate;
+    workOrder.target_completion_date || workOrder.expected_end_date || workOrder.expectedEndDate;
   return (
     <header className="wo-header">
       <div className="wo-company">
@@ -58,18 +53,12 @@ function Header({ workOrder, pageNumber, totalPages }) {
           <span>RIPPŌTAI</span>
         </div>
         <p className="wo-tagline">Architecture · Interiors · Turnkey</p>
+        <p>Address: {workOrder.company_address || 'b-3/33, Mianwali Nagar, New Delhi 110087'}</p>
         <p>
-          Address:{" "}
-          {workOrder.company_address ||
-            "b-3/33, Mianwali Nagar, New Delhi 110087"}
+          Phone: {workOrder.company_phone || '8882830560'} | Email:{' '}
+          {workOrder.company_email || 'sagar@rippotai.in'}
         </p>
-        <p>
-          Phone: {workOrder.company_phone || "8882830560"} | Email:{" "}
-          {workOrder.company_email || "sagar@rippotai.in"}
-        </p>
-        <p>
-          GSTIN: {workOrder.company_gstin || workOrder.rippotai_gstin || ""}
-        </p>
+        <p>GSTIN: {workOrder.company_gstin || workOrder.rippotai_gstin || ''}</p>
       </div>
       <div className="wo-identity">
         <h1>Work Order</h1>
@@ -104,62 +93,45 @@ function Parties({ workOrder }) {
   const vendor = workOrder.vendor || {};
   const contractor = [
     [
-      "Agency",
-      workOrder.agency ||
-        workOrder.contractor_company_name ||
-        blank(getVendorName(workOrder)),
+      'Agency',
+      workOrder.agency || workOrder.contractor_company_name || blank(getVendorName(workOrder)),
     ],
     [
-      "Contact person",
+      'Contact person',
       [
-        workOrder.contractor_name ||
-          vendor.contact_person ||
-          vendor.contact_name,
+        workOrder.contractor_name || vendor.contact_person || vendor.contact_name,
         workOrder.contractor_position,
       ]
         .filter(Boolean)
-        .join(" · "),
+        .join(' · '),
     ],
-    [
-      "Phone",
-      workOrder.contractor_phone || vendor.contact_number || vendor.phone,
-    ],
-    ["Email", workOrder.contractor_email || vendor.email],
-    ["GSTIN", workOrder.contractor_gstin || vendor.gstin],
-    ["PAN", workOrder.contractor_pan || vendor.pan],
+    ['Phone', workOrder.contractor_phone || vendor.contact_number || vendor.phone],
+    ['Email', workOrder.contractor_email || vendor.email],
+    ['GSTIN', workOrder.contractor_gstin || vendor.gstin],
+    ['PAN', workOrder.contractor_pan || vendor.pan],
   ];
   const site = [
-    ["Project", blank(getProjectName(workOrder))],
+    ['Project', blank(getProjectName(workOrder))],
+    ['Site address', workOrder.site_address || workOrder.project?.site_location],
+    ['Site lead', workOrder.site_lead || workOrder.site_contact_person],
     [
-      "Site address",
-      workOrder.site_address || workOrder.project?.site_location,
-    ],
-    ["Site lead", workOrder.site_lead || workOrder.site_contact_person],
-    [
-      "Contact",
-      [
-        workOrder.site_phone,
-        workOrder.site_lead && workOrder.site_contact_person,
-      ]
+      'Contact',
+      [workOrder.site_phone, workOrder.site_lead && workOrder.site_contact_person]
         .filter(Boolean)
-        .join(" · "),
+        .join(' · '),
     ],
-    ["Working hours", workOrder.working_hours],
+    ['Working hours', workOrder.working_hours],
     null,
   ];
   if (workOrder.contractor_address || workOrder.site_email) {
     contractor.push(
-      workOrder.contractor_address
-        ? ["Address", workOrder.contractor_address]
-        : null,
+      workOrder.contractor_address ? ['Address', workOrder.contractor_address] : null,
     );
-    site.push(
-      workOrder.site_email ? ["Site email", workOrder.site_email] : null,
-    );
+    site.push(workOrder.site_email ? ['Site email', workOrder.site_email] : null);
   }
   if (workOrder.site_gstin) {
     contractor.push(null);
-    site.push(["Site GSTIN", workOrder.site_gstin]);
+    site.push(['Site GSTIN', workOrder.site_gstin]);
   }
   return (
     <div className="wo-parties">
@@ -172,7 +144,7 @@ function Parties({ workOrder }) {
           {left ? (
             <>
               <span className="wo-field-label">{left[0]}</span>
-              <span>{left[1] || ""}</span>
+              <span>{left[1] || ''}</span>
             </>
           ) : (
             <>
@@ -183,7 +155,7 @@ function Parties({ workOrder }) {
           {site[index] ? (
             <>
               <span className="wo-field-label">{site[index][0]}</span>
-              <span>{site[index][1] || ""}</span>
+              <span>{site[index][1] || ''}</span>
             </>
           ) : (
             <>
@@ -225,15 +197,15 @@ function ItemRow({ item, index }) {
     <div className="wo-item-row wo-items-grid">
       <span>{index + 1}</span>
       <div>
-        {item.description || item.name || "-"}
-        {item.item_type && item.item_type !== "SERVICE" && (
+        {item.description || item.name || '-'}
+        {item.item_type && item.item_type !== 'SERVICE' && (
           <small>{formatStatus(item.item_type)}</small>
         )}
         {item.remarks && <small>{item.remarks}</small>}
       </div>
       <span>
         {quantity}
-        {unit ? ` ${unit}` : ""}
+        {unit ? ` ${unit}` : ''}
       </span>
       <span>{currency(rate)}</span>
       <span>{currency(item.amount ?? item.total ?? quantity * rate)}</span>
@@ -256,17 +228,13 @@ function PaymentHeading() {
 function PaymentRow({ stage }) {
   return (
     <div className="wo-payment-row wo-payments-grid">
-      <span>{stage ? stage.stage_name || stage.name : ""}</span>
+      <span>{stage ? stage.stage_name || stage.name : ''}</span>
+      <span>{stage ? blank(formatDate(stage.due_date || stage.dueDate)) : ''}</span>
+      <span>{stage ? currency(stage.amount) : ''}</span>
       <span>
-        {stage ? blank(formatDate(stage.due_date || stage.dueDate)) : ""}
-      </span>
-      <span>{stage ? currency(stage.amount) : ""}</span>
-      <span>
-        {stage?.remarks || ""}
-        {Number(stage?.paid_amount) > 0 && (
-          <small>Paid: {currency(stage.paid_amount)}</small>
-        )}
-        {stage?.status && !["PENDING", "UNPAID"].includes(stage.status) && (
+        {stage?.remarks || ''}
+        {Number(stage?.paid_amount) > 0 && <small>Paid: {currency(stage.paid_amount)}</small>}
+        {stage?.status && !['PENDING', 'UNPAID'].includes(stage.status) && (
           <small>{formatStatus(stage.status)}</small>
         )}
       </span>
@@ -278,15 +246,15 @@ function Signatures({ workOrder }) {
     <div className="wo-signatures">
       {[
         [
-          "For Rippotai",
-          "Authorised Signatory",
+          'For Rippotai',
+          'Authorised Signatory',
           workOrder.rippotai_signatory_name,
           workOrder.rippotai_signed_at,
           workOrder.rippotai_signature_url,
         ],
         [
-          "Vendor Acknowledgement",
-          "Signature & Stamp",
+          'Vendor Acknowledgement',
+          'Signature & Stamp',
           workOrder.contractor_signatory_name,
           workOrder.contractor_signed_at,
           workOrder.contractor_signature_url,
@@ -296,19 +264,13 @@ function Signatures({ workOrder }) {
           <h2>{title}</h2>
           <div className="wo-signature-space">
             {signature && (
-              <img
-                src={signature}
-                alt={`${title} signature`}
-                crossOrigin="anonymous"
-              />
+              <img src={signature} alt={`${title} signature`} crossOrigin="anonymous" />
             )}
           </div>
           <div className="wo-signatory">
             <p>{role}</p>
-            <p>Name · {name || "____________________"}</p>
-            <p>
-              Date · {signedAt ? formatDate(signedAt) : "____________________"}
-            </p>
+            <p>Name · {name || '____________________'}</p>
+            <p>Date · {signedAt ? formatDate(signedAt) : '____________________'}</p>
           </div>
         </div>
       ))}
@@ -322,10 +284,7 @@ export default function WorkOrderDocument({ workOrder }) {
     pages: [],
   });
   const items = useMemo(() => sortRows(getItems(workOrder)), [workOrder]);
-  const stages = useMemo(
-    () => sortRows(getPaymentStages(workOrder)),
-    [workOrder],
-  );
+  const stages = useMemo(() => sortRows(getPaymentStages(workOrder)), [workOrder]);
   const terms = useMemo(() => sortRows(getTerms(workOrder)), [workOrder]);
   const blocks = useMemo(() => {
     const subtotal = Number(
@@ -334,9 +293,7 @@ export default function WorkOrderDocument({ workOrder }) {
           (sum, item) =>
             sum +
             Number(
-              item.amount ??
-                item.total ??
-                Number(item.quantity || 0) * Number(item.rate || 0),
+              item.amount ?? item.total ?? Number(item.quantity || 0) * Number(item.rate || 0),
             ),
           0,
         ),
@@ -353,17 +310,17 @@ export default function WorkOrderDocument({ workOrder }) {
     );
     const result = [
       {
-        key: "parties",
+        key: 'parties',
         node: <Parties workOrder={workOrder} />,
       },
       {
-        key: "spacer",
+        key: 'spacer',
         node: <div className="wo-schedule-spacer" />,
         keepWithNext: true,
       },
       {
-        key: "item-heading",
-        type: "item-heading",
+        key: 'item-heading',
+        type: 'item-heading',
         node: <ItemHeading />,
         keepWithNext: true,
       },
@@ -373,22 +330,22 @@ export default function WorkOrderDocument({ workOrder }) {
         },
         (_, index) => ({
           key: `item-${index}`,
-          type: "item",
+          type: 'item',
           node: <ItemRow item={items[index]} index={index} />,
         }),
       ),
       {
-        key: "totals",
+        key: 'totals',
         node: (
           <div className="wo-totals">
             {[
-              ["Sub total", subtotal],
-              ["Discount", discount],
+              ['Sub total', subtotal],
+              ['Discount', discount],
               [`GST (${Number(workOrder.gst_percentage || 0)}%)`, gst],
-              ["Cartage", cartage],
-              ["Total", total],
+              ['Cartage', cartage],
+              ['Total', total],
             ].map(([label, value], index) => (
-              <div key={label} className={index === 4 ? "wo-grand-total" : ""}>
+              <div key={label} className={index === 4 ? 'wo-grand-total' : ''}>
                 <span>{label}</span>
                 <span>{currency(value)}</span>
               </div>
@@ -397,8 +354,8 @@ export default function WorkOrderDocument({ workOrder }) {
         ),
       },
       {
-        key: "payment-heading",
-        type: "payment-heading",
+        key: 'payment-heading',
+        type: 'payment-heading',
         node: <PaymentHeading />,
         keepWithNext: true,
       },
@@ -408,29 +365,25 @@ export default function WorkOrderDocument({ workOrder }) {
         },
         (_, index) => ({
           key: `payment-${index}`,
-          type: "payment",
+          type: 'payment',
           node: <PaymentRow stage={stages[index]} />,
         }),
       ),
     ];
     if (workOrder.payment_terms)
       result.push({
-        key: "payment-note",
+        key: 'payment-note',
         node: <p className="wo-payment-note">{workOrder.payment_terms}</p>,
       });
     result.push({
-      key: "terms-heading",
+      key: 'terms-heading',
       node: <h2 className="wo-terms-heading">Terms &amp; Condition</h2>,
       keepWithNext: true,
     });
     if (!terms.length)
       result.push({
-        key: "no-terms",
-        node: (
-          <p className="wo-no-terms">
-            No terms and conditions have been specified.
-          </p>
-        ),
+        key: 'no-terms',
+        node: <p className="wo-no-terms">No terms and conditions have been specified.</p>,
       });
     terms.forEach((term, index) =>
       result.push({
@@ -439,15 +392,11 @@ export default function WorkOrderDocument({ workOrder }) {
           <div className="wo-term">
             <span>{index + 1}.</span>
             <div>
-              {(term.title || term.name) && (
-                <strong>{term.title || term.name}</strong>
-              )}
+              {(term.title || term.name) && <strong>{term.title || term.name}</strong>}
               <div
                 className="wo-term-content"
                 dangerouslySetInnerHTML={{
-                  __html: termHtml(
-                    term.description || term.terms_template?.content_html || "",
-                  ),
+                  __html: termHtml(term.description || term.terms_template?.content_html || ''),
                 }}
               />
             </div>
@@ -457,7 +406,7 @@ export default function WorkOrderDocument({ workOrder }) {
     );
     if (workOrder.notes)
       result.push({
-        key: "notes",
+        key: 'notes',
         node: (
           <div className="wo-notes">
             <h2>Notes</h2>
@@ -466,7 +415,7 @@ export default function WorkOrderDocument({ workOrder }) {
         ),
       });
     result.push({
-      key: "signatures",
+      key: 'signatures',
       node: <Signatures workOrder={workOrder} />,
     });
     return result;
@@ -478,27 +427,21 @@ export default function WorkOrderDocument({ workOrder }) {
       const container = measureRef.current;
       if (!container || cancelled) return;
       await Promise.all(
-        Array.from(container.querySelectorAll("img")).map((img) =>
-          img.decode().catch(() => {}),
-        ),
+        Array.from(container.querySelectorAll('img')).map((img) => img.decode().catch(() => {})),
       );
       if (cancelled) return;
       // Measure the actual rendered header and rows at the A4 document width.
       const headerHeight = Math.ceil(
-        container.querySelector(".wo-header").getBoundingClientRect().height,
+        container.querySelector('.wo-header').getBoundingClientRect().height,
       );
       const available = PAGE_HEIGHT - PAGE_INSET * 2 - 2 - headerHeight;
-      const elements = Array.from(
-        container.querySelector(".wo-measure-blocks").children,
-      );
-      const heights = elements.map((element) =>
-        Math.ceil(element.getBoundingClientRect().height),
-      );
+      const elements = Array.from(container.querySelector('.wo-measure-blocks').children);
+      const heights = elements.map((element) => Math.ceil(element.getBoundingClientRect().height));
       const headingFor = (type) =>
-        type === "item"
-          ? blocks.find((block) => block.type === "item-heading")
-          : type === "payment"
-            ? blocks.find((block) => block.type === "payment-heading")
+        type === 'item'
+          ? blocks.find((block) => block.type === 'item-heading')
+          : type === 'payment'
+            ? blocks.find((block) => block.type === 'payment-heading')
             : null;
       const next = [];
       let page = [],
@@ -507,10 +450,7 @@ export default function WorkOrderDocument({ workOrder }) {
         let required = heights[index];
         if (block.keepWithNext) {
           let nextIndex = index;
-          while (
-            blocks[nextIndex]?.keepWithNext &&
-            heights[nextIndex + 1] != null
-          ) {
+          while (blocks[nextIndex]?.keepWithNext && heights[nextIndex + 1] != null) {
             required += heights[++nextIndex];
           }
         }
@@ -550,11 +490,7 @@ export default function WorkOrderDocument({ workOrder }) {
           )}
           {ready &&
             layout.pages.map((page, index) => (
-              <section
-                className="wo-page"
-                key={index}
-                aria-label={`Work order page ${index + 1}`}
-              >
+              <section className="wo-page" key={index} aria-label={`Work order page ${index + 1}`}>
                 <div className="wo-sheet">
                   <Header
                     workOrder={workOrder}

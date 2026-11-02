@@ -1,33 +1,27 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 
-import { toast } from "sonner";
+import { toast } from 'sonner';
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from 'lucide-react';
 
 import {
   useCreateProcurementItemMutation,
   useDeleteProcurementItemMutation,
   useGetProcurementItemsQuery,
   useUpdateProcurementItemMutation,
-} from "../../api/documents/project-planner.api";
+} from '../../api/documents/project-planner.api';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableHeader,
@@ -35,7 +29,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -45,19 +39,19 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 // ============================================================
 // DATE FIELDS
 // ============================================================
 
 const DATE_FIELDS = [
-  { key: "estimate_finalised_at", label: "Estimate finalised" },
-  { key: "quotation_finalised_at", label: "Quotation finalised" },
-  { key: "planned_start_date", label: "Start date" },
-  { key: "planned_end_date", label: "End date" },
-  { key: "purchase_date", label: "Purchase" },
-  { key: "received_at_site_date", label: "Received at site" },
+  { key: 'estimate_finalised_at', label: 'Estimate finalised' },
+  { key: 'quotation_finalised_at', label: 'Quotation finalised' },
+  { key: 'planned_start_date', label: 'Start date' },
+  { key: 'planned_end_date', label: 'End date' },
+  { key: 'purchase_date', label: 'Purchase' },
+  { key: 'received_at_site_date', label: 'Received at site' },
 ];
 
 // ============================================================
@@ -65,8 +59,8 @@ const DATE_FIELDS = [
 // ============================================================
 
 const ITEM_TYPES = [
-  { value: "MATERIAL", label: "Material" },
-  { value: "LABOUR", label: "Labour" },
+  { value: 'MATERIAL', label: 'Material' },
+  { value: 'LABOUR', label: 'Labour' },
 ];
 
 // ============================================================
@@ -74,19 +68,19 @@ const ITEM_TYPES = [
 // ============================================================
 
 const STATUS_OPTIONS = [
-  { value: "NOT_STARTED", label: "Not started" },
-  { value: "IN_PROGRESS", label: "In progress" },
-  { value: "ON_HOLD", label: "On hold" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "NOT_APPLICABLE", label: "N/A" },
+  { value: 'NOT_STARTED', label: 'Not started' },
+  { value: 'IN_PROGRESS', label: 'In progress' },
+  { value: 'ON_HOLD', label: 'On hold' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'NOT_APPLICABLE', label: 'N/A' },
 ];
 
 const STATUS_BADGE_VARIANT = {
-  NOT_STARTED: "outline",
-  IN_PROGRESS: "default",
-  ON_HOLD: "secondary",
-  COMPLETED: "success",
-  NOT_APPLICABLE: "outline",
+  NOT_STARTED: 'outline',
+  IN_PROGRESS: 'default',
+  ON_HOLD: 'secondary',
+  COMPLETED: 'success',
+  NOT_APPLICABLE: 'outline',
 };
 
 // ============================================================
@@ -100,13 +94,13 @@ function unwrapArray(data) {
 }
 
 function toDateInputValue(value) {
-  if (!value) return "";
+  if (!value) return '';
   return String(value).slice(0, 10);
 }
 
 function normalizeError(error, fallback) {
   const message = error?.data?.message || error?.error || error?.message;
-  if (Array.isArray(message)) return message.join(", ");
+  if (Array.isArray(message)) return message.join(', ');
   return message || fallback;
 }
 
@@ -116,12 +110,12 @@ function normalizeError(error, fallback) {
 
 export function PlannerProcurementTab({ projectId, plannerId }) {
   // CREATE FORM STATE
-  const [newItemType, setNewItemType] = useState("MATERIAL");
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newVendorName, setNewVendorName] = useState("");
+  const [newItemType, setNewItemType] = useState('MATERIAL');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newVendorName, setNewVendorName] = useState('');
 
   // FILTER
-  const [itemTypeFilter, setItemTypeFilter] = useState("ALL");
+  const [itemTypeFilter, setItemTypeFilter] = useState('ALL');
 
   // DELETE CONFIRMATION
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -133,25 +127,23 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
     isError,
   } = useGetProcurementItemsQuery(
     {
-      plannerId: plannerId || "",
-      itemType: itemTypeFilter === "ALL" ? undefined : itemTypeFilter,
+      plannerId: plannerId || '',
+      itemType: itemTypeFilter === 'ALL' ? undefined : itemTypeFilter,
     },
     { skip: !plannerId },
   );
 
-  const [createProcurementItem, { isLoading: isCreating }] =
-    useCreateProcurementItemMutation();
+  const [createProcurementItem, { isLoading: isCreating }] = useCreateProcurementItemMutation();
   const [updateProcurementItem] = useUpdateProcurementItemMutation();
-  const [deleteProcurementItem, { isLoading: isDeleting }] =
-    useDeleteProcurementItemMutation();
+  const [deleteProcurementItem, { isLoading: isDeleting }] = useDeleteProcurementItemMutation();
 
   const rowList = unwrapArray(rowsResponse);
 
   // SUMMARY
   const stats = useMemo(() => {
-    const material = rowList.filter((row) => row.item_type === "MATERIAL");
-    const labour = rowList.filter((row) => row.item_type === "LABOUR");
-    const completed = rowList.filter((row) => row.status === "COMPLETED");
+    const material = rowList.filter((row) => row.item_type === 'MATERIAL');
+    const labour = rowList.filter((row) => row.item_type === 'LABOUR');
+    const completed = rowList.filter((row) => row.status === 'COMPLETED');
 
     return {
       total: rowList.length,
@@ -163,8 +155,8 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
 
   // CREATE ITEM
   const handleAddRow = async () => {
-    if (!plannerId) return toast.error("Procurement planner is not available");
-    if (!newCategoryName.trim()) return toast.error("Enter a category name");
+    if (!plannerId) return toast.error('Procurement planner is not available');
+    if (!newCategoryName.trim()) return toast.error('Enter a category name');
 
     try {
       await createProcurementItem({
@@ -173,15 +165,15 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
           item_type: newItemType,
           category_name: newCategoryName.trim(),
           vendor_name: newVendorName.trim() || undefined,
-          status: "NOT_STARTED",
+          status: 'NOT_STARTED',
         },
       }).unwrap();
 
-      toast.success("Procurement item added");
-      setNewCategoryName("");
-      setNewVendorName("");
+      toast.success('Procurement item added');
+      setNewCategoryName('');
+      setNewVendorName('');
     } catch (error) {
-      toast.error(normalizeError(error, "Failed to add procurement item"));
+      toast.error(normalizeError(error, 'Failed to add procurement item'));
     }
   };
 
@@ -190,10 +182,10 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
     try {
       await updateProcurementItem({
         id: row.id,
-        data: { [field]: value === "" ? null : value },
+        data: { [field]: value === '' ? null : value },
       }).unwrap();
     } catch (error) {
-      toast.error(normalizeError(error, "Failed to update procurement item"));
+      toast.error(normalizeError(error, 'Failed to update procurement item'));
     }
   };
 
@@ -203,9 +195,9 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
 
     try {
       await deleteProcurementItem(pendingDelete.id).unwrap();
-      toast.success("Procurement item removed");
+      toast.success('Procurement item removed');
     } catch (error) {
-      toast.error(normalizeError(error, "Failed to remove procurement item"));
+      toast.error(normalizeError(error, 'Failed to remove procurement item'));
     } finally {
       setPendingDelete(null);
     }
@@ -249,12 +241,9 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
         <CardContent className="py-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h3 className="text-base font-semibold text-foreground">
-                Vendor & procurement
-              </h3>
+              <h3 className="text-base font-semibold text-foreground">Vendor & procurement</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Track material procurement, labour finalisation, purchasing and
-                site receipt.
+                Track material procurement, labour finalisation, purchasing and site receipt.
               </p>
             </div>
 
@@ -283,14 +272,10 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
       <Card>
         <CardContent className="p-0">
           {isFetching ? (
-            <p className="px-6 py-8 text-sm text-muted-foreground">
-              Loading procurement…
-            </p>
+            <p className="px-6 py-8 text-sm text-muted-foreground">Loading procurement…</p>
           ) : rowList.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-sm font-medium text-foreground">
-                No procurement items yet
-              </p>
+              <p className="text-sm font-medium text-foreground">No procurement items yet</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Add a material or labour item below.
               </p>
@@ -320,10 +305,8 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
                       {/* ITEM TYPE */}
                       <TableCell>
                         <Select
-                          defaultValue={row.item_type || "MATERIAL"}
-                          onValueChange={(value) =>
-                            handleFieldChange(row, "item_type", value)
-                          }
+                          defaultValue={row.item_type || 'MATERIAL'}
+                          onValueChange={(value) => handleFieldChange(row, 'item_type', value)}
                         >
                           <SelectTrigger className="h-8 text-sm">
                             <SelectValue />
@@ -342,13 +325,9 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
                       <TableCell>
                         <Input
                           className="h-8 text-sm"
-                          defaultValue={row.category_name || ""}
+                          defaultValue={row.category_name || ''}
                           onBlur={(event) =>
-                            handleFieldChange(
-                              row,
-                              "category_name",
-                              event.target.value.trim(),
-                            )
+                            handleFieldChange(row, 'category_name', event.target.value.trim())
                           }
                         />
                       </TableCell>
@@ -357,15 +336,9 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
                       <TableCell>
                         <Input
                           className="h-8 text-sm"
-                          defaultValue={
-                            row.vendor_name || row.vendor?.name || ""
-                          }
+                          defaultValue={row.vendor_name || row.vendor?.name || ''}
                           onBlur={(event) =>
-                            handleFieldChange(
-                              row,
-                              "vendor_name",
-                              event.target.value.trim(),
-                            )
+                            handleFieldChange(row, 'vendor_name', event.target.value.trim())
                           }
                         />
                       </TableCell>
@@ -378,11 +351,7 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
                             className="h-8 text-sm"
                             defaultValue={toDateInputValue(row[field.key])}
                             onChange={(event) =>
-                              handleFieldChange(
-                                row,
-                                field.key,
-                                event.target.value,
-                              )
+                              handleFieldChange(row, field.key, event.target.value)
                             }
                           />
                         </TableCell>
@@ -391,31 +360,23 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
                       {/* STATUS */}
                       <TableCell>
                         <Select
-                          defaultValue={row.status || "NOT_STARTED"}
-                          onValueChange={(value) =>
-                            handleFieldChange(row, "status", value)
-                          }
+                          defaultValue={row.status || 'NOT_STARTED'}
+                          onValueChange={(value) => handleFieldChange(row, 'status', value)}
                         >
                           <SelectTrigger className="h-8 text-sm">
                             <SelectValue asChild>
                               <Badge
-                                variant={
-                                  STATUS_BADGE_VARIANT[row.status] || "outline"
-                                }
+                                variant={STATUS_BADGE_VARIANT[row.status] || 'outline'}
                                 className="font-normal"
                               >
-                                {STATUS_OPTIONS.find(
-                                  (option) => option.value === row.status,
-                                )?.label || "Not started"}
+                                {STATUS_OPTIONS.find((option) => option.value === row.status)
+                                  ?.label || 'Not started'}
                               </Badge>
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {STATUS_OPTIONS.map((status) => (
-                              <SelectItem
-                                key={status.value}
-                                value={status.value}
-                              >
+                              <SelectItem key={status.value} value={status.value}>
                                 {status.label}
                               </SelectItem>
                             ))}
@@ -428,13 +389,9 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
                         <Input
                           className="h-8 text-sm"
                           placeholder="Remarks"
-                          defaultValue={row.remarks || ""}
+                          defaultValue={row.remarks || ''}
                           onBlur={(event) =>
-                            handleFieldChange(
-                              row,
-                              "remarks",
-                              event.target.value.trim(),
-                            )
+                            handleFieldChange(row, 'remarks', event.target.value.trim())
                           }
                         />
                       </TableCell>
@@ -486,9 +443,9 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
 
             <Input
               placeholder={
-                newItemType === "MATERIAL"
-                  ? "Category e.g. Tiles"
-                  : "Category e.g. Civil contractor"
+                newItemType === 'MATERIAL'
+                  ? 'Category e.g. Tiles'
+                  : 'Category e.g. Civil contractor'
               }
               value={newCategoryName}
               onChange={(event) => setNewCategoryName(event.target.value)}
@@ -502,17 +459,14 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
 
             <Button onClick={handleAddRow} disabled={isCreating}>
               <Plus className="h-4 w-4" />
-              {isCreating ? "Adding…" : "Add"}
+              {isCreating ? 'Adding…' : 'Add'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* DELETE CONFIRMATION */}
-      <AlertDialog
-        open={!!pendingDelete}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
-      >
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove procurement item?</AlertDialogTitle>
@@ -527,7 +481,7 @@ export function PlannerProcurementTab({ projectId, plannerId }) {
               onClick={confirmRemoveRow}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? "Removing…" : "Remove"}
+              {isDeleting ? 'Removing…' : 'Remove'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

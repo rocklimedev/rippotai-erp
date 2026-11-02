@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { PrefillNotice } from "@/components/PrefillNotice";
+import React, { useEffect, useMemo, useState } from 'react';
+import { PrefillNotice } from '@/components/PrefillNotice';
 import { useSearchParams } from 'react-router-dom';
 import { useSharedProjectData } from '../hooks/use-shared-project-data';
-import { toast } from "sonner";
+import { toast } from 'sonner';
 import {
   Plus,
   Copy,
@@ -20,7 +20,7 @@ import {
   Loader2,
   X,
   RefreshCw,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   Page,
@@ -31,7 +31,7 @@ import {
   SelectInput,
   TextArea,
   FormActions,
-} from "@/components/inos";
+} from '@/components/inos';
 import {
   DocSection,
   DocLayout,
@@ -48,23 +48,19 @@ import {
   Disclosure,
   inr,
   todayISO,
-} from "@/components/forms/commerce-form-ui";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/forms/commerce-form-ui';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 import {
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
-} from "../api/procuerment/purchase-order.api";
+} from '../api/procuerment/purchase-order.api';
 
-import { useGetProjectsQuery } from "../api/projects/project.api";
-import { useGetVendorsQuery } from "../api/vendors/vendor.api";
-import { useGetMaterialsQuery } from "../api/procuerment/material-master.api";
+import { useGetProjectsQuery } from '../api/projects/project.api';
+import { useGetVendorsQuery } from '../api/vendors/vendor.api';
+import { useGetMaterialsQuery } from '../api/procuerment/material-master.api';
 
 /*
  * IMPORTANT:
@@ -87,7 +83,7 @@ import { useGetMaterialsQuery } from "../api/procuerment/material-master.api";
  * If your actual Material Master PATCH route is different,
  * change it inside material-master.api.js.
  */
-import { useUpdateMaterialMutation } from "../api/procuerment/material-master.api";
+import { useUpdateMaterialMutation } from '../api/procuerment/material-master.api';
 
 const normalizeArray = (response) => {
   if (Array.isArray(response)) return response;
@@ -108,7 +104,7 @@ const normalizeArray = (response) => {
   return [];
 };
 
-const getId = (item) => item?.id || item?._id || item?.value || "";
+const getId = (item) => item?.id || item?._id || item?.value || '';
 
 const toNumber = (value) => {
   const number = Number(value);
@@ -116,7 +112,7 @@ const toNumber = (value) => {
 };
 
 const money = (value) =>
-  toNumber(value).toLocaleString("en-IN", {
+  toNumber(value).toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -126,21 +122,18 @@ const money = (value) =>
    ========================================================= */
 
 const getMaterialName = (material) =>
-  material?.name || material?.material_name || material?.materialName || "";
+  material?.name || material?.material_name || material?.materialName || '';
 
 const getMaterialCode = (material) =>
-  material?.material_code || material?.materialCode || material?.code || "";
+  material?.material_code || material?.materialCode || material?.code || '';
 
 const getMaterialDescription = (material) =>
-  material?.description ||
-  material?.material_description ||
-  material?.materialDescription ||
-  "";
+  material?.description || material?.material_description || material?.materialDescription || '';
 
-const getMaterialBrand = (material) => material?.brand || "";
+const getMaterialBrand = (material) => material?.brand || '';
 
 const getMaterialSpecification = (material) =>
-  material?.specification || material?.specifications || "";
+  material?.specification || material?.specifications || '';
 
 const getMaterialPrice = (material) =>
   toNumber(
@@ -153,7 +146,7 @@ const getMaterialPrice = (material) =>
   );
 
 const getMaterialUnitId = (material) =>
-  material?.unit_id || material?.unitId || material?.unit?.id || "";
+  material?.unit_id || material?.unitId || material?.unit?.id || '';
 
 const getMaterialUnitCode = (material) =>
   material?.unit?.code ||
@@ -162,13 +155,12 @@ const getMaterialUnitCode = (material) =>
   material?.unit?.name ||
   material?.uom ||
   material?.unit_of_measure ||
-  "";
+  '';
 
-const getMaterialHsn = (material) =>
-  material?.hsn_code || material?.hsnCode || "";
+const getMaterialHsn = (material) => material?.hsn_code || material?.hsnCode || '';
 
 const getMaterialVendorId = (material) =>
-  material?.vendor_id || material?.vendorId || material?.vendor?.id || "";
+  material?.vendor_id || material?.vendorId || material?.vendor?.id || '';
 
 const getMaterialVendor = (material) => material?.vendor || null;
 
@@ -177,14 +169,9 @@ const getMaterialVendor = (material) => material?.vendor || null;
    ========================================================= */
 
 const getProjectName = (project) =>
-  project?.name ||
-  project?.project_name ||
-  project?.projectName ||
-  project?.title ||
-  "";
+  project?.name || project?.project_name || project?.projectName || project?.title || '';
 
-const getSiteName = (site) =>
-  site?.name || site?.site_name || site?.siteName || site?.title || "";
+const getSiteName = (site) => site?.name || site?.site_name || site?.siteName || site?.title || '';
 
 const getVendorName = (vendor) =>
   vendor?.company_name ||
@@ -192,29 +179,29 @@ const getVendorName = (vendor) =>
   vendor?.name ||
   vendor?.vendor_name ||
   vendor?.vendorName ||
-  "";
+  '';
 
 const getVendorValue = (vendor, ...keys) => {
   for (const key of keys) {
     const value = vendor?.[key];
 
-    if (value !== undefined && value !== null && String(value).trim() !== "") {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
       return value;
     }
   }
 
-  return "";
+  return '';
 };
 
 const getSourceLabel = (value) => {
   const labels = {
-    ESTIMATE: "Estimate",
-    BOQ: "BOQ",
-    QUOTATION: "Quotation",
-    MANUAL: "Manual",
+    ESTIMATE: 'Estimate',
+    BOQ: 'BOQ',
+    QUOTATION: 'Quotation',
+    MANUAL: 'Manual',
   };
 
-  return labels[value] || value || "";
+  return labels[value] || value || '';
 };
 
 /* =========================================================
@@ -222,25 +209,25 @@ const getSourceLabel = (value) => {
    ========================================================= */
 
 const createEmptyItem = (lineNumber = 1) => ({
-  id: "",
+  id: '',
   line_number: lineNumber,
 
-  material_id: "",
+  material_id: '',
 
-  description: "",
-  brand: "",
-  specification: "",
+  description: '',
+  brand: '',
+  specification: '',
 
-  unit: "",
-  unit_id: "",
-  hsn_code: "",
+  unit: '',
+  unit_id: '',
+  hsn_code: '',
 
   ordered_quantity: 1,
-  rate: "",
+  rate: '',
   amount: 0,
 
-  remarks: "",
-  source_reference_id: "",
+  remarks: '',
+  source_reference_id: '',
 
   /*
    * UI-only flag.
@@ -253,32 +240,32 @@ const createEmptyItem = (lineNumber = 1) => ({
 });
 
 const emptyForm = {
-  project_id: "",
-  site_id: "",
-  vendor_id: "",
+  project_id: '',
+  site_id: '',
+  vendor_id: '',
 
-  po_number: "",
+  po_number: '',
 
-  po_date: "",
-  expected_delivery_date: "",
+  po_date: '',
+  expected_delivery_date: '',
 
-  agency_name: "",
-  contact_person: "",
-  phone: "",
-  email: "",
-  address: "",
+  agency_name: '',
+  contact_person: '',
+  phone: '',
+  email: '',
+  address: '',
 
   discount: 0,
   gst_percentage: 18,
   cartage: 0,
 
-  status: "DRAFT",
+  status: 'DRAFT',
 
-  source_type: "MANUAL",
-  source_reference_id: "",
+  source_type: 'MANUAL',
+  source_reference_id: '',
 
-  notes: "",
-  terms_and_conditions: "",
+  notes: '',
+  terms_and_conditions: '',
 
   items: [createEmptyItem(1)],
 };
@@ -298,7 +285,12 @@ export default function PurchaseOrderForm({
   const onBack = onBackProp || onCancel;
 
   const [form, setForm] = useState(() => {
-    if (!initialData) return { ...emptyForm, po_date: todayISO(), project_id: searchParams.get('projectId') || searchParams.get('project_id') || '' };
+    if (!initialData)
+      return {
+        ...emptyForm,
+        po_date: todayISO(),
+        project_id: searchParams.get('projectId') || searchParams.get('project_id') || '',
+      };
 
     return {
       ...emptyForm,
@@ -320,55 +312,41 @@ export default function PurchaseOrderForm({
   const [materialOpen, setMaterialOpen] = useState({});
   const [savingMasterIds, setSavingMasterIds] = useState([]);
 
-  const [createPurchaseOrder, { isLoading: isCreating }] =
-    useCreatePurchaseOrderMutation();
+  const [createPurchaseOrder, { isLoading: isCreating }] = useCreatePurchaseOrderMutation();
 
-  const [updatePurchaseOrder, { isLoading: isUpdating }] =
-    useUpdatePurchaseOrderMutation();
+  const [updatePurchaseOrder, { isLoading: isUpdating }] = useUpdatePurchaseOrderMutation();
 
   const [updateMaterial] = useUpdateMaterialMutation();
 
+  const { data: projectsResponse, isLoading: projectsLoading } = useGetProjectsQuery({});
 
-  const { data: projectsResponse, isLoading: projectsLoading } =
-    useGetProjectsQuery({});
+  const { data: vendorsResponse, isLoading: vendorsLoading } = useGetVendorsQuery({});
 
-  const { data: vendorsResponse, isLoading: vendorsLoading } =
-    useGetVendorsQuery({});
+  const { data: materialsResponse, isLoading: materialsLoading } = useGetMaterialsQuery({
+    isActive: true,
+  });
 
-  const { data: materialsResponse, isLoading: materialsLoading } =
-    useGetMaterialsQuery({
-      isActive: true,
-    });
+  const projects = useMemo(() => normalizeArray(projectsResponse), [projectsResponse]);
 
-  const projects = useMemo(
-    () => normalizeArray(projectsResponse),
-    [projectsResponse],
+  const vendors = useMemo(() => normalizeArray(vendorsResponse), [vendorsResponse]);
+
+  const materials = useMemo(() => normalizeArray(materialsResponse), [materialsResponse]);
+  const prefill = useSharedProjectData(
+    form.project_id,
+    'purchaseOrder',
+    form,
+    setForm,
+    !isEdit && !materialsLoading,
+    materials,
   );
-
-  const vendors = useMemo(
-    () => normalizeArray(vendorsResponse),
-    [vendorsResponse],
-  );
-
-  const materials = useMemo(
-    () => normalizeArray(materialsResponse),
-    [materialsResponse],
-  );
-  const prefill = useSharedProjectData(form.project_id, 'purchaseOrder', form, setForm, !isEdit && !materialsLoading, materials);
 
   const selectedProject = useMemo(
-    () =>
-      projects.find(
-        (project) => String(getId(project)) === String(form.project_id),
-      ),
+    () => projects.find((project) => String(getId(project)) === String(form.project_id)),
     [projects, form.project_id],
   );
 
   const selectedVendor = useMemo(
-    () =>
-      vendors.find(
-        (vendor) => String(getId(vendor)) === String(form.vendor_id),
-      ),
+    () => vendors.find((vendor) => String(getId(vendor)) === String(form.vendor_id)),
     [vendors, form.vendor_id],
   );
 
@@ -445,7 +423,7 @@ export default function PurchaseOrderForm({
 
       const duplicated = {
         ...source,
-        id: "",
+        id: '',
         line_number: previous.items.length + 1,
         update_master: false,
       };
@@ -456,7 +434,7 @@ export default function PurchaseOrderForm({
       };
     });
 
-    toast.success("Material line duplicated");
+    toast.success('Material line duplicated');
   };
 
   const removeItem = (index) => {
@@ -487,12 +465,10 @@ export default function PurchaseOrderForm({
      ========================================================= */
 
   const populateMaterial = (index, materialId) => {
-    const material = materials.find(
-      (item) => String(getId(item)) === String(materialId),
-    );
+    const material = materials.find((item) => String(getId(item)) === String(materialId));
 
     if (!material) {
-      updateItem(index, "material_id", materialId);
+      updateItem(index, 'material_id', materialId);
       return;
     }
 
@@ -513,19 +489,17 @@ export default function PurchaseOrderForm({
          * These values come from the actual Material Master API.
          */
 
-        description:
-          getMaterialDescription(material) || currentItem.description || "",
+        description: getMaterialDescription(material) || currentItem.description || '',
 
-        brand: getMaterialBrand(material) || currentItem.brand || "",
+        brand: getMaterialBrand(material) || currentItem.brand || '',
 
-        specification:
-          getMaterialSpecification(material) || currentItem.specification || "",
+        specification: getMaterialSpecification(material) || currentItem.specification || '',
 
-        unit: getMaterialUnitCode(material) || currentItem.unit || "",
+        unit: getMaterialUnitCode(material) || currentItem.unit || '',
 
-        unit_id: getMaterialUnitId(material) || currentItem.unit_id || "",
+        unit_id: getMaterialUnitId(material) || currentItem.unit_id || '',
 
-        hsn_code: getMaterialHsn(material) || currentItem.hsn_code || "",
+        hsn_code: getMaterialHsn(material) || currentItem.hsn_code || '',
 
         /*
          * IMPORTANT:
@@ -551,7 +525,7 @@ export default function PurchaseOrderForm({
      * automatically select it for the PO.
      */
     if (materialVendorId && !form.vendor_id) {
-      updateForm("vendor_id", materialVendorId);
+      updateForm('vendor_id', materialVendorId);
     }
 
     /*
@@ -564,36 +538,28 @@ export default function PurchaseOrderForm({
       setForm((previous) => ({
         ...previous,
 
-        vendor_id: previous.vendor_id || materialVendorId || "",
+        vendor_id: previous.vendor_id || materialVendorId || '',
 
         agency_name: previous.agency_name || getVendorName(materialVendor),
 
         contact_person:
           previous.contact_person ||
-          getVendorValue(
-            materialVendor,
-            "contact_person",
-            "contactPerson",
-            "contact_name",
-            "name",
-          ),
+          getVendorValue(materialVendor, 'contact_person', 'contactPerson', 'contact_name', 'name'),
 
         phone:
           previous.phone ||
           getVendorValue(
             materialVendor,
-            "contact_number",
-            "contactNumber",
-            "phone",
-            "mobile",
-            "phone_number",
+            'contact_number',
+            'contactNumber',
+            'phone',
+            'mobile',
+            'phone_number',
           ),
 
-        email:
-          previous.email ||
-          getVendorValue(materialVendor, "email", "email_address"),
+        email: previous.email || getVendorValue(materialVendor, 'email', 'email_address'),
 
-        address: previous.address || getVendorValue(materialVendor, "address"),
+        address: previous.address || getVendorValue(materialVendor, 'address'),
       }));
     }
 
@@ -604,7 +570,7 @@ export default function PurchaseOrderForm({
 
     setMaterialSearch((previous) => ({
       ...previous,
-      [index]: "",
+      [index]: '',
     }));
   };
 
@@ -622,24 +588,24 @@ export default function PurchaseOrderForm({
 
       contact_person: getVendorValue(
         selectedVendor,
-        "contact_person",
-        "contactPerson",
-        "contact_name",
-        "name",
+        'contact_person',
+        'contactPerson',
+        'contact_name',
+        'name',
       ),
 
       phone: getVendorValue(
         selectedVendor,
-        "contact_number",
-        "contactNumber",
-        "phone",
-        "mobile",
-        "phone_number",
+        'contact_number',
+        'contactNumber',
+        'phone',
+        'mobile',
+        'phone_number',
       ),
 
-      email: getVendorValue(selectedVendor, "email", "email_address"),
+      email: getVendorValue(selectedVendor, 'email', 'email_address'),
 
-      address: getVendorValue(selectedVendor, "address"),
+      address: getVendorValue(selectedVendor, 'address'),
     }));
   }, [selectedVendor]);
 
@@ -674,9 +640,9 @@ export default function PurchaseOrderForm({
 
       cartage: Number(cartage.toFixed(2)),
 
-      status: overrides.status || form.status || "DRAFT",
+      status: overrides.status || form.status || 'DRAFT',
 
-      source_type: form.source_type || "MANUAL",
+      source_type: form.source_type || 'MANUAL',
 
       source_reference_id: form.source_reference_id || null,
 
@@ -727,8 +693,7 @@ export default function PurchaseOrderForm({
 
         remarks: item.remarks || null,
 
-        source_reference_id:
-          item.source_reference_id || form.source_reference_id || null,
+        source_reference_id: item.source_reference_id || form.source_reference_id || null,
       })),
     };
   };
@@ -759,15 +724,11 @@ export default function PurchaseOrderForm({
       payload.specification = String(item.specification).trim();
     }
 
-    if (item.rate !== undefined && item.rate !== null && item.rate !== "") {
+    if (item.rate !== undefined && item.rate !== null && item.rate !== '') {
       payload.price = Number(toNumber(item.rate).toFixed(2));
     }
 
-    if (
-      item.unit_id !== undefined &&
-      item.unit_id !== null &&
-      item.unit_id !== ""
-    ) {
+    if (item.unit_id !== undefined && item.unit_id !== null && item.unit_id !== '') {
       payload.unit_id = item.unit_id;
     }
 
@@ -779,9 +740,7 @@ export default function PurchaseOrderForm({
   };
 
   const syncMaterialMasters = async () => {
-    const masterItems = calculatedItems.filter(
-      (item) => item.update_master && item.material_id,
-    );
+    const masterItems = calculatedItems.filter((item) => item.update_master && item.material_id);
 
     if (!masterItems.length) {
       return {
@@ -821,7 +780,7 @@ export default function PurchaseOrderForm({
           result,
           item: masterItems[index],
         }))
-        .filter(({ result }) => result.status === "rejected");
+        .filter(({ result }) => result.status === 'rejected');
 
       return {
         total: masterItems.length,
@@ -839,12 +798,12 @@ export default function PurchaseOrderForm({
   const handleSave = async (overrides = {}) => {
     try {
       if (!form.project_id) {
-        toast.error("Please select a project");
+        toast.error('Please select a project');
         return;
       }
 
       if (!form.vendor_id) {
-        toast.error("Please select a vendor");
+        toast.error('Please select a vendor');
         return;
       }
 
@@ -853,7 +812,7 @@ export default function PurchaseOrderForm({
       );
 
       if (!validItems.length) {
-        toast.error("Please add at least one valid material");
+        toast.error('Please add at least one valid material');
         return;
       }
 
@@ -871,9 +830,7 @@ export default function PurchaseOrderForm({
       }
 
       toast.success(
-        isEdit
-          ? "Purchase Order updated successfully"
-          : "Purchase Order created successfully",
+        isEdit ? 'Purchase Order updated successfully' : 'Purchase Order created successfully',
       );
 
       /*
@@ -887,21 +844,21 @@ export default function PurchaseOrderForm({
       try {
         masterResult = await syncMaterialMasters();
       } catch (masterError) {
-        console.error("Material Master synchronization failed:", masterError);
+        console.error('Material Master synchronization failed:', masterError);
 
-        toast.warning("PO saved, but Material Master synchronization failed.");
+        toast.warning('PO saved, but Material Master synchronization failed.');
       }
 
       if (masterResult && masterResult.failed?.length) {
         toast.warning(
           `PO saved, but ${masterResult.failed.length} Material Master ${
-            masterResult.failed.length === 1 ? "record was" : "records were"
+            masterResult.failed.length === 1 ? 'record was' : 'records were'
           } not updated.`,
         );
       } else if (masterResult?.total > 0) {
         toast.success(
           `${masterResult.total} Material Master ${
-            masterResult.total === 1 ? "record" : "records"
+            masterResult.total === 1 ? 'record' : 'records'
           } updated successfully`,
         );
       }
@@ -910,13 +867,9 @@ export default function PurchaseOrderForm({
         onSuccess(savedPO);
       }
     } catch (error) {
-      console.error("Purchase Order save error:", error);
+      console.error('Purchase Order save error:', error);
 
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Failed to save Purchase Order",
-      );
+      toast.error(error?.data?.message || error?.message || 'Failed to save Purchase Order');
     }
   };
 
@@ -927,12 +880,12 @@ export default function PurchaseOrderForm({
      ========================================================= */
 
   const getFilteredMaterials = (index) => {
-    const search = materialSearch[index]?.trim().toLowerCase() || "";
+    const search = materialSearch[index]?.trim().toLowerCase() || '';
 
     const validMaterials = materials.filter((material) => {
       const id = getId(material);
 
-      return id !== undefined && id !== null && String(id).trim() !== "";
+      return id !== undefined && id !== null && String(id).trim() !== '';
     });
 
     if (!search) {
@@ -949,13 +902,12 @@ export default function PurchaseOrderForm({
         getMaterialUnitCode(material),
       ]
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
         .toLowerCase();
 
       return searchable.includes(search);
     });
   };
-
 
   /* =========================================================
      RENDER
@@ -964,14 +916,12 @@ export default function PurchaseOrderForm({
   const findMaterial = (materialId) =>
     materials.find((material) => String(getId(material)) === String(materialId));
 
-  const hasMasterUpdates = calculatedItems.some(
-    (item) => item.update_master && item.material_id,
-  );
+  const hasMasterUpdates = calculatedItems.some((item) => item.update_master && item.material_id);
 
   const missing = [
-    !form.project_id && "project",
-    !form.vendor_id && "vendor",
-    calculatedItems.every((item) => !item.material_id) && "at least one material",
+    !form.project_id && 'project',
+    !form.vendor_id && 'vendor',
+    calculatedItems.every((item) => !item.material_id) && 'at least one material',
   ].filter(Boolean);
 
   const lineCount = calculatedItems.filter((item) => item.material_id).length;
@@ -980,12 +930,21 @@ export default function PurchaseOrderForm({
     <Page>
       <PageHeader
         crumbs={[
-          { label: "Procurement", to: "/procurement" },
-          { label: "Purchase orders", to: "/procurement/purchase-orders" },
-          { label: isEdit ? "Edit" : "New" },
+          { label: 'Procurement', to: '/procurement' },
+          { label: 'Purchase orders', to: '/procurement/purchase-orders' },
+          { label: isEdit ? 'Edit' : 'New' },
         ]}
-        title={isEdit ? `Edit purchase order${form.po_number ? ` ${form.po_number}` : ""}` : "New purchase order"}
-        subtitle={<>Pick the project and vendor, add materials, then review the totals before saving.<PrefillNotice prefill={prefill} /></>}
+        title={
+          isEdit
+            ? `Edit purchase order${form.po_number ? ` ${form.po_number}` : ''}`
+            : 'New purchase order'
+        }
+        subtitle={
+          <>
+            Pick the project and vendor, add materials, then review the totals before saving.
+            <PrefillNotice prefill={prefill} />
+          </>
+        }
         actions={
           <Button variant="ghost" icon={ArrowLeft} onClick={onBack} disabled={isSaving}>
             Back to list
@@ -1010,10 +969,10 @@ export default function PurchaseOrderForm({
             <Field label="Project" required htmlFor="po-project">
               <SelectInput
                 id="po-project"
-                value={form.project_id || ""}
-                onChange={(event) => updateForm("project_id", event.target.value)}
+                value={form.project_id || ''}
+                onChange={(event) => updateForm('project_id', event.target.value)}
                 disabled={projectsLoading}
-                placeholder={projectsLoading ? "Loading projects…" : "Select project"}
+                placeholder={projectsLoading ? 'Loading projects…' : 'Select project'}
               >
                 {projects.map((project) => {
                   const id = getId(project);
@@ -1033,16 +992,16 @@ export default function PurchaseOrderForm({
               htmlFor="po-site"
               hint={
                 form.project_id && !(selectedProject?.sites || []).length
-                  ? "This project has no sites set up."
+                  ? 'This project has no sites set up.'
                   : undefined
               }
             >
               <SelectInput
                 id="po-site"
-                value={form.site_id || ""}
-                onChange={(event) => updateForm("site_id", event.target.value)}
+                value={form.site_id || ''}
+                onChange={(event) => updateForm('site_id', event.target.value)}
                 disabled={!form.project_id}
-                placeholder={form.project_id ? "Select site" : "Pick a project first"}
+                placeholder={form.project_id ? 'Select site' : 'Pick a project first'}
               >
                 {Array.isArray(selectedProject?.sites) &&
                   selectedProject.sites.map((site) => {
@@ -1058,32 +1017,37 @@ export default function PurchaseOrderForm({
             </Field>
 
             <div className="span-2">
-            <Field label="Vendor" required htmlFor="po-vendor">
-              <SelectInput
-                id="po-vendor"
-                value={form.vendor_id || ""}
-                onChange={(event) => updateForm("vendor_id", event.target.value)}
-                disabled={vendorsLoading}
-                placeholder={vendorsLoading ? "Loading vendors…" : "Select vendor"}
-              >
-                {vendors.map((vendor) => {
-                  const id = getId(vendor);
-                  if (!id) return null;
-                  return (
-                    <option key={id} value={String(id)}>
-                      {getVendorName(vendor)}
-                    </option>
-                  );
-                })}
-              </SelectInput>
-            </Field>
+              <Field label="Vendor" required htmlFor="po-vendor">
+                <SelectInput
+                  id="po-vendor"
+                  value={form.vendor_id || ''}
+                  onChange={(event) => updateForm('vendor_id', event.target.value)}
+                  disabled={vendorsLoading}
+                  placeholder={vendorsLoading ? 'Loading vendors…' : 'Select vendor'}
+                >
+                  {vendors.map((vendor) => {
+                    const id = getId(vendor);
+                    if (!id) return null;
+                    return (
+                      <option key={id} value={String(id)}>
+                        {getVendorName(vendor)}
+                      </option>
+                    );
+                  })}
+                </SelectInput>
+              </Field>
             </div>
 
-            <Field label="PO number" optional hint="Leave blank to auto-generate." htmlFor="po-number">
+            <Field
+              label="PO number"
+              optional
+              hint="Leave blank to auto-generate."
+              htmlFor="po-number"
+            >
               <TextInput
                 id="po-number"
-                value={form.po_number || ""}
-                onChange={(event) => updateForm("po_number", event.target.value)}
+                value={form.po_number || ''}
+                onChange={(event) => updateForm('po_number', event.target.value)}
                 placeholder="e.g. PO-2026-014"
               />
             </Field>
@@ -1092,16 +1056,16 @@ export default function PurchaseOrderForm({
               <TextInput
                 id="po-date"
                 type="date"
-                value={form.po_date || ""}
-                onChange={(event) => updateForm("po_date", event.target.value)}
+                value={form.po_date || ''}
+                onChange={(event) => updateForm('po_date', event.target.value)}
               />
             </Field>
 
             <Field label="Status" htmlFor="po-status">
               <SelectInput
                 id="po-status"
-                value={form.status || "DRAFT"}
-                onChange={(event) => updateForm("status", event.target.value)}
+                value={form.status || 'DRAFT'}
+                onChange={(event) => updateForm('status', event.target.value)}
               >
                 <option value="DRAFT">Draft</option>
                 <option value="PENDING_APPROVAL">Pending approval</option>
@@ -1117,10 +1081,10 @@ export default function PurchaseOrderForm({
             <Field label="Source" htmlFor="po-source">
               <SelectInput
                 id="po-source"
-                value={form.source_type || "MANUAL"}
-                onChange={(event) => updateForm("source_type", event.target.value)}
+                value={form.source_type || 'MANUAL'}
+                onChange={(event) => updateForm('source_type', event.target.value)}
               >
-                {["MANUAL", "ESTIMATE", "BOQ", "QUOTATION"].map((value) => (
+                {['MANUAL', 'ESTIMATE', 'BOQ', 'QUOTATION'].map((value) => (
                   <option key={value} value={value}>
                     {getSourceLabel(value)}
                   </option>
@@ -1133,45 +1097,47 @@ export default function PurchaseOrderForm({
             title="Vendor contact"
             icon={Building2}
             summary={
-              [form.contact_person, form.phone, form.email].filter(Boolean).join(" · ") ||
-              (form.vendor_id ? "No contact details on the vendor record — add them here." : "Fills in when you pick a vendor.")
+              [form.contact_person, form.phone, form.email].filter(Boolean).join(' · ') ||
+              (form.vendor_id
+                ? 'No contact details on the vendor record — add them here.'
+                : 'Fills in when you pick a vendor.')
             }
           >
             <Grid cols={4}>
               <Field label="Agency / company">
                 <TextInput
-                  value={form.agency_name || ""}
-                  onChange={(event) => updateForm("agency_name", event.target.value)}
+                  value={form.agency_name || ''}
+                  onChange={(event) => updateForm('agency_name', event.target.value)}
                   placeholder="e.g. Shree Tiles & Co."
                 />
               </Field>
               <Field label="Contact person">
                 <TextInput
-                  value={form.contact_person || ""}
-                  onChange={(event) => updateForm("contact_person", event.target.value)}
+                  value={form.contact_person || ''}
+                  onChange={(event) => updateForm('contact_person', event.target.value)}
                   placeholder="e.g. Rakesh Gupta"
                 />
               </Field>
               <Field label="Phone">
                 <TextInput
                   type="tel"
-                  value={form.phone || ""}
-                  onChange={(event) => updateForm("phone", event.target.value)}
+                  value={form.phone || ''}
+                  onChange={(event) => updateForm('phone', event.target.value)}
                   placeholder="e.g. 98100 12345"
                 />
               </Field>
               <Field label="Email">
                 <TextInput
                   type="email"
-                  value={form.email || ""}
-                  onChange={(event) => updateForm("email", event.target.value)}
+                  value={form.email || ''}
+                  onChange={(event) => updateForm('email', event.target.value)}
                   placeholder="name@vendor.com"
                 />
               </Field>
               <Field label="Address" full>
                 <TextInput
-                  value={form.address || ""}
-                  onChange={(event) => updateForm("address", event.target.value)}
+                  value={form.address || ''}
+                  onChange={(event) => updateForm('address', event.target.value)}
                   placeholder="Billing / dispatch address"
                 />
               </Field>
@@ -1194,8 +1160,9 @@ export default function PurchaseOrderForm({
             <>
               <AddRow onClick={addItem}>Add item</AddRow>
               <span className="inos-hint tabular">
-                {lineCount} of {calculatedItems.length} {calculatedItems.length === 1 ? "line" : "lines"} with a material · Subtotal{" "}
-                <strong style={{ color: "var(--text)" }}>{inr(subtotal)}</strong>
+                {lineCount} of {calculatedItems.length}{' '}
+                {calculatedItems.length === 1 ? 'line' : 'lines'} with a material · Subtotal{' '}
+                <strong style={{ color: 'var(--text)' }}>{inr(subtotal)}</strong>
               </span>
             </>
           }
@@ -1209,9 +1176,15 @@ export default function PurchaseOrderForm({
                 <th style={{ minWidth: 110 }}>Brand</th>
                 <th style={{ minWidth: 150 }}>Specification</th>
                 <th style={{ width: 80 }}>Unit</th>
-                <th className="num" style={{ width: 96 }}>Qty</th>
-                <th className="num" style={{ width: 124 }}>Rate</th>
-                <th className="num" style={{ width: 120 }}>Amount</th>
+                <th className="num" style={{ width: 96 }}>
+                  Qty
+                </th>
+                <th className="num" style={{ width: 124 }}>
+                  Rate
+                </th>
+                <th className="num" style={{ width: 120 }}>
+                  Amount
+                </th>
                 <th className="actions" aria-label="Row actions" />
               </tr>
             </thead>
@@ -1223,7 +1196,10 @@ export default function PurchaseOrderForm({
                   item.material_id && savingMasterIds.includes(item.material_id);
 
                 return (
-                  <tr key={item.id || `new-${index}`} className={item.update_master ? "is-flagged" : undefined}>
+                  <tr
+                    key={item.id || `new-${index}`}
+                    className={item.update_master ? 'is-flagged' : undefined}
+                  >
                     <td className="cf-idx">{index + 1}</td>
 
                     <td>
@@ -1234,15 +1210,24 @@ export default function PurchaseOrderForm({
                         }
                       >
                         <PopoverTrigger asChild>
-                          <button type="button" role="combobox" className="cf-combo" aria-expanded={Boolean(materialOpen[index])}>
+                          <button
+                            type="button"
+                            role="combobox"
+                            className="cf-combo"
+                            aria-expanded={Boolean(materialOpen[index])}
+                          >
                             <span style={{ minWidth: 0 }}>
                               {item.material_id ? (
                                 <>
                                   <span className="block truncate" style={{ fontWeight: 600 }}>
-                                    {getMaterialName(selectedMaterial) || item.description || "Selected material"}
+                                    {getMaterialName(selectedMaterial) ||
+                                      item.description ||
+                                      'Selected material'}
                                   </span>
                                   {getMaterialCode(selectedMaterial) && (
-                                    <span className="block cf-option__meta">{getMaterialCode(selectedMaterial)}</span>
+                                    <span className="block cf-option__meta">
+                                      {getMaterialCode(selectedMaterial)}
+                                    </span>
                                   )}
                                 </>
                               ) : (
@@ -1254,20 +1239,26 @@ export default function PurchaseOrderForm({
                         </PopoverTrigger>
 
                         <PopoverContent align="start" className="w-[400px] p-2">
-                          <div style={{ display: "grid", gap: 8 }}>
+                          <div style={{ display: 'grid', gap: 8 }}>
                             <TextInput
                               autoFocus
                               placeholder="Search by name, code or brand"
-                              value={materialSearch[index] || ""}
+                              value={materialSearch[index] || ''}
                               onChange={(event) =>
-                                setMaterialSearch((previous) => ({ ...previous, [index]: event.target.value }))
+                                setMaterialSearch((previous) => ({
+                                  ...previous,
+                                  [index]: event.target.value,
+                                }))
                               }
                             />
-                            <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
                               {materialsLoading ? (
                                 <LoadingBlock label="Loading materials…" />
                               ) : filteredMaterials.length === 0 ? (
-                                <p className="inos-hint" style={{ padding: "24px 8px", textAlign: "center" }}>
+                                <p
+                                  className="inos-hint"
+                                  style={{ padding: '24px 8px', textAlign: 'center' }}
+                                >
                                   No materials match. Add it in the material master first.
                                 </p>
                               ) : (
@@ -1278,22 +1269,41 @@ export default function PurchaseOrderForm({
                                     <button
                                       key={id}
                                       type="button"
-                                      className={`cf-option${selected ? " is-selected" : ""}`}
+                                      className={`cf-option${selected ? ' is-selected' : ''}`}
                                       onClick={() => populateMaterial(index, id)}
                                     >
                                       <span className="inos-icon-tile inos-icon-tile--sm">
                                         <Package aria-hidden />
                                       </span>
                                       <span style={{ minWidth: 0, flex: 1 }}>
-                                        <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-                                          <span className="truncate">{getMaterialName(material)}</span>
-                                          {selected && <Check size={14} color="var(--brand)" aria-hidden />}
+                                        <span
+                                          style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          <span className="truncate">
+                                            {getMaterialName(material)}
+                                          </span>
+                                          {selected && (
+                                            <Check size={14} color="var(--brand)" aria-hidden />
+                                          )}
                                         </span>
                                         <span className="cf-option__meta">
-                                          {getMaterialCode(material) && <span>{getMaterialCode(material)}</span>}
-                                          {getMaterialBrand(material) && <span>{getMaterialBrand(material)}</span>}
-                                          {getMaterialUnitCode(material) && <span>per {getMaterialUnitCode(material)}</span>}
-                                          <span className="tabular">{inr(getMaterialPrice(material))}</span>
+                                          {getMaterialCode(material) && (
+                                            <span>{getMaterialCode(material)}</span>
+                                          )}
+                                          {getMaterialBrand(material) && (
+                                            <span>{getMaterialBrand(material)}</span>
+                                          )}
+                                          {getMaterialUnitCode(material) && (
+                                            <span>per {getMaterialUnitCode(material)}</span>
+                                          )}
+                                          <span className="tabular">
+                                            {inr(getMaterialPrice(material))}
+                                          </span>
                                         </span>
                                       </span>
                                     </button>
@@ -1309,13 +1319,17 @@ export default function PurchaseOrderForm({
                         <div style={{ marginTop: 8 }}>
                           <CheckBox
                             checked={item.update_master}
-                            onChange={(event) => updateItem(index, "update_master", event.target.checked)}
+                            onChange={(event) =>
+                              updateItem(index, 'update_master', event.target.checked)
+                            }
                           >
                             Save edits to material master
                           </CheckBox>
                           {item.update_master && (
-                            <div className="cf-sub" style={{ color: "var(--brand)" }}>
-                              {isMasterUpdating ? "Updating master…" : "Description, brand, spec, unit and rate will sync on save."}
+                            <div className="cf-sub" style={{ color: 'var(--brand)' }}>
+                              {isMasterUpdating
+                                ? 'Updating master…'
+                                : 'Description, brand, spec, unit and rate will sync on save.'}
                             </div>
                           )}
                         </div>
@@ -1324,29 +1338,29 @@ export default function PurchaseOrderForm({
 
                     <td>
                       <TextInput
-                        value={item.description || ""}
-                        onChange={(event) => updateItem(index, "description", event.target.value)}
+                        value={item.description || ''}
+                        onChange={(event) => updateItem(index, 'description', event.target.value)}
                         placeholder="e.g. 600×600 matt vitrified"
                       />
                     </td>
                     <td>
                       <TextInput
-                        value={item.brand || ""}
-                        onChange={(event) => updateItem(index, "brand", event.target.value)}
+                        value={item.brand || ''}
+                        onChange={(event) => updateItem(index, 'brand', event.target.value)}
                         placeholder="Brand"
                       />
                     </td>
                     <td>
                       <TextInput
-                        value={item.specification || ""}
-                        onChange={(event) => updateItem(index, "specification", event.target.value)}
+                        value={item.specification || ''}
+                        onChange={(event) => updateItem(index, 'specification', event.target.value)}
                         placeholder="Size, grade, finish"
                       />
                     </td>
                     <td>
                       <TextInput
-                        value={item.unit || ""}
-                        onChange={(event) => updateItem(index, "unit", event.target.value)}
+                        value={item.unit || ''}
+                        onChange={(event) => updateItem(index, 'unit', event.target.value)}
                         placeholder="Nos"
                       />
                       {item.unit_id && <div className="cf-sub">Linked to master</div>}
@@ -1357,8 +1371,10 @@ export default function PurchaseOrderForm({
                         min="0"
                         step="0.001"
                         inputMode="decimal"
-                        value={item.ordered_quantity ?? ""}
-                        onChange={(event) => updateItem(index, "ordered_quantity", event.target.value)}
+                        value={item.ordered_quantity ?? ''}
+                        onChange={(event) =>
+                          updateItem(index, 'ordered_quantity', event.target.value)
+                        }
                         invalid={item.material_id && toNumber(item.ordered_quantity) <= 0}
                       />
                     </td>
@@ -1369,21 +1385,25 @@ export default function PurchaseOrderForm({
                           min="0"
                           step="0.01"
                           inputMode="decimal"
-                          value={item.rate ?? ""}
-                          onChange={(event) => updateItem(index, "rate", event.target.value)}
+                          value={item.rate ?? ''}
+                          onChange={(event) => updateItem(index, 'rate', event.target.value)}
                           placeholder="0.00"
                         />
                       </Affix>
                       {item.material_id && (
-                        <div className="cf-sub" style={{ textAlign: "right" }}>
+                        <div className="cf-sub" style={{ textAlign: 'right' }}>
                           Master {inr(getMaterialPrice(selectedMaterial))}
                         </div>
                       )}
                     </td>
                     <td className="cf-amount">{inr(item.amount)}</td>
                     <td className="actions">
-                      <div style={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-                        <IconAction icon={Copy} label="Duplicate line" onClick={() => duplicateItem(index)} />
+                      <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                        <IconAction
+                          icon={Copy}
+                          label="Duplicate line"
+                          onClick={() => duplicateItem(index)}
+                        />
                         <RemoveRow onClick={() => removeItem(index)} />
                       </div>
                     </td>
@@ -1402,9 +1422,9 @@ export default function PurchaseOrderForm({
                 plain
                 title={null}
                 rows={[
-                  { label: "Subtotal", value: inr(subtotal) },
+                  { label: 'Subtotal', value: inr(subtotal) },
                   {
-                    label: "Discount (₹)",
+                    label: 'Discount (₹)',
                     control: (
                       <TextInput
                         type="number"
@@ -1412,14 +1432,14 @@ export default function PurchaseOrderForm({
                         step="0.01"
                         inputMode="decimal"
                         aria-label="Discount in rupees"
-                        value={form.discount ?? ""}
-                        onChange={(event) => updateForm("discount", event.target.value)}
+                        value={form.discount ?? ''}
+                        onChange={(event) => updateForm('discount', event.target.value)}
                       />
                     ),
                   },
-                  { label: "Taxable amount", value: inr(taxableAmount) },
+                  { label: 'Taxable amount', value: inr(taxableAmount) },
                   {
-                    label: "GST",
+                    label: 'GST',
                     control: (
                       <Affix post="%">
                         <TextInput
@@ -1428,15 +1448,15 @@ export default function PurchaseOrderForm({
                           step="0.01"
                           inputMode="decimal"
                           aria-label="GST percentage"
-                          value={form.gst_percentage ?? ""}
-                          onChange={(event) => updateForm("gst_percentage", event.target.value)}
+                          value={form.gst_percentage ?? ''}
+                          onChange={(event) => updateForm('gst_percentage', event.target.value)}
                         />
                       </Affix>
                     ),
                     value: inr(gstAmount),
                   },
                   {
-                    label: "Cartage (₹)",
+                    label: 'Cartage (₹)',
                     control: (
                       <TextInput
                         type="number"
@@ -1444,8 +1464,8 @@ export default function PurchaseOrderForm({
                         step="0.01"
                         inputMode="decimal"
                         aria-label="Cartage in rupees"
-                        value={form.cartage ?? ""}
-                        onChange={(event) => updateForm("cartage", event.target.value)}
+                        value={form.cartage ?? ''}
+                        onChange={(event) => updateForm('cartage', event.target.value)}
                       />
                     ),
                   },
@@ -1455,13 +1475,13 @@ export default function PurchaseOrderForm({
               />
               {missing.length > 0 && (
                 <Callout tone="warn" title="Before saving">
-                  Add {missing.join(", ")}.
+                  Add {missing.join(', ')}.
                 </Callout>
               )}
               {hasMasterUpdates && (
                 <Callout tone="brand" title="Material master will be updated">
-                  Checked lines sync their description, brand, spec, unit and rate to the master. This PO keeps its own
-                  rates.
+                  Checked lines sync their description, brand, spec, unit and rate to the master.
+                  This PO keeps its own rates.
                 </Callout>
               )}
             </DocSection>
@@ -1478,25 +1498,32 @@ export default function PurchaseOrderForm({
                   id="po-delivery"
                   type="date"
                   min={form.po_date || undefined}
-                  value={form.expected_delivery_date || ""}
-                  onChange={(event) => updateForm("expected_delivery_date", event.target.value)}
+                  value={form.expected_delivery_date || ''}
+                  onChange={(event) => updateForm('expected_delivery_date', event.target.value)}
                 />
               </Field>
               <div />
-              <Field label="Notes" optional full hint="Internal or vendor-facing notes printed on the PO.">
+              <Field
+                label="Notes"
+                optional
+                full
+                hint="Internal or vendor-facing notes printed on the PO."
+              >
                 <TextArea
                   rows={3}
-                  value={form.notes || ""}
-                  onChange={(event) => updateForm("notes", event.target.value)}
+                  value={form.notes || ''}
+                  onChange={(event) => updateForm('notes', event.target.value)}
                   placeholder="e.g. Deliver to site gate 2, call supervisor on arrival"
                 />
               </Field>
               <Field label="Terms & conditions" optional full>
                 <TextArea
                   rows={5}
-                  value={form.terms_and_conditions || ""}
-                  onChange={(event) => updateForm("terms_and_conditions", event.target.value)}
-                  placeholder={"e.g. 50% advance, balance on delivery\nPrices inclusive of loading\nWarranty as per manufacturer"}
+                  value={form.terms_and_conditions || ''}
+                  onChange={(event) => updateForm('terms_and_conditions', event.target.value)}
+                  placeholder={
+                    'e.g. 50% advance, balance on delivery\nPrices inclusive of loading\nWarranty as per manufacturer'
+                  }
                 />
               </Field>
             </Grid>
@@ -1506,17 +1533,22 @@ export default function PurchaseOrderForm({
         <FormActions
           note={
             <span className="tabular">
-              {lineCount} {lineCount === 1 ? "item" : "items"} · Grand total{" "}
-              <strong style={{ color: "var(--brand)" }}>{inr(grandTotal)}</strong>
+              {lineCount} {lineCount === 1 ? 'item' : 'items'} · Grand total{' '}
+              <strong style={{ color: 'var(--brand)' }}>{inr(grandTotal)}</strong>
             </span>
           }
           onCancel={onBack}
           extra={
-            <Button variant="secondary" icon={Save} onClick={() => handleSave({ status: "DRAFT" })} disabled={isSaving}>
+            <Button
+              variant="secondary"
+              icon={Save}
+              onClick={() => handleSave({ status: 'DRAFT' })}
+              disabled={isSaving}
+            >
               Save draft
             </Button>
           }
-          submitLabel={isEdit ? "Update purchase order" : "Create purchase order"}
+          submitLabel={isEdit ? 'Update purchase order' : 'Create purchase order'}
           submitting={isSaving}
         />
       </form>

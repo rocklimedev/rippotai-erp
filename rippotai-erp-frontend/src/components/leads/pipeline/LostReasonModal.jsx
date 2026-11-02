@@ -1,22 +1,28 @@
-import { useEffect, useState } from "react";
-import { Button, Field, TextArea, ChoiceGroup } from "@/components/inos";
-import { Modal } from "./Modal";
+import { useEffect, useState } from 'react';
+import { Button, Field, TextArea, ChoiceGroup } from '@/components/inos';
+import { Modal } from './Modal';
 
-const REASONS = ["Budget mismatch", "Chose another firm", "Project on hold", "No response", "Scope too small"];
+const REASONS = [
+  'Budget mismatch',
+  'Chose another firm',
+  'Project on hold',
+  'No response',
+  'Scope too small',
+];
 
 /** Ask why a deal was lost before moving it to Closed Lost. */
 export default function LostReasonModal({ deal, open, onCancel, onConfirm, busy }) {
-  const [reason, setReason] = useState("");
-  const [detail, setDetail] = useState("");
+  const [reason, setReason] = useState('');
+  const [detail, setDetail] = useState('');
 
   useEffect(() => {
     if (open) {
-      setReason("");
-      setDetail("");
+      setReason('');
+      setDetail('');
     }
   }, [open]);
 
-  const text = [reason, detail.trim()].filter(Boolean).join(" — ");
+  const text = [reason, detail.trim()].filter(Boolean).join(' — ');
 
   return (
     <Modal
@@ -38,10 +44,20 @@ export default function LostReasonModal({ deal, open, onCancel, onConfirm, busy 
       }
     >
       <Field label="Reason">
-        <ChoiceGroup value={reason} onChange={setReason} options={REASONS.map((r) => ({ value: r, label: r }))} name="Lost reason" />
+        <ChoiceGroup
+          value={reason}
+          onChange={setReason}
+          options={REASONS.map((r) => ({ value: r, label: r }))}
+          name="Lost reason"
+        />
       </Field>
       <Field label="Details" optional>
-        <TextArea value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="e.g. Went with a local contractor at a lower quote" style={{ minHeight: 72 }} />
+        <TextArea
+          value={detail}
+          onChange={(e) => setDetail(e.target.value)}
+          placeholder="e.g. Went with a local contractor at a lower quote"
+          style={{ minHeight: 72 }}
+        />
       </Field>
     </Modal>
   );

@@ -20,7 +20,9 @@ export function pathForEntity(hit) {
     work_order: `/procurement/work-order/${id}`,
     delivery_challan: `/procurement/delivery-challans/${id}`,
     budget_estimate: `/ledger/budget-estimate/${id}`,
-    material_requirement: projectId ? `/procurement/${encodeURIComponent(projectId)}/material-requirements?requirementId=${id}` : '/procurement/requirements',
+    material_requirement: projectId
+      ? `/procurement/${encodeURIComponent(projectId)}/material-requirements?requirementId=${id}`
+      : '/procurement/requirements',
     scope_of_work: `/crm/scope-of-work/${id}`,
     activity_log: '/activity',
   };

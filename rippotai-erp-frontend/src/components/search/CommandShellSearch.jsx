@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Search,
   ArrowRight,
@@ -18,13 +18,13 @@ import {
   Calendar,
   CheckSquare,
   Briefcase,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
-import { APP_META, APP_MENUS } from "@/config/appNav";
-import { useGlobalSearchQuery } from "@/api/meta/search.api";
-import { pathForEntity } from "./search-routes";
+import { APP_META, APP_MENUS } from '@/config/appNav';
+import { useGlobalSearchQuery } from '@/api/meta/search.api';
+import { pathForEntity } from './search-routes';
 
 // ============================================================
 // Resolve a slug against the app's base route.
@@ -32,17 +32,14 @@ import { pathForEntity } from "./search-routes";
 
 function resolvePath(base, slug) {
   if (!slug) return base;
-  return (slug.startsWith("/") ? slug : `${base}/${slug}`).replace(
-    /\/edit-dashboard$/,
-    "?edit=1",
-  );
+  return (slug.startsWith('/') ? slug : `${base}/${slug}`).replace(/\/edit-dashboard$/, '?edit=1');
 }
 
 // ============================================================
 // Pick an icon based on menu label.
 // ============================================================
 
-function iconFor(label = "", slug = "") {
+function iconFor(label = '', slug = '') {
   const text = `${label} ${slug}`.toLowerCase();
   if (/(create|new|add|upload)/.test(text)) return Plus;
   if (/(setting|role|permission)/.test(text)) return SettingsIcon;
@@ -73,22 +70,22 @@ const ENTITY_ICON = {
 };
 
 const ENTITY_LABEL = {
-  project: "Project",
-  client: "Client",
-  user: "User",
-  lead: "Lead",
-  vendor: "Vendor",
-  boq: "BOQ",
-  project_brief: "Brief",
-  quotation: "Quotation",
-  site_recce: "Site Recce",
-  task: "Task",
-  calendar_event: "Calendar",
-  document: "Document",
-  drawing: "Drawing",
-  work_order: "Work Order",
-  delivery_challan: "Delivery Challan",
-  budget_estimate: "Budget Estimate",
+  project: 'Project',
+  client: 'Client',
+  user: 'User',
+  lead: 'Lead',
+  vendor: 'Vendor',
+  boq: 'BOQ',
+  project_brief: 'Brief',
+  quotation: 'Quotation',
+  site_recce: 'Site Recce',
+  task: 'Task',
+  calendar_event: 'Calendar',
+  document: 'Document',
+  drawing: 'Drawing',
+  work_order: 'Work Order',
+  delivery_challan: 'Delivery Challan',
+  budget_estimate: 'Budget Estimate',
 };
 
 // ============================================================
@@ -97,14 +94,14 @@ const ENTITY_LABEL = {
 
 export default function CommandShellSearch({ currentApp }) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const inputRef = useRef(null);
   const nav = useNavigate();
 
   const meta = APP_META[currentApp] || {};
-  const base = meta.base || "/";
+  const base = meta.base || '/';
 
   const trimmedQuery = query.trim();
 
@@ -126,20 +123,21 @@ export default function CommandShellSearch({ currentApp }) {
   /** Unified hits from Search v2 */
   const searchResults = useMemo(() => {
     const hits = searchData?.results ?? [];
-    return hits.filter((hit) => pathForEntity(hit)).map((hit) => ({
-      id: `search-${hit.entity_type}-${hit.id}`,
-      entityId: hit.id,
-      entity_type: hit.entity_type,
-      label: hit.title || hit.meta?.name || "Untitled",
-      subtitle:
-        hit.subtitle || ENTITY_LABEL[hit.entity_type] || hit.entity_type,
-      type: ENTITY_LABEL[hit.entity_type] || hit.entity_type,
-      score: hit.score,
-      meta: hit.meta,
-      path: pathForEntity(hit),
-      icon: ENTITY_ICON[hit.entity_type] || Search,
-      isSearchHit: true,
-    }));
+    return hits
+      .filter((hit) => pathForEntity(hit))
+      .map((hit) => ({
+        id: `search-${hit.entity_type}-${hit.id}`,
+        entityId: hit.id,
+        entity_type: hit.entity_type,
+        label: hit.title || hit.meta?.name || 'Untitled',
+        subtitle: hit.subtitle || ENTITY_LABEL[hit.entity_type] || hit.entity_type,
+        type: ENTITY_LABEL[hit.entity_type] || hit.entity_type,
+        score: hit.score,
+        meta: hit.meta,
+        path: pathForEntity(hit),
+        icon: ENTITY_ICON[hit.entity_type] || Search,
+        isSearchHit: true,
+      }));
   }, [searchData]);
 
   // ============================================================
@@ -148,16 +146,16 @@ export default function CommandShellSearch({ currentApp }) {
 
   useEffect(() => {
     const handleGlobalKey = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setOpen(true);
-        setQuery("");
+        setQuery('');
         setSelectedIndex(0);
       }
     };
 
-    window.addEventListener("keydown", handleGlobalKey);
-    return () => window.removeEventListener("keydown", handleGlobalKey);
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
   }, []);
 
   // ============================================================
@@ -177,21 +175,21 @@ export default function CommandShellSearch({ currentApp }) {
   const groupedCommands = useMemo(() => {
     const common = [
       {
-        id: "quick-dashboard",
-        label: "Go to Dashboard",
+        id: 'quick-dashboard',
+        label: 'Go to Dashboard',
         icon: Home,
-        action: () => nav("/dashboard"),
+        action: () => nav('/dashboard'),
       },
       {
-        id: "quick-settings",
-        label: "Open Settings",
+        id: 'quick-settings',
+        label: 'Open Settings',
         icon: SettingsIcon,
-        action: () => nav("/settings"),
+        action: () => nav('/settings'),
       },
     ];
 
     const groups = {
-      "Quick Actions": common,
+      'Quick Actions': common,
     };
 
     const menuGroups = APP_MENUS[currentApp] || [];
@@ -236,10 +234,7 @@ export default function CommandShellSearch({ currentApp }) {
 
     Object.entries(groupedCommands).forEach(([group, items]) => {
       items.forEach((item) => {
-        if (
-          !trimmedQuery ||
-          item.label.toLowerCase().includes(trimmedQuery.toLowerCase())
-        ) {
+        if (!trimmedQuery || item.label.toLowerCase().includes(trimmedQuery.toLowerCase())) {
           out.push({ ...item, group });
         }
       });
@@ -276,7 +271,7 @@ export default function CommandShellSearch({ currentApp }) {
     }
 
     setOpen(false);
-    setQuery("");
+    setQuery('');
     setSelectedIndex(0);
   };
 
@@ -285,26 +280,24 @@ export default function CommandShellSearch({ currentApp }) {
   // ============================================================
 
   const handleKeyDown = (e) => {
-    if (e.key === "ArrowDown") {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex((prev) => (prev + 1) % Math.max(1, allItems.length));
     }
 
-    if (e.key === "ArrowUp") {
+    if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex(
-        (prev) => (prev - 1 + allItems.length) % Math.max(1, allItems.length),
-      );
+      setSelectedIndex((prev) => (prev - 1 + allItems.length) % Math.max(1, allItems.length));
     }
 
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       e.preventDefault();
       if (allItems[selectedIndex]) {
         executeCommand(allItems[selectedIndex]);
       }
     }
 
-    if (e.key === "Escape") {
+    if (e.key === 'Escape') {
       e.preventDefault();
       setOpen(false);
     }
@@ -320,7 +313,7 @@ export default function CommandShellSearch({ currentApp }) {
       onOpenChange={(value) => {
         setOpen(value);
         if (!value) {
-          setQuery("");
+          setQuery('');
           setSelectedIndex(0);
         }
       }}
@@ -330,20 +323,20 @@ export default function CommandShellSearch({ currentApp }) {
           type="button"
           data-testid="topbar-search"
           aria-label="Search"
-          title={`Search ${meta.name || ""}`}
+          title={`Search ${meta.name || ''}`}
           className="
             w-10 h-10 shrink-0 rounded-full flex items-center justify-center
             hover:bg-[#F4F6F7] transition-colors
             focus:outline-none focus:ring-2 focus:ring-[#1F453B]/20
           "
         >
-          <Search size={20} strokeWidth={2} style={{ color: "#1F453B" }} />
+          <Search size={20} strokeWidth={2} style={{ color: '#1F453B' }} />
         </button>
       </DialogTrigger>
 
       <DialogContent
         className="bc-card w-[calc(100vw-24px)] sm:w-full max-w-[520px] p-0 overflow-hidden"
-        style={{ maxHeight: "85vh" }}
+        style={{ maxHeight: '85vh' }}
       >
         {/* Header */}
         <div className="p-4 border-b border-border relative">
@@ -358,7 +351,7 @@ export default function CommandShellSearch({ currentApp }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={meta.searchPh || "Type a command or search..."}
+              placeholder={meta.searchPh || 'Type a command or search...'}
               className="
                 w-full pl-12 pr-10 py-4 bg-transparent text-[16px]
                 text-[var(--ink-green)] focus:outline-none
@@ -376,15 +369,8 @@ export default function CommandShellSearch({ currentApp }) {
         </div>
 
         {/* Results */}
-        <div
-          className="overflow-auto"
-          style={{ maxHeight: "calc(85vh - 120px)" }}
-        >
-          {isFetching && (
-            <div className="py-10 text-center text-[var(--muted)]">
-              Searching...
-            </div>
-          )}
+        <div className="overflow-auto" style={{ maxHeight: 'calc(85vh - 120px)' }}>
+          {isFetching && <div className="py-10 text-center text-[var(--muted)]">Searching...</div>}
 
           {!isFetching && allItems.length === 0 && trimmedQuery.length >= 2 && (
             <div className="py-16 text-center text-[var(--muted)]">
@@ -396,8 +382,7 @@ export default function CommandShellSearch({ currentApp }) {
           {Object.entries(groupedCommands).map(([groupName, items]) => {
             const filtered = items.filter(
               (item) =>
-                !trimmedQuery ||
-                item.label.toLowerCase().includes(trimmedQuery.toLowerCase()),
+                !trimmedQuery || item.label.toLowerCase().includes(trimmedQuery.toLowerCase()),
             );
             if (!filtered.length) return null;
 
@@ -405,9 +390,7 @@ export default function CommandShellSearch({ currentApp }) {
               <div key={groupName} className="py-3">
                 <div className="eyebrow px-5 py-2">{groupName}</div>
                 {filtered.map((item) => {
-                  const globalIdx = allResults.findIndex(
-                    (r) => r.id === item.id,
-                  );
+                  const globalIdx = allResults.findIndex((r) => r.id === item.id);
                   const isSelected = globalIdx === selectedIndex;
                   const Icon = item.icon || FileText;
 
@@ -420,25 +403,19 @@ export default function CommandShellSearch({ currentApp }) {
                         w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors
                         ${
                           isSelected
-                            ? "bg-[var(--ink-green)] text-white"
-                            : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
+                            ? 'bg-[var(--ink-green)] text-white'
+                            : 'hover:bg-[var(--mist-soft)] text-[var(--ink-green)]'
                         }
                       `}
                     >
                       <Icon
                         size={18}
-                        className={
-                          isSelected ? "text-white" : "text-[var(--muted)]"
-                        }
+                        className={isSelected ? 'text-white' : 'text-[var(--muted)]'}
                       />
-                      <span className="flex-1 text-[15px] truncate">
-                        {item.label}
-                      </span>
+                      <span className="flex-1 text-[15px] truncate">{item.label}</span>
                       <ArrowRight
                         size={18}
-                        className={
-                          isSelected ? "text-white/70" : "text-[var(--sage)]"
-                        }
+                        className={isSelected ? 'text-white/70' : 'text-[var(--sage)]'}
                       />
                     </button>
                   );
@@ -472,22 +449,17 @@ export default function CommandShellSearch({ currentApp }) {
                       w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors
                       ${
                         isSelected
-                          ? "bg-[var(--ink-green)] text-white"
-                          : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
+                          ? 'bg-[var(--ink-green)] text-white'
+                          : 'hover:bg-[var(--mist-soft)] text-[var(--ink-green)]'
                       }
                     `}
                   >
-                    <Icon
-                      size={18}
-                      className={
-                        isSelected ? "text-white" : "text-[var(--muted)]"
-                      }
-                    />
+                    <Icon size={18} className={isSelected ? 'text-white' : 'text-[var(--muted)]'} />
                     <div className="flex-1 min-w-0">
                       <div className="text-[15px] truncate">{item.label}</div>
                       <div
                         className={`text-xs mt-1 truncate ${
-                          isSelected ? "text-white/70" : "text-[var(--muted)]"
+                          isSelected ? 'text-white/70' : 'text-[var(--muted)]'
                         }`}
                       >
                         {item.subtitle}
@@ -495,9 +467,7 @@ export default function CommandShellSearch({ currentApp }) {
                     </div>
                     <ArrowRight
                       size={18}
-                      className={
-                        isSelected ? "text-white/70" : "text-[var(--sage)]"
-                      }
+                      className={isSelected ? 'text-white/70' : 'text-[var(--sage)]'}
                     />
                   </button>
                 );

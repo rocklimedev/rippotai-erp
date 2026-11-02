@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Trash2 } from "lucide-react";
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 
-import { Field, TextInput, TextArea, SelectInput, FormActions } from "@/components/inos";
+import { Field, TextInput, TextArea, SelectInput, FormActions } from '@/components/inos';
 import {
   DocFormLayout,
   DocSection,
@@ -15,7 +15,7 @@ import {
   IconButton,
   isFilled,
   slugId,
-} from "@/components/forms/crm-form-ui";
+} from '@/components/forms/crm-form-ui';
 
 /**
  * BriefSectionForm
@@ -30,13 +30,13 @@ export function BriefSectionForm({
   values = {},
   onFieldChange,
   projects = [],
-  projectId = "",
+  projectId = '',
   onProjectChange,
   onAddProject,
   onSubmit,
   isSubmitting = false,
   renderSection,
-  submitLabel = "Save brief",
+  submitLabel = 'Save brief',
   children,
   projectsLoading,
   crumbs,
@@ -48,9 +48,7 @@ export function BriefSectionForm({
   const navigate = useNavigate();
   // "Filled from <document>" replaces the field hint while the inherited value is kept.
   const hintFor = (field, fallback) =>
-    prefill?.filled?.[field.key]
-      ? `Filled from ${prefill.filled[field.key]}`
-      : fallback;
+    prefill?.filled?.[field.key] ? `Filled from ${prefill.filled[field.key]}` : fallback;
 
   const filledCount = useMemo(() => {
     let count = 0;
@@ -59,7 +57,7 @@ export function BriefSectionForm({
         if (value.length > 0) count++;
         return;
       }
-      if (value !== "" && value !== null && value !== undefined) count++;
+      if (value !== '' && value !== null && value !== undefined) count++;
     });
     return count;
   }, [values]);
@@ -111,10 +109,10 @@ export function BriefSectionForm({
   };
 
   const isWide = (field) =>
-    field.type === "table" ||
-    field.type === "restriction-table" ||
-    field.type === "textarea" ||
-    field.type === "multiselect" ||
+    field.type === 'table' ||
+    field.type === 'restriction-table' ||
+    field.type === 'textarea' ||
+    field.type === 'multiselect' ||
     field.fullWidth;
 
   // ----------------------------------------------------------
@@ -124,25 +122,68 @@ export function BriefSectionForm({
   const renderField = (section, field) => {
     if (!isFieldVisible(field)) return null;
 
-    const fieldValue = values?.[field.key] ?? "";
+    const fieldValue = values?.[field.key] ?? '';
     const set = (v) => handleFieldChange(section, field.key, v);
 
-    if (field.type === "reference-images") {
+    if (field.type === 'reference-images') {
       const images = Array.isArray(fieldValue) ? fieldValue : [];
       return (
-        <Field key={field.key} label={field.label} hint="Upload JPG, PNG, WebP or GIF images, up to 10 MB each." full>
-          <input type="file" aria-label="Upload reference images" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={uploadingReferences || isSubmitting} onChange={(event) => {
-            const files = Array.from(event.target.files || []);
-            event.target.value = "";
-            onReferenceImagesUpload?.(files);
-          }} />
+        <Field
+          key={field.key}
+          label={field.label}
+          hint="Upload JPG, PNG, WebP or GIF images, up to 10 MB each."
+          full
+        >
+          <input
+            type="file"
+            aria-label="Upload reference images"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            disabled={uploadingReferences || isSubmitting}
+            onChange={(event) => {
+              const files = Array.from(event.target.files || []);
+              event.target.value = '';
+              onReferenceImagesUpload?.(files);
+            }}
+          />
           {uploadingReferences && <p role="status">Uploading reference images…</p>}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginTop: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 16,
+              marginTop: 12,
+            }}
+          >
             {images.map((image, index) => (
               <div key={image.id || image.fileUrl}>
-                <a href={image.fileUrl} target="_blank" rel="noreferrer"><img src={image.fileUrl} alt={image.title || "Reference image"} style={{ width: "100%", height: 160, objectFit: "contain" }} /></a>
-                <TextInput aria-label={`Reference image ${index + 1} name`} value={image.title || ""} placeholder="Image name" maxLength={255} onChange={(event) => set(images.map((row, i) => i === index ? { ...row, title: event.target.value } : row))} />
-                <IconButton danger label={`Remove reference image ${index + 1}`} onClick={() => set(images.filter((_, i) => i !== index))}><Trash2 /></IconButton>
+                <a href={image.fileUrl} target="_blank" rel="noreferrer">
+                  <img
+                    src={image.fileUrl}
+                    alt={image.title || 'Reference image'}
+                    style={{ width: '100%', height: 160, objectFit: 'contain' }}
+                  />
+                </a>
+                <TextInput
+                  aria-label={`Reference image ${index + 1} name`}
+                  value={image.title || ''}
+                  placeholder="Image name"
+                  maxLength={255}
+                  onChange={(event) =>
+                    set(
+                      images.map((row, i) =>
+                        i === index ? { ...row, title: event.target.value } : row,
+                      ),
+                    )
+                  }
+                />
+                <IconButton
+                  danger
+                  label={`Remove reference image ${index + 1}`}
+                  onClick={() => set(images.filter((_, i) => i !== index))}
+                >
+                  <Trash2 />
+                </IconButton>
               </div>
             ))}
           </div>
@@ -151,14 +192,14 @@ export function BriefSectionForm({
     }
 
     // ---- TABLE (compact inline rows) ----
-    if (field.type === "table") {
+    if (field.type === 'table') {
       const rows = getTableRows(field.key);
       const columns = field.columns || [];
       const addRow = () =>
         addTableRow(
           field.key,
           columns.reduce((acc, col) => {
-            acc[col.key] = "";
+            acc[col.key] = '';
             return acc;
           }, {}),
         );
@@ -181,59 +222,97 @@ export function BriefSectionForm({
                     <tr key={idx}>
                       {columns.map((col) => (
                         <td key={col.key}>
-                          {col.type === "points" ? (
-                            <div style={{ display: "grid", gap: 8, minWidth: 220 }}>
-                              {String(row[col.key] ?? "").split(/\r?\n/).map((point, pointIndex, points) => (
-                                <div key={pointIndex} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                  <span aria-hidden="true">{pointIndex + 1}.</span>
-                                  <TextInput
-                                    value={point}
-                                    placeholder="Enter requirement"
-                                    aria-label={`Space ${idx + 1} requirement ${pointIndex + 1}`}
-                                    onChange={(event) => updateTableRow(field.key, idx, col.key,
-                                      points.map((value, index) => index === pointIndex ? event.target.value : value).join("\n"))}
-                                  />
-                                  <IconButton
-                                    danger
-                                    label={`Remove requirement ${pointIndex + 1} from space ${idx + 1}`}
-                                    onClick={() => updateTableRow(field.key, idx, col.key,
-                                      points.filter((_, index) => index !== pointIndex).join("\n"))}
+                          {col.type === 'points' ? (
+                            <div style={{ display: 'grid', gap: 8, minWidth: 220 }}>
+                              {String(row[col.key] ?? '')
+                                .split(/\r?\n/)
+                                .map((point, pointIndex, points) => (
+                                  <div
+                                    key={pointIndex}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
                                   >
-                                    <Trash2 />
-                                  </IconButton>
-                                </div>
-                              ))}
-                              <AddRowButton onClick={() => updateTableRow(field.key, idx, col.key, `${row[col.key] ?? ""}\n`)}>
+                                    <span aria-hidden="true">{pointIndex + 1}.</span>
+                                    <TextInput
+                                      value={point}
+                                      placeholder="Enter requirement"
+                                      aria-label={`Space ${idx + 1} requirement ${pointIndex + 1}`}
+                                      onChange={(event) =>
+                                        updateTableRow(
+                                          field.key,
+                                          idx,
+                                          col.key,
+                                          points
+                                            .map((value, index) =>
+                                              index === pointIndex ? event.target.value : value,
+                                            )
+                                            .join('\n'),
+                                        )
+                                      }
+                                    />
+                                    <IconButton
+                                      danger
+                                      label={`Remove requirement ${pointIndex + 1} from space ${idx + 1}`}
+                                      onClick={() =>
+                                        updateTableRow(
+                                          field.key,
+                                          idx,
+                                          col.key,
+                                          points
+                                            .filter((_, index) => index !== pointIndex)
+                                            .join('\n'),
+                                        )
+                                      }
+                                    >
+                                      <Trash2 />
+                                    </IconButton>
+                                  </div>
+                                ))}
+                              <AddRowButton
+                                onClick={() =>
+                                  updateTableRow(field.key, idx, col.key, `${row[col.key] ?? ''}\n`)
+                                }
+                              >
                                 Add requirement
                               </AddRowButton>
                             </div>
-                          ) : col.type === "select" ? (
+                          ) : col.type === 'select' ? (
                             <SelectInput
-                              value={row[col.key] ?? ""}
+                              value={row[col.key] ?? ''}
                               placeholder={col.placeholder || `Select ${col.label.toLowerCase()}`}
                               aria-label={col.label}
-                              onChange={(e) => updateTableRow(field.key, idx, col.key, e.target.value)}
+                              onChange={(e) =>
+                                updateTableRow(field.key, idx, col.key, e.target.value)
+                              }
                             >
-                              {row[col.key] && !(col.options || []).some((option) => option.value === row[col.key]) && (
-                                <option value={row[col.key]}>{row[col.key]}</option>
-                              )}
+                              {row[col.key] &&
+                                !(col.options || []).some(
+                                  (option) => option.value === row[col.key],
+                                ) && <option value={row[col.key]}>{row[col.key]}</option>}
                               {(col.options || []).map((option) => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
                               ))}
                             </SelectInput>
                           ) : (
-                          <TextInput
-                            type={col.type === "date" ? "date" : "text"}
-                            value={row[col.key] ?? ""}
-                            placeholder={col.placeholder || col.label}
-                            aria-label={col.label}
-                            onChange={(e) => updateTableRow(field.key, idx, col.key, e.target.value)}
-                          />
+                            <TextInput
+                              type={col.type === 'date' ? 'date' : 'text'}
+                              value={row[col.key] ?? ''}
+                              placeholder={col.placeholder || col.label}
+                              aria-label={col.label}
+                              onChange={(e) =>
+                                updateTableRow(field.key, idx, col.key, e.target.value)
+                              }
+                            />
                           )}
                         </td>
                       ))}
                       <td className="actions">
-                        <IconButton danger label="Remove row" onClick={() => removeTableRow(field.key, idx)}>
+                        <IconButton
+                          danger
+                          label="Remove row"
+                          onClick={() => removeTableRow(field.key, idx)}
+                        >
                           <Trash2 />
                         </IconButton>
                       </td>
@@ -243,32 +322,42 @@ export function BriefSectionForm({
               </table>
             </div>
           )}
-          <AddRowButton onClick={addRow}>{field.addLabel || "Add row"}</AddRowButton>
+          <AddRowButton onClick={addRow}>{field.addLabel || 'Add row'}</AddRowButton>
         </Field>
       );
     }
 
     // ---- RESTRICTION TABLE (dropdown creates the row) ----
-    if (field.type === "restriction-table") {
+    if (field.type === 'restriction-table') {
       const rows = getTableRows(field.key);
       const options = field.restrictionOptions || [];
       const usedTypes = new Set(rows.map((r) => r.type));
       const availableOptions = options.filter((o) => !usedTypes.has(o.value));
 
       return (
-        <Field key={field.key} label={field.label} hint="Pick a rule type to add it, then note the details." full>
+        <Field
+          key={field.key}
+          label={field.label}
+          hint="Pick a rule type to add it, then note the details."
+          full
+        >
           {rows.length > 0 && (
             <div className="crmf-rows">
               {rows.map((row, idx) => {
                 const label = options.find((o) => o.value === row.type)?.label || row.type;
                 return (
-                  <RowCard key={idx} title={label} onRemove={() => removeTableRow(field.key, idx)} removeLabel="Remove restriction">
+                  <RowCard
+                    key={idx}
+                    title={label}
+                    onRemove={() => removeTableRow(field.key, idx)}
+                    removeLabel="Remove restriction"
+                  >
                     <TextArea
                       rows={2}
-                      value={row.details ?? ""}
+                      value={row.details ?? ''}
                       placeholder="Details, e.g. work allowed 10am–6pm, no Sundays"
                       aria-label={`${label} details`}
-                      onChange={(e) => updateTableRow(field.key, idx, "details", e.target.value)}
+                      onChange={(e) => updateTableRow(field.key, idx, 'details', e.target.value)}
                     />
                   </RowCard>
                 );
@@ -278,11 +367,13 @@ export function BriefSectionForm({
           <SelectInput
             value=""
             disabled={availableOptions.length === 0}
-            placeholder={availableOptions.length ? "+ Add a restriction…" : "All restriction types added"}
+            placeholder={
+              availableOptions.length ? '+ Add a restriction…' : 'All restriction types added'
+            }
             onChange={(e) => {
               const type = e.target.value;
               if (!type) return;
-              addTableRow(field.key, { type, details: "" });
+              addTableRow(field.key, { type, details: '' });
             }}
           >
             {availableOptions.map((opt) => (
@@ -296,34 +387,59 @@ export function BriefSectionForm({
     }
 
     // ---- MULTISELECT (chips) ----
-    if (field.type === "multiselect") {
+    if (field.type === 'multiselect') {
       const selected = Array.isArray(fieldValue) ? fieldValue : [];
       const options = field.options || [];
-      const allSelected = options.length > 0 && options.every((option) => selected.includes(option.value));
+      const allSelected =
+        options.length > 0 && options.every((option) => selected.includes(option.value));
       return (
-        <Field key={field.key} label={field.label} required={field.required} hint={hintFor(field, field.description || "Select all that apply.")} full>
+        <Field
+          key={field.key}
+          label={field.label}
+          required={field.required}
+          hint={hintFor(field, field.description || 'Select all that apply.')}
+          full
+        >
           {field.selectAll && (
             <label className="crmf-check">
               <input
                 type="checkbox"
                 checked={allSelected}
-                ref={(input) => { if (input) input.indeterminate = !allSelected && selected.length > 0; }}
-                onChange={(event) => set(event.target.checked ? options.map((option) => option.value) : [])}
+                ref={(input) => {
+                  if (input) input.indeterminate = !allSelected && selected.length > 0;
+                }}
+                onChange={(event) =>
+                  set(event.target.checked ? options.map((option) => option.value) : [])
+                }
               />
               Select All
             </label>
           )}
-          <ChipSelect name={field.label} value={Array.isArray(fieldValue) ? fieldValue : []} options={field.options || []} onChange={set} />
+          <ChipSelect
+            name={field.label}
+            value={Array.isArray(fieldValue) ? fieldValue : []}
+            options={field.options || []}
+            onChange={set}
+          />
         </Field>
       );
     }
 
     // ---- CHECKBOX ----
-    if (field.type === "checkbox") {
+    if (field.type === 'checkbox') {
       return (
-        <Field key={field.key} label={field.label} hint={hintFor(field, field.description)} full={field.fullWidth}>
+        <Field
+          key={field.key}
+          label={field.label}
+          hint={hintFor(field, field.description)}
+          full={field.fullWidth}
+        >
           <label className="crmf-check" style={{ height: 40 }}>
-            <input type="checkbox" checked={Boolean(fieldValue)} onChange={(e) => set(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={Boolean(fieldValue)}
+              onChange={(e) => set(e.target.checked)}
+            />
             {field.checkboxLabel || field.label}
           </label>
         </Field>
@@ -331,20 +447,37 @@ export function BriefSectionForm({
     }
 
     // ---- SELECT: small sets as choice cards ----
-    if (field.type === "select") {
+    if (field.type === 'select') {
       const options = field.options || [];
-      const selectedValue = field.arrayValue ? (Array.isArray(fieldValue) ? fieldValue[0] || "" : fieldValue) : fieldValue;
-      const setSelected = (value) => set(field.arrayValue ? (value ? [String(value)] : []) : String(value));
+      const selectedValue = field.arrayValue
+        ? Array.isArray(fieldValue)
+          ? fieldValue[0] || ''
+          : fieldValue
+        : fieldValue;
+      const setSelected = (value) =>
+        set(field.arrayValue ? (value ? [String(value)] : []) : String(value));
       const small = !field.dropdown && options.length > 0 && options.length <= 4;
       return (
-        <Field key={field.key} label={field.label} required={field.required} hint={hintFor(field, field.description)} full={field.fullWidth}>
+        <Field
+          key={field.key}
+          label={field.label}
+          required={field.required}
+          hint={hintFor(field, field.description)}
+          full={field.fullWidth}
+        >
           {small ? (
-            <Choices name={field.label} value={selectedValue} options={options} columns={options.length} onChange={setSelected} />
+            <Choices
+              name={field.label}
+              value={selectedValue}
+              options={options}
+              columns={options.length}
+              onChange={setSelected}
+            />
           ) : (
             <OptionSelect
               value={selectedValue}
               options={options}
-              placeholder={field.placeholder || "Select…"}
+              placeholder={field.placeholder || 'Select…'}
               onChange={setSelected}
             />
           )}
@@ -361,23 +494,33 @@ export function BriefSectionForm({
         hint={field.description}
         full={isWide(field)}
       >
-        {field.type === "textarea" ? (
-          <TextArea rows={field.rows || 3} value={fieldValue} placeholder={field.placeholder || ""} onChange={(e) => set(e.target.value)} />
-        ) : field.type === "date" ? (
+        {field.type === 'textarea' ? (
+          <TextArea
+            rows={field.rows || 3}
+            value={fieldValue}
+            placeholder={field.placeholder || ''}
+            onChange={(e) => set(e.target.value)}
+          />
+        ) : field.type === 'date' ? (
           <TextInput type="date" value={fieldValue} onChange={(e) => set(e.target.value)} />
-        ) : field.type === "number" ? (
+        ) : field.type === 'number' ? (
           <TextInput
             type="number"
             inputMode="decimal"
             min={field.min}
             max={field.max}
-            step={field.step || "0.01"}
+            step={field.step || '0.01'}
             value={fieldValue}
-            placeholder={field.placeholder || ""}
+            placeholder={field.placeholder || ''}
             onChange={(e) => set(e.target.value)}
           />
         ) : (
-          <TextInput type={field.type || "text"} value={fieldValue} placeholder={field.placeholder || ""} onChange={(e) => set(e.target.value)} />
+          <TextInput
+            type={field.type || 'text'}
+            value={fieldValue}
+            placeholder={field.placeholder || ''}
+            onChange={(e) => set(e.target.value)}
+          />
         )}
       </Field>
     );
@@ -391,15 +534,21 @@ export function BriefSectionForm({
     if (section?.type && renderSection) {
       return renderSection(section);
     }
-    return <div className="inos-form-grid">{(section?.fields || []).map((field) => renderField(section, field))}</div>;
+    return (
+      <div className="inos-form-grid">
+        {(section?.fields || []).map((field) => renderField(section, field))}
+      </div>
+    );
   };
 
   const sectionDone = (section) =>
-    (section?.fields || []).some((f) => isFieldVisible(f) && f.type !== "checkbox" && isFilled(values?.[f.key]));
+    (section?.fields || []).some(
+      (f) => isFieldVisible(f) && f.type !== 'checkbox' && isFilled(values?.[f.key]),
+    );
 
-  const projectSectionId = "sec-project";
+  const projectSectionId = 'sec-project';
   const nav = [
-    { id: projectSectionId, label: "Project", done: Boolean(projectId) },
+    { id: projectSectionId, label: 'Project', done: Boolean(projectId) },
     ...sections.map((s, i) => ({
       id: slugId(s.key || s.title, i),
       label: s.title,
@@ -409,12 +558,20 @@ export function BriefSectionForm({
 
   return (
     <DocFormLayout
-      crumbs={crumbs || [{ label: "CRM", to: "/crm" }, { label: "Forms" }, { label: "Project brief" }]}
+      crumbs={
+        crumbs || [{ label: 'CRM', to: '/crm' }, { label: 'Forms' }, { label: 'Project brief' }]
+      }
       title={title}
       subtitle={subtitle}
       nav={nav}
     >
-      <DocSection id={projectSectionId} step={1} title="Project" description="Which project is this brief for?" done={Boolean(projectId)}>
+      <DocSection
+        id={projectSectionId}
+        step={1}
+        title="Project"
+        description="Which project is this brief for?"
+        done={Boolean(projectId)}
+      >
         <ProjectPicker
           projects={projects}
           value={projectId}
@@ -439,9 +596,9 @@ export function BriefSectionForm({
       ))}
 
       <FormActions
-        note={`${filledCount} field${filledCount !== 1 ? "s" : ""} completed`}
+        note={`${filledCount} field${filledCount !== 1 ? 's' : ''} completed`}
         onCancel={onCancel || (() => navigate(-1))}
-        submitLabel={isSubmitting ? "Saving…" : submitLabel}
+        submitLabel={isSubmitting ? 'Saving…' : submitLabel}
         submitDisabled={isSubmitting || uploadingReferences}
         onSubmit={onSubmit}
       />

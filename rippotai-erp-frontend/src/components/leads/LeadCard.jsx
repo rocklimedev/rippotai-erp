@@ -1,20 +1,20 @@
-import { useState } from "react";
-import { pill, TAG_COLORS, LEAD_COLORS } from "../../hooks/stages";
-import { useUpdateLeadMutation } from "../../api/connectors/leads.api";
+import { useState } from 'react';
+import { pill, TAG_COLORS, LEAD_COLORS } from '../../hooks/stages';
+import { useUpdateLeadMutation } from '../../api/connectors/leads.api';
 
 const COLOR_DOTS = [
-  ["None", "#ffffff"],
-  ["Green", "#1f453b"],
-  ["Red", "#a54536"],
-  ["Yellow", "#c98f2b"],
-  ["Blue", "#3f6d8a"],
+  ['None', '#ffffff'],
+  ['Green', '#1f453b'],
+  ['Red', '#a54536'],
+  ['Yellow', '#c98f2b'],
+  ['Blue', '#3f6d8a'],
 ];
 
 const formatBudget = (value) => {
-  if (value == null || value === "") return null;
+  if (value == null || value === '') return null;
 
-  if (typeof value === "number") {
-    return new Intl.NumberFormat("en-IN", {
+  if (typeof value === 'number') {
+    return new Intl.NumberFormat('en-IN', {
       maximumFractionDigits: 0,
     }).format(value);
   }
@@ -59,28 +59,20 @@ export default function LeadCard({
 
   const cc = lead.color && LEAD_COLORS[lead.color];
 
-  const railColor = cc ? cc.rail : lead.stuck ? "#c98f2b" : "var(--sage)";
+  const railColor = cc ? cc.rail : lead.stuck ? '#c98f2b' : 'var(--sage)';
 
-  const tagStyle = lead.tag
-    ? pill(TAG_COLORS[lead.tag]?.fg, TAG_COLORS[lead.tag]?.bg)
-    : null;
+  const tagStyle = lead.tag ? pill(TAG_COLORS[lead.tag]?.fg, TAG_COLORS[lead.tag]?.bg) : null;
 
   const daysAgo = daysSinceCreated(lead.createdAt);
 
   const daysLabel =
-    daysAgo == null
-      ? null
-      : daysAgo === 0
-        ? "Today"
-        : daysAgo === 1
-          ? "1 day"
-          : `${daysAgo} days`;
+    daysAgo == null ? null : daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day' : `${daysAgo} days`;
 
   const whatsappNumber = lead.whatsapp || lead.phone;
 
   // Subtitle: prefer account/contact (Pipelines module) over
   // type/location, which don't exist on Pipelines records.
-  const subtitle = [lead.company, lead.contact].filter(Boolean).join(" · ");
+  const subtitle = [lead.company, lead.contact].filter(Boolean).join(' · ');
 
   // ============================================================
   // WHATSAPP
@@ -91,9 +83,9 @@ export default function LeadCard({
 
     if (!whatsappNumber) return;
 
-    const number = String(whatsappNumber).replace(/[^0-9]/g, "");
+    const number = String(whatsappNumber).replace(/[^0-9]/g, '');
 
-    window.open(`https://wa.me/${number}`, "_blank", "noopener,noreferrer");
+    window.open(`https://wa.me/${number}`, '_blank', 'noopener,noreferrer');
   };
 
   // ============================================================
@@ -119,7 +111,7 @@ export default function LeadCard({
 
       setMenuOpen(false);
     } catch (error) {
-      console.error("Failed to update Bigin lead:", error);
+      console.error('Failed to update Bigin lead:', error);
     }
   };
 
@@ -129,7 +121,7 @@ export default function LeadCard({
 
   const handleNurture = async () => {
     await updateBiginLead({
-      Stage: "Nurture",
+      Stage: 'Nurture',
     });
   };
 
@@ -139,7 +131,7 @@ export default function LeadCard({
 
   const handleLost = async () => {
     await updateBiginLead({
-      Stage: "Closed Lost",
+      Stage: 'Closed Lost',
     });
   };
 
@@ -161,7 +153,7 @@ export default function LeadCard({
 
   const handleColorChange = async (name) => {
     await updateBiginLead({
-      Card_Color: name === "None" ? null : name,
+      Card_Color: name === 'None' ? null : name,
     });
   };
 
@@ -169,26 +161,26 @@ export default function LeadCard({
     <article
       draggable
       onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", String(lead.id));
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(lead.id));
 
         onDragStart(lead.id);
       }}
       onDragEnd={onDragEnd}
       onClick={() => onClick(lead)}
       className={[
-        "group relative overflow-visible rounded-xl border bg-paper",
-        "border-[var(--stroke)]",
-        "transition-all duration-150",
-        "cursor-grab active:cursor-grabbing",
-        "hover:-translate-y-[1px]",
-        "hover:border-[var(--sage)]",
-        "hover:shadow-[0_7px_22px_rgba(15,31,26,0.09)]",
-        dragging ? "opacity-40 scale-[0.98]" : "",
-      ].join(" ")}
+        'group relative overflow-visible rounded-xl border bg-paper',
+        'border-[var(--stroke)]',
+        'transition-all duration-150',
+        'cursor-grab active:cursor-grabbing',
+        'hover:-translate-y-[1px]',
+        'hover:border-[var(--sage)]',
+        'hover:shadow-[0_7px_22px_rgba(15,31,26,0.09)]',
+        dragging ? 'opacity-40 scale-[0.98]' : '',
+      ].join(' ')}
       style={{
         boxShadow: `inset 3px 0 0 ${railColor}`,
-        zIndex: menuOpen ? 50 : "auto",
+        zIndex: menuOpen ? 50 : 'auto',
       }}
     >
       <div className="p-3.5">
@@ -207,8 +199,8 @@ export default function LeadCard({
                 <span
                   className="shrink-0 rounded-full px-1.5 py-[2px] text-[8.5px] font-bold tracking-[0.04em]"
                   style={{
-                    background: "#f6edda",
-                    color: "#a3701a",
+                    background: '#f6edda',
+                    color: '#a3701a',
                   }}
                 >
                   STUCK
@@ -217,7 +209,7 @@ export default function LeadCard({
             </div>
 
             <div className="mt-0.5 text-[11px] text-[var(--muted)] truncate">
-              {subtitle || "No account linked"}
+              {subtitle || 'No account linked'}
             </div>
           </div>
 
@@ -234,21 +226,16 @@ export default function LeadCard({
                 setMenuOpen((v) => !v);
               }}
               className={[
-                "flex h-7 w-7 items-center justify-center rounded-lg",
-                "text-[var(--muted)]",
-                "hover:bg-[var(--mist-soft)]",
-                "hover:text-[var(--ink-green)]",
-                "transition-colors",
-                isUpdating ? "opacity-50 cursor-wait" : "",
-              ].join(" ")}
+                'flex h-7 w-7 items-center justify-center rounded-lg',
+                'text-[var(--muted)]',
+                'hover:bg-[var(--mist-soft)]',
+                'hover:text-[var(--ink-green)]',
+                'transition-colors',
+                isUpdating ? 'opacity-50 cursor-wait' : '',
+              ].join(' ')}
               aria-label="Lead actions"
             >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
                 <circle cx="8" cy="3" r="1.25" />
                 <circle cx="8" cy="8" r="1.25" />
                 <circle cx="8" cy="13" r="1.25" />
@@ -297,24 +284,20 @@ export default function LeadCard({
             {lead.budget ||
               (lead.budgetValue != null
                 ? `₹${formatBudget(lead.budgetValue)}`
-                : "Budget not specified")}
+                : 'Budget not specified')}
           </div>
 
           {lead.proposal && (
             <div className="mt-1 flex items-center gap-1.5 text-[10.5px]">
               <span className="font-medium text-[var(--muted)]">Quoted</span>
 
-              <span className="font-semibold text-[#3f6d5f]">
-                {lead.proposal.amount}
-              </span>
+              <span className="font-semibold text-[#3f6d5f]">{lead.proposal.amount}</span>
 
               {lead.proposal.timeline && (
                 <>
                   <span className="text-[var(--stroke)]">·</span>
 
-                  <span className="text-[var(--muted)]">
-                    {lead.proposal.timeline}
-                  </span>
+                  <span className="text-[var(--muted)]">{lead.proposal.timeline}</span>
                 </>
               )}
             </div>
@@ -342,13 +325,13 @@ export default function LeadCard({
                 onClick={openWhatsApp}
                 title={`WhatsApp ${whatsappNumber}`}
                 className={[
-                  "flex h-7 w-7 shrink-0 items-center justify-center",
-                  "rounded-lg border border-[var(--stroke)] bg-paper",
-                  "text-[#3f6d5f]",
-                  "hover:bg-[var(--mist-soft)]",
-                  "hover:border-[var(--sage)]",
-                  "transition-colors",
-                ].join(" ")}
+                  'flex h-7 w-7 shrink-0 items-center justify-center',
+                  'rounded-lg border border-[var(--stroke)] bg-paper',
+                  'text-[#3f6d5f]',
+                  'hover:bg-[var(--mist-soft)]',
+                  'hover:border-[var(--sage)]',
+                  'transition-colors',
+                ].join(' ')}
               >
                 <svg
                   width="14"
@@ -390,11 +373,11 @@ export default function LeadCard({
 
       <div
         className={[
-          "absolute left-0 top-1/2 -translate-x-[5px] -translate-y-1/2",
-          "h-8 w-[3px] rounded-full",
-          "bg-[var(--sage)] opacity-0",
-          "transition-opacity group-hover:opacity-100",
-        ].join(" ")}
+          'absolute left-0 top-1/2 -translate-x-[5px] -translate-y-1/2',
+          'h-8 w-[3px] rounded-full',
+          'bg-[var(--sage)] opacity-0',
+          'transition-opacity group-hover:opacity-100',
+        ].join(' ')}
       />
     </article>
   );
@@ -404,24 +387,24 @@ export default function LeadCard({
 // MENU ITEM
 // ============================================================
 
-function MenuItem({ label, onClick, tone = "default" }) {
+function MenuItem({ label, onClick, tone = 'default' }) {
   const toneClass =
-    tone === "danger"
-      ? "text-[#a54536] hover:bg-[#f8eeeb]"
-      : tone === "warning"
-        ? "text-[#a3701a] hover:bg-[#f7f0e1]"
-        : "text-[var(--ink-green)] hover:bg-[var(--mist-soft)]";
+    tone === 'danger'
+      ? 'text-[#a54536] hover:bg-[#f8eeeb]'
+      : tone === 'warning'
+        ? 'text-[#a3701a] hover:bg-[#f7f0e1]'
+        : 'text-[var(--ink-green)] hover:bg-[var(--mist-soft)]';
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
-        "w-full rounded-lg px-2.5 py-2 text-left",
-        "text-[11.5px] font-medium",
-        "transition-colors",
+        'w-full rounded-lg px-2.5 py-2 text-left',
+        'text-[11.5px] font-medium',
+        'transition-colors',
         toneClass,
-      ].join(" ")}
+      ].join(' ')}
     >
       {label}
     </button>

@@ -1,7 +1,7 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Settings } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, LogOut, Settings } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -32,9 +32,7 @@ export default function UserMenu() {
   // Never call .replace() directly on user.role.
   // ------------------------------------------------------------
   const roleName =
-    typeof user?.role === "string"
-      ? user.role
-      : user?.role?.name || user?.roleName || "";
+    typeof user?.role === 'string' ? user.role : user?.role?.name || user?.roleName || '';
 
   // ------------------------------------------------------------
   // Safe display value
@@ -42,9 +40,7 @@ export default function UserMenu() {
   // ADMIN_PROJECT -> ADMIN PROJECT
   // ADMIN -> ADMIN
   // ------------------------------------------------------------
-  const displayRole = roleName
-    ? String(roleName).replace(/_/g, " ")
-    : "No role assigned";
+  const displayRole = roleName ? String(roleName).replace(/_/g, ' ') : 'No role assigned';
 
   // ------------------------------------------------------------
   // Normalize for permission checks.
@@ -54,7 +50,7 @@ export default function UserMenu() {
   // ------------------------------------------------------------
   const normalizedRole = String(roleName).toUpperCase();
 
-  const isAdmin = normalizedRole === "ADMIN";
+  const isAdmin = normalizedRole === 'ADMIN';
 
   const isSuperAdmin = Boolean(user?.is_super_admin);
 
@@ -73,14 +69,14 @@ export default function UserMenu() {
             {user?.avatar_url ? (
               <img
                 src={user.avatar_url}
-                alt={user?.name || "User"}
+                alt={user?.name || 'User'}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.currentTarget.style.display = "none";
+                  e.currentTarget.style.display = 'none';
                 }}
               />
             ) : (
-              (user?.name?.charAt(0) || "?").toUpperCase()
+              (user?.name?.charAt(0) || '?').toUpperCase()
             )}
           </div>
 
@@ -90,19 +86,19 @@ export default function UserMenu() {
 
           <div className="text-left hidden lg:block min-w-0 max-w-[160px]">
             <div
-              title={user?.name || "User"}
+              title={user?.name || 'User'}
               className="text-[13.5px] font-semibold leading-tight truncate"
               style={{
-                color: "#333333",
+                color: '#333333',
               }}
             >
-              {user?.name || "User"}
+              {user?.name || 'User'}
             </div>
 
             <div
               className="text-[11px] capitalize leading-tight truncate"
               style={{
-                color: "#6B7B7C",
+                color: '#6B7B7C',
               }}
             >
               {displayRole}
@@ -117,7 +113,7 @@ export default function UserMenu() {
             size={14}
             className="shrink-0"
             style={{
-              color: "#6B7B7C",
+              color: '#6B7B7C',
             }}
           />
         </button>
@@ -127,29 +123,26 @@ export default function UserMenu() {
       {/* DROPDOWN CONTENT */}
       {/* ------------------------------------------------------ */}
 
-      <DropdownMenuContent
-        align="end"
-        className="w-[240px] bc-card border-0 p-1"
-      >
+      <DropdownMenuContent align="end" className="w-[240px] bc-card border-0 p-1">
         {/* ---------------------------------------------------- */}
         {/* USER INFO */}
         {/* ---------------------------------------------------- */}
 
         <DropdownMenuLabel className="px-3 py-2 min-w-0">
           <div
-            title={user?.name || "User"}
+            title={user?.name || 'User'}
             className="text-[14px] font-semibold truncate"
             style={{
-              color: "#333333",
+              color: '#333333',
             }}
           >
-            {user?.name || "User"}
+            {user?.name || 'User'}
           </div>
 
           <div
             className="text-[12px] capitalize truncate"
             style={{
-              color: "#6B7B7C",
+              color: '#6B7B7C',
             }}
           >
             {displayRole}
@@ -162,10 +155,7 @@ export default function UserMenu() {
         {/* ACCOUNT SETTINGS */}
         {/* ---------------------------------------------------- */}
 
-        <DropdownMenuItem
-          className="py-2.5 px-3 text-[14px]"
-          onClick={() => nav("/settings")}
-        >
+        <DropdownMenuItem className="py-2.5 px-3 text-[14px]" onClick={() => nav('/settings')}>
           <Settings size={15} className="mr-2" />
           Account settings
         </DropdownMenuItem>
@@ -174,17 +164,16 @@ export default function UserMenu() {
         {/* ROLES & PERMISSIONS */}
         {/* ---------------------------------------------------- */}
 
-        {isAdmin &&
-          (isSuperAdmin || (user?.plan && user.plan !== "free_trial")) && (
-            <DropdownMenuItem
-              className="py-2.5 px-3 text-[14px]"
-              data-testid="menu-roles-permissions"
-              onClick={() => nav("/console/roles-permissions")}
-            >
-              <Settings size={15} className="mr-2" />
-              Roles &amp; Permissions
-            </DropdownMenuItem>
-          )}
+        {isAdmin && (isSuperAdmin || (user?.plan && user.plan !== 'free_trial')) && (
+          <DropdownMenuItem
+            className="py-2.5 px-3 text-[14px]"
+            data-testid="menu-roles-permissions"
+            onClick={() => nav('/console/roles-permissions')}
+          >
+            <Settings size={15} className="mr-2" />
+            Roles &amp; Permissions
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuSeparator />
 
@@ -197,7 +186,7 @@ export default function UserMenu() {
           data-testid="topbar-logout"
           onClick={() => {
             logout();
-            nav("/login");
+            nav('/login');
           }}
         >
           <LogOut size={15} className="mr-2" />

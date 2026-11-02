@@ -1,50 +1,44 @@
 // src/pages/procurement/material-master/CreateMaterialForm.jsx
 
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 
 import {
   useCreateMaterialMutation,
   useUpdateMaterialMutation,
-} from "../api/procuerment/material-master.api";
+} from '../api/procuerment/material-master.api';
 
 const EMPTY_FORM = {
-  material_code: "",
-  name: "",
-  category: "",
-  sub_category: "",
-  brand: "",
-  model: "",
-  unit_id: "",
-  description: "",
+  material_code: '',
+  name: '',
+  category: '',
+  sub_category: '',
+  brand: '',
+  model: '',
+  unit_id: '',
+  description: '',
   is_active: true,
 };
 
-export default function CreateMaterialForm({
-  material = null,
-  mode = "create",
-  onSuccess,
-}) {
+export default function CreateMaterialForm({ material = null, mode = 'create', onSuccess }) {
   const nav = useNavigate();
 
-  const [createMaterial, { isLoading: isCreating }] =
-    useCreateMaterialMutation();
+  const [createMaterial, { isLoading: isCreating }] = useCreateMaterialMutation();
 
-  const [updateMaterial, { isLoading: isUpdating }] =
-    useUpdateMaterialMutation();
+  const [updateMaterial, { isLoading: isUpdating }] = useUpdateMaterialMutation();
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
-  const isEdit = mode === "edit" || Boolean(material);
+  const isEdit = mode === 'edit' || Boolean(material);
   const isSaving = isCreating || isUpdating;
 
   // ============================================================
@@ -58,16 +52,15 @@ export default function CreateMaterialForm({
     }
 
     setForm({
-      material_code: material.material_code || "",
-      name: material.name || "",
-      category: material.category || "",
-      sub_category: material.sub_category || "",
-      brand: material.brand || "",
-      model: material.model || "",
-      unit_id: material.unit_id || material.unit?.id || "",
-      description: material.description || "",
-      is_active:
-        material.is_active === undefined ? true : Boolean(material.is_active),
+      material_code: material.material_code || '',
+      name: material.name || '',
+      category: material.category || '',
+      sub_category: material.sub_category || '',
+      brand: material.brand || '',
+      model: material.model || '',
+      unit_id: material.unit_id || material.unit?.id || '',
+      description: material.description || '',
+      is_active: material.is_active === undefined ? true : Boolean(material.is_active),
     });
   }, [material]);
 
@@ -91,15 +84,15 @@ export default function CreateMaterialForm({
     const nextErrors = {};
 
     if (!form.name.trim()) {
-      nextErrors.name = "Material name is required.";
+      nextErrors.name = 'Material name is required.';
     }
 
     if (!form.category.trim()) {
-      nextErrors.category = "Category is required.";
+      nextErrors.category = 'Category is required.';
     }
 
     if (!form.unit_id.trim()) {
-      nextErrors.unit_id = "Unit is required.";
+      nextErrors.unit_id = 'Unit is required.';
     }
 
     setErrors(nextErrors);
@@ -158,20 +151,17 @@ export default function CreateMaterialForm({
       if (materialId) {
         nav(`/procurement/${materialId}`);
       } else {
-        nav("/procurement");
+        nav('/procurement');
       }
     } catch (error) {
-      console.error("Failed to save material:", error);
+      console.error('Failed to save material:', error);
 
       const message =
-        error?.data?.message ||
-        error?.data?.error ||
-        error?.message ||
-        "Failed to save material.";
+        error?.data?.message || error?.data?.error || error?.message || 'Failed to save material.';
 
       setErrors((current) => ({
         ...current,
-        form: Array.isArray(message) ? message.join(", ") : String(message),
+        form: Array.isArray(message) ? message.join(', ') : String(message),
       }));
     }
   };
@@ -190,11 +180,7 @@ export default function CreateMaterialForm({
         <Button
           type="button"
           variant="ghost"
-          onClick={() =>
-            material?.id
-              ? nav(`/procurement/${material.id}`)
-              : nav("/procurement")
-          }
+          onClick={() => (material?.id ? nav(`/procurement/${material.id}`) : nav('/procurement'))}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
@@ -206,9 +192,7 @@ export default function CreateMaterialForm({
             variant="outline"
             disabled={isSaving}
             onClick={() =>
-              material?.id
-                ? nav(`/procurement/${material.id}`)
-                : nav("/procurement")
+              material?.id ? nav(`/procurement/${material.id}`) : nav('/procurement')
             }
           >
             Cancel
@@ -223,7 +207,7 @@ export default function CreateMaterialForm({
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                {isEdit ? "Update Material" : "Create Material"}
+                {isEdit ? 'Update Material' : 'Create Material'}
               </>
             )}
           </Button>
@@ -258,7 +242,7 @@ export default function CreateMaterialForm({
             <Input
               id="material_code"
               value={form.material_code}
-              onChange={(e) => updateField("material_code", e.target.value)}
+              onChange={(e) => updateField('material_code', e.target.value)}
               placeholder="e.g. MAT-001"
             />
           </div>
@@ -273,14 +257,12 @@ export default function CreateMaterialForm({
             <Input
               id="name"
               value={form.name}
-              onChange={(e) => updateField("name", e.target.value)}
+              onChange={(e) => updateField('name', e.target.value)}
               placeholder="e.g. Italian Marble"
-              className={errors.name ? "border-destructive" : ""}
+              className={errors.name ? 'border-destructive' : ''}
             />
 
-            {errors.name && (
-              <p className="text-xs text-destructive">{errors.name}</p>
-            )}
+            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           {/* CATEGORY */}
@@ -293,14 +275,12 @@ export default function CreateMaterialForm({
             <Input
               id="category"
               value={form.category}
-              onChange={(e) => updateField("category", e.target.value)}
+              onChange={(e) => updateField('category', e.target.value)}
               placeholder="e.g. Flooring"
-              className={errors.category ? "border-destructive" : ""}
+              className={errors.category ? 'border-destructive' : ''}
             />
 
-            {errors.category && (
-              <p className="text-xs text-destructive">{errors.category}</p>
-            )}
+            {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
           </div>
 
           {/* SUB CATEGORY */}
@@ -311,7 +291,7 @@ export default function CreateMaterialForm({
             <Input
               id="sub_category"
               value={form.sub_category}
-              onChange={(e) => updateField("sub_category", e.target.value)}
+              onChange={(e) => updateField('sub_category', e.target.value)}
               placeholder="e.g. Marble"
             />
           </div>
@@ -336,7 +316,7 @@ export default function CreateMaterialForm({
             <Input
               id="brand"
               value={form.brand}
-              onChange={(e) => updateField("brand", e.target.value)}
+              onChange={(e) => updateField('brand', e.target.value)}
               placeholder="e.g. Kajaria"
             />
           </div>
@@ -349,7 +329,7 @@ export default function CreateMaterialForm({
             <Input
               id="model"
               value={form.model}
-              onChange={(e) => updateField("model", e.target.value)}
+              onChange={(e) => updateField('model', e.target.value)}
               placeholder="e.g. KJ-120"
             />
           </div>
@@ -364,14 +344,12 @@ export default function CreateMaterialForm({
             <Input
               id="unit_id"
               value={form.unit_id}
-              onChange={(e) => updateField("unit_id", e.target.value)}
+              onChange={(e) => updateField('unit_id', e.target.value)}
               placeholder="Unit UUID"
-              className={errors.unit_id ? "border-destructive" : ""}
+              className={errors.unit_id ? 'border-destructive' : ''}
             />
 
-            {errors.unit_id && (
-              <p className="text-xs text-destructive">{errors.unit_id}</p>
-            )}
+            {errors.unit_id && <p className="text-xs text-destructive">{errors.unit_id}</p>}
 
             <p className="text-xs text-muted-foreground">
               Enter the Unit Master ID associated with this material.
@@ -385,15 +363,14 @@ export default function CreateMaterialForm({
               <Label htmlFor="is_active">Active Material</Label>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                Inactive materials will not be available for new procurement
-                operations.
+                Inactive materials will not be available for new procurement operations.
               </p>
             </div>
 
             <Switch
               id="is_active"
               checked={form.is_active}
-              onCheckedChange={(value) => updateField("is_active", value)}
+              onCheckedChange={(value) => updateField('is_active', value)}
             />
           </div>
         </CardContent>
@@ -411,7 +388,7 @@ export default function CreateMaterialForm({
         <CardContent>
           <Textarea
             value={form.description}
-            onChange={(e) => updateField("description", e.target.value)}
+            onChange={(e) => updateField('description', e.target.value)}
             placeholder="Add material specifications, notes, procurement information, etc."
             rows={5}
           />
@@ -427,11 +404,7 @@ export default function CreateMaterialForm({
           type="button"
           variant="outline"
           disabled={isSaving}
-          onClick={() =>
-            material?.id
-              ? nav(`/procurement/${material.id}`)
-              : nav("/procurement")
-          }
+          onClick={() => (material?.id ? nav(`/procurement/${material.id}`) : nav('/procurement'))}
         >
           Cancel
         </Button>
@@ -445,7 +418,7 @@ export default function CreateMaterialForm({
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              {isEdit ? "Update Material" : "Create Material"}
+              {isEdit ? 'Update Material' : 'Create Material'}
             </>
           )}
         </Button>

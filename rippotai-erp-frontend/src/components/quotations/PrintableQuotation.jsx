@@ -1,8 +1,8 @@
-import React from "react";
+import React from 'react';
 
-import { formatCurrency, formatDate } from "../../lib/helpers";
+import { formatCurrency, formatDate } from '../../lib/helpers';
 
-import logoUrl from "../../assets/rippotai_logo.png";
+import logoUrl from '../../assets/rippotai_logo.png';
 
 /* ============================================================
    HELPERS
@@ -12,10 +12,10 @@ function formatQty(value) {
   const number = Number(value || 0);
 
   if (!Number.isFinite(number)) {
-    return "0";
+    return '0';
   }
 
-  return number.toFixed(3).replace(/\.?0+$/, "");
+  return number.toFixed(3).replace(/\.?0+$/, '');
 }
 
 function safeArray(value) {
@@ -29,8 +29,8 @@ function safeNumber(value) {
 }
 
 function displayText(value) {
-  if (value === null || value === undefined || value === "") {
-    return "—";
+  if (value === null || value === undefined || value === '') {
+    return '—';
   }
 
   return String(value);
@@ -41,34 +41,34 @@ function displayText(value) {
 ============================================================ */
 
 const cellLabel = {
-  border: "1px solid #000",
-  padding: "6px 10px",
+  border: '1px solid #000',
+  padding: '6px 10px',
   fontWeight: 600,
-  width: "18%",
-  background: "#fafafa",
-  verticalAlign: "top",
+  width: '18%',
+  background: '#fafafa',
+  verticalAlign: 'top',
 };
 
 const cellValue = {
-  border: "1px solid #000",
-  padding: "6px 10px",
-  width: "37%",
-  verticalAlign: "top",
+  border: '1px solid #000',
+  padding: '6px 10px',
+  width: '37%',
+  verticalAlign: 'top',
 };
 
 const th = {
-  border: "1px solid #000",
+  border: '1px solid #000',
   padding: 8,
   fontSize: 12,
-  textAlign: "center",
+  textAlign: 'center',
   fontWeight: 700,
 };
 
 const td = {
-  border: "1px solid #000",
+  border: '1px solid #000',
   padding: 6,
   fontSize: 12,
-  verticalAlign: "top",
+  verticalAlign: 'top',
 };
 
 /* ============================================================
@@ -101,22 +101,22 @@ export default function PrintableQuotation({
 
   const grandTotal = safeNumber(quotation.grand_total);
 
-  const finalTerms = termsConditions || quotation.terms_conditions || "";
+  const finalTerms = termsConditions || quotation.terms_conditions || '';
 
-  const discountType = quotation.discount_type || "fixed";
+  const discountType = quotation.discount_type || 'fixed';
 
   return (
     <div
       className="print-quotation-content bg-white mx-auto"
       style={{
-        width: "210mm",
-        minHeight: "297mm",
-        padding: "14mm",
-        boxSizing: "border-box",
-        color: "#111",
-        background: "#fff",
-        fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: "12px",
+        width: '210mm',
+        minHeight: '297mm',
+        padding: '14mm',
+        boxSizing: 'border-box',
+        color: '#111',
+        background: '#fff',
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        fontSize: '12px',
         lineHeight: 1.4,
       }}
     >
@@ -126,10 +126,10 @@ export default function PrintableQuotation({
 
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "8mm",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '8mm',
         }}
       >
         <div>
@@ -137,29 +137,25 @@ export default function PrintableQuotation({
             src={logoUrl}
             alt="Rippotai"
             style={{
-              width: "42mm",
-              maxHeight: "20mm",
-              objectFit: "contain",
-              objectPosition: "left center",
-              display: "block",
+              width: '42mm',
+              maxHeight: '20mm',
+              objectFit: 'contain',
+              objectPosition: 'left center',
+              display: 'block',
             }}
           />
         </div>
 
         <div
           style={{
-            textAlign: "right",
+            textAlign: 'right',
             fontSize: 11,
             lineHeight: 1.6,
           }}
         >
           <div>
-            <strong>Date:</strong>{" "}
-            {displayText(
-              quotation.quotation_date
-                ? formatDate(quotation.quotation_date)
-                : "",
-            )}
+            <strong>Date:</strong>{' '}
+            {displayText(quotation.quotation_date ? formatDate(quotation.quotation_date) : '')}
           </div>
 
           {company?.name && (
@@ -182,15 +178,15 @@ export default function PrintableQuotation({
 
       <div
         style={{
-          textAlign: "center",
-          marginBottom: "6mm",
+          textAlign: 'center',
+          marginBottom: '6mm',
         }}
       >
         <div
           style={{
             fontSize: 21,
             fontWeight: 700,
-            letterSpacing: "0.08em",
+            letterSpacing: '0.08em',
           }}
         >
           QUOTATION
@@ -200,7 +196,7 @@ export default function PrintableQuotation({
           style={{
             marginTop: 3,
             fontSize: 11,
-            color: "#555",
+            color: '#555',
           }}
         >
           {displayText(quotation.quotation_number)}
@@ -214,19 +210,19 @@ export default function PrintableQuotation({
       {quotation.status && (
         <div
           style={{
-            textAlign: "right",
-            marginBottom: "4mm",
+            textAlign: 'right',
+            marginBottom: '4mm',
           }}
         >
           <span
             style={{
-              display: "inline-block",
-              border: "1px solid #999",
-              padding: "3px 9px",
+              display: 'inline-block',
+              border: '1px solid #999',
+              padding: '3px 9px',
               fontSize: 9,
               fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
             }}
           >
             {quotation.status}
@@ -240,10 +236,10 @@ export default function PrintableQuotation({
 
       <table
         style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginBottom: "7mm",
-          tableLayout: "fixed",
+          width: '100%',
+          borderCollapse: 'collapse',
+          marginBottom: '7mm',
+          tableLayout: 'fixed',
         }}
       >
         <tbody>
@@ -277,9 +273,7 @@ export default function PrintableQuotation({
             <td style={cellValue}>{displayText(quotation.project_address)}</td>
           </tr>
 
-          {(quotation.client_name ||
-            quotation.client_phone ||
-            quotation.client_address) && (
+          {(quotation.client_name || quotation.client_phone || quotation.client_address) && (
             <tr>
               <td style={cellLabel}>Client</td>
 
@@ -299,7 +293,7 @@ export default function PrintableQuotation({
                 colSpan={3}
                 style={{
                   ...cellValue,
-                  width: "82%",
+                  width: '82%',
                 }}
               >
                 {displayText(quotation.client_address)}
@@ -316,28 +310,28 @@ export default function PrintableQuotation({
       <div
         className="quotation-items"
         style={{
-          marginBottom: "6mm",
+          marginBottom: '6mm',
         }}
       >
         <table
           style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            tableLayout: "fixed",
+            width: '100%',
+            borderCollapse: 'collapse',
+            tableLayout: 'fixed',
           }}
         >
           <thead>
             <tr
               style={{
-                background: "#33473E",
-                color: "#fff",
+                background: '#33473E',
+                color: '#fff',
               }}
             >
               <th
                 style={{
                   ...th,
-                  width: "8%",
-                  color: "#fff",
+                  width: '8%',
+                  color: '#fff',
                 }}
               >
                 S.No.
@@ -346,8 +340,8 @@ export default function PrintableQuotation({
               <th
                 style={{
                   ...th,
-                  width: "43%",
-                  color: "#fff",
+                  width: '43%',
+                  color: '#fff',
                 }}
               >
                 Particular
@@ -356,8 +350,8 @@ export default function PrintableQuotation({
               <th
                 style={{
                   ...th,
-                  width: "12%",
-                  color: "#fff",
+                  width: '12%',
+                  color: '#fff',
                 }}
               >
                 Qty
@@ -366,8 +360,8 @@ export default function PrintableQuotation({
               <th
                 style={{
                   ...th,
-                  width: "17%",
-                  color: "#fff",
+                  width: '17%',
+                  color: '#fff',
                 }}
               >
                 Rate
@@ -376,8 +370,8 @@ export default function PrintableQuotation({
               <th
                 style={{
                   ...th,
-                  width: "20%",
-                  color: "#fff",
+                  width: '20%',
+                  color: '#fff',
                 }}
               >
                 Amount
@@ -392,7 +386,7 @@ export default function PrintableQuotation({
                   <td
                     style={{
                       ...td,
-                      textAlign: "center",
+                      textAlign: 'center',
                     }}
                   >
                     {item.sno || index + 1}
@@ -404,9 +398,7 @@ export default function PrintableQuotation({
                         fontWeight: 600,
                       }}
                     >
-                      {displayText(
-                        item.particular || item.description || item.name,
-                      )}
+                      {displayText(item.particular || item.description || item.name)}
                     </div>
 
                     {item.remarks && (
@@ -414,7 +406,7 @@ export default function PrintableQuotation({
                         style={{
                           marginTop: 3,
                           fontSize: 10,
-                          color: "#555",
+                          color: '#555',
                         }}
                       >
                         {item.remarks}
@@ -425,7 +417,7 @@ export default function PrintableQuotation({
                   <td
                     style={{
                       ...td,
-                      textAlign: "right",
+                      textAlign: 'right',
                     }}
                   >
                     {formatQty(item.quantity)}
@@ -434,8 +426,8 @@ export default function PrintableQuotation({
                   <td
                     style={{
                       ...td,
-                      textAlign: "right",
-                      whiteSpace: "nowrap",
+                      textAlign: 'right',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {formatCurrency(safeNumber(item.rate))}
@@ -444,8 +436,8 @@ export default function PrintableQuotation({
                   <td
                     style={{
                       ...td,
-                      textAlign: "right",
-                      whiteSpace: "nowrap",
+                      textAlign: 'right',
+                      whiteSpace: 'nowrap',
                       fontWeight: 600,
                     }}
                   >
@@ -459,9 +451,9 @@ export default function PrintableQuotation({
                   colSpan={5}
                   style={{
                     ...td,
-                    textAlign: "center",
-                    padding: "12px",
-                    color: "#666",
+                    textAlign: 'center',
+                    padding: '12px',
+                    color: '#666',
                   }}
                 >
                   No items
@@ -479,23 +471,23 @@ export default function PrintableQuotation({
       <div
         className="quotation-totals"
         style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "7mm",
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginBottom: '7mm',
         }}
       >
         <table
           style={{
-            width: "78mm",
-            borderCollapse: "collapse",
+            width: '78mm',
+            borderCollapse: 'collapse',
           }}
         >
           <tbody>
             <tr>
               <td
                 style={{
-                  border: "1px solid #000",
-                  padding: "6px 8px",
+                  border: '1px solid #000',
+                  padding: '6px 8px',
                   fontWeight: 600,
                 }}
               >
@@ -504,9 +496,9 @@ export default function PrintableQuotation({
 
               <td
                 style={{
-                  border: "1px solid #000",
-                  padding: "6px 8px",
-                  textAlign: "right",
+                  border: '1px solid #000',
+                  padding: '6px 8px',
+                  textAlign: 'right',
                 }}
               >
                 {formatCurrency(subtotal)}
@@ -517,8 +509,8 @@ export default function PrintableQuotation({
               <tr>
                 <td
                   style={{
-                    border: "1px solid #000",
-                    padding: "6px 8px",
+                    border: '1px solid #000',
+                    padding: '6px 8px',
                   }}
                 >
                   Tax ({taxPercent}%)
@@ -526,9 +518,9 @@ export default function PrintableQuotation({
 
                 <td
                   style={{
-                    border: "1px solid #000",
-                    padding: "6px 8px",
-                    textAlign: "right",
+                    border: '1px solid #000',
+                    padding: '6px 8px',
+                    textAlign: 'right',
                   }}
                 >
                   {formatCurrency(taxAmount)}
@@ -540,8 +532,8 @@ export default function PrintableQuotation({
               <tr>
                 <td
                   style={{
-                    border: "1px solid #000",
-                    padding: "6px 8px",
+                    border: '1px solid #000',
+                    padding: '6px 8px',
                   }}
                 >
                   Additional Charges
@@ -549,9 +541,9 @@ export default function PrintableQuotation({
 
                 <td
                   style={{
-                    border: "1px solid #000",
-                    padding: "6px 8px",
-                    textAlign: "right",
+                    border: '1px solid #000',
+                    padding: '6px 8px',
+                    textAlign: 'right',
                   }}
                 >
                   {formatCurrency(additionalCharges)}
@@ -563,19 +555,19 @@ export default function PrintableQuotation({
               <tr>
                 <td
                   style={{
-                    border: "1px solid #000",
-                    padding: "6px 8px",
+                    border: '1px solid #000',
+                    padding: '6px 8px',
                   }}
                 >
                   Discount
-                  {discountType === "percent" && ` (${discount}%)`}
+                  {discountType === 'percent' && ` (${discount}%)`}
                 </td>
 
                 <td
                   style={{
-                    border: "1px solid #000",
-                    padding: "6px 8px",
-                    textAlign: "right",
+                    border: '1px solid #000',
+                    padding: '6px 8px',
+                    textAlign: 'right',
                   }}
                 >
                   - {formatCurrency(discount)}
@@ -586,12 +578,12 @@ export default function PrintableQuotation({
             <tr>
               <td
                 style={{
-                  border: "1px solid #000",
-                  padding: "8px",
+                  border: '1px solid #000',
+                  padding: '8px',
                   fontWeight: 700,
                   fontSize: 13,
-                  background: "#33473E",
-                  color: "#fff",
+                  background: '#33473E',
+                  color: '#fff',
                 }}
               >
                 Grand Total
@@ -599,14 +591,14 @@ export default function PrintableQuotation({
 
               <td
                 style={{
-                  border: "1px solid #000",
-                  padding: "8px",
-                  textAlign: "right",
+                  border: '1px solid #000',
+                  padding: '8px',
+                  textAlign: 'right',
                   fontWeight: 700,
                   fontSize: 13,
-                  background: "#33473E",
-                  color: "#fff",
-                  whiteSpace: "nowrap",
+                  background: '#33473E',
+                  color: '#fff',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {formatCurrency(grandTotal)}
@@ -624,7 +616,7 @@ export default function PrintableQuotation({
         <div
           className="no-break"
           style={{
-            marginBottom: "7mm",
+            marginBottom: '7mm',
           }}
         >
           <div
@@ -639,15 +631,15 @@ export default function PrintableQuotation({
 
           <div
             style={{
-              border: "1px solid #000",
-              padding: "8px 10px",
+              border: '1px solid #000',
+              padding: '8px 10px',
             }}
           >
             {paymentTerms.map((term, index) => {
               const text =
-                typeof term === "string"
+                typeof term === 'string'
                   ? term
-                  : term?.label || term?.name || term?.description || "";
+                  : term?.label || term?.name || term?.description || '';
 
               if (!text) {
                 return null;
@@ -657,7 +649,7 @@ export default function PrintableQuotation({
                 <div
                   key={index}
                   style={{
-                    display: "flex",
+                    display: 'flex',
                     gap: 8,
                     marginBottom: index === paymentTerms.length - 1 ? 0 : 4,
                   }}
@@ -680,7 +672,7 @@ export default function PrintableQuotation({
         <div
           className="terms-box no-break"
           style={{
-            marginBottom: "8mm",
+            marginBottom: '8mm',
           }}
         >
           <div
@@ -695,9 +687,9 @@ export default function PrintableQuotation({
 
           <div
             style={{
-              border: "1px solid #000",
-              padding: "8px 10px",
-              whiteSpace: "pre-wrap",
+              border: '1px solid #000',
+              padding: '8px 10px',
+              whiteSpace: 'pre-wrap',
               fontSize: 10.5,
               lineHeight: 1.55,
             }}
@@ -714,15 +706,15 @@ export default function PrintableQuotation({
       <div
         className="signature-row no-break"
         style={{
-          marginTop: "10mm",
-          display: "flex",
-          justifyContent: "flex-end",
+          marginTop: '10mm',
+          display: 'flex',
+          justifyContent: 'flex-end',
         }}
       >
         <div
           style={{
-            width: "58mm",
-            textAlign: "center",
+            width: '58mm',
+            textAlign: 'center',
           }}
         >
           {adminSignature && (
@@ -731,11 +723,11 @@ export default function PrintableQuotation({
               alt="Authorized Signature"
               crossOrigin="anonymous"
               style={{
-                display: "block",
-                width: "48mm",
-                height: "20mm",
-                objectFit: "contain",
-                margin: "0 auto 3mm",
+                display: 'block',
+                width: '48mm',
+                height: '20mm',
+                objectFit: 'contain',
+                margin: '0 auto 3mm',
               }}
             />
           )}
@@ -743,14 +735,14 @@ export default function PrintableQuotation({
           {!adminSignature && (
             <div
               style={{
-                height: "20mm",
+                height: '20mm',
               }}
             />
           )}
 
           <div
             style={{
-              borderTop: "1px solid #000",
+              borderTop: '1px solid #000',
               paddingTop: 5,
               fontWeight: 600,
               fontSize: 11,

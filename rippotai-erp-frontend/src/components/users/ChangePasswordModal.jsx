@@ -1,28 +1,28 @@
-import React, { useState } from "react";
-import { Eye, EyeOff, KeyRound, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
-import { toast } from "sonner";
-import { Field, TextInput, Button } from "@/components/inos";
-import { AdminModal, ModalActions } from "@/pages/settings/_admin-ui";
-import { useChangePasswordMutation } from "../../api/auth/auth.api"; // adjust path to match your project
-import { newPasswordError } from "@/lib/password-policy";
+import React, { useState } from 'react';
+import { Eye, EyeOff, KeyRound, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Field, TextInput, Button } from '@/components/inos';
+import { AdminModal, ModalActions } from '@/pages/settings/_admin-ui';
+import { useChangePasswordMutation } from '../../api/auth/auth.api'; // adjust path to match your project
+import { newPasswordError } from '@/lib/password-policy';
 
 const initialPasswords = {
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
 };
 
 export default function ChangePasswordModal({ open, onOpenChange }) {
   const [showPasswords, setShowPasswords] = useState(false);
   const [passwords, setPasswords] = useState(initialPasswords);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
   const [changePassword, { isLoading }] = useChangePasswordMutation();
 
   const handlePasswordChange = (e) => {
-    setError("");
+    setError('');
     setFieldErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
     setPasswords((prev) => ({
       ...prev,
@@ -32,7 +32,7 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
 
   const handleClose = () => {
     setPasswords(initialPasswords);
-    setError("");
+    setError('');
     setFieldErrors({});
     setShowPasswords(false);
     onOpenChange(false);
@@ -43,11 +43,12 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
     const { currentPassword, newPassword, confirmPassword } = passwords;
 
     const next = {};
-    if (!currentPassword) next.currentPassword = "Enter your current password.";
-    if (!newPassword) next.newPassword = "Choose a new password.";
+    if (!currentPassword) next.currentPassword = 'Enter your current password.';
+    if (!newPassword) next.newPassword = 'Choose a new password.';
     else if (newPasswordError(newPassword)) next.newPassword = newPasswordError(newPassword);
-    if (!confirmPassword) next.confirmPassword = "Type the new password again.";
-    else if (newPassword && newPassword !== confirmPassword) next.confirmPassword = "Passwords do not match.";
+    if (!confirmPassword) next.confirmPassword = 'Type the new password again.';
+    else if (newPassword && newPassword !== confirmPassword)
+      next.confirmPassword = 'Passwords do not match.';
     if (Object.keys(next).length) {
       setFieldErrors(next);
       return;
@@ -60,18 +61,18 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
       }).unwrap();
 
       handleClose();
-      toast.success("Password updated. You may need to sign in again on your other devices.");
+      toast.success('Password updated. You may need to sign in again on your other devices.');
     } catch (err) {
       const message = err?.data?.message;
       setError(
         Array.isArray(message)
-          ? message.join(" ")
-          : message || "Failed to update password. Please try again.",
+          ? message.join(' ')
+          : message || 'Failed to update password. Please try again.',
       );
     }
   };
 
-  const type = showPasswords ? "text" : "password";
+  const type = showPasswords ? 'text' : 'password';
 
   return (
     <AdminModal
@@ -84,7 +85,7 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
       title="Change password"
       subtitle={
         <>
-          Keep your account secure.{" "}
+          Keep your account secure.{' '}
           <Link to="/forgot-password" className="adm-link-btn" onClick={handleClose}>
             Forgot password?
           </Link>
@@ -101,7 +102,12 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
         />
       }
     >
-      <Field label="Current password" required htmlFor="currentPassword" error={fieldErrors.currentPassword}>
+      <Field
+        label="Current password"
+        required
+        htmlFor="currentPassword"
+        error={fieldErrors.currentPassword}
+      >
         <TextInput
           id="currentPassword"
           name="currentPassword"
@@ -132,7 +138,12 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
         />
       </Field>
 
-      <Field label="Confirm new password" required htmlFor="confirmPassword" error={fieldErrors.confirmPassword}>
+      <Field
+        label="Confirm new password"
+        required
+        htmlFor="confirmPassword"
+        error={fieldErrors.confirmPassword}
+      >
         <TextInput
           id="confirmPassword"
           name="confirmPassword"
@@ -151,8 +162,13 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
       )}
 
       <div>
-        <Button variant="ghost" size="sm" icon={showPasswords ? EyeOff : Eye} onClick={() => setShowPasswords((prev) => !prev)}>
-          {showPasswords ? "Hide passwords" : "Show passwords"}
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={showPasswords ? EyeOff : Eye}
+          onClick={() => setShowPasswords((prev) => !prev)}
+        >
+          {showPasswords ? 'Hide passwords' : 'Show passwords'}
         </Button>
       </div>
     </AdminModal>

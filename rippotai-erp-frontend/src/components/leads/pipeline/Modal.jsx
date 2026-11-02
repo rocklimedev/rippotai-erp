@@ -1,6 +1,6 @@
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
-import { Button } from "@/components/inos";
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { Button } from '@/components/inos';
 
 /** Centered modal in Quiet Studio style (title, body, footer). */
 export function Modal({ open, onOpenChange, title, description, children, footer, size, testId }) {
@@ -9,7 +9,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="crm-overlay" />
         <DialogPrimitive.Content
-          className={`crm-modal ${size === "sm" ? "crm-modal--sm" : ""}`}
+          className={`crm-modal ${size === 'sm' ? 'crm-modal--sm' : ''}`}
           data-testid={testId}
           aria-describedby={undefined}
         >
@@ -19,7 +19,13 @@ export function Modal({ open, onOpenChange, title, description, children, footer
               {description && <p className="crm-modal__desc">{description}</p>}
             </div>
             <DialogPrimitive.Close asChild>
-              <Button variant="ghost" size="sm" icon={X} aria-label="Close" style={{ marginLeft: "auto" }} />
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={X}
+                aria-label="Close"
+                style={{ marginLeft: 'auto' }}
+              />
             </DialogPrimitive.Close>
           </div>
           <div className="crm-modal__body">{children}</div>
@@ -31,12 +37,16 @@ export function Modal({ open, onOpenChange, title, description, children, footer
 }
 
 /** Right-side drawer. */
-export function Drawer({ open, onOpenChange, children, label = "Deal", testId }) {
+export function Drawer({ open, onOpenChange, children, label = 'Deal', testId }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="crm-overlay" />
-        <DialogPrimitive.Content className="crm-drawer" data-testid={testId} aria-describedby={undefined}>
+        <DialogPrimitive.Content
+          className="crm-drawer"
+          data-testid={testId}
+          aria-describedby={undefined}
+        >
           <DialogPrimitive.Title className="sr-only">{label}</DialogPrimitive.Title>
           {children}
         </DialogPrimitive.Content>

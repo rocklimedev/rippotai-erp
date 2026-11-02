@@ -1,19 +1,19 @@
-import React, { useState } from "react";
-import { toast } from "sonner";
-import { useCreateVendorMutation } from "../../api/vendors/vendor.api";
-import { Button, Field as InosField, TextInput, SelectInput, ChoiceGroup } from "@/components/inos";
-import { Modal } from "@/components/forms/commerce-form-ui";
+import React, { useState } from 'react';
+import { toast } from 'sonner';
+import { useCreateVendorMutation } from '../../api/vendors/vendor.api';
+import { Button, Field as InosField, TextInput, SelectInput, ChoiceGroup } from '@/components/inos';
+import { Modal } from '@/components/forms/commerce-form-ui';
 
 const VENDOR_CATEGORIES = [
-  "General",
-  "Civil",
-  "Electrical",
-  "Plumbing",
-  "Carpentry",
-  "Painting",
-  "Flooring",
-  "Fabrication",
-  "Other",
+  'General',
+  'Civil',
+  'Electrical',
+  'Plumbing',
+  'Carpentry',
+  'Painting',
+  'Flooring',
+  'Fabrication',
+  'Other',
 ];
 
 const Field = ({ label, required, children, hint }) => (
@@ -25,24 +25,23 @@ const Input = (props) => <TextInput {...props} />;
 
 export default function NewVendorModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
-    name: "",
-    company: "",
-    contact: "",
-    email: "",
-    primary_category: "General",
+    name: '',
+    company: '',
+    contact: '',
+    email: '',
+    primary_category: 'General',
   });
 
   const [createVendor, { isLoading: saving }] = useCreateVendorMutation();
 
   const save = async () => {
-    if (!form.company.trim() && !form.name.trim())
-      return toast.error("Company or name required");
+    if (!form.company.trim() && !form.name.trim()) return toast.error('Company or name required');
     try {
       const data = await createVendor(form).unwrap();
       toast.success(`Vendor "${data.company || data.name}" added`);
       onCreated(data);
     } catch (e) {
-      toast.error(e?.data?.detail || e?.error || "Failed to add vendor");
+      toast.error(e?.data?.detail || e?.error || 'Failed to add vendor');
     }
   };
 
@@ -58,7 +57,7 @@ export default function NewVendorModal({ onClose, onCreated }) {
             Cancel
           </Button>
           <Button variant="primary" onClick={save} disabled={saving} data-testid="nv-save">
-            {saving ? "Saving…" : "Add vendor"}
+            {saving ? 'Saving…' : 'Add vendor'}
           </Button>
         </>
       }

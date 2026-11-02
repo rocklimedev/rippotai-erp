@@ -1,27 +1,19 @@
-import React from "react";
-import { Upload, FileText } from "lucide-react";
-import { Card } from "../hooks/shared";
+import React from 'react';
+import { Upload, FileText } from 'lucide-react';
+import { Card } from '../hooks/shared';
 
 /**
  * Renders the attachments upload UI. Stateless — SiteRekiForm owns the
  * attachments array and passes handlers down, same pattern as SectionForm.
  */
-export function AttachmentsPanel({
-  attachments,
-  onAddFiles,
-  onRemove,
-  onRemarkChange,
-}) {
+export function AttachmentsPanel({ attachments, onAddFiles, onRemove, onRemarkChange }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-2">
         <div>
-          <div className="text-[16px] font-semibold text-[#333333]">
-            Attachments
-          </div>
+          <div className="text-[16px] font-semibold text-[#333333]">Attachments</div>
           <div className="text-[12.5px] text-[#6B7B7C]">
-            Upload site photos and reference files. Add a remark to each so
-            context isn&apos;t lost.
+            Upload site photos and reference files. Add a remark to each so context isn&apos;t lost.
           </div>
         </div>
         <label
@@ -36,7 +28,7 @@ export function AttachmentsPanel({
             className="hidden"
             onChange={(e) => {
               onAddFiles(e.target.files);
-              e.target.value = "";
+              e.target.value = '';
             }}
             data-testid="reki-upload-input"
           />
@@ -47,13 +39,12 @@ export function AttachmentsPanel({
           className="border border-dashed border-[#B5C4B6] rounded-lg py-8 text-center text-[12.5px] text-[#6B7B7C]"
           data-testid="reki-attach-empty"
         >
-          No attachments yet. Upload JPG / PNG / PDF / DOC / XLSX (up to 8 MB
-          each).
+          No attachments yet. Upload JPG / PNG / PDF / DOC / XLSX (up to 8 MB each).
         </div>
       ) : (
         <div className="grid gap-3" data-testid="reki-attachments-list">
           {attachments.map((a, i) => {
-            const isImg = (a.mime || "").startsWith("image/");
+            const isImg = (a.mime || '').startsWith('image/');
             return (
               <div
                 key={i}
@@ -85,7 +76,7 @@ export function AttachmentsPanel({
                     </button>
                   </div>
                   <div className="text-[11.5px] text-[#6B7B7C] mb-1.5">
-                    {(a.size / 1024).toFixed(1)} KB · {a.mime || "—"}
+                    {(a.size / 1024).toFixed(1)} KB · {a.mime || '—'}
                   </div>
                   <input
                     placeholder="Remark (optional) — e.g. 'North wall damp patch'"
