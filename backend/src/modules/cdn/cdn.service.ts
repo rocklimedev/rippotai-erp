@@ -12,6 +12,7 @@ import * as fs from 'fs/promises';
 import { pipeline } from 'stream/promises';
 import type { Writable } from 'stream';
 import { streamSftpFile } from './sftp-stream';
+import { withCdnDownloadSlot } from './cdn-download-gate';
 import { MAX_UPLOAD_BYTES, validateUploadType } from './upload-security';
 import { NasService } from './nas.service';
 import { NasStagingService } from './nas-staging.service';
@@ -43,14 +44,37 @@ export class CdnService {
   }
 
   private async connect(): Promise<SftpClient> {
-    const sftp = new SftpClient();
-    await sftp.connect({
-      host: process.env.CDN_HOST!,
-      port: Number(process.env.CDN_PORT ?? 22),
-      username: process.env.CDN_USERNAME!,
-      password: process.env.CDN_PASSWORD!,
-    });
-    return sftp;
+    for (let attempt = 0; ; attempt++) {
+      const sftp = new SftpClient();
+      try {
+        await sftp.connect({
+          host: process.env.CDN_HOST!,
+          port: Number(process.env.CDN_PORT ?? 22),
+          username: process.env.CDN_USERNAME!,
+          password: process.env.CDN_PASSWORD!,
+          readyTimeout: 10000,
+          retries: 0,
+        });
+        return sftp;
+      } catch (error) {
+        await sftp.end().catch(() => undefined);
+        const message = error instanceof Error ? error.message : '';
+        const code = (error as NodeJS.ErrnoException).code;
+        const transient =
+          /before handshake|handshake.*timed out/i.test(message) ||
+          ['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED'].includes(code || '');
+        if (!transient) throw error;
+        if (attempt >= 2) {
+          this.logger.warn('CDN SSH connection unavailable after 3 attempts');
+          throw new ServiceUnavailableException(
+            'File storage temporarily unavailable; retry shortly',
+          );
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, 250 * (attempt + 1)),
+        );
+      }
+    }
   }
 
   private async put(
@@ -162,13 +186,17 @@ export class CdnService {
       await pipeline(file.createReadStream(), destination);
       return;
     }
-    const sftp = await this.connect();
-    try {
-      await sftp.stat(`${root}/${storageFilename}`);
-      await streamSftpFile(sftp, `${root}/${storageFilename}`, destination);
-    } finally {
-      await sftp.end().catch(() => undefined);
-    }
+    await withCdnDownloadSlot(async () => {
+      if (destination.destroyed || destination.writableEnded) return;
+      const sftp = await this.connect();
+      try {
+        if (destination.destroyed || destination.writableEnded) return;
+        await sftp.stat(`${root}/${storageFilename}`);
+        await streamSftpFile(sftp, `${root}/${storageFilename}`, destination);
+      } finally {
+        await sftp.end().catch(() => undefined);
+      }
+    });
   }
 
   async uploadBuffer(

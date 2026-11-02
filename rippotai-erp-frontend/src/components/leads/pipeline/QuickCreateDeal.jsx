@@ -1,46 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import {
-  Button,
-  Field,
-  TextInput,
-  SelectInput,
-  ChoiceGroup,
-} from "@/components/inos";
-import { useGetClientsQuery } from "@/api/projects/client.api";
-import { useCreateLeadMutation } from "@/api/connectors/leads.api";
-import { STAGES, formatINR } from "@/hooks/stages";
-import { Modal } from "./Modal";
-import { errorText, parseRupees } from "./utils";
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { Button, Field, TextInput, SelectInput, ChoiceGroup } from '@/components/inos';
+import { useGetClientsQuery } from '@/api/projects/client.api';
+import { useCreateLeadMutation } from '@/api/connectors/leads.api';
+import { STAGES, formatINR } from '@/hooks/stages';
+import { Modal } from './Modal';
+import { errorText, parseRupees } from './utils';
 
-const TYPES = ["Residential", "Commercial", "Institutional"];
-const DEFAULT_SOURCES = [
-  "Referral",
-  "Website",
-  "Social Media",
-  "Walk-in",
-  "Other",
-];
+const TYPES = ['Residential', 'Commercial', 'Institutional'];
+const DEFAULT_SOURCES = ['Referral', 'Website', 'Social Media', 'Walk-in', 'Other'];
 
 // Digits only, max 10. Handles pasted "+91 98765 43210" / "098765 43210".
 const toTenDigits = (raw) => {
-  let digits = String(raw ?? "").replace(/\D/g, "");
+  let digits = String(raw ?? '').replace(/\D/g, '');
   if (digits.length > 10) {
-    if (digits.startsWith("91")) digits = digits.slice(2);
-    else if (digits.startsWith("0")) digits = digits.slice(1);
+    if (digits.startsWith('91')) digits = digits.slice(2);
+    else if (digits.startsWith('0')) digits = digits.slice(1);
   }
   return digits.slice(0, 10);
 };
 
 const ALLOWED_KEYS = [
-  "Backspace",
-  "Delete",
-  "Tab",
-  "ArrowLeft",
-  "ArrowRight",
-  "Home",
-  "End",
-  "Enter",
+  'Backspace',
+  'Delete',
+  'Tab',
+  'ArrowLeft',
+  'ArrowRight',
+  'Home',
+  'End',
+  'Enter',
 ];
 const blockNonDigits = (e) => {
   if (ALLOWED_KEYS.includes(e.key) || e.ctrlKey || e.metaKey) return;
@@ -48,20 +36,20 @@ const blockNonDigits = (e) => {
 };
 
 const empty = (stage) => ({
-  clientMode: "existing", // default: pick an existing client
-  clientId: "",
-  newClientName: "",
-  phone: "",
-  email: "",
-  contact: "",
-  dealName: "",
-  amount: "",
-  stage: stage || "capture",
-  ownerId: "",
-  source: "Referral",
-  expectedClose: "",
-  type: "Residential",
-  location: "",
+  clientMode: 'existing', // default: pick an existing client
+  clientId: '',
+  newClientName: '',
+  phone: '',
+  email: '',
+  contact: '',
+  dealName: '',
+  amount: '',
+  stage: stage || 'capture',
+  ownerId: '',
+  source: 'Referral',
+  expectedClose: '',
+  type: 'Residential',
+  location: '',
 });
 
 /**
@@ -69,19 +57,12 @@ const empty = (stage) => ({
  * value, stage, owner, source, expected close. Everything else is edited
  * later in the deal drawer.
  */
-export default function QuickCreateDeal({
-  open,
-  onOpenChange,
-  defaultStage,
-  meta,
-  onCreated,
-}) {
+export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta, onCreated }) {
   const [form, setForm] = useState(() => empty(defaultStage));
   const [errors, setErrors] = useState({});
-  const { data: clients = [], isSuccess: clientsLoaded } = useGetClientsQuery(
-    undefined,
-    { skip: !open },
-  );
+  const { data: clients = [], isSuccess: clientsLoaded } = useGetClientsQuery(undefined, {
+    skip: !open,
+  });
   const [createLead, { isLoading }] = useCreateLeadMutation();
 
   // Reset to "existing client" every time the modal opens.
@@ -95,7 +76,7 @@ export default function QuickCreateDeal({
   const sortedClients = useMemo(
     () =>
       [...(Array.isArray(clients) ? clients : [])].sort((a, b) =>
-        (a.name || "").localeCompare(b.name || ""),
+        (a.name || '').localeCompare(b.name || ''),
       ),
     [clients],
   );
@@ -103,14 +84,12 @@ export default function QuickCreateDeal({
   // No clients to pick from? Fall back to "new client" so the user isn't stuck.
   useEffect(() => {
     if (open && clientsLoaded && sortedClients.length === 0) {
-      setForm((f) =>
-        f.clientMode === "existing" ? { ...f, clientMode: "new" } : f,
-      );
+      setForm((f) => (f.clientMode === 'existing' ? { ...f, clientMode: 'new' } : f));
     }
   }, [open, clientsLoaded, sortedClients.length]);
 
   const set = (k, v) => {
-    setForm((f) => ({ ...f, [k]: k === "phone" ? toTenDigits(v) : v }));
+    setForm((f) => ({ ...f, [k]: k === 'phone' ? toTenDigits(v) : v }));
     if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
   };
 
@@ -118,10 +97,10 @@ export default function QuickCreateDeal({
     setForm((f) => ({
       ...f,
       clientMode: mode,
-      clientId: mode === "existing" ? f.clientId : "",
-      newClientName: mode === "new" ? f.newClientName : "",
-      phone: mode === "new" ? f.phone : "",
-      email: mode === "new" ? f.email : "",
+      clientId: mode === 'existing' ? f.clientId : '',
+      newClientName: mode === 'new' ? f.newClientName : '',
+      phone: mode === 'new' ? f.phone : '',
+      email: mode === 'new' ? f.email : '',
     }));
     setErrors((e) => ({
       ...e,
@@ -139,8 +118,8 @@ export default function QuickCreateDeal({
     setForm((f) => {
       const next = { ...f, clientId: id };
       if (c && !f.dealName.trim()) {
-        const surname = (c.name || "").split(/\s+/).slice(-1)[0];
-        next.dealName = `${surname} ${f.type === "Residential" ? "Residence" : "Project"}`;
+        const surname = (c.name || '').split(/\s+/).slice(-1)[0];
+        next.dealName = `${surname} ${f.type === 'Residential' ? 'Residence' : 'Project'}`;
       }
       return next;
     });
@@ -152,7 +131,7 @@ export default function QuickCreateDeal({
       ...new Set(
         (meta?.sources?.length ? meta.sources : DEFAULT_SOURCES)
           .filter((s) => !/zoho|bigin/i.test(s))
-          .map((s) => (s === "Instagram" ? "Social Media" : s)),
+          .map((s) => (s === 'Instagram' ? 'Social Media' : s)),
       ),
     ],
     [meta],
@@ -160,20 +139,15 @@ export default function QuickCreateDeal({
 
   const validate = () => {
     const e = {};
-    if (form.clientMode === "existing" && !form.clientId)
-      e.clientId = "Pick a client, or add a new one.";
-    if (form.clientMode === "new") {
-      if (!form.newClientName.trim())
-        e.newClientName = "Enter the client's name.";
-      if (!form.phone && !form.email.trim())
-        e.phone = "Add a phone number or email.";
-      else if (form.phone && form.phone.length !== 10)
-        e.phone = "Enter a 10-digit phone number.";
+    if (form.clientMode === 'existing' && !form.clientId)
+      e.clientId = 'Pick a client, or add a new one.';
+    if (form.clientMode === 'new') {
+      if (!form.newClientName.trim()) e.newClientName = "Enter the client's name.";
+      if (!form.phone && !form.email.trim()) e.phone = 'Add a phone number or email.';
+      else if (form.phone && form.phone.length !== 10) e.phone = 'Enter a 10-digit phone number.';
     }
-    if (!form.dealName.trim())
-      e.dealName = "Name the deal, e.g. “Malhotra Residence”.";
-    if (form.amount && Number.isNaN(amountValue))
-      e.amount = "Use a number, e.g. 45 L or 1.2 Cr.";
+    if (!form.dealName.trim()) e.dealName = 'Name the deal, e.g. “Malhotra Residence”.';
+    if (form.amount && Number.isNaN(amountValue)) e.amount = 'Use a number, e.g. 45 L or 1.2 Cr.';
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -190,12 +164,8 @@ export default function QuickCreateDeal({
       expectedClose: form.expectedClose || undefined,
       type: form.type,
       location: form.location.trim() || undefined,
-      ...(owner
-        ? owner.id
-          ? { ownerId: owner.id }
-          : { owner: owner.name }
-        : {}),
-      ...(form.clientMode === "existing"
+      ...(owner ? (owner.id ? { ownerId: owner.id } : { owner: owner.name }) : {}),
+      ...(form.clientMode === 'existing'
         ? { clientId: form.clientId }
         : {
             newClient: {
@@ -210,9 +180,7 @@ export default function QuickCreateDeal({
     };
     try {
       const deal = await createLead(body).unwrap();
-      toast.success(
-        `${deal.title} added to ${STAGES.find((s) => s.id === deal.stage)?.label}`,
-      );
+      toast.success(`${deal.title} added to ${STAGES.find((s) => s.id === deal.stage)?.label}`);
       onCreated?.(deal); // before closing, so callers can flag "created"
       onOpenChange(false);
     } catch (err) {
@@ -252,7 +220,7 @@ export default function QuickCreateDeal({
         }}
         noValidate
       >
-        {form.clientMode === "existing" ? (
+        {form.clientMode === 'existing' ? (
           <Field
             label="Client"
             required
@@ -260,9 +228,7 @@ export default function QuickCreateDeal({
             error={errors.clientId}
             hint={
               selectedClient
-                ? [selectedClient.contact_person, selectedClient.phone]
-                    .filter(Boolean)
-                    .join(" · ")
+                ? [selectedClient.contact_person, selectedClient.phone].filter(Boolean).join(' · ')
                 : undefined
             }
           >
@@ -282,8 +248,8 @@ export default function QuickCreateDeal({
             <button
               type="button"
               className="crm-linkbtn"
-              style={{ justifySelf: "start" }}
-              onClick={() => setMode("new")}
+              style={{ justifySelf: 'start' }}
+              onClick={() => setMode('new')}
             >
               + New client
             </button>
@@ -298,7 +264,7 @@ export default function QuickCreateDeal({
             <TextInput
               id="qc-newclient"
               value={form.newClientName}
-              onChange={(e) => set("newClientName", e.target.value)}
+              onChange={(e) => set('newClientName', e.target.value)}
               placeholder="e.g. Rhea Malhotra"
               autoFocus
               invalid={!!errors.newClientName}
@@ -307,8 +273,8 @@ export default function QuickCreateDeal({
               <button
                 type="button"
                 className="crm-linkbtn"
-                style={{ justifySelf: "start" }}
-                onClick={() => setMode("existing")}
+                style={{ justifySelf: 'start' }}
+                onClick={() => setMode('existing')}
               >
                 Pick an existing client instead
               </button>
@@ -320,19 +286,19 @@ export default function QuickCreateDeal({
           <TextInput
             id="qc-contact"
             value={form.contact}
-            onChange={(e) => set("contact", e.target.value)}
+            onChange={(e) => set('contact', e.target.value)}
             placeholder="Who you're speaking with"
           />
         </Field>
 
-        {form.clientMode === "new" && (
+        {form.clientMode === 'new' && (
           <>
             <Field label="Phone" htmlFor="qc-phone" error={errors.phone}>
               <TextInput
                 id="qc-phone"
                 name="phone"
                 value={form.phone}
-                onChange={(e) => set("phone", e.target.value)}
+                onChange={(e) => set('phone', e.target.value)}
                 onKeyDown={blockNonDigits}
                 placeholder="10-digit phone number"
                 inputMode="numeric"
@@ -346,23 +312,18 @@ export default function QuickCreateDeal({
                 id="qc-email"
                 type="email"
                 value={form.email}
-                onChange={(e) => set("email", e.target.value)}
+                onChange={(e) => set('email', e.target.value)}
                 placeholder="name@example.com"
               />
             </Field>
           </>
         )}
 
-        <Field
-          label="Deal / project name"
-          required
-          htmlFor="qc-deal"
-          error={errors.dealName}
-        >
+        <Field label="Deal / project name" required htmlFor="qc-deal" error={errors.dealName}>
           <TextInput
             id="qc-deal"
             value={form.dealName}
-            onChange={(e) => set("dealName", e.target.value)}
+            onChange={(e) => set('dealName', e.target.value)}
             placeholder="e.g. DLF Camellias apartment"
             invalid={!!errors.dealName}
           />
@@ -376,7 +337,7 @@ export default function QuickCreateDeal({
           hint={
             amountValue && !Number.isNaN(amountValue)
               ? `= ${formatINR(amountValue, { compact: false })}`
-              : "Type 45 L, 1.2 Cr or a full amount."
+              : 'Type 45 L, 1.2 Cr or a full amount.'
           }
         >
           <div className="crm-input-prefix">
@@ -384,7 +345,7 @@ export default function QuickCreateDeal({
             <TextInput
               id="qc-amount"
               value={form.amount}
-              onChange={(e) => set("amount", e.target.value)}
+              onChange={(e) => set('amount', e.target.value)}
               placeholder="45 L"
               inputMode="decimal"
               invalid={!!errors.amount}
@@ -396,7 +357,7 @@ export default function QuickCreateDeal({
           <SelectInput
             id="qc-stage"
             value={form.stage}
-            onChange={(e) => set("stage", e.target.value)}
+            onChange={(e) => set('stage', e.target.value)}
           >
             {STAGES.map((s) => (
               <option key={s.id} value={s.id}>
@@ -410,7 +371,7 @@ export default function QuickCreateDeal({
           <SelectInput
             id="qc-owner"
             value={form.ownerId}
-            onChange={(e) => set("ownerId", e.target.value)}
+            onChange={(e) => set('ownerId', e.target.value)}
           >
             <option value="">Me</option>
             {(meta?.owners || []).map((o) => (
@@ -425,7 +386,7 @@ export default function QuickCreateDeal({
           <SelectInput
             id="qc-source"
             value={form.source}
-            onChange={(e) => set("source", e.target.value)}
+            onChange={(e) => set('source', e.target.value)}
           >
             {sources.map((s) => (
               <option key={s} value={s}>
@@ -440,7 +401,7 @@ export default function QuickCreateDeal({
             id="qc-close"
             type="date"
             value={form.expectedClose}
-            onChange={(e) => set("expectedClose", e.target.value)}
+            onChange={(e) => set('expectedClose', e.target.value)}
           />
         </Field>
 
@@ -448,7 +409,7 @@ export default function QuickCreateDeal({
           <TextInput
             id="qc-location"
             value={form.location}
-            onChange={(e) => set("location", e.target.value)}
+            onChange={(e) => set('location', e.target.value)}
             placeholder="e.g. Golf Course Road, Gurugram"
           />
         </Field>
@@ -456,7 +417,7 @@ export default function QuickCreateDeal({
         <Field label="Project type" full>
           <ChoiceGroup
             value={form.type}
-            onChange={(v) => set("type", v)}
+            onChange={(v) => set('type', v)}
             options={TYPES.map((t) => ({ value: t, label: t }))}
             name="Project type"
           />

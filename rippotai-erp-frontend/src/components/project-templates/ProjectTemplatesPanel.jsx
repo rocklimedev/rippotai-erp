@@ -1,18 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { Download, FileText, Sparkles } from "lucide-react";
-import {
-  Button,
-  Card,
-  EmptyState,
-  Field,
-  Pill,
-  TextInput,
-} from "@/components/inos";
-import { Modal } from "@/components/projects/_projects-ui";
-import { DocumentPreview, usePdfDownload } from "@/components/print-document";
-import { TEMPLATES } from "./templates.config";
+import { useEffect, useRef, useState } from 'react';
+import { Download, FileText, Sparkles } from 'lucide-react';
+import { Button, Card, EmptyState, Field, Pill, TextInput } from '@/components/inos';
+import { Modal } from '@/components/projects/_projects-ui';
+import { DocumentPreview, usePdfDownload } from '@/components/print-document';
+import { TEMPLATES } from './templates.config';
 
-const isBlank = (v) => !String(v ?? "").trim();
+const isBlank = (v) => !String(v ?? '').trim();
 
 /* ---------- Modal 1: shown ONLY when data is missing ---------- */
 function CompleteDetailsModal({ template, missing, onCancel, onSubmit }) {
@@ -30,26 +23,20 @@ function CompleteDetailsModal({ template, missing, onCancel, onSubmit }) {
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            disabled={!complete}
-            onClick={() => onSubmit(draft)}
-          >
+          <Button variant="primary" disabled={!complete} onClick={() => onSubmit(draft)}>
             Continue
           </Button>
         </>
       }
     >
-      <div style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: 'grid', gap: 14 }}>
         {missing.map((f) => (
           <Field key={f.key} label={f.label}>
             <TextInput
-              type={f.inputType || "text"}
+              type={f.inputType || 'text'}
               maxLength={f.maxLength}
-              value={draft[f.key] || ""}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, [f.key]: e.target.value }))
-              }
+              value={draft[f.key] || ''}
+              onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
             />
           </Field>
         ))}
@@ -79,11 +66,9 @@ function PreviewModal({ template, values, project, onClose }) {
             variant="primary"
             icon={Download}
             disabled={downloading}
-            onClick={() =>
-              download(template.fileName(project), template.pdfOptions(project))
-            }
+            onClick={() => download(template.fileName(project), template.pdfOptions(project))}
           >
-            {downloading ? "Preparing PDF…" : "Download PDF"}
+            {downloading ? 'Preparing PDF…' : 'Download PDF'}
           </Button>
         </>
       }
@@ -105,27 +90,24 @@ function BackgroundExport({ template, values, project, onDone }) {
     if (started.current) return;
     started.current = true;
     const t = setTimeout(() => {
-      Promise.resolve(
-        download(template.fileName(project), template.pdfOptions(project)),
-      ).finally(onDone);
+      Promise.resolve(download(template.fileName(project), template.pdfOptions(project))).finally(
+        onDone,
+      );
     }, 150); // let fonts/logo paint
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div
-      style={{ position: "fixed", left: -10000, top: 0, pointerEvents: "none" }}
-      aria-hidden
-    >
+    <div style={{ position: 'fixed', left: -10000, top: 0, pointerEvents: 'none' }} aria-hidden>
       <Document ref={ref} values={values} />
     </div>
   );
 }
 
 function downloadStatic(template) {
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = template.fileUrl;
-  a.download = template.fileName?.() || "";
+  a.download = template.fileName?.() || '';
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -140,26 +122,23 @@ export default function ProjectTemplatesPanel({ project }) {
     ...t.getValues(project),
     ...(overrides[t.id] || {}),
   });
-  const missingFor = (t) =>
-    t.fields.filter((f) => f.required && isBlank(valuesFor(t)[f.key]));
+  const missingFor = (t) => t.fields.filter((f) => f.required && isBlank(valuesFor(t)[f.key]));
 
   const proceed = (template, action) => {
-    if (action === "generate")
-      return setFlow({ template, action, stage: "preview" });
-    return setFlow({ template, action, stage: "export" });
+    if (action === 'generate') return setFlow({ template, action, stage: 'preview' });
+    return setFlow({ template, action, stage: 'export' });
   };
 
   const start = (template, action) => {
-    if (template.type === "static") return downloadStatic(template);
-    if (missingFor(template).length)
-      return setFlow({ template, action, stage: "collect" });
+    if (template.type === 'static') return downloadStatic(template);
+    if (missingFor(template).length) return setFlow({ template, action, stage: 'collect' });
     proceed(template, action);
   };
 
   const active = flow?.template;
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div style={{ display: 'grid', gap: 20 }}>
       <Card
         flush
         title="Templates"
@@ -182,24 +161,20 @@ export default function ProjectTemplatesPanel({ project }) {
                   <div className="pj-list-item__title">{t.name}</div>
                   <div className="pj-list-item__sub">{t.description}</div>
                 </div>
-                <Pill
-                  tone={t.type === "generated" ? "brand" : "mute"}
-                  size="sm"
-                  dot={false}
-                >
-                  {t.type === "generated" ? "Auto-filled" : "Ready PDF"}
+                <Pill tone={t.type === 'generated' ? 'brand' : 'mute'} size="sm" dot={false}>
+                  {t.type === 'generated' ? 'Auto-filled' : 'Ready PDF'}
                 </Pill>
                 <Button
                   variant="secondary"
                   size="sm"
                   icon={Sparkles}
-                  disabled={t.type === "static"}
+                  disabled={t.type === 'static'}
                   title={
-                    t.type === "static"
-                      ? "This template is a ready-made PDF"
-                      : "Preview the generated document"
+                    t.type === 'static'
+                      ? 'This template is a ready-made PDF'
+                      : 'Preview the generated document'
                   }
-                  onClick={() => start(t, "generate")}
+                  onClick={() => start(t, 'generate')}
                 >
                   Generate
                 </Button>
@@ -207,7 +182,7 @@ export default function ProjectTemplatesPanel({ project }) {
                   variant="primary"
                   size="sm"
                   icon={Download}
-                  onClick={() => start(t, "download")}
+                  onClick={() => start(t, 'download')}
                 >
                   Download
                 </Button>
@@ -217,7 +192,7 @@ export default function ProjectTemplatesPanel({ project }) {
         )}
       </Card>
 
-      {flow?.stage === "collect" && (
+      {flow?.stage === 'collect' && (
         <CompleteDetailsModal
           template={active}
           missing={missingFor(active)}
@@ -232,7 +207,7 @@ export default function ProjectTemplatesPanel({ project }) {
         />
       )}
 
-      {flow?.stage === "preview" && (
+      {flow?.stage === 'preview' && (
         <PreviewModal
           template={active}
           values={valuesFor(active)}
@@ -241,7 +216,7 @@ export default function ProjectTemplatesPanel({ project }) {
         />
       )}
 
-      {flow?.stage === "export" && (
+      {flow?.stage === 'export' && (
         <BackgroundExport
           template={active}
           values={valuesFor(active)}

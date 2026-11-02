@@ -1,5 +1,5 @@
-import React from "react";
-import { ArrowLeft } from "lucide-react";
+import React from 'react';
+import { ArrowLeft } from 'lucide-react';
 
 import {
   Page,
@@ -10,8 +10,8 @@ import {
   SelectInput,
   TextArea,
   FormActions,
-} from "@/components/inos";
-import { DocSection, DocLayout, Grid } from "@/components/forms/commerce-form-ui";
+} from '@/components/inos';
+import { DocSection, DocLayout, Grid } from '@/components/forms/commerce-form-ui';
 
 /**
  * Generic multi-section form shell.
@@ -45,15 +45,11 @@ export function PaymentSectionForm({
     Object.values(values || {}).forEach((val) => {
       if (Array.isArray(val)) {
         count += val.length > 0 ? 1 : 0;
-      } else if (typeof val === "object" && val !== null) {
+      } else if (typeof val === 'object' && val !== null) {
         count += Object.values(val).filter(
-          (v) =>
-            v !== "" &&
-            v !== null &&
-            v !== undefined &&
-            !(Array.isArray(v) && v.length === 0),
+          (v) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0),
         ).length;
-      } else if (val !== "" && val !== null && val !== undefined) {
+      } else if (val !== '' && val !== null && val !== undefined) {
         count++;
       }
     });
@@ -66,15 +62,20 @@ export function PaymentSectionForm({
     <Grid cols={2}>
       {(section?.fields || []).map((field) => {
         const sectionData = values?.[section.title] || {};
-        const fieldValue = sectionData?.[field.key] ?? "";
+        const fieldValue = sectionData?.[field.key] ?? '';
         const onChange = (e) => onFieldChange(section.title, field.key, e.target.value);
 
         return (
-          <Field key={field.key} label={field.label} full={field.type === "textarea"}>
-            {field.type === "textarea" ? (
-              <TextArea rows={field.rows || 4} value={fieldValue} onChange={onChange} placeholder={field.placeholder} />
-            ) : field.type === "select" ? (
-              <SelectInput value={fieldValue || ""} onChange={onChange} placeholder="Select…">
+          <Field key={field.key} label={field.label} full={field.type === 'textarea'}>
+            {field.type === 'textarea' ? (
+              <TextArea
+                rows={field.rows || 4}
+                value={fieldValue}
+                onChange={onChange}
+                placeholder={field.placeholder}
+              />
+            ) : field.type === 'select' ? (
+              <SelectInput value={fieldValue || ''} onChange={onChange} placeholder="Select…">
                 {(field.options || []).map((option) => (
                   <option key={option} value={option}>
                     {option}
@@ -82,7 +83,12 @@ export function PaymentSectionForm({
                 ))}
               </SelectInput>
             ) : (
-              <TextInput type={field.type || "text"} value={fieldValue} onChange={onChange} placeholder={field.placeholder} />
+              <TextInput
+                type={field.type || 'text'}
+                value={fieldValue}
+                onChange={onChange}
+                placeholder={field.placeholder}
+              />
             )}
           </Field>
         );
@@ -104,10 +110,15 @@ export function PaymentSectionForm({
       {projects && (
         <DocSection step={1} title="Project" description="Which project this document belongs to.">
           <Grid cols={2}>
-            <Field label="Project" required htmlFor="psf-project" hint={disableProject ? "Can't be changed after creation." : undefined}>
+            <Field
+              label="Project"
+              required
+              htmlFor="psf-project"
+              hint={disableProject ? "Can't be changed after creation." : undefined}
+            >
               <SelectInput
                 id="psf-project"
-                value={projectId || ""}
+                value={projectId || ''}
                 onChange={(e) => onProjectChange?.(e.target.value)}
                 disabled={disableProject}
                 placeholder="Select project"
@@ -138,7 +149,7 @@ export function PaymentSectionForm({
   );
 
   return (
-    <Page width={aside ? undefined : "form"}>
+    <Page width={aside ? undefined : 'form'}>
       <PageHeader
         crumbs={crumbs}
         title={title}
@@ -162,9 +173,9 @@ export function PaymentSectionForm({
         {aside ? <DocLayout aside={aside}>{body}</DocLayout> : body}
 
         <FormActions
-          note={`Draft autosaves on this device · ${filledCount} field${filledCount !== 1 ? "s" : ""} filled`}
+          note={`Draft autosaves on this device · ${filledCount} field${filledCount !== 1 ? 's' : ''} filled`}
           onCancel={onCancel}
-          submitLabel={submitLabel || "Save"}
+          submitLabel={submitLabel || 'Save'}
           submitting={isSubmitting}
         />
       </form>

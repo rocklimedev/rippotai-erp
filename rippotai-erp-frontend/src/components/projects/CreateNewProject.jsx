@@ -1,35 +1,34 @@
-import React, { useState } from "react";
-import { toast } from "sonner";
-import { UserPlus } from "lucide-react";
+import React, { useState } from 'react';
+import { toast } from 'sonner';
+import { UserPlus } from 'lucide-react';
 
-import { Button, Field, TextInput, SelectInput, TextArea, ChoiceGroup } from "@/components/inos";
-import { Modal } from "./_projects-ui";
+import { Button, Field, TextInput, SelectInput, TextArea, ChoiceGroup } from '@/components/inos';
+import { Modal } from './_projects-ui';
 
-import { useCreateProjectMutation } from "../../api/projects/project.api";
-import { useGetProjectTypesQuery } from "../../api/projects/project-type.api";
-import {
-  useGetClientsQuery,
-  useCreateClientMutation,
-} from "../../api/projects/client.api";
+import { useCreateProjectMutation } from '../../api/projects/project.api';
+import { useGetProjectTypesQuery } from '../../api/projects/project-type.api';
+import { useGetClientsQuery, useCreateClientMutation } from '../../api/projects/client.api';
 
 export default function NewProjectModal({ open, onClose, onCreated }) {
-  const [name, setName] = useState("");
-  const [siteLocation, setSiteLocation] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [projectTypeId, setProjectTypeId] = useState("");
-  const [priority, setPriority] = useState("MEDIUM");
-  const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState('');
+  const [siteLocation, setSiteLocation] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [projectTypeId, setProjectTypeId] = useState('');
+  const [priority, setPriority] = useState('MEDIUM');
+  const [expectedCompletionDate, setExpectedCompletionDate] = useState('');
+  const [description, setDescription] = useState('');
 
   // Inline "new client" mini-form state
   const [showNewClient, setShowNewClient] = useState(false);
-  const [newClientName, setNewClientName] = useState("");
-  const [newClientEmail, setNewClientEmail] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
 
   const [createProject, { isLoading: busy }] = useCreateProjectMutation();
-  const { data: projectTypes = [], isLoading: projectTypesLoading } =
-    useGetProjectTypesQuery(undefined, { skip: !open });
+  const { data: projectTypes = [], isLoading: projectTypesLoading } = useGetProjectTypesQuery(
+    undefined,
+    { skip: !open },
+  );
 
   const {
     data: clients = [],
@@ -37,23 +36,22 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
     isFetching: clientsFetching,
   } = useGetClientsQuery(undefined, { skip: !open });
 
-  const [createClient, { isLoading: creatingClient }] =
-    useCreateClientMutation();
+  const [createClient, { isLoading: creatingClient }] = useCreateClientMutation();
 
   if (!open) return null;
 
   const reset = () => {
-    setName("");
-    setSiteLocation("");
-    setClientId("");
-    setProjectTypeId("");
-    setPriority("MEDIUM");
-    setExpectedCompletionDate("");
-    setDescription("");
+    setName('');
+    setSiteLocation('');
+    setClientId('');
+    setProjectTypeId('');
+    setPriority('MEDIUM');
+    setExpectedCompletionDate('');
+    setDescription('');
     setShowNewClient(false);
-    setNewClientName("");
-    setNewClientEmail("");
-    setNewClientPhone("");
+    setNewClientName('');
+    setNewClientEmail('');
+    setNewClientPhone('');
   };
 
   const handleClose = () => {
@@ -63,9 +61,9 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
 
   const handleClientSelectChange = (e) => {
     const value = e.target.value;
-    if (value === "__new__") {
+    if (value === '__new__') {
       setShowNewClient(true);
-      setClientId("");
+      setClientId('');
       return;
     }
     setShowNewClient(false);
@@ -74,14 +72,14 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
 
   const cancelNewClient = () => {
     setShowNewClient(false);
-    setNewClientName("");
-    setNewClientEmail("");
-    setNewClientPhone("");
+    setNewClientName('');
+    setNewClientEmail('');
+    setNewClientPhone('');
   };
 
   const saveNewClient = async () => {
     if (!newClientName.trim()) {
-      toast.error("Client name is required.");
+      toast.error('Client name is required.');
       return;
     }
 
@@ -92,16 +90,14 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
         phone: newClientPhone.trim() || undefined,
       }).unwrap();
 
-      toast.success("Client created.");
+      toast.success('Client created.');
       setClientId(client.id);
       setShowNewClient(false);
-      setNewClientName("");
-      setNewClientEmail("");
-      setNewClientPhone("");
+      setNewClientName('');
+      setNewClientEmail('');
+      setNewClientPhone('');
     } catch (err) {
-      toast.error(
-        err?.data?.message || err?.data?.detail || "Failed to create client.",
-      );
+      toast.error(err?.data?.message || err?.data?.detail || 'Failed to create client.');
     }
   };
 
@@ -109,12 +105,12 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error("Project name is required.");
+      toast.error('Project name is required.');
       return;
     }
 
     if (!siteLocation.trim()) {
-      toast.error("Site location is required.");
+      toast.error('Site location is required.');
       return;
     }
 
@@ -129,15 +125,13 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
         description: description || undefined,
       }).unwrap();
 
-      toast.success("Project created.");
+      toast.success('Project created.');
 
       reset();
       onCreated?.(project);
       onClose();
     } catch (err) {
-      toast.error(
-        err?.data?.message || err?.data?.detail || "Failed to create project.",
-      );
+      toast.error(err?.data?.message || err?.data?.detail || 'Failed to create project.');
     }
   };
 
@@ -180,8 +174,14 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
         </Field>
 
         <Field label="Client" optional>
-          <SelectInput value={showNewClient ? "__new__" : clientId} onChange={handleClientSelectChange} disabled={clientsLoading}>
-            <option value="">{clientsLoading || clientsFetching ? "Loading…" : "Select client"}</option>
+          <SelectInput
+            value={showNewClient ? '__new__' : clientId}
+            onChange={handleClientSelectChange}
+            disabled={clientsLoading}
+          >
+            <option value="">
+              {clientsLoading || clientsFetching ? 'Loading…' : 'Select client'}
+            </option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
                 {client.name}
@@ -192,8 +192,12 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
         </Field>
 
         <Field label="Project type" optional>
-          <SelectInput value={projectTypeId} onChange={(e) => setProjectTypeId(e.target.value)} disabled={projectTypesLoading}>
-            <option value="">{projectTypesLoading ? "Loading…" : "Select type"}</option>
+          <SelectInput
+            value={projectTypeId}
+            onChange={(e) => setProjectTypeId(e.target.value)}
+            disabled={projectTypesLoading}
+          >
+            <option value="">{projectTypesLoading ? 'Loading…' : 'Select type'}</option>
             {projectTypes.map((type) => (
               <option key={type.id} value={type.id}>
                 {type.name}
@@ -212,10 +216,26 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
                 Cancel
               </Button>
             </div>
-            <TextInput value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Client name" aria-label="Client name" />
+            <TextInput
+              value={newClientName}
+              onChange={(e) => setNewClientName(e.target.value)}
+              placeholder="Client name"
+              aria-label="Client name"
+            />
             <div className="inos-form-grid">
-              <TextInput value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} placeholder="Email (optional)" type="email" aria-label="Client email" />
-              <TextInput value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="Phone (optional)" aria-label="Client phone" />
+              <TextInput
+                value={newClientEmail}
+                onChange={(e) => setNewClientEmail(e.target.value)}
+                placeholder="Email (optional)"
+                type="email"
+                aria-label="Client email"
+              />
+              <TextInput
+                value={newClientPhone}
+                onChange={(e) => setNewClientPhone(e.target.value)}
+                placeholder="Phone (optional)"
+                aria-label="Client phone"
+              />
             </div>
             <div>
               <Button variant="soft" onClick={saveNewClient} loading={creatingClient}>
@@ -231,20 +251,29 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
             value={priority}
             onChange={setPriority}
             options={[
-              { value: "LOW", label: "Low" },
-              { value: "MEDIUM", label: "Medium" },
-              { value: "HIGH", label: "High" },
-              { value: "CRITICAL", label: "Critical" },
+              { value: 'LOW', label: 'Low' },
+              { value: 'MEDIUM', label: 'Medium' },
+              { value: 'HIGH', label: 'High' },
+              { value: 'CRITICAL', label: 'Critical' },
             ]}
           />
         </Field>
 
         <Field label="Expected completion" optional>
-          <TextInput type="date" value={expectedCompletionDate} onChange={(e) => setExpectedCompletionDate(e.target.value)} />
+          <TextInput
+            type="date"
+            value={expectedCompletionDate}
+            onChange={(e) => setExpectedCompletionDate(e.target.value)}
+          />
         </Field>
 
         <Field label="Description" optional full>
-          <TextArea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short brief for the team" />
+          <TextArea
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Short brief for the team"
+          />
         </Field>
       </form>
     </Modal>

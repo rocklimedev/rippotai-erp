@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   useAttachPlannerLocationsMutation,
   useUpdateItemLocationMutation,
   useUpdatePlannerItemMutation,
   useUpdateProcurementItemMutation,
-} from "../../api/documents/project-planner.api";
+} from '../../api/documents/project-planner.api';
 
-import "./PlannerWorkbook.css";
-import { workbookRows } from "./plannerWorkbookFormat";
+import './PlannerWorkbook.css';
+import { workbookRows } from './plannerWorkbookFormat';
 
 import {
   Select,
@@ -17,23 +17,17 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
-const STATUSES = [
-  "NOT_STARTED",
-  "IN_PROGRESS",
-  "ON_HOLD",
-  "COMPLETED",
-  "NOT_APPLICABLE",
-];
+const STATUSES = ['NOT_STARTED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'NOT_APPLICABLE'];
 
-const label = (value) => value?.toLowerCase().replaceAll("_", " ") || "";
+const label = (value) => value?.toLowerCase().replaceAll('_', ' ') || '';
 
-function EditCell({ value, type = "text", title, save }) {
-  const [draft, setDraft] = useState(value || "");
+function EditCell({ value, type = 'text', title, save }) {
+  const [draft, setDraft] = useState(value || '');
   const [busy, setBusy] = useState(false);
 
-  const Control = type === "date" ? "input" : "textarea";
+  const Control = type === 'date' ? 'input' : 'textarea';
 
   return (
     <Control
@@ -43,30 +37,30 @@ function EditCell({ value, type = "text", title, save }) {
       value={draft}
       disabled={busy}
       ref={(node) => {
-        if (node?.tagName === "TEXTAREA") {
-          node.style.height = "auto";
+        if (node?.tagName === 'TEXTAREA') {
+          node.style.height = 'auto';
           node.style.height = `${node.scrollHeight}px`;
         }
       }}
       onChange={(e) => {
         setDraft(e.target.value);
 
-        if (type !== "date") {
-          e.target.style.height = "auto";
+        if (type !== 'date') {
+          e.target.style.height = 'auto';
           e.target.style.height = `${e.target.scrollHeight}px`;
         }
       }}
       onBlur={async () => {
-        if (draft === (value || "")) return;
+        if (draft === (value || '')) return;
 
         setBusy(true);
 
         try {
           await save(draft || null);
         } catch (error) {
-          setDraft(value || "");
+          setDraft(value || '');
 
-          toast.error(error?.data?.message || "Could not save this cell");
+          toast.error(error?.data?.message || 'Could not save this cell');
         } finally {
           setBusy(false);
         }
@@ -81,35 +75,29 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
   const [updateItem] = useUpdatePlannerItemMutation();
   const [updateProcurement] = useUpdateProcurementItemMutation();
 
-  const [saving, setSaving] = useState("");
+  const [saving, setSaving] = useState('');
 
-  const floors = (overview?.locations || []).filter(
-    (location) => location.type === "FLOOR",
-  );
+  const floors = (overview?.locations || []).filter((location) => location.type === 'FLOOR');
 
   const columns =
-    view === "Overview"
-      ? floors.flatMap((floor) =>
-          floor.children?.length ? floor.children : [floor],
-        )
+    view === 'Overview'
+      ? floors.flatMap((floor) => (floor.children?.length ? floor.children : [floor]))
       : floors;
 
   const allRows = workbookRows(overview?.planners);
 
   const rows =
-    view === "Overview"
+    view === 'Overview'
       ? allRows
       : allRows.filter(
-          (item) =>
-            item.phase?.module ===
-            (view === "Consultancy" ? "CONSULTANCY" : "PMC"),
+          (item) => item.phase?.module === (view === 'Consultancy' ? 'CONSULTANCY' : 'PMC'),
         );
 
   const procurement = (overview?.planners || [])
     .flatMap((planner) => planner.procurement_items || [])
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 
-  const isVendor = view === "Vendor & Procurement";
+  const isVendor = view === 'Vendor & Procurement';
 
   const saveItem = async (item, key, value) => {
     await updateItem({
@@ -147,7 +135,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
     return (
       <div className="min-w-[120px]">
         <Select
-          value={relation?.status || ""}
+          value={relation?.status || ''}
           disabled={saving === key}
           onValueChange={async (status) => {
             if (!status) return;
@@ -169,13 +157,11 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
 
                 id = workbookRows(data?.planners)
                   .find((plannerItem) => plannerItem.id === item.id)
-                  ?.locations?.find(
-                    (locationItem) => locationItem.location_id === location.id,
-                  )?.id;
+                  ?.locations?.find((locationItem) => locationItem.location_id === location.id)?.id;
               }
 
               if (!id) {
-                throw new Error("Location relation could not be resolved");
+                throw new Error('Location relation could not be resolved');
               }
 
               await updateLocation({
@@ -183,32 +169,25 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                 data: {
                   status,
                   progress_pct:
-                    status === "COMPLETED"
+                    status === 'COMPLETED'
                       ? 100
-                      : status === "IN_PROGRESS"
-                        ? Math.max(
-                            1,
-                            Math.min(99, Number(relation?.progress_pct || 1)),
-                          )
+                      : status === 'IN_PROGRESS'
+                        ? Math.max(1, Math.min(99, Number(relation?.progress_pct || 1)))
                         : 0,
                 },
               }).unwrap();
 
               await refresh();
             } catch (error) {
-              toast.error(
-                error?.data?.message ||
-                  error.message ||
-                  "Could not save status",
-              );
+              toast.error(error?.data?.message || error.message || 'Could not save status');
             } finally {
-              setSaving("");
+              setSaving('');
             }
           }}
         >
           <SelectTrigger
             className="planner-status w-full min-w-[110px] border-0 shadow-none focus:ring-1"
-            data-status={relation?.status || ""}
+            data-status={relation?.status || ''}
             aria-label={`${item.work_name || item.details} — ${location.name}`}
           >
             <SelectValue placeholder="—" />
@@ -226,21 +205,19 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
     );
   };
 
-  const field = (item, key, type = "text", vendor = false) =>
+  const field = (item, key, type = 'text', vendor = false) =>
     editable ? (
       <EditCell
-        key={`${item.id}:${key}:${item[key] || ""}`}
+        key={`${item.id}:${key}:${item[key] || ''}`}
         value={item[key]}
         type={type}
-        title={`${key.replaceAll("_", " ")} — ${
+        title={`${key.replaceAll('_', ' ')} — ${
           item.work_name || item.category_name || item.details
         }`}
-        save={(value) =>
-          vendor ? saveVendor(item, key, value) : saveItem(item, key, value)
-        }
+        save={(value) => (vendor ? saveVendor(item, key, value) : saveItem(item, key, value))}
       />
     ) : (
-      item[key] || ""
+      item[key] || ''
     );
 
   return (
@@ -248,9 +225,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
       <section
         className="planner-sheet"
         style={{
-          minWidth: isVendor
-            ? 1800
-            : Math.max(1100, 650 + columns.length * 150),
+          minWidth: isVendor ? 1800 : Math.max(1100, 650 + columns.length * 150),
         }}
         data-sheet={view}
       >
@@ -258,9 +233,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
           <strong>RIPPŌTAI</strong>
 
           <h2>
-            {view === "Overview"
-              ? "PROJECT PLANNER"
-              : `${view.toUpperCase()} — PROJECT PLANNER`}
+            {view === 'Overview' ? 'PROJECT PLANNER' : `${view.toUpperCase()} — PROJECT PLANNER`}
           </h2>
 
           <p>{overview?.project?.name}</p>
@@ -276,7 +249,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                   230,
                   250,
                   ...columns.map(() => 150),
-                  ...(view !== "Overview" ? [220] : []),
+                  ...(view !== 'Overview' ? [220] : []),
                 ]
             ).map((width, index) => (
               <col
@@ -303,17 +276,17 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
 
                 <tr>
                   {[
-                    "Sr. No.",
-                    "LABOUR CONTRACTOR",
-                    "MATERIAL VENDOR",
-                    "VENDOR NAME",
-                    "ESTIMATE FINALISED",
-                    "QUOTATION FINALISED",
-                    "START",
-                    "END",
-                    "PURCHASE",
-                    "RECEIVED AT SITE",
-                    "REMARKS",
+                    'Sr. No.',
+                    'LABOUR CONTRACTOR',
+                    'MATERIAL VENDOR',
+                    'VENDOR NAME',
+                    'ESTIMATE FINALISED',
+                    'QUOTATION FINALISED',
+                    'START',
+                    'END',
+                    'PURCHASE',
+                    'RECEIVED AT SITE',
+                    'REMARKS',
                   ].map((heading) => (
                     <th key={heading}>{heading}</th>
                   ))}
@@ -322,39 +295,34 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
             ) : (
               <>
                 <tr>
-                  <th rowSpan={view === "Overview" ? 2 : 1}>S.no</th>
+                  <th rowSpan={view === 'Overview' ? 2 : 1}>S.no</th>
 
-                  <th rowSpan={view === "Overview" ? 2 : 1}>
-                    {view === "Overview" ? "EXECUTION" : "PHASE"}
+                  <th rowSpan={view === 'Overview' ? 2 : 1}>
+                    {view === 'Overview' ? 'EXECUTION' : 'PHASE'}
                   </th>
 
-                  <th rowSpan={view === "Overview" ? 2 : 1}>
-                    {view === "Consultancy"
-                      ? "DRAWINGS & DESIGN"
-                      : view === "Overview"
-                        ? "DOCUMENTS"
-                        : "WORK"}
+                  <th rowSpan={view === 'Overview' ? 2 : 1}>
+                    {view === 'Consultancy'
+                      ? 'DRAWINGS & DESIGN'
+                      : view === 'Overview'
+                        ? 'DOCUMENTS'
+                        : 'WORK'}
                   </th>
 
-                  <th rowSpan={view === "Overview" ? 2 : 1}>DETAILS</th>
+                  <th rowSpan={view === 'Overview' ? 2 : 1}>DETAILS</th>
 
-                  {view === "Overview"
+                  {view === 'Overview'
                     ? floors.map((floor) => (
-                        <th
-                          key={floor.id}
-                          colSpan={floor.children?.length || 1}
-                        >
+                        <th key={floor.id} colSpan={floor.children?.length || 1}>
                           {floor.name}
                         </th>
                       ))
-                    : columns.map((location) => (
-                        <th key={location.id}>{location.name}</th>
-                      ))}
+                    : columns.map((location) => <th key={location.id}>{location.name}</th>)}
 
-                  {view !== "Overview" && <th>REMARKS</th>}
+                  {view !== 'Overview' && <th>REMARKS</th>}
                 </tr>
 
-                {view === "Overview" && (
+                {view === 'Overview' && (
                   <tr>
                     {columns.map((location) => (
                       <th key={location.id}>{location.name}</th>
@@ -372,36 +340,35 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                     <td>{index + 1}.0</td>
 
                     <td>
-                      {item.item_type === "LABOUR"
-                        ? field(item, "category_name", "text", true)
-                        : ""}
+                      {item.item_type === 'LABOUR'
+                        ? field(item, 'category_name', 'text', true)
+                        : ''}
                     </td>
 
                     <td>
-                      {item.item_type === "MATERIAL"
-                        ? field(item, "category_name", "text", true)
-                        : ""}
+                      {item.item_type === 'MATERIAL'
+                        ? field(item, 'category_name', 'text', true)
+                        : ''}
                     </td>
 
-                    <td>{field(item, "vendor_name", "text", true)}</td>
+                    <td>{field(item, 'vendor_name', 'text', true)}</td>
 
                     {[
-                      "estimate_finalised_at",
-                      "quotation_finalised_at",
-                      "planned_start_date",
-                      "planned_end_date",
-                      "purchase_date",
-                      "received_at_site_date",
+                      'estimate_finalised_at',
+                      'quotation_finalised_at',
+                      'planned_start_date',
+                      'planned_end_date',
+                      'purchase_date',
+                      'received_at_site_date',
                     ].map((key) => (
-                      <td key={key}>{field(item, key, "date", true)}</td>
+                      <td key={key}>{field(item, key, 'date', true)}</td>
                     ))}
 
-                    <td>{field(item, "remarks", "text", true)}</td>
+                    <td>{field(item, 'remarks', 'text', true)}</td>
                   </tr>
                 ))
               : rows.map((item, index) => {
-                  const start =
-                    index === 0 || rows[index - 1].phase_id !== item.phase_id;
+                  const start = index === 0 || rows[index - 1].phase_id !== item.phase_id;
 
                   let span = 1;
 
@@ -419,15 +386,15 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                         </td>
                       )}
 
-                      <td>{field(item, "work_name")}</td>
+                      <td>{field(item, 'work_name')}</td>
 
-                      <td>{field(item, "details")}</td>
+                      <td>{field(item, 'details')}</td>
 
                       {columns.map((location) => (
                         <td key={location.id}>{statusCell(item, location)}</td>
                       ))}
 
-                      {view !== "Overview" && <td>{field(item, "remarks")}</td>}
+                      {view !== 'Overview' && <td>{field(item, 'remarks')}</td>}
                     </tr>
                   );
                 })}
@@ -435,9 +402,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
         </table>
 
         {!rows.length && !isVendor && (
-          <p className="planner-empty">
-            Initialize the project planner to populate this sheet.
-          </p>
+          <p className="planner-empty">Initialize the project planner to populate this sheet.</p>
         )}
 
         {isVendor && !procurement.length && (

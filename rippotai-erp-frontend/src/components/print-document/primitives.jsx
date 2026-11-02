@@ -1,8 +1,8 @@
 // Presentational building blocks for printable documents. All render inside <PrintDocument>.
-import React from "react";
-import { has, inr, money } from "./format";
+import React from 'react';
+import { has, inr, money } from './format';
 
-const cx = (...c) => c.filter(Boolean).join(" ");
+const cx = (...c) => c.filter(Boolean).join(' ');
 
 /** Small pastel pills for selected values (never tick boxes). */
 export function Pills({ items }) {
@@ -27,14 +27,14 @@ export function KV({ items, cols = 2 }) {
   const shown = (items || []).filter((i) => i && (React.isValidElement(i.value) || has(i.value)));
   if (!shown.length) return null;
   return (
-    <div className={cx("pd-kv", cols === 3 && "pd-kv--3", cols === 1 && "pd-kv--1")}>
+    <div className={cx('pd-kv', cols === 3 && 'pd-kv--3', cols === 1 && 'pd-kv--1')}>
       {shown.map((i) => (
-        <div key={i.label} className={cx("pd-kv__item", i.wide && "pd-kv__item--wide")}>
+        <div key={i.label} className={cx('pd-kv__item', i.wide && 'pd-kv__item--wide')}>
           <span className="pd-label">{i.label}</span>
           {Array.isArray(i.value) ? (
             <Pills items={i.value} />
           ) : (
-            <div className={cx("pd-value", i.strong && "pd-value--strong")}>
+            <div className={cx('pd-value', i.strong && 'pd-value--strong')}>
               {i.value}
               {has(i.sub) && <span className="pd-value__sub">{i.sub}</span>}
             </div>
@@ -45,7 +45,8 @@ export function KV({ items, cols = 2 }) {
   );
 }
 /** true when a KV items array has anything to show. */
-export const kvHas = (items) => (items || []).some((i) => i && (React.isValidElement(i.value) || has(i.value)));
+export const kvHas = (items) =>
+  (items || []).some((i) => i && (React.isValidElement(i.value) || has(i.value)));
 
 /** Labelled paragraph text (keeps line breaks). */
 export const TextItem = ({ label, value }) =>
@@ -61,8 +62,8 @@ export function RowsHead({ cols, template }) {
   return (
     <div className="pd-rows__head" style={{ gridTemplateColumns: template }}>
       {cols.map((c, i) => (
-        <span key={i} style={String(c).startsWith("#") ? { textAlign: "right" } : undefined}>
-          {String(c).replace(/^#/, "")}
+        <span key={i} style={String(c).startsWith('#') ? { textAlign: 'right' } : undefined}>
+          {String(c).replace(/^#/, '')}
         </span>
       ))}
     </div>
@@ -75,14 +76,18 @@ export function RowsHead({ cols, template }) {
  */
 export function Row({ cols, template, cells, variant }) {
   return (
-    <div className={cx("pd-row", variant && `pd-row--${variant}`)} style={{ gridTemplateColumns: template }}>
+    <div
+      className={cx('pd-row', variant && `pd-row--${variant}`)}
+      style={{ gridTemplateColumns: template }}
+    >
       {cells.map((c, i) => {
-        const numeric = String(cols?.[i] || "").startsWith("#");
-        const obj = c && typeof c === "object" && !React.isValidElement(c) && !Array.isArray(c) ? c : null;
+        const numeric = String(cols?.[i] || '').startsWith('#');
+        const obj =
+          c && typeof c === 'object' && !React.isValidElement(c) && !Array.isArray(c) ? c : null;
         const text = obj ? obj.text : c;
         const strong = obj?.strong ?? i === 0;
         return (
-          <span key={i} className={cx(strong && "pd-row__title", numeric && "pd-row__num")}>
+          <span key={i} className={cx(strong && 'pd-row__title', numeric && 'pd-row__num')}>
             {text}
             {obj && has(obj.sub) && <span className="pd-row__sub">{obj.sub}</span>}
           </span>
@@ -98,7 +103,13 @@ export function Rows({ cols, template, items }) {
     <div>
       <RowsHead cols={cols} template={template} />
       {items.map((it, i) => (
-        <Row key={it?.key ?? i} cols={cols} template={template} cells={Array.isArray(it) ? it : it.cells} variant={it?.variant} />
+        <Row
+          key={it?.key ?? i}
+          cols={cols}
+          template={template}
+          cells={Array.isArray(it) ? it : it.cells}
+          variant={it?.variant}
+        />
       ))}
     </div>
   );
@@ -108,7 +119,7 @@ export function Rows({ cols, template, items }) {
 export function Figure({ label, value, exact, note }) {
   let big = value;
   let small = exact;
-  if (typeof value === "number" || (typeof value === "string" && /^\d+(\.\d+)?$/.test(value))) {
+  if (typeof value === 'number' || (typeof value === 'string' && /^\d+(\.\d+)?$/.test(value))) {
     const m = inr(value, { allowZero: true });
     if (!m) return null;
     big = m.short;
@@ -122,7 +133,11 @@ export function Figure({ label, value, exact, note }) {
         <span className="pd-figure__value">{big}</span>
         {has(small) && <span className="pd-figure__exact">{small}</span>}
       </div>
-      {note && <p className="pd-note" style={{ marginTop: "3mm" }}>{note}</p>}
+      {note && (
+        <p className="pd-note" style={{ marginTop: '3mm' }}>
+          {note}
+        </p>
+      )}
     </div>
   );
 }
@@ -132,25 +147,41 @@ export function Figure({ label, value, exact, note }) {
  * lines: [{ label, value (number → ₹), strong?, muted? }]; the last `grand` line is emphasised.
  * Shorthand: <Totals subtotal={..} gst={..} gstLabel="GST @ 18%" discount={..} total={..} words="..." />
  */
-export function Totals({ lines, subtotal, discount, gst, gstLabel = "GST", total, words, decimals = 0 }) {
+export function Totals({
+  lines,
+  subtotal,
+  discount,
+  gst,
+  gstLabel = 'GST',
+  total,
+  words,
+  decimals = 0,
+}) {
   const rows = lines
     ? lines
     : [
-        has(subtotal) && { label: "Subtotal", value: subtotal },
-        Number(discount) > 0 && { label: "Discount", value: -Math.abs(Number(discount)) },
+        has(subtotal) && { label: 'Subtotal', value: subtotal },
+        Number(discount) > 0 && { label: 'Discount', value: -Math.abs(Number(discount)) },
         has(gst) && Number(gst) !== 0 && { label: gstLabel, value: gst },
-        has(total) && { label: "Grand total", value: total, grand: true },
+        has(total) && { label: 'Grand total', value: total, grand: true },
       ].filter(Boolean);
   const fmt = (v) => {
-    if (typeof v !== "number" && !/^-?\d+(\.\d+)?$/.test(String(v))) return v;
+    if (typeof v !== 'number' && !/^-?\d+(\.\d+)?$/.test(String(v))) return v;
     const n = Number(v);
-    return (n < 0 ? "− " : "") + money(Math.abs(n), decimals);
+    return (n < 0 ? '− ' : '') + money(Math.abs(n), decimals);
   };
   if (!rows.length) return null;
   return (
     <div className="pd-totals">
       {rows.map((r, i) => (
-        <div key={i} className={cx("pd-totals__line", r.grand && "pd-totals__line--grand", r.muted && "pd-totals__line--muted")}>
+        <div
+          key={i}
+          className={cx(
+            'pd-totals__line',
+            r.grand && 'pd-totals__line--grand',
+            r.muted && 'pd-totals__line--muted',
+          )}
+        >
           <span>{r.label}</span>
           <span className="pd-totals__val">{fmt(r.value)}</span>
         </div>
@@ -161,7 +192,12 @@ export function Totals({ lines, subtotal, discount, gst, gstLabel = "GST", total
 }
 
 /** Muted side-ruled note. */
-export const Note = ({ children, style }) => (children ? <p className="pd-note" style={style}>{children}</p> : null);
+export const Note = ({ children, style }) =>
+  children ? (
+    <p className="pd-note" style={style}>
+      {children}
+    </p>
+  ) : null;
 
 /** Small uppercase sub-heading inside a section. */
 export const SubHead = ({ children }) => <div className="pd-subhead">{children}</div>;
@@ -173,21 +209,21 @@ export function SignOff({ left, right, note, before }) {
   const side = (s) => (
     <div>
       <div className="pd-sign__line" />
-      <div className="pd-sign__who">{s?.name || " "}</div>
-      <div className="pd-sign__role">{[s?.role, s?.date].filter(has).join(" · ")}</div>
+      <div className="pd-sign__who">{s?.name || ' '}</div>
+      <div className="pd-sign__role">{[s?.role, s?.date].filter(has).join(' · ')}</div>
     </div>
   );
   return (
     <div>
       {before}
       {note && (
-        <p className="pd-note" style={{ marginBottom: "4mm" }}>
+        <p className="pd-note" style={{ marginBottom: '4mm' }}>
           {note}
         </p>
       )}
       <div className="pd-sign">
-        {side(left || { name: "Rippotai Architecture", role: "Authorised signatory" })}
-        {side(right || { name: "Client", role: "Client · Date" })}
+        {side(left || { name: 'Rippotai Architecture', role: 'Authorised signatory' })}
+        {side(right || { name: 'Client', role: 'Client · Date' })}
       </div>
     </div>
   );
@@ -214,7 +250,10 @@ export function Stats({ items }) {
   const list = (items || []).filter((i) => i && has(i.value));
   if (!list.length) return null;
   return (
-    <div className="pd-stats" style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(list.length, 2), 4)}, 1fr)` }}>
+    <div
+      className="pd-stats"
+      style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(list.length, 2), 4)}, 1fr)` }}
+    >
       {list.map((i) => (
         <div key={i.label}>
           <div className="pd-stat__value">{i.value}</div>
@@ -238,7 +277,12 @@ export function HtmlTerms({ html }) {
         <li key={i}>
           <span className="pd-terms__n">{i + 1}.</span>
           <span>
-            {t.title && <b style={{ color: "var(--pd-ink)" }}>{t.title}{t.body ? ". " : ""}</b>}
+            {t.title && (
+              <b style={{ color: 'var(--pd-ink)' }}>
+                {t.title}
+                {t.body ? '. ' : ''}
+              </b>
+            )}
             {t.body}
           </span>
         </li>
@@ -253,29 +297,30 @@ export function htmlToTerms(html) {
   if (!/<[a-z][\s\S]*>/i.test(src))
     return src
       .split(/\n+/)
-      .map((l) => l.replace(/^\s*(\d+[.)]|[-•*])\s*/, "").trim())
+      .map((l) => l.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim())
       .filter(Boolean)
       .map((body) => ({ body }));
   try {
-    const doc = new DOMParser().parseFromString(src, "text/html");
+    const doc = new DOMParser().parseFromString(src, 'text/html');
     const items = [];
     let cur = null;
     const walk = (nodes) =>
       nodes.forEach((node) => {
         const tag = node.tagName?.toLowerCase();
-        const text = (node.textContent || "").replace(/\s+/g, " ").trim();
-        if (!tag || tag === "h1" || tag === "h2") return;
-        if (tag === "ol" || tag === "ul" || tag === "div" || tag === "section") return walk(Array.from(node.children));
+        const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!tag || tag === 'h1' || tag === 'h2') return;
+        if (tag === 'ol' || tag === 'ul' || tag === 'div' || tag === 'section')
+          return walk(Array.from(node.children));
         if (!text) return;
-        if (tag === "h3" || tag === "h4" || tag === "h5") {
-          cur = { title: text.replace(/^\d+[.)]\s*/, ""), body: "" };
+        if (tag === 'h3' || tag === 'h4' || tag === 'h5') {
+          cur = { title: text.replace(/^\d+[.)]\s*/, ''), body: '' };
           items.push(cur);
-        } else if (tag === "li") {
+        } else if (tag === 'li') {
           cur = null;
           items.push({ body: text });
         } else if (cur) {
-          cur.body = [cur.body, text].filter(Boolean).join(" ");
-        } else items.push({ body: text.replace(/^\d+[.)]\s*/, "") });
+          cur.body = [cur.body, text].filter(Boolean).join(' ');
+        } else items.push({ body: text.replace(/^\d+[.)]\s*/, '') });
       });
     walk(Array.from(doc.body.children));
     return items;
@@ -285,5 +330,7 @@ export function htmlToTerms(html) {
 }
 
 /** Small inline pastel pill. tone: "green" | "rose" | "sand" | "mute". */
-export const Pill = ({ children, tone = "green" }) =>
-  has(children) ? <span className={cx("pd-pill", tone !== "green" && `pd-pill--${tone}`)}>{children}</span> : null;
+export const Pill = ({ children, tone = 'green' }) =>
+  has(children) ? (
+    <span className={cx('pd-pill', tone !== 'green' && `pd-pill--${tone}`)}>{children}</span>
+  ) : null;

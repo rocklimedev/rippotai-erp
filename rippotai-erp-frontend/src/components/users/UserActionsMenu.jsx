@@ -1,6 +1,6 @@
-import React from "react";
-import { MoreHorizontal, Pencil, Power, Trash2, Mail, ShieldCheck, ShieldX } from "lucide-react";
-import { RowMenu } from "@/pages/settings/_admin-ui";
+import React from 'react';
+import { MoreHorizontal, Pencil, Power, Trash2, Mail, ShieldCheck, ShieldX } from 'lucide-react';
+import { RowMenu } from '@/pages/settings/_admin-ui';
 
 export default function UserActionsMenu({
   isSelf,
@@ -24,36 +24,38 @@ export default function UserActionsMenu({
       busy={saving}
       items={[
         {
-          label: "Edit user",
+          label: 'Edit user',
           icon: Pencil,
           onClick: onEdit,
           disabled: isSelf,
-          title: isSelf ? "Use Profile Settings to edit your own account" : undefined,
+          title: isSelf ? 'Use Profile Settings to edit your own account' : undefined,
         },
         {
-          label: isActive ? "Deactivate" : "Activate",
+          label: isActive ? 'Deactivate' : 'Activate',
           icon: Power,
           onClick: onToggleActive,
           disabled: isSelf,
           title: isSelf ? "You can't deactivate your own account" : undefined,
         },
-        "sep",
+        'sep',
         !isVerified && {
-          label: sending ? "Sending…" : "Send verification",
+          label: sending ? 'Sending…' : 'Send verification',
           icon: Mail,
           onClick: onSendVerification,
           disabled: !isActive || sendingVerification || updatingVerification,
-          title: !isActive ? "Activate this account before sending a verification email" : undefined,
+          title: !isActive
+            ? 'Activate this account before sending a verification email'
+            : undefined,
         },
         {
-          label: updating ? "Updating…" : isVerified ? "Mark unverified" : "Mark verified manually",
+          label: updating ? 'Updating…' : isVerified ? 'Mark unverified' : 'Mark verified manually',
           icon: isVerified ? ShieldX : ShieldCheck,
           onClick: onToggleVerification,
           disabled: updatingVerification || sendingVerification,
         },
-        "sep",
+        'sep',
         {
-          label: "Delete user",
+          label: 'Delete user',
           icon: Trash2,
           onClick: onDelete,
           danger: true,

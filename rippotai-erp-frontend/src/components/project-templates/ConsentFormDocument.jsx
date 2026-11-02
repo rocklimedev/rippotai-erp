@@ -1,18 +1,18 @@
-import { forwardRef } from "react";
-import "@fontsource/lato/400.css";
-import "@fontsource/lato/700.css";
-import content from "./consent-form-content.json";
-import { consentFormDate } from "./consent-form-data";
-import logo from "../../assets/rippotai_logo.png";
-import "./consent-form.css";
+import { forwardRef } from 'react';
+import '@fontsource/lato/400.css';
+import '@fontsource/lato/700.css';
+import content from './consent-form-content.json';
+import { consentFormDate } from './consent-form-data';
+import logo from '../../assets/rippotai_logo.png';
+import './consent-form.css';
 
 const splitClause = (clause) => {
   const m = clause.match(/^(\d+\.\d+\.)\s+([\s\S]*)$/);
-  return m ? [m[1], m[2]] : ["", clause];
+  return m ? [m[1], m[2]] : ['', clause];
 };
 const splitTitle = (title) => {
   const m = title.match(/^(\d+)\s+([\s\S]*)$/);
-  return m ? [m[1], m[2]] : ["", title];
+  return m ? [m[1], m[2]] : ['', title];
 };
 
 function Footer() {

@@ -1,20 +1,24 @@
-import { forwardRef } from "react";
-import { useDraggable } from "@dnd-kit/core";
-import { CalendarClock, Clock, ListTodo, AlertTriangle, MessageSquare } from "lucide-react";
-import { Avatar, Pill } from "@/components/inos";
-import { formatINR, LEAD_COLORS, TAG_COLORS } from "@/hooks/stages";
-import { shortDate, isPast } from "./utils";
+import { forwardRef } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CalendarClock, Clock, ListTodo, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Avatar, Pill } from '@/components/inos';
+import { formatINR, LEAD_COLORS, TAG_COLORS } from '@/hooks/stages';
+import { shortDate, isPast } from './utils';
 
 /** Presentational card — also used inside the DragOverlay. */
 export const DealCardBody = forwardRef(function DealCardBody(
-  { deal, className = "", style, onOpen, ...rest },
+  { deal, className = '', style, onOpen, ...rest },
   ref,
 ) {
-  const rail = deal.color ? LEAD_COLORS[deal.color]?.rail : deal.stuck ? "var(--warn-dot)" : null;
-  const closeLate = deal.expectedClose && isPast(deal.expectedClose) && ["capture", "qual", "disc", "prop", "nego"].includes(deal.stage);
+  const rail = deal.color ? LEAD_COLORS[deal.color]?.rail : deal.stuck ? 'var(--warn-dot)' : null;
+  const closeLate =
+    deal.expectedClose &&
+    isPast(deal.expectedClose) &&
+    ['capture', 'qual', 'disc', 'prop', 'nego'].includes(deal.stage);
   const next = deal.nextTask;
   const nextLate = next?.dueDate && isPast(next.dueDate);
-  const client = deal.clientName || deal.company || (deal.contact !== deal.title ? deal.contact : null);
+  const client =
+    deal.clientName || deal.company || (deal.contact !== deal.title ? deal.contact : null);
 
   return (
     <div
@@ -22,10 +26,10 @@ export const DealCardBody = forwardRef(function DealCardBody(
       role="button"
       tabIndex={0}
       className={`crm-card ${className}`}
-      style={{ ...style, "--rail": rail || "transparent" }}
+      style={{ ...style, '--rail': rail || 'transparent' }}
       onClick={() => onOpen?.(deal)}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onOpen?.(deal);
+        if (e.key === 'Enter') onOpen?.(deal);
       }}
       data-testid="deal-card"
       data-deal-id={deal.id}
@@ -36,22 +40,27 @@ export const DealCardBody = forwardRef(function DealCardBody(
         {deal.title}
       </p>
       {(client || deal.source) && (
-        <div className="crm-card__client" title={[client, deal.source].filter(Boolean).join(" · ")}>
+        <div className="crm-card__client" title={[client, deal.source].filter(Boolean).join(' · ')}>
           {client}
-          {deal.source && <span style={{ color: "var(--text-3)" }}>{client ? " · " : ""}{deal.source}</span>}
+          {deal.source && (
+            <span style={{ color: 'var(--text-3)' }}>
+              {client ? ' · ' : ''}
+              {deal.source}
+            </span>
+          )}
         </div>
       )}
 
       <div className="crm-card__row">
-        <span className="crm-card__value">{deal.amount ? formatINR(deal.amount) : "No value"}</span>
-        <span title={deal.owner || "Unassigned"} style={{ display: "inline-flex" }}>
-          <Avatar name={deal.owner || "?"} size={24} />
+        <span className="crm-card__value">{deal.amount ? formatINR(deal.amount) : 'No value'}</span>
+        <span title={deal.owner || 'Unassigned'} style={{ display: 'inline-flex' }}>
+          <Avatar name={deal.owner || '?'} size={24} />
         </span>
       </div>
 
       <div className="crm-card__meta">
         {deal.expectedClose && (
-          <span className={`crm-meta-item ${closeLate ? "is-late" : ""}`} title="Expected close">
+          <span className={`crm-meta-item ${closeLate ? 'is-late' : ''}`} title="Expected close">
             <CalendarClock aria-hidden />
             {shortDate(deal.expectedClose)}
           </span>
@@ -72,7 +81,7 @@ export const DealCardBody = forwardRef(function DealCardBody(
           </Pill>
         )}
         {deal.tag && (
-          <Pill tone={TAG_COLORS[deal.tag]?.tone || "mute"} size="sm">
+          <Pill tone={TAG_COLORS[deal.tag]?.tone || 'mute'} size="sm">
             {deal.tag}
           </Pill>
         )}
@@ -81,8 +90,8 @@ export const DealCardBody = forwardRef(function DealCardBody(
       {next && (
         <div className="crm-card__next" title="Next activity">
           <ListTodo aria-hidden />
-          <span style={nextLate ? { color: "var(--bad-fg)", fontWeight: 600 } : undefined}>
-            {next.dueDate ? `${shortDate(next.dueDate)} · ` : ""}
+          <span style={nextLate ? { color: 'var(--bad-fg)', fontWeight: 600 } : undefined}>
+            {next.dueDate ? `${shortDate(next.dueDate)} · ` : ''}
             {next.title}
           </span>
         </div>
@@ -102,7 +111,7 @@ export default function DealCard({ deal, onOpen }) {
       ref={setNodeRef}
       deal={deal}
       onOpen={onOpen}
-      className={isDragging ? "is-dragging" : ""}
+      className={isDragging ? 'is-dragging' : ''}
       {...attributes}
       {...listeners}
     />

@@ -1,27 +1,27 @@
 // Shared bits for the Projects module (dashboard, workspace, planner, documents).
 // Presentation + phase-status helpers only — no data fetching lives here.
-import React, { useEffect } from "react";
-import { X } from "lucide-react";
-import { Button } from "@/components/inos";
-import "./projects-ui.css";
+import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
+import { Button } from '@/components/inos';
+import './projects-ui.css';
 
-const cx = (...c) => c.filter(Boolean).join(" ");
+const cx = (...c) => c.filter(Boolean).join(' ');
 
 /* ============================================================
    Formatting
 ============================================================ */
 
 export const formatDate = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 export const prettyLabel = (value) =>
-  String(value ?? "")
+  String(value ?? '')
     .toLowerCase()
-    .replace(/[_-]+/g, " ")
+    .replace(/[_-]+/g, ' ')
     .replace(/^\w/, (m) => m.toUpperCase());
 
 /* ============================================================
@@ -36,7 +36,7 @@ export const prettyLabel = (value) =>
 
 export const treePhaseIsComplete = (phase) => {
   const s = phase?.summary;
-  if (s && typeof s.total === "number") {
+  if (s && typeof s.total === 'number') {
     return Boolean(phase?.isComplete) && s.total > 0 && (s.uploaded ?? 0) > 0;
   }
   return phase?.isComplete === true;
@@ -60,8 +60,8 @@ export function normalizeTreePhases(treePhases = []) {
     const s = phase?.summary;
     return {
       id: phase?.id || phase?.phaseCode || `phase-${index}`,
-      name: cleanPhaseName(phase?.title || phase?.phaseCode || phase?.name || "Untitled phase"),
-      status: done ? "done" : current ? "current" : "upcoming",
+      name: cleanPhaseName(phase?.title || phase?.phaseCode || phase?.name || 'Untitled phase'),
+      status: done ? 'done' : current ? 'current' : 'upcoming',
       docCounts: s ? { uploaded: s.uploaded ?? 0, total: s.total ?? 0 } : null,
       pendingDocumentName: current ? nextPendingDocument(phase) : null,
     };
@@ -71,13 +71,30 @@ export function normalizeTreePhases(treePhases = []) {
 /** Phases embedded on a project object (legacy shape) with explicit statuses. */
 export function normalizeEmbeddedPhases(phases = []) {
   return phases.map((phase, index) => {
-    const raw = String(phase?.status || phase?.phase_status || phase?.state || "").toLowerCase();
-    let status = "upcoming";
-    if (["completed", "complete", "cleared", "done", "finished"].includes(raw) || phase?.completed === true || phase?.isComplete === true) status = "done";
-    else if (["current", "active", "in_progress", "in-progress", "working"].includes(raw) || phase?.current === true || phase?.isCurrent === true) status = "current";
+    const raw = String(phase?.status || phase?.phase_status || phase?.state || '').toLowerCase();
+    let status = 'upcoming';
+    if (
+      ['completed', 'complete', 'cleared', 'done', 'finished'].includes(raw) ||
+      phase?.completed === true ||
+      phase?.isComplete === true
+    )
+      status = 'done';
+    else if (
+      ['current', 'active', 'in_progress', 'in-progress', 'working'].includes(raw) ||
+      phase?.current === true ||
+      phase?.isCurrent === true
+    )
+      status = 'current';
     return {
       id: phase?.id || phase?.phaseId || phase?.phase_id || phase?.code || `phase-${index}`,
-      name: cleanPhaseName(phase?.name || phase?.title || phase?.phase_name || phase?.phaseName || phase?.label || "Untitled phase"),
+      name: cleanPhaseName(
+        phase?.name ||
+          phase?.title ||
+          phase?.phase_name ||
+          phase?.phaseName ||
+          phase?.label ||
+          'Untitled phase',
+      ),
       status,
       docCounts: null,
       pendingDocumentName: null,
@@ -92,17 +109,21 @@ export function normalizeWorkspacePhases(data) {
   const started = list.some((p) => p.complete || (p.completed_subphases || 0) > 0);
   return list.map((p, index) => ({
     id: p.key || `phase-${index}`,
-    name: cleanPhaseName(p.name || "Phase"),
-    status: p.complete ? "done" : started && index === firstOpen ? "current" : "upcoming",
-    docCounts: p.subphase_count ? { uploaded: p.completed_subphases || 0, total: p.subphase_count, unit: "units" } : null,
+    name: cleanPhaseName(p.name || 'Phase'),
+    status: p.complete ? 'done' : started && index === firstOpen ? 'current' : 'upcoming',
+    docCounts: p.subphase_count
+      ? { uploaded: p.completed_subphases || 0, total: p.subphase_count, unit: 'units' }
+      : null,
     pendingDocumentName: null,
   }));
 }
 
 function nextPendingDocument(phase) {
   const docs = Array.isArray(phase?.documents) ? phase.documents : [];
-  const pending = docs.filter((d) => !d?.isUploaded).sort((a, b) => (a?.sequence ?? 0) - (b?.sequence ?? 0));
-  return (pending.find((d) => d?.requirementType === "REQUIRED") || pending[0])?.name || null;
+  const pending = docs
+    .filter((d) => !d?.isUploaded)
+    .sort((a, b) => (a?.sequence ?? 0) - (b?.sequence ?? 0));
+  return (pending.find((d) => d?.requirementType === 'REQUIRED') || pending[0])?.name || null;
 }
 
 /**
@@ -118,15 +139,15 @@ export function normalizeCommandCenterPhases(row) {
     id: p.id || p.code,
     code: p.code,
     phaseNumber: p.phaseNumber,
-    name: cleanPhaseName(p.name || p.code || "Phase"),
+    name: cleanPhaseName(p.name || p.code || 'Phase'),
     status:
-      p.phaseNumber === row.currentPhaseSeq && String(p.state).toUpperCase() !== "COMPLETE"
-        ? "current"
-        : String(p.state).toUpperCase() === "COMPLETE"
-          ? "done"
+      p.phaseNumber === row.currentPhaseSeq && String(p.state).toUpperCase() !== 'COMPLETE'
+        ? 'current'
+        : String(p.state).toUpperCase() === 'COMPLETE'
+          ? 'done'
           : p.phaseNumber === row.currentPhaseSeq
-            ? "current"
-            : "upcoming",
+            ? 'current'
+            : 'upcoming',
     state: p.state,
     docCounts: { uploaded: p.docsDone ?? 0, total: p.docsTotal ?? 0 },
     pendingDocumentName: null,
@@ -148,8 +169,8 @@ export function commandCenterProgress(row, phases = normalizeCommandCenterPhases
 
 /** "01 BRIEF" → "Brief", "A VENDOR TRADES" → "Vendor trades" */
 export function cleanPhaseName(name) {
-  const s = String(name || "").trim();
-  const stripped = s.replace(/^(\d{1,2}|[A-Z])[\s._-]+(?=[A-Za-z])/, "");
+  const s = String(name || '').trim();
+  const stripped = s.replace(/^(\d{1,2}|[A-Z])[\s._-]+(?=[A-Za-z])/, '');
   const base = stripped || s;
   if (base === base.toUpperCase()) return base.charAt(0) + base.slice(1).toLowerCase();
   return base;
@@ -157,8 +178,8 @@ export function cleanPhaseName(name) {
 
 export function phaseProgress(phases = []) {
   const total = phases.length;
-  const done = phases.filter((p) => p.status === "done").length;
-  const currentIndex = phases.findIndex((p) => p.status === "current");
+  const done = phases.filter((p) => p.status === 'done').length;
+  const currentIndex = phases.findIndex((p) => p.status === 'current');
   const current = currentIndex >= 0 ? phases[currentIndex] : null;
   return {
     total,
@@ -178,14 +199,18 @@ export function phaseProgress(phases = []) {
 export function PhaseStepper({ phases = [], label }) {
   if (!phases.length) return null;
   return (
-    <div className="pj-stepper" role="list" aria-label={label || "Project phases"}>
+    <div className="pj-stepper" role="list" aria-label={label || 'Project phases'}>
       {phases.map((p, i) => (
         <div
           key={p.id}
           role="listitem"
-          className={cx("pj-step", p.status === "done" && "is-done", p.status === "current" && "is-current")}
-          title={`${p.name} — ${p.status === "done" ? "Completed" : p.status === "current" ? "In progress" : "Upcoming"}${
-            p.docCounts ? ` · ${p.docCounts.uploaded}/${p.docCounts.total} docs` : ""
+          className={cx(
+            'pj-step',
+            p.status === 'done' && 'is-done',
+            p.status === 'current' && 'is-current',
+          )}
+          title={`${p.name} — ${p.status === 'done' ? 'Completed' : p.status === 'current' ? 'In progress' : 'Upcoming'}${
+            p.docCounts ? ` · ${p.docCounts.uploaded}/${p.docCounts.total} docs` : ''
           }`}
         >
           <span className="pj-step__dot" />
@@ -202,12 +227,18 @@ export function PhaseTrack({ phases = [] }) {
     <div className="pj-phase-track">
       <div className="pj-phase-track__inner" role="list">
         {phases.map((p) => (
-          <div key={p.id} role="listitem" className={cx("pj-phase-cell", `is-${p.status}`)}>
+          <div key={p.id} role="listitem" className={cx('pj-phase-cell', `is-${p.status}`)}>
             <span className="pj-step__dot" />
             <span className="pj-phase-cell__name">{p.name}</span>
             <span className="pj-phase-cell__sub">
-              {p.status === "done" ? "Completed" : p.status === "current" ? "In progress" : "Upcoming"}
-              {p.docCounts && p.docCounts.total > 0 ? ` · ${p.docCounts.uploaded}/${p.docCounts.total}` : ""}
+              {p.status === 'done'
+                ? 'Completed'
+                : p.status === 'current'
+                  ? 'In progress'
+                  : 'Upcoming'}
+              {p.docCounts && p.docCounts.total > 0
+                ? ` · ${p.docCounts.uploaded}/${p.docCounts.total}`
+                : ''}
             </span>
           </div>
         ))}
@@ -219,9 +250,18 @@ export function PhaseTrack({ phases = [] }) {
 export function PhaseLegend() {
   return (
     <div className="pj-legend" aria-hidden>
-      <span className="is-done"><i className="pj-step__dot" />Completed</span>
-      <span className="is-current"><i className="pj-step__dot" />Current</span>
-      <span><i className="pj-step__dot" />Upcoming</span>
+      <span className="is-done">
+        <i className="pj-step__dot" />
+        Completed
+      </span>
+      <span className="is-current">
+        <i className="pj-step__dot" />
+        Current
+      </span>
+      <span>
+        <i className="pj-step__dot" />
+        Upcoming
+      </span>
     </div>
   );
 }
@@ -231,12 +271,21 @@ export function Skeleton({ height = 72, style }) {
 }
 
 /** Lightweight modal in the design system (overlay + card, Esc/overlay to close). */
-export function Modal({ open, onClose, title, description, children, footer, width = 480, testId }) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  width = 480,
+  testId,
+}) {
   useEffect(() => {
     if (!open) return undefined;
-    const onKey = (e) => e.key === "Escape" && onClose?.();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const onKey = (e) => e.key === 'Escape' && onClose?.();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -246,7 +295,7 @@ export function Modal({ open, onClose, title, description, children, footer, wid
         className="pj-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={typeof title === "string" ? title : undefined}
+        aria-label={typeof title === 'string' ? title : undefined}
         style={{ maxWidth: width }}
         onClick={(e) => e.stopPropagation()}
         data-testid={testId}

@@ -1,36 +1,29 @@
-import React, { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { Eye, EyeOff, UserPlus, UserCog } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Eye, EyeOff, UserPlus, UserCog } from 'lucide-react';
 
-import {
-  useCreateUserMutation,
-  useUpdateUserMutation,
-} from "../../api/users/user.api";
+import { useCreateUserMutation, useUpdateUserMutation } from '../../api/users/user.api';
 
-import { useGetRolesQuery } from "../../api/users/rbac.api";
-import { Field, TextInput, SelectInput, ChoiceGroup, Button } from "@/components/inos";
-import { AdminModal, ModalActions, humanize } from "@/pages/settings/_admin-ui";
-import { newPasswordError } from "@/lib/password-policy";
+import { useGetRolesQuery } from '../../api/users/rbac.api';
+import { Field, TextInput, SelectInput, ChoiceGroup, Button } from '@/components/inos';
+import { AdminModal, ModalActions, humanize } from '@/pages/settings/_admin-ui';
+import { newPasswordError } from '@/lib/password-policy';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function InviteUserModal({ onClose, user }) {
   const isEdit = Boolean(user);
 
-  const {
-    data: roles = [],
-    isLoading: rolesLoading,
-    error: rolesError,
-  } = useGetRolesQuery();
+  const { data: roles = [], isLoading: rolesLoading, error: rolesError } = useGetRolesQuery();
 
   const [form, setForm] = useState({
-    name: user?.name ?? "",
-    email: user?.email ?? "",
-    password: "",
-    phone: user?.phone ?? "",
-    job_title: user?.job_title ?? "",
-    avatar_url: user?.avatar_url ?? "",
-    role_id: user?.role_id ?? user?.role?.id ?? "",
+    name: user?.name ?? '',
+    email: user?.email ?? '',
+    password: '',
+    phone: user?.phone ?? '',
+    job_title: user?.job_title ?? '',
+    avatar_url: user?.avatar_url ?? '',
+    role_id: user?.role_id ?? user?.role?.id ?? '',
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +31,7 @@ export default function InviteUserModal({ onClose, user }) {
   useEffect(() => {
     if (!isEdit && roles.length && !form.role_id) {
       // Default new people to the everyday internal role when it exists.
-      const preferred = roles.find((r) => String(r.name).toUpperCase() === "USER") || roles[0];
+      const preferred = roles.find((r) => String(r.name).toUpperCase() === 'USER') || roles[0];
       setForm((prev) => ({
         ...prev,
         role_id: preferred.id,
@@ -49,7 +42,7 @@ export default function InviteUserModal({ onClose, user }) {
 
   useEffect(() => {
     if (rolesError) {
-      toast.error("Failed to load roles.");
+      toast.error('Failed to load roles.');
     }
   }, [rolesError]);
 
@@ -70,10 +63,12 @@ export default function InviteUserModal({ onClose, user }) {
     const next = {};
     if (!form.name.trim()) next.name = "Enter the person's full name.";
     if (!form.email.trim()) next.email = "Email is required — it's their sign-in.";
-    else if (!EMAIL_RE.test(form.email.trim())) next.email = "That doesn't look like an email address.";
-    if (!form.role_id) next.role_id = "Pick a role.";
-    if (!isEdit && !form.password) next.password = "Set a temporary password.";
-    else if (form.password && newPasswordError(form.password)) next.password = newPasswordError(form.password);
+    else if (!EMAIL_RE.test(form.email.trim()))
+      next.email = "That doesn't look like an email address.";
+    if (!form.role_id) next.role_id = 'Pick a role.';
+    if (!isEdit && !form.password) next.password = 'Set a temporary password.';
+    else if (form.password && newPasswordError(form.password))
+      next.password = newPasswordError(form.password);
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -103,20 +98,20 @@ export default function InviteUserModal({ onClose, user }) {
           ...payload,
         }).unwrap();
 
-        toast.success(updated.pending_email
-          ? `Verification sent to ${updated.pending_email}. The current email stays active until confirmed.`
-          : "User updated successfully.");
+        toast.success(
+          updated.pending_email
+            ? `Verification sent to ${updated.pending_email}. The current email stays active until confirmed.`
+            : 'User updated successfully.',
+        );
       } else {
         await createUser(payload).unwrap();
 
-        toast.success("User invited successfully.");
+        toast.success('User invited successfully.');
       }
 
       onClose();
     } catch (err) {
-      toast.error(
-        err?.data?.message || err?.data?.detail || "Something went wrong.",
-      );
+      toast.error(err?.data?.message || err?.data?.detail || 'Something went wrong.');
     }
   };
 
@@ -129,10 +124,10 @@ export default function InviteUserModal({ onClose, user }) {
       onClose={onClose}
       busy={saving}
       icon={isEdit ? UserCog : UserPlus}
-      title={isEdit ? "Edit user" : "Invite user"}
+      title={isEdit ? 'Edit user' : 'Invite user'}
       subtitle={
         isEdit
-          ? `Update ${user?.name || "this person"}'s details and role.`
+          ? `Update ${user?.name || 'this person'}'s details and role.`
           : "They'll sign in with this email and the temporary password you set."
       }
       width={600}
@@ -141,8 +136,8 @@ export default function InviteUserModal({ onClose, user }) {
         <ModalActions
           onCancel={onClose}
           submitting={saving}
-          submittingLabel={isEdit ? "Saving…" : "Creating…"}
-          submitLabel={isEdit ? "Save changes" : "Create user"}
+          submittingLabel={isEdit ? 'Saving…' : 'Creating…'}
+          submitLabel={isEdit ? 'Save changes' : 'Create user'}
           disabled={rolesLoading}
         />
       }
@@ -155,7 +150,7 @@ export default function InviteUserModal({ onClose, user }) {
             value={form.name}
             invalid={!!errors.name}
             placeholder="e.g. Priya Sharma"
-            onChange={(e) => handleChange("name", e.target.value)}
+            onChange={(e) => handleChange('name', e.target.value)}
           />
         </Field>
 
@@ -167,7 +162,7 @@ export default function InviteUserModal({ onClose, user }) {
             value={form.email}
             invalid={!!errors.email}
             placeholder="priya@rippotai.in"
-            onChange={(e) => handleChange("email", e.target.value)}
+            onChange={(e) => handleChange('email', e.target.value)}
           />
         </Field>
 
@@ -176,7 +171,7 @@ export default function InviteUserModal({ onClose, user }) {
           required
           full
           error={errors.role_id}
-          hint={selectedRole?.description || "Controls which apps and actions they can use."}
+          hint={selectedRole?.description || 'Controls which apps and actions they can use.'}
         >
           {rolesLoading ? (
             <SelectInput disabled placeholder="Loading roles…" />
@@ -184,14 +179,14 @@ export default function InviteUserModal({ onClose, user }) {
             <ChoiceGroup
               name="Role"
               value={form.role_id}
-              onChange={(v) => handleChange("role_id", v)}
+              onChange={(v) => handleChange('role_id', v)}
               options={roles.map((r) => ({ value: r.id, label: humanize(r.name) }))}
             />
           ) : (
             <SelectInput
               value={form.role_id}
               invalid={!!errors.role_id}
-              onChange={(e) => handleChange("role_id", e.target.value)}
+              onChange={(e) => handleChange('role_id', e.target.value)}
               placeholder="Select a role"
             >
               {roles.map((role) => (
@@ -204,28 +199,32 @@ export default function InviteUserModal({ onClose, user }) {
         </Field>
 
         <Field
-          label={isEdit ? "New password" : "Temporary password"}
+          label={isEdit ? 'New password' : 'Temporary password'}
           required={!isEdit}
           optional={isEdit}
           full
           htmlFor="iu-pass"
           error={errors.password}
-          hint={isEdit ? "Leave blank to keep their current password. New passwords need at least 12 characters." : "At least 12 characters. Known breached passwords are rejected."}
+          hint={
+            isEdit
+              ? 'Leave blank to keep their current password. New passwords need at least 12 characters.'
+              : 'At least 12 characters. Known breached passwords are rejected.'
+          }
         >
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <TextInput
               id="iu-pass"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               value={form.password}
               invalid={!!errors.password}
-              placeholder={isEdit ? "••••••••" : "Min. 12 characters"}
-              onChange={(e) => handleChange("password", e.target.value)}
+              placeholder={isEdit ? '••••••••' : 'Min. 12 characters'}
+              onChange={(e) => handleChange('password', e.target.value)}
             />
             <Button
               variant="secondary"
               icon={showPassword ? EyeOff : Eye}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword((v) => !v)}
               style={{ height: 40, width: 40 }}
             />
@@ -238,7 +237,7 @@ export default function InviteUserModal({ onClose, user }) {
             type="tel"
             value={form.phone}
             placeholder="+91 98100 00000"
-            onChange={(e) => handleChange("phone", e.target.value)}
+            onChange={(e) => handleChange('phone', e.target.value)}
           />
         </Field>
 
@@ -247,16 +246,22 @@ export default function InviteUserModal({ onClose, user }) {
             id="iu-title"
             value={form.job_title}
             placeholder="e.g. Site engineer"
-            onChange={(e) => handleChange("job_title", e.target.value)}
+            onChange={(e) => handleChange('job_title', e.target.value)}
           />
         </Field>
 
-        <Field label="Photo URL" optional full htmlFor="iu-avatar" hint="Link to a square image. Initials are used when empty.">
+        <Field
+          label="Photo URL"
+          optional
+          full
+          htmlFor="iu-avatar"
+          hint="Link to a square image. Initials are used when empty."
+        >
           <TextInput
             id="iu-avatar"
             type="url"
             value={form.avatar_url}
-            onChange={(e) => handleChange("avatar_url", e.target.value)}
+            onChange={(e) => handleChange('avatar_url', e.target.value)}
             placeholder="https://…/photo.jpg"
           />
         </Field>

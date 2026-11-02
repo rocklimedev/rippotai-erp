@@ -1,10 +1,16 @@
-import { appAlert, appConfirm } from "@/lib/app-dialog";
-import React, { useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Image as ImageIcon, Pencil, Ruler, Upload, X, ShieldCheck } from "lucide-react";
-import { commitRoomDraft, changeRoomField, parseFeetInches, formatFeetInches, roomFeetInchesDraft } from "@/hooks/site-recce-form-helpers";
+import { appAlert, appConfirm } from '@/lib/app-dialog';
+import React, { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Image as ImageIcon, Pencil, Ruler, Upload, X, ShieldCheck } from 'lucide-react';
+import {
+  commitRoomDraft,
+  changeRoomField,
+  parseFeetInches,
+  formatFeetInches,
+  roomFeetInchesDraft,
+} from '@/hooks/site-recce-form-helpers';
 
-import { Button, Field, TextInput, TextArea, FormActions } from "@/components/inos";
+import { Button, Field, TextInput, TextArea, FormActions } from '@/components/inos';
 import {
   DocFormLayout,
   DocSection,
@@ -20,51 +26,51 @@ import {
   isFilled,
   slugId,
   useAutosaveNote,
-} from "@/components/forms/crm-form-ui";
+} from '@/components/forms/crm-form-ui';
 
 // ============================================================
 // EMPTY VALUES
 // ============================================================
 
 const EMPTY_ROOM = {
-  room_name: "",
-  room_number: "",
-  room_type: "OTHER",
-  length: "",
-  width: "",
-  height: "",
-  area: "",
-  measurement_unit: "FT",
-  existing_flooring: "",
-  existing_ceiling: "",
-  notes: "",
+  room_name: '',
+  room_number: '',
+  room_type: 'OTHER',
+  length: '',
+  width: '',
+  height: '',
+  area: '',
+  measurement_unit: 'FT',
+  existing_flooring: '',
+  existing_ceiling: '',
+  notes: '',
 };
 
 const ROOM_TYPE_OPTIONS = [
-  { value: "LIVING_DINING", label: "Living / Dining" },
-  { value: "MASTER_BEDROOM", label: "Master Bedroom" },
-  { value: "BEDROOM", label: "Bedroom" },
-  { value: "KITCHEN", label: "Kitchen" },
-  { value: "BATHROOM", label: "Bathroom" },
-  { value: "BALCONY", label: "Balcony" },
-  { value: "OTHER", label: "Other" },
+  { value: 'LIVING_DINING', label: 'Living / Dining' },
+  { value: 'MASTER_BEDROOM', label: 'Master Bedroom' },
+  { value: 'BEDROOM', label: 'Bedroom' },
+  { value: 'KITCHEN', label: 'Kitchen' },
+  { value: 'BATHROOM', label: 'Bathroom' },
+  { value: 'BALCONY', label: 'Balcony' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 const getRoomTypeLabel = (type) => {
   const found = ROOM_TYPE_OPTIONS.find((o) => o.value === type);
-  return found ? found.label : type || "Other";
+  return found ? found.label : type || 'Other';
 };
 
 const EMPTY_PHOTO = {
-  room_id: "",
+  room_id: '',
   shot_number: 1,
-  photo_url: "",
-  photo_file_name: "",
-  layout_image_url: "",
-  layout_file_name: "",
-  standing_position: "",
-  camera_direction: "",
-  notes: "",
+  photo_url: '',
+  photo_file_name: '',
+  layout_image_url: '',
+  layout_file_name: '',
+  standing_position: '',
+  camera_direction: '',
+  notes: '',
 };
 
 // ============================================================
@@ -73,12 +79,16 @@ const EMPTY_PHOTO = {
 
 const isEmpty = (value) => {
   if (value === null || value === undefined) return true;
-  if (typeof value === "string") return value.trim() === "";
+  if (typeof value === 'string') return value.trim() === '';
   return false;
 };
 
 const withUnit = (value, unit) =>
-  isEmpty(value) ? "" : unit === "FT" ? formatFeetInches(value) : `${value}${unit ? ` ${String(unit).toLowerCase()}` : ""}`;
+  isEmpty(value)
+    ? ''
+    : unit === 'FT'
+      ? formatFeetInches(value)
+      : `${value}${unit ? ` ${String(unit).toLowerCase()}` : ''}`;
 
 // ============================================================
 // PREVIEW
@@ -88,13 +98,13 @@ function Preview({ label, url }) {
   if (!url) return null;
 
   return (
-    <div className="crmf-thumb">
+    <div className="crmf-thumb crmf-thumb--recce">
       <div className="crmf-thumb__img">
         <img
           src={url}
           alt={label}
           onError={(event) => {
-            event.currentTarget.style.display = "none";
+            event.currentTarget.style.display = 'none';
           }}
         />
       </div>
@@ -111,10 +121,14 @@ function UploadButton({ label, busy, disabled, accept, onFile }) {
   return (
     <label
       className="inos-btn inos-btn--secondary"
-      style={{ width: "fit-content", opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+      style={{
+        width: 'fit-content',
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
     >
       <Upload aria-hidden />
-      <span>{busy ? "Uploading…" : label}</span>
+      <span>{busy ? 'Uploading…' : label}</span>
       <input
         type="file"
         accept={accept}
@@ -123,7 +137,7 @@ function UploadButton({ label, busy, disabled, accept, onFile }) {
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) onFile(file);
-          e.target.value = "";
+          e.target.value = '';
         }}
       />
     </label>
@@ -132,20 +146,31 @@ function UploadButton({ label, busy, disabled, accept, onFile }) {
 
 function AccompaniedByInput({ value, options, onChange }) {
   const [otherSelected, setOtherSelected] = useState(false);
-  const knownValue = value === "Self" || options.some((option) => option.value === value);
+  const knownValue = value === 'Self' || options.some((option) => option.value === value);
   const isOther = otherSelected || Boolean(value && !knownValue);
   return (
-    <div style={{ display: "grid", gap: 8 }}>
+    <div style={{ display: 'grid', gap: 8 }}>
       <OptionSelect
-        value={isOther ? "__other__" : value}
-        options={[{ value: "Self", label: "Self" }, ...options, { value: "__other__", label: "Other" }]}
+        value={isOther ? '__other__' : value}
+        options={[
+          { value: 'Self', label: 'Self' },
+          ...options,
+          { value: '__other__', label: 'Other' },
+        ]}
         placeholder="Select accompanying person"
         onChange={(selected) => {
-          setOtherSelected(selected === "__other__");
-          onChange(selected === "__other__" ? "" : selected);
+          setOtherSelected(selected === '__other__');
+          onChange(selected === '__other__' ? '' : selected);
         }}
       />
-      {isOther && <TextInput aria-label="Other accompanying person" placeholder="Enter accompanying person's name" value={value} onChange={(event) => onChange(event.target.value)} />}
+      {isOther && (
+        <TextInput
+          aria-label="Other accompanying person"
+          placeholder="Enter accompanying person's name"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      )}
     </div>
   );
 }
@@ -161,13 +186,14 @@ function ExistingSiteLayouts({ images, onChange, onFileUpload, busy, onBusyChang
     const uploaded = [];
     try {
       for (const file of files) {
-        if (!file.type.startsWith("image/")) throw new Error("Choose image files for the site layouts.");
-        const url = await onFileUpload(file, "layout");
+        if (!file.type.startsWith('image/'))
+          throw new Error('Choose image files for the site layouts.');
+        const url = await onFileUpload(file, 'layout');
         if (!url) throw new Error(`Could not upload ${file.name}.`);
         uploaded.push(url);
       }
     } catch (error) {
-      (await appAlert(error.message || "Could not upload the site layouts. Please try again."));
+      await appAlert(error.message || 'Could not upload the site layouts. Please try again.');
     } finally {
       if (uploaded.length) onChange([...images, ...uploaded]);
       onBusyChange(false);
@@ -180,7 +206,7 @@ function ExistingSiteLayouts({ images, onChange, onFileUpload, busy, onBusyChang
       <div
         onDragOver={(event) => {
           event.preventDefault();
-          event.dataTransfer.dropEffect = disabled ? "none" : "copy";
+          event.dataTransfer.dropEffect = disabled ? 'none' : 'copy';
           if (!disabled) setDragging(true);
         }}
         onDragLeave={(event) => {
@@ -193,30 +219,49 @@ function ExistingSiteLayouts({ images, onChange, onFileUpload, busy, onBusyChang
         }}
         aria-busy={busy}
         style={{
-          border: `2px dashed ${dragging && !disabled ? "var(--primary, #2563eb)" : "var(--border, #cbd5e1)"}`,
+          border: `2px dashed ${dragging && !disabled ? 'var(--primary, #2563eb)' : 'var(--border, #cbd5e1)'}`,
           borderRadius: 8,
           padding: 24,
-          textAlign: "center",
-          background: dragging && !disabled ? "var(--surface-2, #f1f5f9)" : undefined,
+          textAlign: 'center',
+          background: dragging && !disabled ? 'var(--surface-2, #f1f5f9)' : undefined,
           opacity: disabled ? 0.6 : 1,
         }}
       >
-      <p style={{ marginBottom: 12 }} role="status">
-        {busy ? "Uploading layouts…" : "Drag and drop layout images here, or browse files."}
-      </p>
-      <label className="inos-btn inos-btn--secondary" style={{ width: "fit-content" }}>
-        <Upload aria-hidden />
-        {busy ? "Uploading..." : "Upload layouts"}
-        <input type="file" accept="image/*" multiple className="sr-only" aria-label="Upload existing site layout images" disabled={disabled}
-          onChange={(event) => { const files = Array.from(event.target.files || []); event.target.value = ""; uploadFiles(files); }} />
-      </label>
-      <p className="inos-hint" style={{ marginTop: 8 }}>You can add multiple layout images at once.</p>
+        <p style={{ marginBottom: 12 }} role="status">
+          {busy ? 'Uploading layouts…' : 'Drag and drop layout images here, or browse files.'}
+        </p>
+        <label className="inos-btn inos-btn--secondary" style={{ width: 'fit-content' }}>
+          <Upload aria-hidden />
+          {busy ? 'Uploading...' : 'Upload layouts'}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            aria-label="Upload existing site layout images"
+            disabled={disabled}
+            onChange={(event) => {
+              const files = Array.from(event.target.files || []);
+              event.target.value = '';
+              uploadFiles(files);
+            }}
+          />
+        </label>
+        <p className="inos-hint" style={{ marginTop: 8 }}>
+          You can add multiple layout images at once.
+        </p>
       </div>
       <div className="inos-form-grid" style={{ marginTop: 16 }}>
         {images.map((url, index) => (
           <div key={`${url}-${index}`}>
             <Preview label={`Existing site layout ${index + 1}`} url={url} />
-            <IconButton label={`Remove layout ${index + 1}`} disabled={busy} onClick={() => onChange(images.filter((_, i) => i !== index))}><X /></IconButton>
+            <IconButton
+              label={`Remove layout ${index + 1}`}
+              disabled={busy}
+              onClick={() => onChange(images.filter((_, i) => i !== index))}
+            >
+              <X />
+            </IconButton>
           </div>
         ))}
       </div>
@@ -232,8 +277,11 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
   const [pendingUploads, setPendingUploads] = useState(0);
   const upload = async (file, type) => {
     setPendingUploads((count) => count + 1);
-    try { return await onFileUpload(file, type); }
-    finally { setPendingUploads((count) => count - 1); }
+    try {
+      return await onFileUpload(file, type);
+    } finally {
+      setPendingUploads((count) => count - 1);
+    }
   };
   const update = (key, value) => {
     onChange((current) => changeRoomField(current, key, value));
@@ -241,7 +289,7 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
 
   return (
     <RowCard
-      title={room?.id ? "Edit room" : "New room"}
+      title={room?.id ? 'Edit room' : 'New room'}
       meta="Name the room and record its measurements"
       actions={
         <IconButton label="Close" onClick={onCancel} disabled={pendingUploads > 0}>
@@ -252,97 +300,179 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
       <div className="inos-form-grid">
         <Field label="Room name" required>
           <TextInput
-            value={room.room_name || ""}
+            value={room.room_name || ''}
             placeholder="e.g. Master bedroom"
             autoFocus
-            onChange={(e) => update("room_name", e.target.value)}
+            onChange={(e) => update('room_name', e.target.value)}
           />
         </Field>
 
         <Field label="Room type" full>
           <OptionSelect
-            value={room.room_type || "OTHER"}
+            value={room.room_type || 'OTHER'}
             options={ROOM_TYPE_OPTIONS}
-            onChange={(value) => update("room_type", value)}
+            onChange={(value) => update('room_type', value)}
           />
         </Field>
 
-        {room.room_type === "OTHER" && <Field label="Other room type" required full>
-          <TextInput value={room.room_type_other || ""} placeholder="e.g. Study or prayer room" onChange={(e) => update("room_type_other", e.target.value)} />
-        </Field>}
-
+        {room.room_type === 'OTHER' && (
+          <Field label="Other room type" required full>
+            <TextInput
+              value={room.room_type_other || ''}
+              placeholder="e.g. Study or prayer room"
+              onChange={(e) => update('room_type_other', e.target.value)}
+            />
+          </Field>
+        )}
       </div>
 
       <div className="inos-form-grid inos-form-grid--3">
         {[
-          ["length", "Length", "e.g. 14"],
-          ["width", "Width", "e.g. 12"],
-          ["height", "Height", "e.g. 10"],
+          ['length', 'Length', 'e.g. 14'],
+          ['width', 'Width', 'e.g. 12'],
+          ['height', 'Height', 'e.g. 10'],
         ].map(([key, label]) => (
-          <Field key={key} label={label} hint={'Feet and inches, e.g. 7\'-6" or 7i-6ii. 12 inches = 1 foot.'}>
+          <Field
+            key={key}
+            label={label}
+            hint={'Feet and inches, e.g. 7\'-6" or 7i-6ii. 12 inches = 1 foot.'}
+          >
             <TextInput
               type="text"
-              value={room[key] ?? ""}
+              value={room[key] ?? ''}
               placeholder={'e.g. 7\'-6"'}
               aria-label={`${label} in feet and inches`}
-              invalid={Boolean(String(room[key] ?? "").trim()) && !Number.isFinite(parseFeetInches(room[key]))}
+              invalid={
+                Boolean(String(room[key] ?? '').trim()) &&
+                !Number.isFinite(parseFeetInches(room[key]))
+              }
               onChange={(e) => update(key, e.target.value)}
             />
           </Field>
         ))}
         <Field label="Area (sq ft)" hint="Calculated from length × width.">
           <label className="crmf-check">
-            <input type="checkbox" checked={Boolean(room._manualArea)} onChange={(event) => update("_manualArea", event.target.checked)} />
+            <input
+              type="checkbox"
+              checked={Boolean(room._manualArea)}
+              onChange={(event) => update('_manualArea', event.target.checked)}
+            />
             Enter area manually
           </label>
-          <TextInput type="number" min="0" step="0.01" aria-label="Room area in square feet" value={room.area ?? ""} readOnly={!room._manualArea} onChange={(event) => update("area", event.target.value)} />
+          <TextInput
+            type="number"
+            min="0"
+            step="0.01"
+            aria-label="Room area in square feet"
+            value={room.area ?? ''}
+            readOnly={!room._manualArea}
+            onChange={(event) => update('area', event.target.value)}
+          />
         </Field>
       </div>
 
       <div className="inos-form-grid">
         <Field label="Existing flooring">
           <TextInput
-            value={room.existing_flooring || ""}
+            value={room.existing_flooring || ''}
             placeholder="e.g. Italian marble"
-            onChange={(e) => update("existing_flooring", e.target.value)}
+            onChange={(e) => update('existing_flooring', e.target.value)}
           />
         </Field>
 
         <Field label="Existing ceiling">
           <TextInput
-            value={room.existing_ceiling || ""}
+            value={room.existing_ceiling || ''}
             placeholder="e.g. POP false ceiling"
-            onChange={(e) => update("existing_ceiling", e.target.value)}
+            onChange={(e) => update('existing_ceiling', e.target.value)}
           />
         </Field>
 
         <Field label="Notes" full>
           <TextArea
             rows={3}
-            value={room.notes || ""}
+            value={room.notes || ''}
             placeholder="Site observations for this room, e.g. seepage near window"
-            onChange={(e) => update("notes", e.target.value)}
+            onChange={(e) => update('notes', e.target.value)}
           />
         </Field>
       </div>
 
       <div className="crmf-rows">
-        {(room._photos || []).map((photo) => <PhotoEditor
-          key={photo.id} photo={photo} rooms={[]} embedded
-          onChange={(updated) => onChange((current) => current ? ({ ...current, _photos: current._photos.map((item) => item.id === photo.id ? (typeof updated === "function" ? updated(item) : updated) : item) }) : current)}
-          onCancel={() => onChange((current) => ({ ...current, _photos: current._photos.filter((item) => item.id !== photo.id) }))}
-          onFileUpload={onFileUpload ? upload : undefined}
-        />)}
-        <AddRowButton onClick={() => onChange((current) => ({ ...current, _photos: [...(current._photos || []), { ...EMPTY_PHOTO, id: crypto.randomUUID(), room_id: current.id || current._draftId, shot_number: (current._photos?.length || 0) + 1 }] }))}>
+        {(room._photos || []).map((photo) => (
+          <PhotoEditor
+            key={photo.id}
+            photo={photo}
+            rooms={[]}
+            embedded
+            onChange={(updated) =>
+              onChange((current) =>
+                current
+                  ? {
+                      ...current,
+                      _photos: current._photos.map((item) =>
+                        item.id === photo.id
+                          ? typeof updated === 'function'
+                            ? updated(item)
+                            : updated
+                          : item,
+                      ),
+                    }
+                  : current,
+              )
+            }
+            onCancel={() =>
+              onChange((current) => ({
+                ...current,
+                _photos: current._photos.filter((item) => item.id !== photo.id),
+              }))
+            }
+            onFileUpload={onFileUpload ? upload : undefined}
+          />
+        ))}
+        <AddRowButton
+          onClick={() =>
+            onChange((current) => ({
+              ...current,
+              _photos: [
+                ...(current._photos || []),
+                {
+                  ...EMPTY_PHOTO,
+                  id: crypto.randomUUID(),
+                  room_id: current.id || current._draftId,
+                  shot_number: (current._photos?.length || 0) + 1,
+                },
+              ],
+            }))
+          }
+        >
           Add room photo / layout
         </AddRowButton>
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
         <Button variant="ghost" onClick={onCancel} disabled={pendingUploads > 0}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={onSave} disabled={pendingUploads > 0 || ["length", "width", "height"].some((key) => String(room[key] ?? "").trim() && !Number.isFinite(parseFeetInches(room[key]))) || (room.area !== "" && room.area != null && (!Number.isFinite(Number(room.area)) || Number(room.area) < 0)) || !room?.room_name?.trim() || (room.room_type === "OTHER" && !room.room_type_other?.trim()) || (room._photos || []).some((photo) => !photo.shot_number || (!photo.photo_url && !photo.layout_image_url))}>
-          {room?.id ? "Update room" : "Add room"}
+        <Button
+          variant="primary"
+          onClick={onSave}
+          disabled={
+            pendingUploads > 0 ||
+            ['length', 'width', 'height'].some(
+              (key) =>
+                String(room[key] ?? '').trim() && !Number.isFinite(parseFeetInches(room[key])),
+            ) ||
+            (room.area !== '' &&
+              room.area != null &&
+              (!Number.isFinite(Number(room.area)) || Number(room.area) < 0)) ||
+            !room?.room_name?.trim() ||
+            (room.room_type === 'OTHER' && !room.room_type_other?.trim()) ||
+            (room._photos || []).some(
+              (photo) => !photo.shot_number || (!photo.photo_url && !photo.layout_image_url),
+            )
+          }
+        >
+          {room?.id ? 'Update room' : 'Add room'}
         </Button>
       </div>
     </RowCard>
@@ -353,15 +483,7 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
 // PHOTO EDITOR
 // ============================================================
 
-function PhotoEditor({
-  photo,
-  rooms,
-  onChange,
-  onCancel,
-  onSave,
-  onFileUpload,
-  embedded = false,
-}) {
+function PhotoEditor({ photo, rooms, onChange, onCancel, onSave, onFileUpload, embedded = false }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [uploadingLayout, setUploadingLayout] = useState(false);
@@ -376,7 +498,7 @@ function PhotoEditor({
   const uploadFile = async (file, type) => {
     if (!file || !onFileUpload) return;
 
-    const isPhoto = type === "photo";
+    const isPhoto = type === 'photo';
 
     try {
       if (isPhoto) {
@@ -405,9 +527,7 @@ function PhotoEditor({
     } catch (error) {
       console.error(`Failed to upload ${type}:`, error);
 
-      (await appAlert(
-        `Failed to upload ${isPhoto ? "photo" : "layout"}. Please try again.`,
-      ));
+      await appAlert(`Failed to upload ${isPhoto ? 'photo' : 'layout'}. Please try again.`);
     } finally {
       if (isPhoto) {
         setUploadingPhoto(false);
@@ -419,12 +539,12 @@ function PhotoEditor({
 
   const roomOptions = rooms.map((room) => ({
     value: String(room.id),
-    label: `${room.room_name}${room.room_number ? ` · ${room.room_number}` : ""}`,
+    label: `${room.room_name}${room.room_number ? ` · ${room.room_number}` : ''}`,
   }));
 
   return (
     <RowCard
-      title={photo?.id ? "Edit photo / layout shot" : "New photo / layout shot"}
+      title={photo?.id ? 'Edit photo / layout shot' : 'New photo / layout shot'}
       meta="Link the photo or layout to a room"
       actions={
         <IconButton label="Close" onClick={onCancel}>
@@ -433,64 +553,78 @@ function PhotoEditor({
       }
     >
       <div className="inos-form-grid">
-        {!embedded && <Field label="Room" required>
-          <OptionSelect
-            value={photo.room_id || ""}
-            options={roomOptions}
-            placeholder="Select a room"
-            onChange={(value) => update("room_id", value)}
-          />
-        </Field>}
+        {!embedded && (
+          <Field label="Room" required>
+            <OptionSelect
+              value={photo.room_id || ''}
+              options={roomOptions}
+              placeholder="Select a room"
+              onChange={(value) => update('room_id', value)}
+            />
+          </Field>
+        )}
 
-        <Field label="Actual photo" hint={!onFileUpload ? "File upload is not configured." : "JPG or PNG from the site visit."}>
-          {photo.photo_url && <Preview label={photo.photo_file_name || "Current photo"} url={photo.photo_url} />}
+        <Field
+          label="Actual photo"
+          hint={
+            !onFileUpload ? 'File upload is not configured.' : 'JPG or PNG from the site visit.'
+          }
+        >
+          {photo.photo_url && (
+            <Preview label={photo.photo_file_name || 'Current photo'} url={photo.photo_url} />
+          )}
           <UploadButton
-            label={photo.photo_url ? "Replace photo" : "Upload photo"}
+            label={photo.photo_url ? 'Replace photo' : 'Upload photo'}
             busy={uploadingPhoto}
             disabled={uploadingPhoto || !onFileUpload}
             accept="image/*"
-            onFile={(file) => uploadFile(file, "photo")}
+            onFile={(file) => uploadFile(file, 'photo')}
           />
         </Field>
 
-        <Field label="Layout image" hint="Marked-up plan showing the camera position. Image or PDF.">
-          {photo.layout_image_url && <Preview label={photo.layout_file_name || "Current layout"} url={photo.layout_image_url} />}
+        <Field
+          label="Layout image"
+          hint="Marked-up plan showing the camera position. Image or PDF."
+        >
+          {photo.layout_image_url && (
+            <Preview
+              label={photo.layout_file_name || 'Current layout'}
+              url={photo.layout_image_url}
+            />
+          )}
           <UploadButton
-            label={photo.layout_image_url ? "Replace layout" : "Upload layout"}
+            label={photo.layout_image_url ? 'Replace layout' : 'Upload layout'}
             busy={uploadingLayout}
             disabled={uploadingLayout || !onFileUpload}
             accept="image/*,.pdf"
-            onFile={(file) => uploadFile(file, "layout")}
+            onFile={(file) => uploadFile(file, 'layout')}
           />
         </Field>
 
         <Field label="Notes" full>
           <TextArea
             rows={3}
-            value={photo.notes || ""}
+            value={photo.notes || ''}
             placeholder="What this shot shows, e.g. existing wiring on east wall"
-            onChange={(e) => update("notes", e.target.value)}
+            onChange={(e) => update('notes', e.target.value)}
           />
         </Field>
       </div>
 
-      {!embedded && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <Button variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          onClick={onSave}
-          disabled={
-            !photo?.room_id ||
-            !photo?.shot_number ||
-            uploadingPhoto ||
-            uploadingLayout
-          }
-        >
-          {photo?.id ? "Update shot" : "Add shot"}
-        </Button>
-      </div>}
+      {!embedded && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={onSave}
+            disabled={!photo?.room_id || !photo?.shot_number || uploadingPhoto || uploadingLayout}
+          >
+            {photo?.id ? 'Update shot' : 'Add shot'}
+          </Button>
+        </div>
+      )}
     </RowCard>
   );
 }
@@ -533,19 +667,15 @@ export function SiteRecceSectionForm({
     let count = 0;
 
     Object.entries(values || {}).forEach(([key, val]) => {
-      if (key === "rooms" || key === "photos") {
+      if (key === 'rooms' || key === 'photos') {
         return;
       }
 
       if (Array.isArray(val)) {
         count += val.length > 0 ? 1 : 0;
-      } else if (typeof val === "object" && val !== null) {
+      } else if (typeof val === 'object' && val !== null) {
         count += Object.values(val).filter(
-          (v) =>
-            v !== "" &&
-            v !== null &&
-            v !== undefined &&
-            !(Array.isArray(v) && v.length === 0),
+          (v) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0),
         ).length;
       } else if (!isEmpty(val)) {
         count++;
@@ -579,38 +709,30 @@ export function SiteRecceSectionForm({
   const handleEditRoom = (room) => {
     setEditingRoom({
       ...roomFeetInchesDraft(room),
-      _photos: photos.filter((photo) => String(photo.room_id) === String(room.id)).map((photo) => ({ ...photo })),
+      _photos: photos
+        .filter((photo) => String(photo.room_id) === String(room.id))
+        .map((photo) => ({ ...photo })),
     });
   };
 
   const handleDeleteRoom = async (roomId) => {
-    const hasPhotos = photos.some(
-      (photo) => String(photo.room_id) === String(roomId),
-    );
+    const hasPhotos = photos.some((photo) => String(photo.room_id) === String(roomId));
 
     if (hasPhotos) {
-      const confirmed = (await appConfirm(
-        "This room has photos/layout shots attached to it. Delete the room and its photos?",
-      ));
+      const confirmed = await appConfirm(
+        'This room has photos/layout shots attached to it. Delete the room and its photos?',
+      );
 
       if (!confirmed) return;
 
-      const remainingPhotos = photos.filter(
-        (photo) => String(photo.room_id) !== String(roomId),
-      );
+      const remainingPhotos = photos.filter((photo) => String(photo.room_id) !== String(roomId));
 
-      onFieldChange(
-        "Room Photos & Layout References",
-        "photos",
-        remainingPhotos,
-      );
+      onFieldChange('Room Photos & Layout References', 'photos', remainingPhotos);
     }
 
-    const remainingRooms = rooms.filter(
-      (room) => String(room.id) !== String(roomId),
-    );
+    const remainingRooms = rooms.filter((room) => String(room.id) !== String(roomId));
 
-    onFieldChange("Room-wise Measurements", "rooms", remainingRooms);
+    onFieldChange('Room-wise Measurements', 'rooms', remainingRooms);
 
     if (editingRoom && String(editingRoom.id) === String(roomId)) {
       setEditingRoom(null);
@@ -623,8 +745,8 @@ export function SiteRecceSectionForm({
     }
 
     const committed = commitRoomDraft(rooms, photos, editingRoom);
-    onFieldChange("Room-wise Measurements", "rooms", committed.rooms);
-    onFieldChange("Room Photos & Layout References", "photos", committed.photos);
+    onFieldChange('Room-wise Measurements', 'rooms', committed.rooms);
+    onFieldChange('Room Photos & Layout References', 'photos', committed.photos);
 
     setEditingRoom(null);
   };
@@ -648,17 +770,13 @@ export function SiteRecceSectionForm({
   };
 
   const handleDeletePhoto = async (photoId) => {
-    const confirmed = (await appConfirm(
-      "Are you sure you want to delete this photo/layout record?",
-    ));
+    const confirmed = await appConfirm('Are you sure you want to delete this photo/layout record?');
 
     if (!confirmed) return;
 
-    const remainingPhotos = photos.filter(
-      (photo) => String(photo.id) !== String(photoId),
-    );
+    const remainingPhotos = photos.filter((photo) => String(photo.id) !== String(photoId));
 
-    onFieldChange("Room Photos & Layout References", "photos", remainingPhotos);
+    onFieldChange('Room Photos & Layout References', 'photos', remainingPhotos);
 
     if (editingPhoto && String(editingPhoto.id) === String(photoId)) {
       setEditingPhoto(null);
@@ -685,7 +803,7 @@ export function SiteRecceSectionForm({
       nextPhotos = [...photos, newPhoto];
     }
 
-    onFieldChange("Room Photos & Layout References", "photos", nextPhotos);
+    onFieldChange('Room Photos & Layout References', 'photos', nextPhotos);
 
     setEditingPhoto(null);
   };
@@ -695,17 +813,13 @@ export function SiteRecceSectionForm({
   // ============================================================
 
   const renderRestrictionTable = (section) => {
-    const field = (section.fields || []).find(
-      (item) => item.type === "restriction-table",
-    );
+    const field = (section.fields || []).find((item) => item.type === 'restriction-table');
 
     if (!field) {
       return null;
     }
 
-    const restrictions = Array.isArray(values?.[field.key])
-      ? values[field.key]
-      : [];
+    const restrictions = Array.isArray(values?.[field.key]) ? values[field.key] : [];
 
     const updateRestrictions = (nextRestrictions) => {
       handleFieldChange(section.title, field.key, nextRestrictions);
@@ -715,8 +829,8 @@ export function SiteRecceSectionForm({
       updateRestrictions([
         ...restrictions,
         {
-          type: "",
-          details: "",
+          type: '',
+          details: '',
         },
       ]);
     };
@@ -735,9 +849,7 @@ export function SiteRecceSectionForm({
     };
 
     const handleDeleteRestriction = (index) => {
-      updateRestrictions(
-        restrictions.filter((_, itemIndex) => itemIndex !== index),
-      );
+      updateRestrictions(restrictions.filter((_, itemIndex) => itemIndex !== index));
     };
 
     return (
@@ -757,7 +869,7 @@ export function SiteRecceSectionForm({
                 title={
                   (field.restrictionOptions || []).find(
                     (o) => String(o.value) === String(restriction?.type),
-                  )?.label || "New restriction"
+                  )?.label || 'New restriction'
                 }
                 onRemove={() => handleDeleteRestriction(index)}
                 removeLabel="Delete restriction"
@@ -765,25 +877,19 @@ export function SiteRecceSectionForm({
                 <div className="inos-form-grid">
                   <Field label="Restriction type" required>
                     <OptionSelect
-                      value={restriction?.type || ""}
+                      value={restriction?.type || ''}
                       options={field.restrictionOptions || []}
                       placeholder="Select restriction"
-                      onChange={(value) =>
-                        handleUpdateRestriction(index, "type", String(value))
-                      }
+                      onChange={(value) => handleUpdateRestriction(index, 'type', String(value))}
                     />
                   </Field>
 
                   <Field label="Details / notes">
                     <TextInput
-                      value={restriction?.details || ""}
+                      value={restriction?.details || ''}
                       placeholder="e.g. Work allowed 10am–6pm, no Sundays"
                       onChange={(event) =>
-                        handleUpdateRestriction(
-                          index,
-                          "details",
-                          event.target.value,
-                        )
+                        handleUpdateRestriction(index, 'details', event.target.value)
                       }
                     />
                   </Field>
@@ -794,7 +900,7 @@ export function SiteRecceSectionForm({
         )}
 
         <AddRowButton onClick={handleAddRestriction}>
-          {restrictions.length ? field.addLabel || "Add restriction" : "Add first restriction"}
+          {restrictions.length ? field.addLabel || 'Add restriction' : 'Add first restriction'}
         </AddRowButton>
       </>
     );
@@ -830,7 +936,11 @@ export function SiteRecceSectionForm({
                   key={room.id || index}
                   index={index + 1}
                   title={room.room_name}
-                  meta={room.room_type === "OTHER" ? room.room_type_other || "Other" : getRoomTypeLabel(room.room_type)}
+                  meta={
+                    room.room_type === 'OTHER'
+                      ? room.room_type_other || 'Other'
+                      : getRoomTypeLabel(room.room_type)
+                  }
                   onRemove={() => handleDeleteRoom(room.id)}
                   removeLabel="Delete room"
                   actions={
@@ -841,21 +951,25 @@ export function SiteRecceSectionForm({
                 >
                   <KV
                     items={[
-                      ["Length", withUnit(room.length, room.measurement_unit)],
-                      ["Width", withUnit(room.width, room.measurement_unit)],
-                      ["Height", withUnit(room.height, room.measurement_unit)],
-                      ["Area", isFilled(room.area) ? `${room.area} sq ${(room.measurement_unit || "FT").toLowerCase()}` : ""],
+                      ['Length', withUnit(room.length, room.measurement_unit)],
+                      ['Width', withUnit(room.width, room.measurement_unit)],
+                      ['Height', withUnit(room.height, room.measurement_unit)],
                       [
-                        "Photos",
+                        'Area',
+                        isFilled(room.area)
+                          ? `${room.area} sq ${(room.measurement_unit || 'FT').toLowerCase()}`
+                          : '',
+                      ],
+                      [
+                        'Photos',
                         String(
-                          photos.filter(
-                            (photo) => String(photo.room_id) === String(room.id),
-                          ).length,
+                          photos.filter((photo) => String(photo.room_id) === String(room.id))
+                            .length,
                         ),
                       ],
-                      room.existing_flooring && ["Existing flooring", room.existing_flooring],
-                      room.existing_ceiling && ["Existing ceiling", room.existing_ceiling],
-                      room.notes && ["Notes", room.notes],
+                      room.existing_flooring && ['Existing flooring', room.existing_flooring],
+                      room.existing_ceiling && ['Existing ceiling', room.existing_ceiling],
+                      room.notes && ['Notes', room.notes],
                     ]}
                   />
                 </RowCard>
@@ -876,7 +990,7 @@ export function SiteRecceSectionForm({
 
         {!editingRoom && (
           <AddRowButton onClick={handleAddRoom}>
-            {rooms.length ? "Add room" : "Add first room"}
+            {rooms.length ? 'Add room' : 'Add first room'}
           </AddRowButton>
         )}
       </>
@@ -905,9 +1019,7 @@ export function SiteRecceSectionForm({
         ) : (
           <div className="crmf-rows">
             {photos.map((photo, index) => {
-              const room = rooms.find(
-                (item) => String(item.id) === String(photo.room_id),
-              );
+              const room = rooms.find((item) => String(item.id) === String(photo.room_id));
 
               if (editingPhoto && editingPhoto.id && String(editingPhoto.id) === String(photo.id)) {
                 return (
@@ -928,7 +1040,7 @@ export function SiteRecceSectionForm({
                   key={photo.id || index}
                   index={photo.shot_number}
                   title={`Shot ${photo.shot_number}`}
-                  meta={room?.room_name || "Unknown room"}
+                  meta={room?.room_name || 'Unknown room'}
                   onRemove={() => handleDeletePhoto(photo.id)}
                   removeLabel="Delete shot"
                   actions={
@@ -940,14 +1052,12 @@ export function SiteRecceSectionForm({
                   {(photo.photo_url || photo.layout_image_url) && (
                     <div className="crmf-thumbs">
                       {photo.photo_url && <Preview label="Actual photo" url={photo.photo_url} />}
-                      {photo.layout_image_url && <Preview label="Layout" url={photo.layout_image_url} />}
+                      {photo.layout_image_url && (
+                        <Preview label="Layout" url={photo.layout_image_url} />
+                      )}
                     </div>
                   )}
-                  <KV
-                    items={[
-                      photo.notes && ["Notes", photo.notes],
-                    ]}
-                  />
+                  <KV items={[photo.notes && ['Notes', photo.notes]]} />
                 </RowCard>
               );
             })}
@@ -967,7 +1077,7 @@ export function SiteRecceSectionForm({
 
         {!editingPhoto && rooms.length > 0 && (
           <AddRowButton onClick={handleAddPhoto}>
-            {photos.length ? "Add shot" : "Add first shot"}
+            {photos.length ? 'Add shot' : 'Add first shot'}
           </AddRowButton>
         )}
       </>
@@ -983,42 +1093,42 @@ export function SiteRecceSectionForm({
       {(section.fields || []).map((field) => {
         // restriction-table is handled
         // separately by renderSectionBody
-        if (field.type === "restriction-table") {
+        if (field.type === 'restriction-table') {
           return null;
         }
         if (field.showWhen && values?.[field.showWhen.field] !== field.showWhen.value) return null;
 
-        const fieldValue = values?.[field.key] ?? "";
+        const fieldValue = values?.[field.key] ?? '';
         const set = (value) => handleFieldChange(section.title, field.key, value);
         const options = field.options || [];
-        const emptyOptions = field.type === "select" && options.length === 0;
+        const emptyOptions = field.type === 'select' && options.length === 0;
 
         return (
           <Field
             key={field.key}
             label={field.label}
             required={field.required}
-            full={field.type === "textarea"}
+            full={field.type === 'textarea'}
             hint={
-              emptyOptions && field.key === "site_engineer_id"
-                ? "No site engineers found. Add users with the Site Engineer role in Admin Console."
+              emptyOptions && field.key === 'site_engineer_id'
+                ? 'No site engineers found. Add users with the Site Engineer role in Admin Console.'
                 : field.hint
             }
           >
-            {field.type === "accompanied-by" ? (
+            {field.type === 'accompanied-by' ? (
               <AccompaniedByInput value={fieldValue} options={options} onChange={set} />
-            ) : field.type === "textarea" ? (
+            ) : field.type === 'textarea' ? (
               <TextArea
                 rows={Math.min(field.rows || 3, 4)}
                 value={fieldValue}
-                placeholder={field.placeholder || ""}
+                placeholder={field.placeholder || ''}
                 onChange={(e) => set(e.target.value)}
               />
-            ) : field.type === "date" ? (
+            ) : field.type === 'date' ? (
               <TextInput type="date" value={fieldValue} onChange={(e) => set(e.target.value)} />
-            ) : field.type === "time" ? (
+            ) : field.type === 'time' ? (
               <TextInput type="time" value={fieldValue} onChange={(e) => set(e.target.value)} />
-            ) : field.type === "select" ? (
+            ) : field.type === 'select' ? (
               options.length > 0 && options.length <= 4 ? (
                 <Choices
                   name={field.label}
@@ -1031,17 +1141,17 @@ export function SiteRecceSectionForm({
                 <OptionSelect
                   value={fieldValue}
                   options={options}
-                  placeholder={emptyOptions ? "None available" : "Select…"}
+                  placeholder={emptyOptions ? 'None available' : 'Select…'}
                   disabled={emptyOptions}
                   onChange={set}
                 />
               )
             ) : (
               <TextInput
-                type={field.type || "text"}
-                inputMode={field.type === "number" ? "decimal" : undefined}
+                type={field.type || 'text'}
+                inputMode={field.type === 'number' ? 'decimal' : undefined}
                 value={fieldValue}
-                placeholder={field.placeholder || ""}
+                placeholder={field.placeholder || ''}
                 onChange={(e) => set(e.target.value)}
               />
             )}
@@ -1056,20 +1166,31 @@ export function SiteRecceSectionForm({
   // ============================================================
 
   const renderSectionBody = (section) => {
-    if (section.type === "existing-layouts") {
-      return <ExistingSiteLayouts images={values.existing_site_layouts || []}
-        onChange={(images) => handleFieldChange(section.title, "existing_site_layouts", images)}
-        onFileUpload={onFileUpload} busy={uploadingSiteLayouts} onBusyChange={setUploadingSiteLayouts} />;
+    if (section.type === 'existing-layouts') {
+      return (
+        <ExistingSiteLayouts
+          images={values.existing_site_layouts || []}
+          onChange={(images) => handleFieldChange(section.title, 'existing_site_layouts', images)}
+          onFileUpload={onFileUpload}
+          busy={uploadingSiteLayouts}
+          onBusyChange={setUploadingSiteLayouts}
+        />
+      );
     }
-    if (section.type === "rooms") {
-      return <>{renderRooms()}<div className="mt-6">{renderPhotos()}</div></>;
+    if (section.type === 'rooms') {
+      return (
+        <>
+          {renderRooms()}
+          <div className="mt-6">{renderPhotos()}</div>
+        </>
+      );
     }
 
-    if (section.type === "roomPhotos") {
+    if (section.type === 'roomPhotos') {
       return renderPhotos();
     }
 
-    if (section.fields?.some((field) => field.type === "restriction-table")) {
+    if (section.fields?.some((field) => field.type === 'restriction-table')) {
       return renderRestrictionTable(section);
     }
 
@@ -1085,11 +1206,9 @@ export function SiteRecceSectionForm({
   // ============================================================
 
   const sectionCount = (section) => {
-    if (section.type === "rooms") return rooms.length;
-    if (section.type === "roomPhotos") return photos.length;
-    const restrictionField = section.fields?.find(
-      (field) => field.type === "restriction-table",
-    );
+    if (section.type === 'rooms') return rooms.length;
+    if (section.type === 'roomPhotos') return photos.length;
+    const restrictionField = section.fields?.find((field) => field.type === 'restriction-table');
     if (restrictionField) {
       const v = values?.[restrictionField.key];
       return Array.isArray(v) ? v.length : 0;
@@ -1098,17 +1217,18 @@ export function SiteRecceSectionForm({
   };
 
   const sectionDone = (section) => {
-    if (section.type === "rooms" || section.type === "roomPhotos") return sectionCount(section) > 0;
-    if (section.fields?.some((field) => field.type === "restriction-table")) return sectionCount(section) > 0;
+    if (section.type === 'rooms' || section.type === 'roomPhotos') return sectionCount(section) > 0;
+    if (section.fields?.some((field) => field.type === 'restriction-table'))
+      return sectionCount(section) > 0;
     const fields = section.fields || [];
     const required = fields.filter((f) => f.required);
     if (required.length) return required.every((f) => isFilled(values?.[f.key]));
     return fields.some((f) => isFilled(values?.[f.key]));
   };
 
-  const projectSectionId = "sec-project";
+  const projectSectionId = 'sec-project';
   const nav = [
-    { id: projectSectionId, label: "Project", done: Boolean(projectId) },
+    { id: projectSectionId, label: 'Project', done: Boolean(projectId) },
     ...(sections || []).map((section, i) => ({
       id: slugId(section.key || section.title, i),
       label: section.title,
@@ -1123,7 +1243,7 @@ export function SiteRecceSectionForm({
 
   return (
     <DocFormLayout
-      crumbs={crumbs || [{ label: "CRM", to: "/crm" }, { label: "Forms" }, { label: "Site recce" }]}
+      crumbs={crumbs || [{ label: 'CRM', to: '/crm' }, { label: 'Forms' }, { label: 'Site recce' }]}
       title={title}
       subtitle={subtitle}
       nav={nav}
@@ -1135,11 +1255,7 @@ export function SiteRecceSectionForm({
         description="Which project was this site visit for?"
         done={Boolean(projectId)}
       >
-        <ProjectPicker
-          projects={projects || []}
-          value={projectId}
-          onChange={onProjectChange}
-        />
+        <ProjectPicker projects={projects || []} value={projectId} onChange={onProjectChange} />
       </DocSection>
 
       {(sections || []).map((section, index) => (
@@ -1156,17 +1272,34 @@ export function SiteRecceSectionForm({
       ))}
 
       <FormActions
-        note={editingRoom || editingPhoto ? "Save or cancel the open room / photo before saving the site recce." : autosaveNote || `${filledCount} item${filledCount !== 1 ? "s" : ""} completed`}
+        note={
+          editingRoom || editingPhoto
+            ? 'Save or cancel the open room / photo before saving the site recce.'
+            : autosaveNote || `${filledCount} item${filledCount !== 1 ? 's' : ''} completed`
+        }
         extra={
           onSaveDraft && (
-            <Button variant="secondary" onClick={onSaveDraft} disabled={uploadingSiteLayouts || Boolean(editingRoom || editingPhoto)}>
+            <Button
+              variant="secondary"
+              onClick={onSaveDraft}
+              disabled={uploadingSiteLayouts || Boolean(editingRoom || editingPhoto)}
+            >
               Save draft
             </Button>
           )
         }
         onCancel={onCancel || (() => navigate(-1))}
-        submitLabel={isSubmitting ? "Saving…" : submitLabel || (title?.includes("Recce") || title?.includes("recce") ? "Save site recce" : "Generate brief")}
-        submitDisabled={isSubmitting || uploadingSiteLayouts || Boolean(editingRoom || editingPhoto)}
+        submitLabel={
+          isSubmitting
+            ? 'Saving…'
+            : submitLabel ||
+              (title?.includes('Recce') || title?.includes('recce')
+                ? 'Save site recce'
+                : 'Generate brief')
+        }
+        submitDisabled={
+          isSubmitting || uploadingSiteLayouts || Boolean(editingRoom || editingPhoto)
+        }
         onSubmit={onSubmit}
       />
 
@@ -1177,11 +1310,11 @@ export function SiteRecceSectionForm({
 
 // One-line guidance for sections that don't define a description.
 const SECTION_HINTS = {
-  "General Information": "When the visit happened and who was there.",
-  "Property Details": "Size, layout and type of the property.",
-  "Site Access & Material Movement": "How people and material get to the site.",
-  "Site Utilities": "Water, power and drainage available on site.",
-  "Existing Site Condition": "What the site looks like today.",
+  'General Information': 'When the visit happened and who was there.',
+  'Property Details': 'Size, layout and type of the property.',
+  'Site Access & Material Movement': 'How people and material get to the site.',
+  'Site Utilities': 'Water, power and drainage available on site.',
+  'Existing Site Condition': 'What the site looks like today.',
 };
 
 export default SiteRecceSectionForm;

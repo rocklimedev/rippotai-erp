@@ -8,8 +8,8 @@ export default function TopBar({ onNewLead }) {
             className="absolute inset-0 opacity-20"
             style={{
               backgroundImage:
-                "linear-gradient(var(--sage) 1px, transparent 1px), linear-gradient(90deg, var(--sage) 1px, transparent 1px)",
-              backgroundSize: "6px 6px",
+                'linear-gradient(var(--sage) 1px, transparent 1px), linear-gradient(90deg, var(--sage) 1px, transparent 1px)',
+              backgroundSize: '6px 6px',
             }}
           />
           <svg
