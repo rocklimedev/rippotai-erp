@@ -1,3 +1,4 @@
+import { calculateBudgetEstimateTotals, roundBudgetMoney, budgetItemAmount } from './budget-estimate-totals';
 import {
   BadRequestException,
   Injectable,
@@ -329,9 +330,9 @@ export class BudgetEstimateService {
       });
     }
 
-    const quantity = Number(dto.quantity ?? 0);
+    const quantity = roundBudgetMoney(dto.quantity);
 
-    const rate = Number(dto.rate ?? libraryItem?.default_rate ?? 0);
+    const rate = roundBudgetMoney(dto.rate ?? libraryItem?.default_rate);
 
     await this.itemModel.create(
       {
@@ -353,7 +354,7 @@ export class BudgetEstimateService {
 
         rate,
 
-        amount: quantity * rate,
+        amount: budgetItemAmount({ quantity, rate }),
 
         calc_type: dto.calc_type || 'M',
 
@@ -586,65 +587,7 @@ export class BudgetEstimateService {
   // ============================================================
 
   async recalculate(id: string) {
-    const estimate = await this.estimateModel.findByPk(id);
-
-    if (!estimate) {
-      throw new NotFoundException('Budget estimate not found');
-    }
-
-    const items = await this.itemModel.findAll({
-      where: {
-        estimate_id: id,
-      },
-    });
-
-    const miscellaneous = await this.miscellaneousModel.findAll({
-      where: {
-        estimate_id: id,
-      },
-    });
-
-    const subtotal = items
-      .filter((item) => !item.hidden)
-      .reduce(
-        (sum, item) => sum + Number(item.quantity) * Number(item.rate),
-        0,
-      );
-
-    const miscItemsTotal = miscellaneous.reduce(
-      (sum, item) => sum + Number(item.value),
-      0,
-    );
-
-    const percentageMisc =
-      subtotal * (Number(estimate.misc_percentage || 0) / 100);
-
-    const miscAmount = percentageMisc + miscItemsTotal;
-
-    const beforeTax =
-      subtotal +
-      miscAmount +
-      Number(estimate.design_amount || 0) +
-      Number(estimate.execution_amount || 0) +
-      Number(estimate.supervisor_amount || 0) +
-      Number(estimate.additional_amount || 0) -
-      Number(estimate.discount_amount || 0);
-
-    const taxAmount = beforeTax * (Number(estimate.tax_percentage || 0) / 100);
-
-    const totalAmount = beforeTax + taxAmount;
-
-    await estimate.update({
-      subtotal,
-
-      misc_amount: miscAmount,
-
-      tax_amount: taxAmount,
-
-      total_amount: totalAmount,
-    });
-
-    return estimate;
+    return this.recalculateWithTransaction(id);
   }
 
   // ============================================================
@@ -920,9 +863,9 @@ export class BudgetEstimateService {
         for (let itemIndex = 0; itemIndex < boqItems.length; itemIndex++) {
           const boqItem = boqItems[itemIndex];
 
-          const quantity = Number(boqItem.quantity || 0);
+          const quantity = roundBudgetMoney(boqItem.quantity);
 
-          const rate = Number(boqItem.rate || 0);
+          const rate = roundBudgetMoney(boqItem.rate);
 
           await this.itemModel.create(
             {
@@ -948,7 +891,7 @@ export class BudgetEstimateService {
 
               rate,
 
-              amount: quantity * rate,
+              amount: budgetItemAmount({ quantity, rate }),
 
               calc_type: boqItem.calc_type || 'M',
 
@@ -1008,7 +951,7 @@ export class BudgetEstimateService {
   // RECALCULATE WITH TRANSACTION
   // ============================================================
 
-  private async recalculateWithTransaction(id: string, transaction: any) {
+  private async recalculateWithTransaction(id: string, transaction?: any) {
     const estimate = await this.estimateModel.findByPk(id, { transaction });
 
     if (!estimate) {
@@ -1031,55 +974,18 @@ export class BudgetEstimateService {
       transaction,
     });
 
-    // ----------------------------------------------------------
-    // SUBTOTAL
-    // ----------------------------------------------------------
-
-    const subtotal = items
-      .filter((item) => !item.hidden)
-      .reduce(
-        (sum, item) => sum + Number(item.quantity) * Number(item.rate),
-        0,
-      );
-
-    // ----------------------------------------------------------
-    // MISC
-    // ----------------------------------------------------------
-
-    const miscItemsTotal = miscellaneous.reduce(
-      (sum, item) => sum + Number(item.value),
-      0,
-    );
-
-    const percentageMisc =
-      subtotal * (Number(estimate.misc_percentage || 0) / 100);
-
-    const miscAmount = percentageMisc + miscItemsTotal;
-
-    // ----------------------------------------------------------
-    // BEFORE TAX
-    // ----------------------------------------------------------
-
-    const beforeTax =
-      subtotal +
-      miscAmount +
-      Number(estimate.design_amount || 0) +
-      Number(estimate.execution_amount || 0) +
-      Number(estimate.supervisor_amount || 0) +
-      Number(estimate.additional_amount || 0) -
-      Number(estimate.discount_amount || 0);
-
-    // ----------------------------------------------------------
-    // TAX
-    // ----------------------------------------------------------
-
-    const taxAmount = beforeTax * (Number(estimate.tax_percentage || 0) / 100);
-
-    // ----------------------------------------------------------
-    // TOTAL
-    // ----------------------------------------------------------
-
-    const totalAmount = beforeTax + taxAmount;
+    const totals = calculateBudgetEstimateTotals({
+      design_amount: estimate.design_amount,
+      execution_amount: estimate.execution_amount,
+      supervisor_amount: estimate.supervisor_amount,
+      additional_amount: estimate.additional_amount,
+      misc_percentage: estimate.misc_percentage,
+      tax_percentage: estimate.tax_percentage,
+      discount_amount: estimate.discount_amount,
+      categories: [{ items }],
+      miscellaneous,
+    });
+    const { subtotal, miscAmount, taxAmount, total: totalAmount } = totals;
 
     await estimate.update(
       {

@@ -2,6 +2,8 @@ import { appConfirm } from "@/lib/app-dialog";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Archive, ClipboardList, HardHat, Plus, Save, Pencil, Trash2, Info } from "lucide-react";
+import "./admin-dpr-workspace.css";
 import {
   Page,
   PageHeader,
@@ -11,6 +13,9 @@ import {
   TextInput,
   TextArea,
   SelectInput,
+  Segmented,
+  StatusPill,
+  EmptyState,
 } from "@/components/inos";
 import { useGetProjectsQuery } from "@/api/projects/project.api";
 import {
@@ -122,18 +127,20 @@ export default function AdminDprWorkspacePage() {
   };
 
   return (
-    <Page>
+    <Page className="admin-dpr-workspace">
       <PageHeader
-        eyebrow="Site Operations"
+        crumbs={[{ label: "Site Operations" }, { label: "DPR records", to: "/site-operations/admin-dpr" }, { label: "Workspace" }]}
+        icon={<ClipboardList size={22} />}
         title="Admin DPR workspace"
         subtitle="Record project progress and admin coordination, then save the complete DPR to records."
         actions={
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Button onClick={() => navigate("/site-operations/admin-dpr")}>
+          <div className="dpr-actions">
+            <Button icon={Archive} onClick={() => navigate("/site-operations/admin-dpr")}>
               DPR records
             </Button>
             <Button
               variant="primary"
+              icon={Save}
               loading={archiving.isLoading}
               disabled={
                 !!form ||
@@ -149,54 +156,19 @@ export default function AdminDprWorkspacePage() {
           </div>
         }
       />
-      <Card>
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            marginBottom: 20,
-          }}
-        >
-          <Button
-            variant={kind === "reports" ? "primary" : "secondary"}
-            onClick={() => {
-              setKind("reports");
-              setPage(1);
-              setForm(null);
-            }}
-          >
-            Project progress
-          </Button>
-          <Button
-            variant={kind === "logs" ? "primary" : "secondary"}
-            onClick={() => {
-              setKind("logs");
-              setPage(1);
-              setForm(null);
-            }}
-          >
-            Admin coordination
-          </Button>
-          <Button
-            onClick={() =>
-              setForm({
-                [dateKey]: today(),
-                [statusKey]: "Pending",
-                project_id: filters.project_id,
-              })
-            }
-          >
-            Add entry
-          </Button>
+      <Card className="dpr-controls" flush>
+        <div className="dpr-toolbar">
+          <Segmented value={kind} onChange={(value) => {
+            setKind(value); setPage(1); setForm(null);
+          }} options={[
+            { value: "reports", label: "Project progress", icon: HardHat },
+            { value: "logs", label: "Admin coordination", icon: ClipboardList },
+          ]} />
+          <Button icon={Plus} variant="primary" disabled={!!form} onClick={() =>
+            setForm({ [dateKey]: today(), [statusKey]: "Pending", project_id: filters.project_id })
+          }>Add entry</Button>
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 16,
-          }}
-        >
+        <div className="dpr-filters">
           <Field label="From date">
             <TextInput
               type="date"
@@ -226,22 +198,15 @@ export default function AdminDprWorkspacePage() {
             </SelectInput>
           </Field>
         </div>
-        <p>
-          Saving a DPR retains both sections and the complete Excel for the
-          selected dates and project. Save or cancel the open entry before
-          saving the document.
-        </p>
+        <div className="dpr-note"><Info size={16} aria-hidden />
+          <span>Save DPR captures both sections and the complete Excel for the selected period and project.
+            {form && " Save or cancel your entry before saving the DPR."}</span>
+        </div>
       </Card>
       {form && (
-        <Card title={form.id ? "Edit entry" : "New entry"}>
+        <Card className="dpr-editor" title={form.id ? "Edit entry" : "New entry"} subtitle={kind === "reports" ? "Record site progress, materials and upcoming work." : "Track coordination, ownership and due dates."}>
           <form onSubmit={submit}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                gap: 16,
-              }}
-            >
+            <div className="dpr-form-grid">
               <Field label="Date" required>
                 <TextInput
                   required
@@ -273,6 +238,7 @@ export default function AdminDprWorkspacePage() {
                 <Field
                   key={key}
                   label={label}
+                  full={kind === "reports" || key === "details" || key === "remarks"}
                   required={key === "work_type" || key === "details"}
                 >
                   {key === "due_date" ? (
@@ -298,10 +264,11 @@ export default function AdminDprWorkspacePage() {
                 </Field>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+            <div className="dpr-form-footer">
               <Button
                 type="submit"
                 variant="primary"
+                icon={Save}
                 loading={saving.isLoading}
               >
                 Save entry
@@ -312,6 +279,8 @@ export default function AdminDprWorkspacePage() {
         </Card>
       )}
       <Card
+        className="dpr-entries" flush
+        subtitle="Review daily activity and keep your report up to date."
         title={
           kind === "reports"
             ? "Project progress entries"
@@ -319,14 +288,14 @@ export default function AdminDprWorkspacePage() {
         }
       >
         {isFetching ? (
-          <p>Loading entries…</p>
+          <div className="dpr-feedback" role="status">Loading entries…</div>
         ) : error ? (
-          <p role="alert">{errorMessage(error)}</p>
+          <div className="dpr-feedback" role="alert">{errorMessage(error)}</div>
         ) : !data?.data?.length ? (
-          <p>No entries for the selected dates and project.</p>
+          <EmptyState icon={kind === "reports" ? HardHat : ClipboardList} title="No entries for this period" text="Choose another date range or add an entry to start your daily progress report." />
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table className="inos-table">
+          <div className="inos-table-wrap dpr-table-scroll">
+            <table className="inos-table dpr-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -343,18 +312,21 @@ export default function AdminDprWorkspacePage() {
                   <tr key={row.id}>
                     <td>{row[dateKey]}</td>
                     <td>{row.project?.name || "—"}</td>
-                    <td>{row[statusKey]}</td>
+                    <td><StatusPill status={row[statusKey]} /></td>
                     {fields.map(([key]) => (
                       <td
-                        style={{ minWidth: 160, whiteSpace: "pre-wrap" }}
+                        className="dpr-detail-cell"
                         key={key}
                       >
                         {row[key] || "—"}
                       </td>
                     ))}
                     <td>
-                      <Button onClick={() => setForm(row)}>Edit</Button>
+                      <Button size="sm" icon={Pencil} onClick={() => setForm(row)}>Edit</Button>
                       <Button
+                        size="sm"
+                        variant="danger"
+                        icon={Trash2}
                         disabled={removing.isLoading}
                         onClick={async () => {
                           if (!(await appConfirm("Delete this entry?"))) return;
@@ -376,14 +348,7 @@ export default function AdminDprWorkspacePage() {
             </table>
           </div>
         )}
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            marginTop: 16,
-          }}
-        >
+        <div className="dpr-pagination">
           <Button
             disabled={page === 1 || isFetching}
             onClick={() => setPage(page - 1)}

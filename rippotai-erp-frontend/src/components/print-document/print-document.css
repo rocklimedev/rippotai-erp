@@ -258,6 +258,8 @@
 /* ------------------------------------------------------------ content blocks */
 
 .pd-block {
+  /* Include child margins in both off-screen measurements and page layout. */
+  display: flow-root;
   padding-bottom: 5mm;
 }
 .pd-block--tight {

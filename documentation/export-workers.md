@@ -56,6 +56,8 @@ npm run build
 npm run start:export-worker
 ```
 
+The root `docker-compose.yml` defines `backend`, `export-worker` and persistent Redis. Copy it to `/opt/apps/rippotai-erp-api/docker-compose.yml` alongside the server `.env` before deploying. The backend deployment workflow starts both application services directly. The worker uses the same image, environment and Redis as the API, runs `npm run start:export-worker`, restarts automatically, and has a one-CPU / 2 GiB limit with a 210-second shutdown grace period. If `EXPORT_JOB_TIMEOUT_MS` is raised above its 180-second default, increase `stop_grace_period` accordingly. For local private-file storage, mount the same directory at `PRIVATE_FILE_PATH` in both application services.
+
 The worker has its own process and command and must be supervised/restarted separately from the API. `scripts/start-export-worker.cjs` and `scripts/export-child.cjs` register compiled TypeScript aliases; the resolver is a production dependency. Node 22.12+ is required by the installed Puppeteer version; the backend container now uses Node 22. Chromium, templates and fonts are included through the existing backend image/build assets.
 
 Redis 7 was used for integration testing. Use a private authenticated Redis endpoint with persistence enabled (for example AOF), `maxmemory-policy noeviction`, appropriate backups and TLS where the network requires it. All API/worker replicas must use the same queue prefix, Redis database, capacity, retry and retention settings; set global concurrency consistently on worker replicas. Do not point test queues at production. Database schema changes are not required for the queue.

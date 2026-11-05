@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { ArrowLeft, ClipboardCheck, Info, Plus, Save, Trash2, X } from "lucide-react";
+import "./snag-list-workspace.css";
 import {
   Page,
   PageHeader,
@@ -10,6 +12,8 @@ import {
   TextInput,
   TextArea,
   SelectInput,
+  Pill,
+  StatusPill,
 } from "@/components/inos";
 import { useSiteProjects } from "./siteProjects";
 import {
@@ -111,27 +115,29 @@ export default function SnagListWorkspacePage() {
   };
   if (id && isFetching && loaded.current !== id)
     return (
-      <Page>
-        <p>Loading snag list…</p>
+      <Page className="snag-list-workspace">
+        <Card><div className="snag-feedback" role="status">Loading snag list…</div></Card>
       </Page>
     );
   if (id && error)
     return (
-      <Page>
-        <p role="alert">Unable to load snag list.</p>
+      <Page className="snag-list-workspace">
+        <Card><div className="snag-feedback" role="alert">Unable to load snag list.</div></Card>
         <Button onClick={() => navigate("/site-operations/snag-lists")}>
           Back to list
         </Button>
       </Page>
     );
   return (
-    <Page>
+    <Page className="snag-list-workspace">
       <PageHeader
-        eyebrow="Site Operations"
+        crumbs={[{ label: "Site Operations" }, { label: "Snag lists", to: "/site-operations/snag-lists" }, { label: id ? "Edit" : "Workspace" }]}
+        icon={<ClipboardCheck size={22} />}
         title={id ? "Edit snag list" : "Create snag list"}
-        subtitle="Record site observations using the Snag list sheet fields."
+        subtitle="Capture site observations, assign scope and track rectification in one place."
         actions={
           <Button
+            icon={ArrowLeft}
             onClick={() =>
               navigate(
                 id
@@ -145,14 +151,8 @@ export default function SnagListWorkspacePage() {
         }
       />
       <form onSubmit={submit}>
-        <Card>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 16,
-            }}
-          >
+        <Card title="Document details" subtitle="Set the project and inspection date for this snag list.">
+          <div className="snag-details-grid">
             <Field label="Title" required>
               <TextInput
                 required
@@ -195,9 +195,12 @@ export default function SnagListWorkspacePage() {
             </Field>
           </div>
         </Card>
-        <Card title="Snag rows">
-          <div style={{ overflowX: "auto" }}>
-            <table className="inos-table">
+        <Card className="snag-rows" flush title="Site observations"
+          subtitle="Record each snag with its location, photos and current status."
+          actions={<Pill tone="brand" dot={false}>{form.items.length} {form.items.length === 1 ? "observation" : "observations"}</Pill>}>
+          <div className="inos-table-wrap snag-table-scroll" tabIndex={0} role="region" aria-label="Editable site observations">
+            <table className="inos-table snag-table">
+              <caption className="snag-sr-only">Site observations with location, attachments, scope and rectification status</caption>
               <thead>
                 <tr>
                   {[
@@ -219,7 +222,7 @@ export default function SnagListWorkspacePage() {
               <tbody>
                 {form.items.map((item, index) => (
                   <tr key={item.key}>
-                    <td>{index + 1}</td>
+                    <td><span className="snag-row-number">{String(index + 1).padStart(2, "0")}</span></td>
                     {["floor", "room", "category", "observation"].map((k) => (
                       <td
                         key={k}
@@ -240,8 +243,9 @@ export default function SnagListWorkspacePage() {
                         />
                       </td>
                     ))}
-                    <td style={{ minWidth: 200 }}>
+                    <td className="snag-photo-cell">
                       <input
+                        className="snag-photo-input"
                         aria-label={`Upload photos, row ${index + 1}`}
                         type="file"
                         accept="image/*"
@@ -259,12 +263,17 @@ export default function SnagListWorkspacePage() {
                           e.target.value = "";
                         }}
                       />
+                      <p className="snag-photo-hint">{item.photos.length}/10 photos{uploading ? " · Uploading…" : ""}</p>
                       {item.photos.map((url, n) => (
-                        <div key={url + n}>
+                        <div className="snag-attachment" key={url + n}>
                           <a href={url} target="_blank" rel="noreferrer">
                             Photo {n + 1}
                           </a>
                           <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={X}
+                            aria-label={`Remove photo ${n + 1}, row ${index + 1}`}
                             disabled={uploading || saving.isLoading}
                             onClick={() =>
                               editRow(
@@ -274,7 +283,6 @@ export default function SnagListWorkspacePage() {
                               )
                             }
                           >
-                            Remove
                           </Button>
                         </div>
                       ))}
@@ -289,7 +297,8 @@ export default function SnagListWorkspacePage() {
                         }
                       />
                     </td>
-                    <td style={{ minWidth: 160 }}>
+                    <td style={{ minWidth: 180 }}>
+                      <div className="snag-status"><StatusPill status={item.status} /></div>
                       <SelectInput
                         aria-label={`Status, row ${index + 1}`}
                         value={item.status}
@@ -314,6 +323,10 @@ export default function SnagListWorkspacePage() {
                     </td>
                     <td>
                       <Button
+                        size="sm"
+                        variant="danger"
+                        icon={Trash2}
+                        aria-label={`Remove observation ${index + 1}`}
                         disabled={
                           form.items.length === 1 ||
                           uploading ||
@@ -334,8 +347,11 @@ export default function SnagListWorkspacePage() {
               </tbody>
             </table>
           </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+          <div className="snag-save-bar">
+            <span className="snag-save-hint">{form.items.length} of 500 observations</span>
+            <div className="snag-save-actions">
             <Button
+              icon={Plus}
               disabled={
                 form.items.length >= 500 || uploading || saving.isLoading
               }
@@ -346,6 +362,7 @@ export default function SnagListWorkspacePage() {
               Add row
             </Button>
             <Button
+              icon={Save}
               type="submit"
               variant="primary"
               loading={saving.isLoading}
@@ -355,11 +372,12 @@ export default function SnagListWorkspacePage() {
             >
               Save snag list
             </Button>
+            </div>
           </div>
-          <p>
+          <div className="snag-note"><Info size={16} aria-hidden /><span>
             Photos are retained as attachment links in Excel. Saving preserves
             this revision's records and complete Excel file.
-          </p>
+          </span></div>
         </Card>
       </form>
     </Page>

@@ -1,3 +1,4 @@
+import { calculateBudgetEstimateTotals, budgetItemAmount, budgetItemsSubtotal } from '@/lib/budget-estimate-totals';
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import { PrefillNotice } from "@/components/PrefillNotice";
 import React, { useEffect, useMemo, useRef } from "react";
@@ -75,7 +76,7 @@ const BUDGET_SECTIONS = [
     key: "amounts",
     title: "Amounts",
     description:
-      "Headline figures. Miscellaneous % and tax % apply on top; discount comes off before tax.",
+      "Fees are added to category items. Miscellaneous % applies to category items; one-off charges are added separately. Discount comes off before tax.",
     fields: [
       {
         key: "design_amount",
@@ -340,46 +341,7 @@ export function BudgetEstimateForm() {
   // TOTAL PREVIEW
   // ============================================================
 
-  const totals = useMemo(() => {
-    const design = Number(values.design_amount || 0);
-
-    const execution = Number(values.execution_amount || 0);
-
-    const supervisor = Number(values.supervisor_amount || 0);
-
-    const additional = Number(values.additional_amount || 0);
-
-    const subtotal = design + execution + supervisor + additional;
-
-    const miscPercentage = Number(values.misc_percentage || 0);
-
-    const miscAmount = subtotal * (miscPercentage / 100);
-
-    const taxPercentage = Number(values.tax_percentage || 0);
-
-    const discount = Number(values.discount_amount || 0);
-
-    const taxableAmount = subtotal + miscAmount - discount;
-
-    const taxAmount = taxableAmount * (taxPercentage / 100);
-
-    const total = taxableAmount + taxAmount;
-
-    return {
-      subtotal,
-      miscAmount,
-      taxAmount,
-      total,
-    };
-  }, [
-    values.design_amount,
-    values.execution_amount,
-    values.supervisor_amount,
-    values.additional_amount,
-    values.misc_percentage,
-    values.tax_percentage,
-    values.discount_amount,
-  ]);
+  const totals = useMemo(() => calculateBudgetEstimateTotals(values), [values]);
 
   // ============================================================
   // BUILD PAYLOAD
@@ -485,9 +447,7 @@ export function BudgetEstimateForm() {
 
                   rate: numberValue(item.rate) ?? 0,
 
-                  amount:
-                    numberValue(item.amount) ??
-                    Number(item.quantity || 0) * Number(item.rate || 0),
+                  amount: budgetItemAmount(item),
 
                   calc_type: item.calc_type || "M",
 
@@ -666,15 +626,7 @@ export function BudgetEstimateForm() {
       return { ...current, miscellaneous };
     });
 
-  const categoriesTotal = (values.categories || []).reduce(
-    (sum, category) =>
-      sum +
-      (category.items || []).reduce(
-        (s, item) => s + Number(item.amount || 0),
-        0,
-      ),
-    0,
-  );
+  const categoriesTotal = totals.subtotal;
 
   const miscTotal = (values.miscellaneous || []).reduce(
     (sum, item) => sum + Number(item.value || 0),
@@ -704,10 +656,7 @@ export function BudgetEstimateForm() {
       return (
         <div style={{ display: "grid", gap: 14 }}>
           {categories.map((category, categoryIndex) => {
-            const categorySum = (category.items || []).reduce(
-              (s, item) => s + Number(item.amount || 0),
-              0,
-            );
+            const categorySum = budgetItemsSubtotal(category.items);
             return (
               <div
                 key={categoryIndex}
@@ -805,7 +754,7 @@ export function BudgetEstimateForm() {
                                   (it) => ({
                                     ...it,
                                     quantity,
-                                    amount: quantity * Number(it.rate || 0),
+                                    amount: budgetItemAmount({ quantity, rate: it.rate }),
                                   }),
                                 );
                               }}
@@ -826,14 +775,14 @@ export function BudgetEstimateForm() {
                                     (it) => ({
                                       ...it,
                                       rate,
-                                      amount: Number(it.quantity || 0) * rate,
+                                      amount: budgetItemAmount({ quantity: it.quantity, rate }),
                                     }),
                                   );
                                 }}
                               />
                             </Affix>
                           </td>
-                          <td className="cf-amount">{inr(item.amount ?? 0)}</td>
+                          <td className="cf-amount">{inr(budgetItemAmount(item))}</td>
                           <td className="actions">
                             <RemoveRow
                               onClick={() =>
@@ -1022,11 +971,16 @@ export function BudgetEstimateForm() {
         <TotalsCard
           title="Summary"
           rows={[
-            { label: "Subtotal", value: inr(totals.subtotal) },
+            { label: "Items subtotal", value: inr(totals.subtotal) },
+            { label: "Design fee", value: inr(values.design_amount) },
+            { label: "Execution fee", value: inr(values.execution_amount) },
+            { label: "Site supervision", value: inr(values.supervisor_amount) },
+            { label: "Additional amount", value: inr(values.additional_amount) },
             {
               label: `Miscellaneous${Number(values.misc_percentage) ? ` (${values.misc_percentage}%)` : ""}`,
-              value: inr(totals.miscAmount),
+              value: inr(totals.percentageMisc),
             },
+            { label: "One-off charges", value: inr(totals.miscItemsTotal) },
             {
               label: "Discount",
               value: `− ${inr(values.discount_amount || 0)}`,

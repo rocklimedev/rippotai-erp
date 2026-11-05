@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "backend/**"
+      - "docker-compose.yml"
       - ".github/workflows/**"
 
 jobs:
@@ -49,7 +50,8 @@ jobs:
             echo "${{ secrets.RIPPOTAIERPAPI_GHCR_TOKEN }}" | docker login ghcr.io \
               -u rocklimedev --password-stdin
 
-            docker compose pull backend
-            docker compose up -d backend --force-recreate --remove-orphans
+            docker compose pull backend export-worker
+            docker compose up -d --force-recreate --remove-orphans backend export-worker
+            docker compose ps backend export-worker
 
             docker image prune -f

@@ -1103,12 +1103,6 @@ function DocumentDetails({ documentType, phase, onEdit, onMove, onDuplicate, onT
         }
       />
 
-      {getDescription(documentType) && (
-        <div className="adm-section">
-          <p style={{ margin: 0, fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>{getDescription(documentType)}</p>
-        </div>
-      )}
-
       <div className="adm-section">
         <KV
           items={[
@@ -1250,15 +1244,6 @@ function DocumentForm({ form, setForm, phases, errors = {} }) {
         />
       </Field>
 
-      <Field label="Description" optional full htmlFor="dsf-desc">
-        <TextArea
-          id="dsf-desc"
-          value={form.description}
-          onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-          placeholder="What this document contains and who prepares it."
-          rows={3}
-        />
-      </Field>
 
       <div className="span-full">
         <ToggleRow

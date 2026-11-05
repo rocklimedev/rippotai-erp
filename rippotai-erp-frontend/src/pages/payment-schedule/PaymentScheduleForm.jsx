@@ -797,11 +797,13 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
           : "Payment Schedule created successfully.",
       );
       draftStorage.removeItem(draftKey);
-      navigate(`/payment-schedules/${result?.id ?? scheduleId}`);
+      navigate(`/ledger/payment-schedule/${result?.id ?? scheduleId}`);
     } catch (error) {
       console.error("Payment Schedule save failed:", error);
       toast.error(
-        error?.data?.message ||
+        (Array.isArray(error?.data?.message)
+          ? error.data.message.join(' ')
+          : error?.data?.message) || error?.message ||
           `Failed to ${isEdit ? "update" : "create"} Payment Schedule.`,
       );
     }

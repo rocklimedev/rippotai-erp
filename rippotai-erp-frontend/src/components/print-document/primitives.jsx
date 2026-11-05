@@ -268,14 +268,14 @@ export function Stats({ items }) {
  * Terms from stored HTML / text. Accepts <ol><li>, <h3>+<p> pairs, <p> paragraphs or plain text lines.
  * Renders a numbered list; h3 titles are bold lead-ins.
  */
-export function HtmlTerms({ html }) {
-  const items = htmlToTerms(html);
+export function HtmlTerms({ html, items: suppliedItems, start = 1 }) {
+  const items = suppliedItems ?? htmlToTerms(html);
   if (!items.length) return null;
   return (
-    <ol className="pd-terms">
+    <ol className="pd-terms" start={start}>
       {items.map((t, i) => (
         <li key={i}>
-          <span className="pd-terms__n">{i + 1}.</span>
+          <span className="pd-terms__n">{start + i}.</span>
           <span>
             {t.title && (
               <b style={{ color: 'var(--pd-ink)' }}>

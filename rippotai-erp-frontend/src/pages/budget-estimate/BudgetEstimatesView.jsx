@@ -16,9 +16,10 @@ import {
   useUnlockBudgetEstimateMutation,
 } from "../../api/documents/budget-estimates.api";
 import { useGetTermsTemplateQuery } from "../../api/meta/terms.api";
+import { roundBudgetMoney, budgetItemAmount } from "@/lib/budget-estimate-totals";
 
 const itemAmount = (item) =>
-  item?.amount !== null && item?.amount !== undefined ? Number(item.amount) : Number(item?.quantity || 0) * Number(item?.rate || 0);
+  item?.amount !== null && item?.amount !== undefined ? Number(item.amount) : budgetItemAmount(item);
 const pct = (v) => `${Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}%`;
 
 export function buildEstimateSections(estimate, termsHtml) {
@@ -34,7 +35,9 @@ export function buildEstimateSections(estimate, termsHtml) {
   const subtotal = Number(estimate.subtotal ?? itemsTotal) || itemsTotal;
   const total = Number(estimate.total_amount || 0);
   const misc = [...(estimate.miscellaneous || [])].filter((m) => Number(m.value) > 0 || has(m.name));
-  const miscTotal = misc.reduce((s, m) => s + (Number(m.value) || 0), 0);
+  const miscNames = misc.map((m) => m.name).filter(has).join(", ");
+  const miscTotal = roundBudgetMoney(misc.reduce((sum, item) => sum + Number(item.value || 0), 0));
+  const percentageMisc = roundBudgetMoney(Number(estimate.misc_amount || 0) - miscTotal);
   const sections = [];
 
   // 1 — Summary
@@ -88,12 +91,13 @@ export function buildEstimateSections(estimate, termsHtml) {
 
   // 3 — Commercial summary
   const miscPct = Number(estimate.misc_percentage || 0);
-  const additional = Number(estimate.additional_amount || 0) || miscTotal;
+  const additional = Number(estimate.additional_amount || 0);
   const lines = [
     { label: "Items subtotal", value: subtotal },
-    Number(estimate.misc_amount) > 0 && { label: `Miscellaneous${miscPct ? ` (${pct(miscPct)})` : ""}`, value: Number(estimate.misc_amount) },
+    percentageMisc > 0 && { label: `Miscellaneous${miscPct ? ` (${pct(miscPct)} of items)` : ""}`, value: percentageMisc },
+    miscTotal > 0 && { label: `One-off charges${miscNames ? ` (${miscNames})` : ""}`, value: miscTotal },
     additional > 0 && {
-      label: misc.length ? `Additional items (${misc.map((m) => m.name).filter(has).join(", ")})` : "Additional items",
+      label: "Additional amount",
       value: additional,
     },
     Number(estimate.design_amount) > 0 && { label: "Design fee", value: Number(estimate.design_amount) },

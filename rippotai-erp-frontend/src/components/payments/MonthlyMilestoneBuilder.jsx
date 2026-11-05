@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { buildMonthlyMilestones } from '@/lib/monthly-milestones';
 
 export default function MonthlyMilestoneBuilder({
@@ -8,6 +8,10 @@ export default function MonthlyMilestoneBuilder({
   canReplace = true,
   onGenerate,
 }) {
+  // Generator controls are validated by generate(), independently of the parent
+  // schedule. An unassociated form owner keeps unused helper values from
+  // blocking submission (e.g. the remaining share is 0% on a complete schedule).
+  const helperFormId = useId();
   const [months, setMonths] = useState(12);
   const [firstDate, setFirstDate] = useState('');
   const [mode, setMode] = useState('append');
@@ -51,6 +55,7 @@ export default function MonthlyMilestoneBuilder({
         <label className="text-sm">
           First payment date
           <input
+            form={helperFormId}
             aria-label="First monthly payment date"
             className="bc-input mt-1"
             type="date"
@@ -61,6 +66,7 @@ export default function MonthlyMilestoneBuilder({
         <label className="text-sm">
           Number of months
           <input
+            form={helperFormId}
             aria-label="Number of monthly payments"
             className="bc-input mt-1"
             type="number"
@@ -74,6 +80,7 @@ export default function MonthlyMilestoneBuilder({
         <label className="text-sm">
           Total share to split (%)
           <input
+            form={helperFormId}
             aria-label="Monthly payment share"
             className="bc-input mt-1"
             type="number"
@@ -87,6 +94,7 @@ export default function MonthlyMilestoneBuilder({
         <label className="text-sm">
           Add to schedule
           <select
+            form={helperFormId}
             aria-label="Monthly payment mode"
             className="bc-input mt-1"
             value={mode}

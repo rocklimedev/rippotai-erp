@@ -26,7 +26,7 @@
       body {
         background: var(--paper);
         color: var(--ink);
-        font-family: "Lato", sans-serif;
+        font-family: 'Lato', sans-serif;
         -webkit-font-smoothing: antialiased;
       }
       ::selection {
@@ -201,7 +201,7 @@
         padding: 0 4px;
       }
       .gateflag::before {
-        content: "◆";
+        content: '◆';
         font-size: 7px;
         color: var(--ink);
       }
@@ -388,7 +388,7 @@
         );
       }
       .platform .app-row .label .name::before {
-        content: "◆ ";
+        content: '◆ ';
       }
 
       /* ── Legend footer ────────────────────────────────── */
@@ -408,15 +408,12 @@
   <body>
     <header>
       <div class="eyebrow">INOS · Construction &amp; Interior Design ERP</div>
-      <h1>
-        App Deployment Map <span>— overlaid on the RIPPOTAI process brain</span>
-      </h1>
+      <h1>App Deployment Map <span>— overlaid on the RIPPOTAI process brain</span></h1>
       <p class="dek">
-        Every app below is positioned on the same 0–100 project timeline as the
-        Master Process Brain, so you can see exactly when in a real project each
-        app goes live, how long it stays active, and which gate opens or closes
-        it. Click any row to see its features and the process steps it was built
-        from.
+        Every app below is positioned on the same 0–100 project timeline as the Master Process
+        Brain, so you can see exactly when in a real project each app goes live, how long it stays
+        active, and which gate opens or closes it. Click any row to see its features and the process
+        steps it was built from.
       </p>
       <div class="stat-row">
         <div class="stat"><b>11</b><span>Modules</span></div>
@@ -439,13 +436,12 @@
     </div>
 
     <footer>
-      <b>Reading the map:</b> solid bars are module apps, colour-coded by
-      module. Dashed cross-hatched bars are platform services — shared
-      infrastructure (the Estimate→Quotation→BOQ engine, the Gate/Approval
-      engine, the Document Register, and Role &amp; Team Directory + Client
-      Portal) that every module app plugs into rather than rebuilding. Diamond
-      markers on the ruler mark the same 12 gates from the process brain — an
-      app's start almost always lines up with one.
+      <b>Reading the map:</b> solid bars are module apps, colour-coded by module. Dashed
+      cross-hatched bars are platform services — shared infrastructure (the Estimate→Quotation→BOQ
+      engine, the Gate/Approval engine, the Document Register, and Role &amp; Team Directory +
+      Client Portal) that every module app plugs into rather than rebuilding. Diamond markers on the
+      ruler mark the same 12 gates from the process brain — an app's start almost always lines up
+      with one.
     </footer>
 
     <script>
@@ -453,492 +449,475 @@
       const L = (u) => u * W;
 
       const PHASE_RULER = [
-        [0, 3.5, "BRIEF"],
-        [3.5, 6.5, "SURVEY"],
-        [6.5, 17, "PRE-DESIGN"],
-        [17, 21, "PAYMENT"],
-        [21, 40, "DESIGN"],
-        [40, 52, "TENDER DWGS"],
-        [52, 62, "WORKING DWGS"],
-        [62, 96.5, "EXECUTION"],
-        [96.5, 100, "HANDOVER"],
+        [0, 3.5, 'BRIEF'],
+        [3.5, 6.5, 'SURVEY'],
+        [6.5, 17, 'PRE-DESIGN'],
+        [17, 21, 'PAYMENT'],
+        [21, 40, 'DESIGN'],
+        [40, 52, 'TENDER DWGS'],
+        [52, 62, 'WORKING DWGS'],
+        [62, 96.5, 'EXECUTION'],
+        [96.5, 100, 'HANDOVER'],
       ];
       const GATES = [
-        [12, "LAYOUT FINALISED"],
-        [17, "PITCH+CONCEPT01"],
-        [18.5, "TOKEN"],
-        [21, "MOBILISED"],
-        [27, "CONCEPT 02"],
-        [37, "DESIGN CLOSED"],
-        [40, "PAYMENT 01"],
-        [52, "TENDER DWGS"],
-        [59, "ESTIMATE APPR."],
-        [66, "CONTRACTOR LINEUP"],
-        [70, "GFC ISSUED"],
-        [100, "HANDOVER"],
+        [12, 'LAYOUT FINALISED'],
+        [17, 'PITCH+CONCEPT01'],
+        [18.5, 'TOKEN'],
+        [21, 'MOBILISED'],
+        [27, 'CONCEPT 02'],
+        [37, 'DESIGN CLOSED'],
+        [40, 'PAYMENT 01'],
+        [52, 'TENDER DWGS'],
+        [59, 'ESTIMATE APPR.'],
+        [66, 'CONTRACTOR LINEUP'],
+        [70, 'GFC ISSUED'],
+        [100, 'HANDOVER'],
       ];
 
       const MODULES = {
-        crm: { name: "CRM & Pre-Sales", color: "oklch(0.55 0.14 24)" },
-        survey: { name: "Site Survey", color: "oklch(0.58 0.13 58)" },
-        design: { name: "Design Studio", color: "oklch(0.55 0.12 95)" },
-        sales: { name: "Sales & Payments", color: "oklch(0.52 0.13 320)" },
+        crm: { name: 'CRM & Pre-Sales', color: 'oklch(0.55 0.14 24)' },
+        survey: { name: 'Site Survey', color: 'oklch(0.58 0.13 58)' },
+        design: { name: 'Design Studio', color: 'oklch(0.55 0.12 95)' },
+        sales: { name: 'Sales & Payments', color: 'oklch(0.52 0.13 320)' },
         vendor: {
-          name: "Vendor & Tender Management",
-          color: "oklch(0.55 0.10 140)",
+          name: 'Vendor & Tender Management',
+          color: 'oklch(0.55 0.10 140)',
         },
         procure: {
-          name: "Procurement & Materials",
-          color: "oklch(0.52 0.09 195)",
+          name: 'Procurement & Materials',
+          color: 'oklch(0.52 0.09 195)',
         },
-        drawing: { name: "Drawing Management", color: "oklch(0.53 0.11 250)" },
-        exec: { name: "Execution & Site Ops", color: "oklch(0.55 0.11 275)" },
-        finance: { name: "Finance & Accounts", color: "oklch(0.50 0.10 305)" },
-        snag: { name: "Snag & Handover", color: "oklch(0.53 0.09 15)" },
+        drawing: { name: 'Drawing Management', color: 'oklch(0.53 0.11 250)' },
+        exec: { name: 'Execution & Site Ops', color: 'oklch(0.55 0.11 275)' },
+        finance: { name: 'Finance & Accounts', color: 'oklch(0.50 0.10 305)' },
+        snag: { name: 'Snag & Handover', color: 'oklch(0.53 0.09 15)' },
         planning: {
-          name: "Planning & Programme",
-          color: "oklch(0.52 0.07 175)",
+          name: 'Planning & Programme',
+          color: 'oklch(0.52 0.07 175)',
         },
       };
 
       const APPS = [
         {
-          mod: "crm",
-          name: "Project Intake",
-          owner: "Architect",
+          mod: 'crm',
+          name: 'Project Intake',
+          owner: 'Architect',
           a: 0,
           b: 3.5,
-          why: "One app because brief, scope, budget, and scope-of-work are all the same motion — capturing what the project is before design starts.",
+          why: 'One app because brief, scope, budget, and scope-of-work are all the same motion — capturing what the project is before design starts.',
           feats: [
-            "Client Brief capture",
-            "Project Scope + feasibility flags",
-            "Budget Sheet",
-            "Scope of Work builder (auto-escalates → Scope of Approval)",
+            'Client Brief capture',
+            'Project Scope + feasibility flags',
+            'Budget Sheet',
+            'Scope of Work builder (auto-escalates → Scope of Approval)',
           ],
-          src: "1.1 · 1.2 · 1.3 · 1.4",
+          src: '1.1 · 1.2 · 1.3 · 1.4',
         },
 
         {
-          mod: "survey",
-          name: "Survey & Site Brief",
-          owner: "Architect + Site Supervisor",
+          mod: 'survey',
+          name: 'Survey & Site Brief',
+          owner: 'Architect + Site Supervisor',
           a: 3,
           b: 7.5,
-          why: "One continuous field-to-office workflow — measure on site, then turn that into usable documents.",
+          why: 'One continuous field-to-office workflow — measure on site, then turn that into usable documents.',
           feats: [
-            "Measurement + photo capture (mobile)",
-            "Site Analysis (auto-drafted)",
-            "Site Brief generator",
-            "Scope of Approval (escalated)",
+            'Measurement + photo capture (mobile)',
+            'Site Analysis (auto-drafted)',
+            'Site Brief generator',
+            'Scope of Approval (escalated)',
           ],
-          src: "2.1 · 2.2 · 2.3 · 2.4",
+          src: '2.1 · 2.2 · 2.3 · 2.4',
         },
 
         {
-          mod: "design",
-          name: "Design Workspace",
-          owner: "Architect",
+          mod: 'design',
+          name: 'Design Workspace',
+          owner: 'Architect',
           a: 6.5,
           b: 37,
-          why: "Everything the Architect produces internally before it is shown to anyone — one continuous design file that evolves in place.",
+          why: 'Everything the Architect produces internally before it is shown to anyone — one continuous design file that evolves in place.',
           feats: [
-            "Layout (Existing → Proposed)",
-            "Moodboard & Reference",
-            "Concept 3D — 01 & 02",
-            "Design Development — 01 & 02",
-            "Material Selection Board (live from Procurement)",
+            'Layout (Existing → Proposed)',
+            'Moodboard & Reference',
+            'Concept 3D — 01 & 02',
+            'Design Development — 01 & 02',
+            'Material Selection Board (live from Procurement)',
           ],
-          src: "3.1 · 3.2 · 3.3 · 3.5 · 5.1 · 5.3 · 5.4",
+          src: '3.1 · 3.2 · 3.3 · 3.5 · 5.1 · 5.3 · 5.4',
         },
 
         {
-          mod: "design",
-          name: "Client Presentation",
-          owner: "Architect + Accounts",
+          mod: 'design',
+          name: 'Client Presentation',
+          owner: 'Architect + Accounts',
           a: 12,
           b: 37,
           why: "Different audience, different action — the client sees and signs, doesn't edit. Kept separate from Design Workspace for that reason.",
           feats: [
-            "Pitch Deck + Business Proposal builder",
-            "Presentation mode for Concept 3D reveals",
-            "Design-close summary for sign-off",
+            'Pitch Deck + Business Proposal builder',
+            'Presentation mode for Concept 3D reveals',
+            'Design-close summary for sign-off',
           ],
-          src: "3.4 · ◆ Client Sign-off · ◆ Design Closed",
+          src: '3.4 · ◆ Client Sign-off · ◆ Design Closed',
         },
 
         {
-          mod: "sales",
-          name: "Payment Collection",
-          owner: "Accounts & Finance",
+          mod: 'sales',
+          name: 'Payment Collection',
+          owner: 'Accounts & Finance',
           a: 17,
           b: 40,
-          why: "Every money-in event, one ledger.",
+          why: 'Every money-in event, one ledger.',
           feats: [
-            "Token collection",
-            "Payment Phase invoicing",
-            "Payment schedule vs. deliverable list",
+            'Token collection',
+            'Payment Phase invoicing',
+            'Payment schedule vs. deliverable list',
           ],
-          src: "4.1 · 4.4 · 5.5",
+          src: '4.1 · 4.4 · 5.5',
         },
 
         {
-          mod: "sales",
-          name: "Agreement & Mobilisation",
-          owner: "Accounts + Planning",
+          mod: 'sales',
+          name: 'Agreement & Mobilisation',
+          owner: 'Accounts + Planning',
           a: 18.5,
           b: 21,
-          why: "Both fire once, right after token, and both produce the documents that unlock every other module.",
+          why: 'Both fire once, right after token, and both produce the documents that unlock every other module.',
           feats: [
-            "Agreement / Contract generator (execution vs. consultancy)",
-            "Plan of Action (execution plan + timeline + drawings plan)",
+            'Agreement / Contract generator (execution vs. consultancy)',
+            'Plan of Action (execution plan + timeline + drawings plan)',
           ],
-          src: "4.2 · 4.3 · 4.5",
+          src: '4.2 · 4.3 · 4.5',
         },
 
         {
-          mod: "vendor",
-          name: "Vendor Directory & Scheduling",
-          owner: "Admin Coordinator",
+          mod: 'vendor',
+          name: 'Vendor Directory & Scheduling',
+          owner: 'Admin Coordinator',
           a: 12,
           b: 66,
           why: 'Search and site-visit scheduling are the same "finding and moving vendors" activity.',
           feats: [
-            "12-trade vendor directory + shortlist",
-            "Site visit scheduler (vendor + contractor + Supervisor)",
-            "Contractor lineup — final confirmation",
+            '12-trade vendor directory + shortlist',
+            'Site visit scheduler (vendor + contractor + Supervisor)',
+            'Contractor lineup — final confirmation',
           ],
-          src: "A.1 · A.2 · A.8",
+          src: 'A.1 · A.2 · A.8',
         },
 
         {
-          mod: "procure",
-          name: "Material Sourcing",
-          owner: "Procurement Team",
+          mod: 'procure',
+          name: 'Material Sourcing',
+          owner: 'Procurement Team',
           a: 27,
           b: 48,
           why: 'Requirement intake, sourcing, and spec-linking are one continuous "what are we buying and where does it go" workflow.',
           feats: [
-            "Requirement intake (from Architect)",
-            "Sourcing & sample board",
-            "Spec linker (pins materials to drawings)",
+            'Requirement intake (from Architect)',
+            'Sourcing & sample board',
+            'Spec linker (pins materials to drawings)',
           ],
-          src: "B.1 · B.2 · B.3",
+          src: 'B.1 · B.2 · B.3',
         },
 
         {
-          mod: "procure",
-          name: "Procurement & Inventory",
-          owner: "Procurement + Supervisor",
+          mod: 'procure',
+          name: 'Procurement & Inventory',
+          owner: 'Procurement + Supervisor',
           a: 56,
           b: 97,
-          why: "Purchase, delivery, and inventory are the same physical-goods pipeline once quotation is approved.",
+          why: 'Purchase, delivery, and inventory are the same physical-goods pipeline once quotation is approved.',
           feats: [
-            "Purchase orders",
-            "Staged delivery tracking (challans)",
-            "Site inventory register (dual reconciled)",
+            'Purchase orders',
+            'Staged delivery tracking (challans)',
+            'Site inventory register (dual reconciled)',
           ],
-          src: "B.5 · B.6 · B.7",
+          src: 'B.5 · B.6 · B.7',
         },
 
         {
-          mod: "drawing",
-          name: "Drawing Set Manager",
-          owner: "Architect",
+          mod: 'drawing',
+          name: 'Drawing Set Manager',
+          owner: 'Architect',
           a: 40,
           b: 70,
-          why: "Tender and working sets are the same drawing library at two maturity stages; trade-tagging is metadata on top.",
+          why: 'Tender and working sets are the same drawing library at two maturity stages; trade-tagging is metadata on top.',
           feats: [
-            "Tender set (8 drawing groups)",
-            "Working / GFC set (6 drawing groups)",
-            "Fixed furniture detail pack",
-            "Auto-tags contractor team per drawing group",
+            'Tender set (8 drawing groups)',
+            'Working / GFC set (6 drawing groups)',
+            'Fixed furniture detail pack',
+            'Auto-tags contractor team per drawing group',
           ],
-          src: "06.1–8 · 07.1–7.5",
+          src: '06.1–8 · 07.1–7.5',
         },
 
         {
-          mod: "exec",
-          name: "Work Package & Progress",
-          owner: "Site Supervisor + Accounts",
+          mod: 'exec',
+          name: 'Work Package & Progress',
+          owner: 'Site Supervisor + Accounts',
           a: 62,
           b: 97.5,
           why: "Package split and progress tracking are the same data — a package's progress is just its schedule filled in over time.",
           feats: [
-            "BOQ split into per-contractor work packages",
-            "Trade progress tracker (fixed % milestones per trade)",
+            'BOQ split into per-contractor work packages',
+            'Trade progress tracker (fixed % milestones per trade)',
           ],
-          src: "8.0 · 5.3 · 5.5",
+          src: '8.0 · 5.3 · 5.5',
         },
 
         {
-          mod: "exec",
-          name: "Site Quality & Reporting",
-          owner: "Site Supervisor",
+          mod: 'exec',
+          name: 'Site Quality & Reporting',
+          owner: 'Site Supervisor',
           a: 64,
           b: 98,
           why: "The Supervisor's daily toolkit — one app because it's used continuously, by the same person, every day.",
           feats: [
-            "QC checklist & sign-off (blocking gate)",
-            "Daily site report",
-            "Site visit log",
-            "Mockup approvals",
+            'QC checklist & sign-off (blocking gate)',
+            'Daily site report',
+            'Site visit log',
+            'Mockup approvals',
           ],
-          src: "● continuous · 8.1",
+          src: '● continuous · 8.1',
         },
 
         {
-          mod: "exec",
-          name: "RFI & Supplementary Estimates",
-          owner: "Architect + Accounts + Procurement",
+          mod: 'exec',
+          name: 'RFI & Supplementary Estimates',
+          owner: 'Architect + Accounts + Procurement',
           a: 64,
           b: 97,
           why: 'Both are "something unplanned came up on site" — a clarification or a new cost, both need a fast loop back to the office.',
           feats: [
-            "Design clarification / RFI log",
-            "Supplementary estimate requests (re-enters shared BOQ engine)",
+            'Design clarification / RFI log',
+            'Supplementary estimate requests (re-enters shared BOQ engine)',
           ],
-          src: "● continuous",
+          src: '● continuous',
         },
 
         {
-          mod: "finance",
-          name: "Budget & Billing",
-          owner: "Accounts & Finance",
+          mod: 'finance',
+          name: 'Budget & Billing',
+          owner: 'Accounts & Finance',
           a: 1.6,
           b: 100,
-          why: "Runs the full length of the project — from the first budget sheet to the last consolidated bill.",
-          feats: [
-            "Budget management",
-            "Milestone billing",
-            "Consolidated billing at handover",
-          ],
-          src: "1.3 · 8.0 · 9.4",
+          why: 'Runs the full length of the project — from the first budget sheet to the last consolidated bill.',
+          feats: ['Budget management', 'Milestone billing', 'Consolidated billing at handover'],
+          src: '1.3 · 8.0 · 9.4',
         },
 
         {
-          mod: "snag",
-          name: "Snag & Handover",
-          owner: "Admin + Site Supervisor",
+          mod: 'snag',
+          name: 'Snag & Handover',
+          owner: 'Admin + Site Supervisor',
           a: 96.5,
           b: 100,
-          why: "A single linear closeout sequence, not separate concerns.",
+          why: 'A single linear closeout sequence, not separate concerns.',
           feats: [
-            "Snag list & rectification (trade by trade)",
-            "Deep clean & styling tracker",
-            "Completion certificate",
-            "Handover pack (warranty, as-built, care notes)",
+            'Snag list & rectification (trade by trade)',
+            'Deep clean & styling tracker',
+            'Completion certificate',
+            'Handover pack (warranty, as-built, care notes)',
           ],
-          src: "9.1 · 9.2 · 9.3 · 9.4",
+          src: '9.1 · 9.2 · 9.3 · 9.4',
         },
 
         {
-          mod: "planning",
-          name: "Planning & Programme",
-          owner: "Planning Team",
+          mod: 'planning',
+          name: 'Planning & Programme',
+          owner: 'Planning Team',
           a: 0.8,
           b: 66,
-          why: "Runs parallel to nearly the entire process — sequencing and feasibility re-tested against every move.",
+          why: 'Runs parallel to nearly the entire process — sequencing and feasibility re-tested against every move.',
           feats: [
-            "Programme / timeline",
-            "Scope chain tracker (Scope of Work → Approval → Plan of Action)",
-            "Strategy notes",
+            'Programme / timeline',
+            'Scope chain tracker (Scope of Work → Approval → Plan of Action)',
+            'Strategy notes',
           ],
-          src: "5.0 · 1.4 · 2.4 · 4.5",
+          src: '5.0 · 1.4 · 2.4 · 4.5',
         },
       ];
 
       const PLATFORM = [
         {
-          name: "Estimate → Quotation → BOQ Engine",
-          owner: "Admin + Accounts + Procurement",
+          name: 'Estimate → Quotation → BOQ Engine',
+          owner: 'Admin + Accounts + Procurement',
           a: 46,
           b: 64,
-          why: "Vendor & Tender and Procurement & Materials run the identical estimate→approval→quotation conversion. Built once, called by both.",
+          why: 'Vendor & Tender and Procurement & Materials run the identical estimate→approval→quotation conversion. Built once, called by both.',
           feats: [
-            "Rate-card & vendor-quote estimate builder",
-            "Approval → auto-converts to Quotation",
-            "BOQ generator (hard-gated on Tender Drawings Finalised)",
+            'Rate-card & vendor-quote estimate builder',
+            'Approval → auto-converts to Quotation',
+            'BOQ generator (hard-gated on Tender Drawings Finalised)',
           ],
-          src: "A.3–A.7 · B.4",
+          src: 'A.3–A.7 · B.4',
         },
         {
-          name: "Gate / Approval Engine",
-          owner: "Platform",
+          name: 'Gate / Approval Engine',
+          owner: 'Platform',
           a: 0,
           b: 100,
-          why: "All 12 ◆ gates. Every module fires or unlocks off a gate, not a date — this is the workflow backbone.",
+          why: 'All 12 ◆ gates. Every module fires or unlocks off a gate, not a date — this is the workflow backbone.',
           feats: [
-            "12 gate definitions with trigger conditions",
-            "Owner-to-owner handoff routing",
-            "Blocks downstream apps until a gate clears",
+            '12 gate definitions with trigger conditions',
+            'Owner-to-owner handoff routing',
+            'Blocks downstream apps until a gate clears',
           ],
-          src: "All 12 ◆ gates",
+          src: 'All 12 ◆ gates',
         },
         {
-          name: "Document Register",
-          owner: "Platform",
+          name: 'Document Register',
+          owner: 'Platform',
           a: 0,
           b: 100,
-          why: "Every deliverable across all 11 phases, one searchable, phase-tagged repository that every app writes into.",
+          why: 'Every deliverable across all 11 phases, one searchable, phase-tagged repository that every app writes into.',
           feats: [
-            "Phase-tagged deliverable index",
-            "Version history per document",
-            "Cross-module search",
+            'Phase-tagged deliverable index',
+            'Version history per document',
+            'Cross-module search',
           ],
-          src: "All d:[...] deliverables",
+          src: 'All d:[...] deliverables',
         },
         {
-          name: "Role & Team Directory + Client Portal",
-          owner: "Platform",
+          name: 'Role & Team Directory + Client Portal',
+          owner: 'Platform',
           a: 0,
           b: 100,
-          why: "7 core roles + 12 trades, each pre-loaded with their active span. Client Portal exposes only the 4 points the client actually touches.",
+          why: '7 core roles + 12 trades, each pre-loaded with their active span. Client Portal exposes only the 4 points the client actually touches.',
           feats: [
-            "Role directory with active-span presets",
-            "12-trade contractor directory",
-            "Stripped client view — 4 touchpoints only",
+            'Role directory with active-span presets',
+            '12-trade contractor directory',
+            'Stripped client view — 4 touchpoints only',
           ],
-          src: "Continuity table · 4 client gates",
+          src: 'Continuity table · 4 client gates',
         },
       ];
 
       // ── Render ruler ──────────────────────────────────────
-      const ruler = document.getElementById("ruler");
+      const ruler = document.getElementById('ruler');
       PHASE_RULER.forEach((p, i) => {
-        const el = document.createElement("div");
-        el.className = "seg" + (i % 2 === 0 ? " even" : "");
-        el.style.left = L(p[0]) + "px";
-        el.style.width = (p[1] - p[0]) * W - 1 + "px";
+        const el = document.createElement('div');
+        el.className = 'seg' + (i % 2 === 0 ? ' even' : '');
+        el.style.left = L(p[0]) + 'px';
+        el.style.width = (p[1] - p[0]) * W - 1 + 'px';
         el.textContent = p[2];
         ruler.appendChild(el);
       });
-      ruler.style.width = L(100) + "px";
+      ruler.style.width = L(100) + 'px';
 
-      const gatelines = document.getElementById("gatelines");
+      const gatelines = document.getElementById('gatelines');
       GATES.forEach((g, i) => {
-        const line = document.createElement("div");
-        line.className = "gateline";
-        line.style.left = L(g[0]) + "px";
+        const line = document.createElement('div');
+        line.className = 'gateline';
+        line.style.left = L(g[0]) + 'px';
         gatelines.appendChild(line);
-        const flag = document.createElement("div");
-        flag.className = "gateflag";
-        flag.style.left = L(g[0]) + "px";
-        flag.style.top = 2 + (i % 4) * 14 + "px";
+        const flag = document.createElement('div');
+        flag.className = 'gateflag';
+        flag.style.left = L(g[0]) + 'px';
+        flag.style.top = 2 + (i % 4) * 14 + 'px';
         flag.textContent = g[1];
         gatelines.appendChild(flag);
       });
-      gatelines.style.height = 52 * 20 + 300 + "px";
+      gatelines.style.height = 52 * 20 + 300 + 'px';
 
       // ── Legend / filters ──────────────────────────────────
-      const legend = document.getElementById("legend");
+      const legend = document.getElementById('legend');
       let activeFilter = null;
       Object.entries(MODULES).forEach(([key, m]) => {
-        const chip = document.createElement("div");
-        chip.className = "chip on";
-        chip.innerHTML =
-          '<span class="dot" style="background:' +
-          m.color +
-          '"></span>' +
-          m.name;
+        const chip = document.createElement('div');
+        chip.className = 'chip on';
+        chip.innerHTML = '<span class="dot" style="background:' + m.color + '"></span>' + m.name;
         chip.onclick = () => {
           activeFilter = activeFilter === key ? null : key;
-          document.querySelectorAll(".chip[data-mod]").forEach((c) => {
-            const k = c.getAttribute("data-mod");
-            c.className =
-              "chip " + (!activeFilter || activeFilter === k ? "on" : "off");
+          document.querySelectorAll('.chip[data-mod]').forEach((c) => {
+            const k = c.getAttribute('data-mod');
+            c.className = 'chip ' + (!activeFilter || activeFilter === k ? 'on' : 'off');
           });
-          document.querySelectorAll(".app-row[data-mod]").forEach((r) => {
-            const k = r.getAttribute("data-mod");
-            r.classList.toggle("dim", !!activeFilter && activeFilter !== k);
+          document.querySelectorAll('.app-row[data-mod]').forEach((r) => {
+            const k = r.getAttribute('data-mod');
+            r.classList.toggle('dim', !!activeFilter && activeFilter !== k);
           });
         };
-        chip.setAttribute("data-mod", key);
+        chip.setAttribute('data-mod', key);
         legend.appendChild(chip);
       });
 
       // ── Render sections ──────────────────────────────────
-      const sections = document.getElementById("sections");
+      const sections = document.getElementById('sections');
 
       function makeBar(a, b, color, label) {
-        const bar = document.createElement("div");
-        bar.className = "bar";
-        bar.style.left = L(a) + "px";
-        bar.style.width = Math.max((b - a) * W - 2, 4) + "px";
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.left = L(a) + 'px';
+        bar.style.width = Math.max((b - a) * W - 2, 4) + 'px';
         bar.style.background = color;
         return bar;
       }
 
       function buildRow(app, color, isPlatform) {
-        const row = document.createElement("div");
-        row.className = "app-row";
-        if (!isPlatform) row.setAttribute("data-mod", app.mod);
+        const row = document.createElement('div');
+        row.className = 'app-row';
+        if (!isPlatform) row.setAttribute('data-mod', app.mod);
 
-        const label = document.createElement("div");
-        label.className = "label";
+        const label = document.createElement('div');
+        label.className = 'label';
         label.innerHTML =
-          '<div class="name">' +
-          app.name +
-          '</div><div class="meta">' +
-          app.owner +
-          "</div>";
+          '<div class="name">' + app.name + '</div><div class="meta">' + app.owner + '</div>';
 
-        const track = document.createElement("div");
-        track.className = "track";
+        const track = document.createElement('div');
+        track.className = 'track';
         const bar = isPlatform
-          ? document.createElement("div")
+          ? document.createElement('div')
           : makeBar(app.a, app.b, color, app.name);
         if (isPlatform) {
-          bar.className = "bar";
-          bar.style.left = L(app.a) + "px";
-          bar.style.width = Math.max((app.b - app.a) * W - 2, 4) + "px";
+          bar.className = 'bar';
+          bar.style.left = L(app.a) + 'px';
+          bar.style.width = Math.max((app.b - app.a) * W - 2, 4) + 'px';
         }
-        const tail = document.createElement("div");
-        tail.className = "taillabel";
+        const tail = document.createElement('div');
+        tail.className = 'taillabel';
         const x = L(app.b);
         const flip = x > 1150;
-        tail.style.left = (flip ? L(app.a) - 6 : x + 8) + "px";
-        tail.style.transform = flip
-          ? "translate(-100%,-50%)"
-          : "translateY(-50%)";
-        tail.textContent = app.a.toFixed(1) + " → " + app.b.toFixed(1);
+        tail.style.left = (flip ? L(app.a) - 6 : x + 8) + 'px';
+        tail.style.transform = flip ? 'translate(-100%,-50%)' : 'translateY(-50%)';
+        tail.textContent = app.a.toFixed(1) + ' → ' + app.b.toFixed(1);
         track.appendChild(bar);
         track.appendChild(tail);
 
         row.appendChild(label);
         row.appendChild(track);
 
-        const detail = document.createElement("div");
-        detail.className = "detail";
-        const feats = app.feats
-          .map((f) => '<span class="feat-pill">' + f + "</span>")
-          .join("");
+        const detail = document.createElement('div');
+        detail.className = 'detail';
+        const feats = app.feats.map((f) => '<span class="feat-pill">' + f + '</span>').join('');
         detail.innerHTML =
           '<div class="detail-inner">' +
           '<div class="why">' +
           app.why +
-          "</div>" +
+          '</div>' +
           '<div class="feats">' +
           feats +
-          "</div>" +
+          '</div>' +
           '<div class="src-row"><b>Source steps:</b> ' +
           app.src +
-          "</div>" +
-          "</div>";
+          '</div>' +
+          '</div>';
 
         row.onclick = () => {
-          const open = row.classList.toggle("expanded");
-          detail.style.maxHeight = open ? detail.scrollHeight + "px" : "0";
+          const open = row.classList.toggle('expanded');
+          detail.style.maxHeight = open ? detail.scrollHeight + 'px' : '0';
         };
 
-        const wrap = document.createElement("div");
+        const wrap = document.createElement('div');
         wrap.appendChild(row);
         wrap.appendChild(detail);
         return wrap;
       }
 
       // module sections
-      const head1 = document.createElement("div");
-      head1.className = "section-head";
+      const head1 = document.createElement('div');
+      head1.className = 'section-head';
       head1.innerHTML =
         '<h2>Module Apps</h2><span class="n">17 apps · owned by a single team</span>';
       sections.appendChild(head1);
@@ -946,35 +925,33 @@
       Object.entries(MODULES).forEach(([key, m]) => {
         const apps = APPS.filter((a) => a.mod === key);
         if (!apps.length) return;
-        const mod = document.createElement("div");
-        mod.className = "module";
-        const mh = document.createElement("div");
-        mh.className = "module-head";
+        const mod = document.createElement('div');
+        mod.className = 'module';
+        const mh = document.createElement('div');
+        mh.className = 'module-head';
         mh.innerHTML =
           '<div class="lbl"><span class="sw" style="background:' +
           m.color +
           '"></span>' +
           m.name +
-          "</div><div></div>";
+          '</div><div></div>';
         mod.appendChild(mh);
         apps.forEach((app) => mod.appendChild(buildRow(app, m.color, false)));
         sections.appendChild(mod);
       });
 
-      const head2 = document.createElement("div");
-      head2.className = "section-head";
+      const head2 = document.createElement('div');
+      head2.className = 'section-head';
       head2.innerHTML =
         '<h2>Platform Services</h2><span class="n">4 shared services · every module plugs in</span>';
       sections.appendChild(head2);
 
-      const platMod = document.createElement("div");
-      platMod.className = "module platform";
-      PLATFORM.forEach((app) =>
-        platMod.appendChild(buildRow(app, "var(--ink)", true)),
-      );
+      const platMod = document.createElement('div');
+      platMod.className = 'module platform';
+      PLATFORM.forEach((app) => platMod.appendChild(buildRow(app, 'var(--ink)', true)));
       sections.appendChild(platMod);
 
-      document.getElementById("chart").style.width = L(100) + 300 + 120 + "px";
+      document.getElementById('chart').style.width = L(100) + 300 + 120 + 'px';
     </script>
   </body>
 </html>

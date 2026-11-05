@@ -15,7 +15,6 @@ import {
   Pill,
   Field,
   TextInput,
-  TextArea,
   SelectInput,
   ChoiceGroup,
 } from "@/components/inos";
@@ -302,7 +301,6 @@ const DocumentTypes = () => {
                           </span>
                           <div style={{ minWidth: 0 }}>
                             <div className="adm-cell-title">{item.name || "Untitled"}</div>
-                            {item.description && <div className="adm-cell-sub">{item.description}</div>}
                           </div>
                         </div>
                       </td>
@@ -371,10 +369,6 @@ const DocumentTypes = () => {
 
           <Field label="Kind" full>
             <ChoiceGroup name="Kind" value={form.targetType} onChange={(v) => setField("targetType", v)} options={TARGETS} />
-          </Field>
-
-          <Field label="Description" optional full htmlFor="dt-desc">
-            <TextArea id="dt-desc" name="description" value={form.description} onChange={handleChange} rows={3} placeholder="What this document contains and who prepares it." />
           </Field>
 
           <div className="span-full">
