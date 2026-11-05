@@ -52,6 +52,15 @@ export const INDEX_MAPPINGS: Record<string, ReturnType<typeof buildMapping>> = {
     is_active: { type: 'boolean' },
   }),
 
+  leads: buildMapping({
+    name: { type: 'text', analyzer: 'standard_folded' },
+    company: { type: 'text', analyzer: 'standard_folded' },
+    email: { type: 'keyword' },
+    phone: { type: 'keyword' },
+    stage: { type: 'keyword' },
+    source: { type: 'keyword' },
+  }),
+
   vendors: buildMapping({
     company_name: { type: 'text', analyzer: 'standard_folded' },
     contact_number: { type: 'keyword' },
