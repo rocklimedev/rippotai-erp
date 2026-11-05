@@ -16,7 +16,7 @@ import '@fontsource/lato/900.css';
 import './print-document.css';
 import mark from '../../assets/rippotai_mark.png';
 import { has } from './format';
-import { RowsHead, Row, TextItem } from './primitives';
+import { RowsHead, Row, TextItem, HtmlTerms, htmlToTerms } from './primitives';
 
 const MM = 96 / 25.4; // CSS px per mm
 // Inner page: 297 − 14 (top pad) − 11 (header) − 9 (body pad) − 14 (footer) = 249 mm; keep 1.5 mm spare.
@@ -32,6 +32,16 @@ function expandBlocks(section, si) {
   const specs = [...(section.rows ? [{ table: section.rows }] : []), ...(section.blocks || [])];
   specs.forEach((spec, bi) => {
     if (spec == null || spec === false) return;
+    // A complete terms list can exceed an A4 body. Measure and paginate each
+    // clause separately, preserving its original number across page breaks.
+    if (React.isValidElement(spec) && spec.type === HtmlTerms) {
+      const items = spec.props.items ?? htmlToTerms(spec.props.html);
+      items.forEach((item, index) => out.push({
+        node: <HtmlTerms items={[item]} start={(spec.props.start ?? 1) + index} />,
+        tight: index < items.length - 1,
+      }));
+      return;
+    }
     // table spec
     if (spec && typeof spec === 'object' && !React.isValidElement(spec) && spec.table) {
       const t = spec.table;

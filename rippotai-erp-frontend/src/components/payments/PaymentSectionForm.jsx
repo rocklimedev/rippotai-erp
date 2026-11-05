@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 
 import {
@@ -165,6 +166,11 @@ export function PaymentSectionForm({
 
       <form
         className="inos-form"
+        onInvalidCapture={(event) => {
+          const input = event.target;
+          const label = input.labels?.[0]?.textContent?.trim() || 'a schedule field';
+          toast.error(`Please check ${label}: ${input.validationMessage}`, { id: 'payment-schedule-validation' });
+        }}
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit?.();

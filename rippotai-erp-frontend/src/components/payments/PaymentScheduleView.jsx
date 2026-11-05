@@ -130,7 +130,7 @@ export function buildScheduleSections(schedule) {
 
   const termsHtml = schedule.terms_content_snapshot ?? schedule.termsTemplate?.content_html;
   if (htmlToTerms(termsHtml).length)
-    sections.push({ title: 'Terms', blocks: [<HtmlTerms key="t" html={termsHtml} />] });
+    sections.push({ title: 'Terms', newPage: true, blocks: [<HtmlTerms key="t" html={termsHtml} />] });
 
   const architect =
     project.team_members?.find((m) => m.role_label === 'Principal Architect')?.user?.name ||

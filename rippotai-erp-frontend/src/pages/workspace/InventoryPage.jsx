@@ -1,10 +1,12 @@
 // Inventory: site stock per project × material, and the movement ledger.
 // /inventory/site-inventory/all (stock) and /inventory/site-inventory/transactions (movements)
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Boxes, ArrowDownToLine, ArrowUpFromLine, AlertTriangle, PackageX } from "lucide-react";
 import { Page, PageHeader, Card, Button, Toolbar, ToolbarSpacer, SearchInput, SelectInput, Tabs, Pill, EmptyState, Stats, StatTile, Progress } from "@/components/inos";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGetWsInventoryOverviewQuery } from "@/api/workspace/workspace.api";
+import { useGetProjectsQuery } from "@/api/projects/project.api";
 import { fmtDate, Loading, Meta } from "./shared";
 
 const num = (n) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -26,6 +28,25 @@ export default function InventoryPage({ tab: initialTab = "stock" }) {
   const [q, setQ] = useState("");
   const [state, setState] = useState("");
   const { data, isLoading, isError, refetch } = useGetWsInventoryOverviewQuery(project || undefined);
+
+  const { data: projectData } = useGetProjectsQuery({ includeArchived: true });
+  const projectOptions = useMemo(() => {
+    const listed = [projectData, projectData?.data, projectData?.items, projectData?.data?.data]
+      .find(Array.isArray) || [];
+    const options = new Map();
+    for (const row of [...(data?.stock || []), ...(data?.movements || [])]) {
+      if (row.project_id) options.set(String(row.project_id), {
+        id: String(row.project_id), name: row.project_name || "Unnamed project",
+      });
+    }
+    for (const row of [...(data?.projects || []), ...listed]) {
+      if (row.id) {
+        const id = String(row.id);
+        options.set(id, { id, name: row.name || row.project_name || options.get(id)?.name || "Unnamed project" });
+      }
+    }
+    return [...options.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [data, projectData]);
 
   const setParam = (k, v) => {
     const n = new URLSearchParams(sp);
@@ -77,10 +98,15 @@ export default function InventoryPage({ tab: initialTab = "stock" }) {
       <Tabs value={tab} onChange={(v) => { setTab(v); navigate(v === "stock" ? `/inventory/site-inventory/all?${sp}` : `/inventory/site-inventory/transactions?${sp}`, { replace: true }); }} options={[{ value: "stock", label: "Stock", count: stock.length }, { value: "moves", label: "Movements", count: moves.length }]} />
       <Toolbar>
         <SearchInput value={q} onChange={setQ} placeholder={tab === "stock" ? "Search material, code or category" : "Search material, trade, remarks"} />
-        <SelectInput value={project} onChange={(e) => setParam("project_id", e.target.value)} style={{ width: 240 }} aria-label="Project">
-          <option value="">All projects</option>
-          {(data?.projects || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </SelectInput>
+        <Select value={project || "all-projects"} onValueChange={(value) => setParam("project_id", value === "all-projects" ? "" : value)}>
+          <SelectTrigger className="w-[240px] max-w-full bg-[var(--surface)] border-[var(--line-strong)] text-[var(--text)]" aria-label="Project">
+            <SelectValue placeholder="All projects" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4} collisionPadding={12} className="z-[100] max-h-[min(320px,var(--radix-select-content-available-height))] max-w-[calc(100vw-24px)] bg-[var(--surface)] text-[var(--text)]">
+            <SelectItem value="all-projects">All projects</SelectItem>
+            {projectOptions.map((p) => <SelectItem key={p.id} value={p.id} className="whitespace-normal break-words">{p.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
         {tab === "stock" && (
           <SelectInput value={state} onChange={(e) => setState(e.target.value)} style={{ width: 160 }} aria-label="Stock status">
             <option value="">Any status</option><option value="ok">In stock</option><option value="warn">Low</option><option value="bad">Out of stock</option>

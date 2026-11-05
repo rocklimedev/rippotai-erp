@@ -1359,11 +1359,6 @@ function DocumentTypeInfo({ documentTypes, documentTypeId }) {
         )}
       </div>
 
-      {type.description && (
-        <div className="mt-1 text-[11px] text-muted-foreground">
-          {type.description}
-        </div>
-      )}
     </div>
   );
 }

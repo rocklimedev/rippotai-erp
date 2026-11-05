@@ -1,0 +1,25 @@
+.admin-dpr-workspace .dpr-actions,.admin-dpr-workspace .dpr-toolbar,.admin-dpr-workspace .dpr-form-footer,.admin-dpr-workspace .dpr-pagination { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.admin-dpr-workspace .dpr-toolbar { justify-content:space-between; padding:18px 24px; border-bottom:1px solid var(--line); }
+.admin-dpr-workspace .dpr-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,2fr); gap:20px; padding:22px 24px; }
+.admin-dpr-workspace .dpr-note { display:flex; align-items:flex-start; gap:8px; padding:12px 24px; background:var(--surface-2); border-top:1px solid var(--line); color:var(--text-2); font-size:12px; line-height:1.6; }
+.admin-dpr-workspace .dpr-note svg { flex-shrink:0; margin-top:2px; color:var(--brand); }
+.admin-dpr-workspace .dpr-editor { border-color:var(--line-strong); }
+.admin-dpr-workspace .dpr-form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+.admin-dpr-workspace .dpr-form-grid textarea { min-height:90px; resize:vertical; }
+.admin-dpr-workspace .dpr-form-grid .span-full { grid-column:1/-1; }
+.admin-dpr-workspace .dpr-form-footer { justify-content:flex-end; border-top:1px solid var(--line); padding-top:20px; margin-top:24px; }
+.admin-dpr-workspace .dpr-detail-cell { min-width:200px; max-width:320px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.admin-dpr-workspace .dpr-table td { vertical-align:top; }
+.admin-dpr-workspace .dpr-table td:first-child { white-space:nowrap; }
+.admin-dpr-workspace .dpr-table td:last-child { min-width:180px; white-space:nowrap; }
+.admin-dpr-workspace .dpr-table td:last-child .inos-btn + .inos-btn { margin-left:6px; }
+.admin-dpr-workspace .dpr-pagination { justify-content:flex-end; border-top:1px solid var(--line); padding:16px 24px; }
+.admin-dpr-workspace .dpr-pagination span { font-size:12px; color:var(--text-2); }
+.admin-dpr-workspace .dpr-feedback { padding:48px 24px; text-align:center; color:var(--text-2); }
+.admin-dpr-workspace .dpr-feedback[role="alert"] { color:var(--bad-fg); }
+@media (max-width:700px) {
+.admin-dpr-workspace .dpr-filters,.admin-dpr-workspace .dpr-form-grid { grid-template-columns:1fr; }
+.admin-dpr-workspace .dpr-toolbar { align-items:stretch; }
+.admin-dpr-workspace .inos-segmented { flex-wrap:wrap; }
+.admin-dpr-workspace .dpr-pagination { justify-content:center; }
+}
