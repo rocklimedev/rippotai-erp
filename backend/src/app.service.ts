@@ -91,7 +91,7 @@ export class AppService {
    *
    * - MySQL
    * - Redis
-   * - Elasticsearch
+   * - MySQL search
    * - Other required infrastructure
    */
   getReadiness() {
@@ -103,7 +103,7 @@ export class AppService {
       dependencies: {
         database: 'configured',
         redis: 'configured',
-        elasticsearch: 'configured',
+        search: 'mysql',
       },
     };
   }

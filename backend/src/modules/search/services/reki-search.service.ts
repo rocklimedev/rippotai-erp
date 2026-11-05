@@ -28,7 +28,7 @@ export class SiteRecceSearchService {
   ) {}
 
   // ============================================================
-  // CONVERT SITE RECCE -> ELASTICSEARCH DOCUMENT
+  // CONVERT SITE RECCE -> SEARCH DOCUMENT
   // ============================================================
 
   private toDocument(recce: SiteRecce) {

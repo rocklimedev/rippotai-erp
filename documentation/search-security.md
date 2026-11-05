@@ -45,3 +45,10 @@ The schema audit is not a complete scan for secrets embedded in arbitrary text. 
 ## Local verification
 
 From `backend`, run `npx jest --runInBand --moduleNameMapper='{"^@/(.*)$":"<rootDir>/$1"}' search-security.spec.ts`. The HTTP and service tests cover every search route's authentication, full/entity reindex permissions, principal/scope failures, cross-project results/counts/facets/suggestions, entity searches, arbitrary-index rejection and administrator access. Elasticsearch is simulated for these tests; they do not replace the staging procedure.
+# Current engine
+
+Search now uses the ERP MySQL database. See [MySQL cutover](search-mysql-cutover.md)
+for migration, validation, resource limits and rollback. The Elasticsearch
+references below describe the previous implementation. The staging validation
+script now checks API permissions without an Elasticsearch connection.
+

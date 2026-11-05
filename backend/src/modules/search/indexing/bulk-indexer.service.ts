@@ -20,7 +20,7 @@ export class BulkIndexerService {
   constructor(private readonly searchService: SearchService) {}
 
   /**
-   * Index a batch of documents using the Elasticsearch Bulk API.
+   * Index a batch of documents using the internal search store.
    * Automatically ensures the target indices exist.
    */
   async indexBatch(

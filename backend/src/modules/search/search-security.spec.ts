@@ -10,7 +10,6 @@ import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
 import { SearchScopeService } from './search-scope.service';
 import { SearchService } from './search.service';
-import { SqlSearchFallbackService } from './sql-search-fallback.service';
 import { searchScopeFilter } from './search-access';
 import { Project } from '../projects/models/projects.model';
 import { TeamMember } from '../users/models/team-member.model';
@@ -63,7 +62,7 @@ describe('Search authentication and project visibility', () => {
       );
     return true;
   };
-  const es = {
+  const engine = {
     search: jest.fn(async (_indices, body) => {
       const docs = fixtures.filter(
         (doc) =>
@@ -125,11 +124,7 @@ describe('Search authentication and project visibility', () => {
         GlobalSearchService,
         AutocompleteService,
         SearchScopeService,
-        { provide: SearchService, useValue: es },
-        {
-          provide: SqlSearchFallbackService,
-          useValue: { search: jest.fn().mockResolvedValue([]) },
-        },
+        { provide: SearchService, useValue: engine },
         { provide: getModelToken(Project), useValue: projects },
         { provide: getModelToken(TeamMember), useValue: members },
       ],
@@ -174,7 +169,7 @@ describe('Search authentication and project visibility', () => {
     '/health',
   ])('denies anonymous GET %s', async (path) => {
     await call('get', `${path}?q=visible`).expect(401);
-    expect(es.search).not.toHaveBeenCalled();
+    expect(engine.search).not.toHaveBeenCalled();
   });
 
   it.each(['/reindex/all', '/reindex/projects'])(
@@ -229,7 +224,9 @@ describe('Search authentication and project visibility', () => {
       actor,
     ).expect(200);
     expect(response.body.results).toEqual([]);
-    expect(es.search.mock.calls.at(-1)![1].query.bool.filter).toContainEqual({
+    expect(
+      engine.search.mock.calls.at(-1)![1].query.bool.filter,
+    ).toContainEqual({
       terms: { project_id: ['project-a'] },
     });
   });
@@ -249,7 +246,7 @@ describe('Search authentication and project visibility', () => {
     await expect(autocomplete.suggest({ q: '' }, null as any)).rejects.toThrow(
       UnauthorizedException,
     );
-    expect(es.search).not.toHaveBeenCalled();
+    expect(engine.search).not.toHaveBeenCalled();
   });
 
   it('rejects arbitrary index selection', async () => {
@@ -258,7 +255,7 @@ describe('Search authentication and project visibility', () => {
       id: 'admin',
       roleName: 'ADMIN',
     }).expect(400);
-    expect(es.search).not.toHaveBeenCalled();
+    expect(engine.search).not.toHaveBeenCalled();
   });
 
   it('returns no data for users with no projects, and does not search if scope lookup fails', async () => {
@@ -268,9 +265,9 @@ describe('Search authentication and project visibility', () => {
     projects.findAll.mockRejectedValueOnce(
       new Error('Scope database unavailable'),
     );
-    es.search.mockClear();
+    engine.search.mockClear();
     await call('get', '/suggest?q=visible', user).expect(500);
-    expect(es.search).not.toHaveBeenCalled();
+    expect(engine.search).not.toHaveBeenCalled();
   });
 
   it('administrators can search across projects, while deleted records require explicit opt-in', async () => {

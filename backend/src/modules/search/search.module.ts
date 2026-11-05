@@ -1,8 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ElasticsearchModule } from '@nestjs/elasticsearch';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ClientOptions } from '@elastic/elasticsearch';
 
 import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
@@ -10,7 +7,6 @@ import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
 import { BulkIndexerService } from './indexing/bulk-indexer.service';
 import { SearchScopeService } from './search-scope.service';
-import { SqlSearchFallbackService } from './sql-search-fallback.service';
 import { TeamMember } from '../users/models/team-member.model';
 
 import { ProjectSearchService } from './services/project-search.service';
@@ -50,25 +46,6 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
 
 @Module({
   imports: [
-    ConfigModule,
-
-    ElasticsearchModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService): ClientOptions => {
-        const node =
-          config.get<string>('ELASTICSEARCH_NODE') ?? 'http://localhost:9200';
-        const username = config.get<string>('ELASTICSEARCH_USERNAME');
-        const password = config.get<string>('ELASTICSEARCH_PASSWORD');
-
-        const options: ClientOptions = { node };
-        if (username && password) {
-          options.auth = { username, password };
-        }
-        return options;
-      },
-    }),
-
     SequelizeModule.forFeature([
       TeamMember,
       Project,
@@ -95,7 +72,6 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
   providers: [
     SearchScopeService,
     SearchService,
-    SqlSearchFallbackService,
     GlobalSearchService,
     AutocompleteService,
     BulkIndexerService,

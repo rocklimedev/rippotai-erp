@@ -6,7 +6,6 @@ import {
 } from './search-access';
 export type { SearchUserContext } from './search-access';
 import { SearchService } from './search.service';
-import { SqlSearchFallbackService } from './sql-search-fallback.service';
 import {
   GlobalSearchResult,
   SearchHit,
@@ -83,10 +82,7 @@ const ENTITY_TO_INDEX: Record<string, string> = {
 export class GlobalSearchService {
   private readonly logger = new Logger(GlobalSearchService.name);
 
-  constructor(
-    private readonly searchService: SearchService,
-    private readonly sqlFallback: SqlSearchFallbackService,
-  ) {}
+  constructor(private readonly searchService: SearchService) {}
 
   async search(
     dto: GlobalSearchQueryDto,
@@ -136,18 +132,7 @@ export class GlobalSearchService {
 
     const start = Date.now();
 
-    let response: any;
-    try {
-      response = await this.searchService.search(indices, body);
-    } catch (err) {
-      this.logger.warn(
-        `Elasticsearch unavailable, using SQL fallback: ${(err as Error)?.message}`,
-      );
-      response = null;
-    }
-    if (!response || response.noIndices) {
-      return this.fallbackSearch(dto, user, indices, page, pageSize, start);
-    }
+    const response = await this.searchService.search(indices, body);
 
     const took_ms = Date.now() - start;
 
@@ -162,11 +147,6 @@ export class GlobalSearchService {
 
     const facets: GlobalSearchResult['facets'] = {};
 
-    /**
-     * Elasticsearch types `aggregations` as a union of all possible
-     * aggregation types. Since `entity_type` is explicitly a `terms`
-     * aggregation in our query, narrow it to the terms shape here.
-     */
     const entityTypeAggregation =
       'aggregations' in response
         ? response.aggregations?.entity_type
@@ -200,41 +180,6 @@ export class GlobalSearchService {
   // ------------------------------------------------------------------
   // Helpers
   // ------------------------------------------------------------------
-
-  private async fallbackSearch(
-    dto: GlobalSearchQueryDto,
-    user: SearchUserContext,
-    indices: string[],
-    page: number,
-    pageSize: number,
-    start: number,
-  ): Promise<GlobalSearchResult> {
-    const q = dto.q?.trim() ?? '';
-    const indexToEntity = Object.fromEntries(
-      Object.entries(ENTITY_TO_INDEX).map(([e, i]) => [i, e]),
-    );
-    const hits = q
-      ? await this.sqlFallback.search(q, user, {
-          entities: indices.map((i) => indexToEntity[i]).filter(Boolean),
-          limit: 50,
-          projectId: dto.projectId,
-        })
-      : [];
-    const facets: GlobalSearchResult['facets'] = { entity_type: {} };
-    for (const h of hits) {
-      facets.entity_type![h.entity_type] =
-        (facets.entity_type![h.entity_type] ?? 0) + 1;
-    }
-    const from = (page - 1) * pageSize;
-    return {
-      results: hits.slice(from, from + pageSize),
-      total: hits.length,
-      page,
-      pageSize,
-      took_ms: Date.now() - start,
-      facets,
-    };
-  }
 
   private resolveIndices(types?: string): string[] {
     if (!types?.trim()) return DEFAULT_INDICES;

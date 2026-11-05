@@ -23,12 +23,10 @@
     "start:export-worker": "node scripts/start-export-worker.cjs"
   },
   "dependencies": {
-    "@elastic/elasticsearch": "^8.15.0",
     "@getbrevo/brevo": "^6.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
-    "@nestjs/elasticsearch": "^11.1.0",
     "@nestjs/jwt": "^12.0.1",
     "@nestjs/mapped-types": "^2.1.1",
     "@nestjs/passport": "^11.0.5",
