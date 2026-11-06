@@ -144,7 +144,7 @@ export class SearchService {
     let total = 0;
     const buckets = new Map<string, number>();
     let best: any[] = [];
-    // Keyset batches bound memory. Scope is enforced by SQL before text is read.
+    // Keyset batches bound memory. Structured filters run in SQL before text is read.
     while (indices.length) {
       const rows = await this.db.query<any>(
         `SELECT sequence_id, index_name, document_id, document FROM erp_search_documents

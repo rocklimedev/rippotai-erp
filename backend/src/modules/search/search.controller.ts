@@ -13,7 +13,6 @@ import {
 import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
-import { SearchScopeService } from './search-scope.service';
 import { isSearchAdmin } from './search-access';
 import { GlobalSearchQueryDto, SuggestQueryDto } from './dto/global-search.dto';
 
@@ -58,7 +57,6 @@ export class SearchController {
     private readonly workOrderSearch: WorkOrderSearchService,
     private readonly deliveryChallanSearch: DeliveryChallanSearchService,
     private readonly budgetEstimateSearch: BudgetEstimateSearchService,
-    private readonly scope: SearchScopeService,
   ) {}
 
   // ================================================================
@@ -68,7 +66,7 @@ export class SearchController {
   @RequirePermission('search:read')
   @Get()
   async search(@Query() query: GlobalSearchQueryDto, @Req() req: any) {
-    const user = await this.scope.resolve(req.user);
+    const user = { id: req.user?.id, role: req.user?.roleName };
     return this.globalSearch.search(query, user);
   }
 
@@ -79,7 +77,7 @@ export class SearchController {
   @RequirePermission('search:read')
   @Get('suggest')
   async suggest(@Query() query: SuggestQueryDto, @Req() req: any) {
-    const user = await this.scope.resolve(req.user);
+    const user = { id: req.user?.id, role: req.user?.roleName };
     return {
       suggestions: await this.autocomplete.suggest(query, user),
     };
@@ -321,7 +319,7 @@ export class SearchController {
   }
 
   private async searchEntity(type: string, q: string, req: any) {
-    const user = await this.scope.resolve(req.user);
+    const user = { id: req.user?.id, role: req.user?.roleName };
     if (!q?.trim()) return [];
     const result = await this.globalSearch.search({ q, types: type }, user);
     return result.results.map((hit) => ({

@@ -69,21 +69,16 @@ for (const [token, ownProject, otherProject, ownBoq, otherBoq] of [
     token,
   );
   assert.equal(other.status, 200);
-  assert.equal(other.body.total, 0);
-  assert.deepEqual(other.body.results, []);
-  assert.ok(
-    Object.values(other.body.facets.entity_type ?? {}).every(
-      (count) => count === 0,
-    ),
-  );
+  assert.ok(other.body.results.some((hit) => hit.id === otherBoq));
+  assert.ok(other.body.results.every((hit) => hit.meta.project_id === otherProject));
   const entity = await apiCall(`/boqs?q=${marker}`, token);
   assert.equal(entity.status, 200);
   assert.ok(entity.body.some((hit) => hit.id === ownBoq));
-  assert.ok(!entity.body.some((hit) => hit.id === otherBoq));
+  assert.ok(entity.body.some((hit) => hit.id === otherBoq));
   const suggest = await apiCall(`/suggest?q=${marker}`, token);
   assert.equal(suggest.status, 200);
   assert.ok(suggest.body.suggestions.some((hit) => hit.id === ownBoq));
-  assert.ok(!suggest.body.suggestions.some((hit) => hit.id === otherBoq));
+  assert.ok(suggest.body.suggestions.some((hit) => hit.id === otherBoq));
 }
 
 console.log(JSON.stringify({ permissionChecks: 'passed', engine: 'mysql' }, null, 2));

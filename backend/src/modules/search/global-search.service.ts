@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import {
   isSearchAdmin,
-  searchScopeFilter,
+  requireSearchPrincipal,
   SearchUserContext,
 } from './search-access';
 export type { SearchUserContext } from './search-access';
@@ -202,7 +202,8 @@ export class GlobalSearchService {
 
   private buildQuery(dto: GlobalSearchQueryDto, user: SearchUserContext) {
     const must: any[] = [];
-    const filter: any[] = [searchScopeFilter(user)];
+    requireSearchPrincipal(user);
+    const filter: any[] = [];
     const mustNot: any[] = [];
 
     // Soft-delete filter

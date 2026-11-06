@@ -20,7 +20,7 @@ The frontend contracts and entity document builders remain unchanged.
    identifiers, typos, autocomplete, empty-query filters, date/status/client/
    project filters, deleted records, pagination and facets. Test two ordinary
    users in different projects and an administrator. The API-only
-   `backend/scripts/validate-search-staging.mjs` verifies fixture isolation;
+   `backend/scripts/validate-search-staging.mjs` verifies global visibility for authenticated users;
    its required environment variables are declared at the top of the script.
 6. Measure request latency and database CPU at expected record counts and
    concurrency before switching traffic. Observe successful rebuilds and fresh
@@ -37,7 +37,7 @@ deletion is performed by this code change.
 
 - Case and accent folding, weighted best-field matching, AUTO-style edit
   distances (including adjacent transpositions), prefix suggestions, escaped
-  highlights, soft deletion and the existing scope rules are supported.
+  highlights, soft deletion are supported. Users with `search:read` can search across projects.
 - Structured access and metadata filters run in SQL. Text ranking reads only
   matching candidates in batches of 500 and keeps at most the requested result
   window. Totals/facets count all matching candidates, before pagination.
