@@ -3,7 +3,7 @@ import { SearchService } from './search.service';
 import { SuggestItem } from './interfaces/searchable-document.interface';
 import { SuggestQueryDto } from './dto/global-search.dto';
 import { SearchUserContext } from './global-search.service';
-import { searchScopeFilter } from './search-access';
+import { requireSearchPrincipal } from './search-access';
 
 const SUGGEST_INDICES = [
   'projects',
@@ -23,13 +23,13 @@ export class AutocompleteService {
     dto: SuggestQueryDto,
     user: SearchUserContext,
   ): Promise<SuggestItem[]> {
-    const scope = searchScopeFilter(user);
+    requireSearchPrincipal(user);
     const q = dto.q?.trim();
     if (!q || q.length < 2) return [];
 
     const limit = Math.min(dto.limit ?? 8, 15);
 
-    const filter: any[] = [{ term: { is_deleted: false } }, scope];
+    const filter: any[] = [{ term: { is_deleted: false } }];
 
     const response = await this.searchService.search(SUGGEST_INDICES, {
       size: limit,

@@ -1,6 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { getModelToken } from '@nestjs/sequelize';
+import { UnauthorizedException } from '@nestjs/common';
 import passport from 'passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { sign } from 'jsonwebtoken';
@@ -8,19 +7,14 @@ import request from 'supertest';
 import { SearchController } from './search.controller';
 import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
-import { SearchScopeService } from './search-scope.service';
 import { SearchService } from './search.service';
-import { searchScopeFilter } from './search-access';
-import { Project } from '../projects/models/projects.model';
-import { TeamMember } from '../users/models/team-member.model';
-import { Op } from 'sequelize';
 
-describe('Search authentication and project visibility', () => {
+describe('Search authentication and global visibility', () => {
   let app: any;
   let global: GlobalSearchService;
   let autocomplete: AutocompleteService;
   const secret = 'search-security-test-secret';
-  const user = { id: 'user-a', roleName: 'USER' };
+  const user = { id: 'user-a', roleName: 'DEVELOPER' };
   const fixtures = [
     {
       id: 'a',
@@ -82,12 +76,6 @@ describe('Search authentication and project visibility', () => {
       };
     }),
   };
-  const members = {
-    findAll: jest.fn().mockResolvedValue([{ owner_id: 'project-a' }]),
-  };
-  const projects = {
-    findAll: jest.fn().mockResolvedValue([{ id: 'project-a' }]),
-  };
   const reindex = jest.fn().mockResolvedValue({ indexed: 1 });
 
   beforeAll(async () => {
@@ -114,7 +102,6 @@ describe('Search authentication and project visibility', () => {
               ![
                 GlobalSearchService,
                 AutocompleteService,
-                SearchScopeService,
               ].includes(type),
           )
           .map((type) => ({
@@ -123,10 +110,7 @@ describe('Search authentication and project visibility', () => {
           })),
         GlobalSearchService,
         AutocompleteService,
-        SearchScopeService,
         { provide: SearchService, useValue: engine },
-        { provide: getModelToken(Project), useValue: projects },
-        { provide: getModelToken(TeamMember), useValue: members },
       ],
     }).compile();
     global = module.get(GlobalSearchService);
@@ -188,64 +172,26 @@ describe('Search authentication and project visibility', () => {
     },
   );
 
-  it('applies scope to results, counts, facets, autocomplete and entity routes', async () => {
+  it('returns global results, counts, facets, suggestions and entity hits for a developer', async () => {
+    const ids = ['a', 'b', 'unscoped'];
     const response = await call('get', '?q=visible', user).expect(200);
-    expect(response.body.results.map((hit) => hit.id)).toEqual(['a']);
-    expect(response.body.total).toBe(1);
-    expect(response.body.facets.entity_type.boq).toBe(1);
-    const suggestions = await call('get', '/suggest?q=visible', user).expect(
-      200,
-    );
-    expect(suggestions.body.suggestions.map((hit) => hit.id)).toEqual(['a']);
+    expect(response.body.results.map((hit) => hit.id)).toEqual(ids);
+    expect(response.body.total).toBe(3);
+    expect(response.body.facets.entity_type.boq).toBe(3);
+    const suggestions = await call('get', '/suggest?q=visible', user).expect(200);
+    expect(suggestions.body.suggestions.map((hit) => hit.id)).toEqual(ids);
     const entity = await call('get', '/boqs?q=visible', user).expect(200);
-    expect(entity.body.map((hit) => hit.id)).toEqual(['a']);
-    expect(projects.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          deleted_at: null,
-          [Op.or]: [
-            { created_by: 'user-a' },
-            { id: { [Op.in]: ['project-a'] } },
-          ],
-        }),
-      }),
-    );
+    expect(entity.body.map((hit) => hit.id)).toEqual(ids);
   });
 
-  it('does not trust supplied project IDs or permit cross-project filters', async () => {
-    const actor = {
-      ...user,
-      projectIds: ['project-b'],
-      allowedProjectIds: ['project-b'],
-    };
-    const response = await call(
-      'get',
-      '?q=visible&projectId=project-b',
-      actor,
-    ).expect(200);
-    expect(response.body.results).toEqual([]);
-    expect(
-      engine.search.mock.calls.at(-1)![1].query.bool.filter,
-    ).toContainEqual({
-      terms: { project_id: ['project-a'] },
-    });
+  it('allows developers to filter global results by project', async () => {
+    const response = await call('get', '?q=visible&projectId=project-b', user).expect(200);
+    expect(response.body.results.map((hit) => hit.id)).toEqual(['b']);
   });
 
-  it('fails closed for absent principal or scope; an explicit empty scope matches nothing', async () => {
-    expect(() => searchScopeFilter(null as any)).toThrow(UnauthorizedException);
-    expect(() => searchScopeFilter({ id: 'user' })).toThrow(ForbiddenException);
-    expect(() =>
-      searchScopeFilter({ id: 'user', projectIds: [null] as any }),
-    ).toThrow(ForbiddenException);
-    expect(searchScopeFilter({ id: 'user', projectIds: [] })).toEqual({
-      match_none: {},
-    });
-    await expect(global.search({}, { id: 'user' })).rejects.toThrow(
-      ForbiddenException,
-    );
-    await expect(autocomplete.suggest({ q: '' }, null as any)).rejects.toThrow(
-      UnauthorizedException,
-    );
+  it('requires a principal in the search services', async () => {
+    await expect(global.search({}, null as any)).rejects.toThrow(UnauthorizedException);
+    await expect(autocomplete.suggest({ q: '' }, null as any)).rejects.toThrow(UnauthorizedException);
     expect(engine.search).not.toHaveBeenCalled();
   });
 
@@ -258,18 +204,6 @@ describe('Search authentication and project visibility', () => {
     expect(engine.search).not.toHaveBeenCalled();
   });
 
-  it('returns no data for users with no projects, and does not search if scope lookup fails', async () => {
-    projects.findAll.mockResolvedValueOnce([]);
-    const response = await call('get', '?q=visible', user).expect(200);
-    expect(response.body.results).toEqual([]);
-    projects.findAll.mockRejectedValueOnce(
-      new Error('Scope database unavailable'),
-    );
-    engine.search.mockClear();
-    await call('get', '/suggest?q=visible', user).expect(500);
-    expect(engine.search).not.toHaveBeenCalled();
-  });
-
   it('administrators can search across projects, while deleted records require explicit opt-in', async () => {
     const actor = { id: 'admin', roleName: 'SUPERADMIN' };
     const result = await call('get', '?q=visible', actor).expect(200);
@@ -278,8 +212,6 @@ describe('Search authentication and project visibility', () => {
       'b',
       'unscoped',
     ]);
-    expect(projects.findAll).not.toHaveBeenCalled();
-    expect(members.findAll).not.toHaveBeenCalled();
     const all = await global.search(
       { includeDeleted: true },
       { id: 'admin', role: 'SUPERADMIN' },
