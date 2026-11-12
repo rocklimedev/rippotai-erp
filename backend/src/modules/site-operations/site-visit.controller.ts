@@ -1,4 +1,6 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { User } from '../users/models/user.model';
 import {
   Controller,
   Get,
@@ -25,8 +27,8 @@ export class SiteVisitController {
   // Central assignment
   @RequirePermission('site-ops-visits:assign')
   @Post('assignments')
-  createAssignment(@Body() dto: CreateVisitAssignmentDto) {
-    return this.visitService.createAssignment(dto);
+  createAssignment(@Body() dto: CreateVisitAssignmentDto, @CurrentUser() user: User) {
+    return this.visitService.createAssignment(dto, user.id);
   }
 
   @RequirePermission('site-ops-visits:read')

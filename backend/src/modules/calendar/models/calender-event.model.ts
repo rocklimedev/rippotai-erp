@@ -36,6 +36,10 @@ export class CalendarEvent extends Model<CalendarEvent> {
   @Column(DataType.UUID)
   declare id: string;
 
+  // Unique source link: visit allocations own their calendar representation.
+  @Column({ type: DataType.INTEGER, allowNull: true, unique: true })
+  declare visit_assignment_id: number | null;
+
   @Column({ type: DataType.STRING(255), allowNull: false })
   declare title: string;
 

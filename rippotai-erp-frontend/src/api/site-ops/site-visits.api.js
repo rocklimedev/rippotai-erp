@@ -15,7 +15,7 @@ export const siteVisitApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["SiteVisitAssignments"],
+      invalidatesTags: ["SiteVisitAssignments", "WsCalendar"],
     }),
 
     /**
@@ -35,7 +35,7 @@ export const siteVisitApi = baseApi.injectEndpoints({
         url: `/site-ops/visits/assignments/${id}/deactivate`,
         method: "PATCH",
       }),
-      invalidatesTags: ["SiteVisitAssignments"],
+      invalidatesTags: ["SiteVisitAssignments", "WsCalendar"],
     }),
 
     // ============================================================
