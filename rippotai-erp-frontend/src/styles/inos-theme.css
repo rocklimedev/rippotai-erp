@@ -1512,17 +1512,25 @@ textarea.bc-input {
   font-size: var(--fs-lead);
 }
 .inos-launcher__grid {
-  display: grid;
-  grid-template-columns: repeat(4, 124px);
+  --app-width: 124px;
+  display: flex;
+  flex-wrap: wrap;
   gap: 28px 20px;
   justify-content: center;
   width: 100%;
+  max-width: 556px;
+  margin-inline: auto;
 }
 @media (max-width: 620px) {
   .inos-launcher__grid {
-    grid-template-columns: repeat(3, minmax(0, 104px));
+    --app-width: 104px;
+    max-width: 336px;
     gap: 20px 12px;
   }
+}
+.inos-launcher__grid > .inos-app {
+  flex: 0 0 var(--app-width);
+  min-width: 0;
 }
 .inos-app {
   display: flex;

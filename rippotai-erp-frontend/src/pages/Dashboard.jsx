@@ -101,7 +101,6 @@ export default function Dashboard() {
             {greeting()}
             {firstName ? `, ${firstName}` : ""}
           </h1>
-          <p>Pick up where you left off.</p>
         </div>
 
         <nav
