@@ -179,7 +179,7 @@ export class WorkspaceService {
 
     const events = await this.q(
       `SELECT e.id, e.title, e.type, e.starts_at, e.ends_at, e.all_day, e.location, e.description,
-              e.project_id, e.attendees, e.created_by, p.name AS project_name
+              e.project_id, e.attendees, e.created_by, e.visit_assignment_id, p.name AS project_name
        FROM calendar_events e LEFT JOIN projects p ON p.id = e.project_id
        WHERE e.starts_at BETWEEN :start AND :end
        ${mine ? `AND (e.created_by = :uid OR JSON_CONTAINS(e.attendees, JSON_QUOTE(:email)) OR JSON_CONTAINS(e.attendees, JSON_QUOTE(:uid)))` : ''}
@@ -190,11 +190,11 @@ export class WorkspaceService {
       items.push({
         ...e,
         key: `event:${e.id}`,
-        source: 'event',
+        source: e.visit_assignment_id != null ? 'site_visit' : 'event',
         kind: e.type,
         date: e.starts_at,
         end: e.ends_at,
-        editable: true,
+        editable: e.visit_assignment_id == null,
         attendees:
           typeof e.attendees === 'string' ? safeJson(e.attendees) : e.attendees,
       });
@@ -290,7 +290,9 @@ export class WorkspaceService {
         const visits = await this.q(
           `SELECT l.id, l.visitor_name, l.visitor_type, l.scheduled_date, l.status, l.purpose, l.project_id, p.name AS project_name
            FROM site_visit_logs l LEFT JOIN projects p ON p.id = l.project_id
-           WHERE l.scheduled_date BETWEEN DATE(:start) AND DATE(:end)`,
+           WHERE l.scheduled_date BETWEEN DATE(:start) AND DATE(:end)
+             AND NOT EXISTS (SELECT 1 FROM calendar_events ce WHERE ce.visit_assignment_id = l.visit_assignment_id)
+             AND NOT EXISTS (SELECT 1 FROM visit_assignments va WHERE va.id = l.visit_assignment_id AND va.is_active = 0)`,
           r,
         );
         for (const v of visits)

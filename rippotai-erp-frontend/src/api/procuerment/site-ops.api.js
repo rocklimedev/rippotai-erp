@@ -424,7 +424,7 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["SiteVisits"],
+      invalidatesTags: ["SiteVisits", "WsCalendar"],
     }),
 
     updateVisitAssignment: builder.mutation({
@@ -433,7 +433,7 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["SiteVisits"],
+      invalidatesTags: ["SiteVisits", "WsCalendar"],
     }),
 
     getVisitAssignmentsByProject: builder.query({
@@ -453,7 +453,7 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         url: `/site-ops/visits/assignments/${id}/deactivate`,
         method: "PATCH",
       }),
-      invalidatesTags: ["SiteVisits"],
+      invalidatesTags: ["SiteVisits", "WsCalendar"],
     }),
 
     logSiteVisit: builder.mutation({

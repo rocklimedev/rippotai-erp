@@ -21,6 +21,8 @@ import { ArchitectVisitStage } from './models/architect-visit-stage.model';
 import { Project } from '../projects/models/projects.model';
 import { Team } from '../process-workflow/models/team.model';
 import { ARCHITECT_VISIT_STAGES } from './constants/architect-visit-stages.constant';
+import { CalendarEvent, CalendarEventType } from '../calendar/models/calender-event.model';
+import { Transaction } from 'sequelize';
 
 @Injectable()
 export class SiteVisitService {
@@ -32,16 +34,50 @@ export class SiteVisitService {
     private stageModel: typeof ArchitectVisitStage,
     @InjectModel(Project) private projectModel: typeof Project,
     @InjectModel(Team) private teamModel: typeof Team,
+    @InjectModel(CalendarEvent) private calendarModel: typeof CalendarEvent,
   ) {}
 
   // ---------- Central assignment ----------
 
   async createAssignment(
     dto: CreateVisitAssignmentDto,
+    actorId?: string,
   ): Promise<VisitAssignment> {
-    return this.assignmentModel.create(
-      (await this.assignmentValues(dto)) as any,
-    );
+    const values = await this.assignmentValues(dto);
+    return this.assignmentModel.sequelize!.transaction(async (transaction) => {
+      const assignment = await this.assignmentModel.create(values as any, { transaction });
+      await this.syncCalendar(assignment, transaction, actorId);
+      return assignment;
+    });
+  }
+
+  private async syncCalendar(assignment: VisitAssignment, transaction: Transaction, actorId?: string) {
+    const where = { visit_assignment_id: assignment.id };
+    if (!assignment.isActive || !assignment.scheduledDate) {
+      await this.calendarModel.destroy({ where, transaction });
+      return;
+    }
+    const values = {
+      ...where,
+      title: `Site visit: ${assignment.stageName || assignment.purpose || assignment.visitorType}`.slice(0, 255),
+      type: CalendarEventType.SITE_VISIT,
+      project_id: assignment.projectId,
+      // Date-only allocations are all-day events, never fabricated appointment times.
+      starts_at: new Date(`${assignment.scheduledDate}T00:00:00+05:30`),
+      ends_at: new Date(`${assignment.scheduledDate}T23:59:59.999+05:30`),
+      all_day: true,
+      description: [
+        `Visit assignment #${assignment.id}`,
+        `Visitor type: ${assignment.visitorType}`,
+        assignment.externalPartyName ? `Visitor: ${assignment.externalPartyName}` : `Team: ${assignment.teamId}`,
+        assignment.purpose,
+        assignment.checksPurpose,
+        assignment.visitType ? `Visit type: ${assignment.visitType}` : null,
+      ].filter(Boolean).join('\n'),
+    };
+    const existing = await this.calendarModel.findOne({ where, transaction });
+    if (existing) await existing.update(values, { transaction });
+    else await this.calendarModel.create({ ...values, attendees: [], created_by: actorId ?? null } as any, { transaction });
   }
 
   private async assignmentValues(dto: CreateVisitAssignmentDto) {
@@ -166,7 +202,9 @@ export class SiteVisitService {
           purpose: row.purpose,
         });
       }
-      return row.update(values as any, { transaction });
+      await row.update(values as any, { transaction });
+      await this.syncCalendar(row, transaction);
+      return row;
     });
   }
 
@@ -196,6 +234,7 @@ export class SiteVisitService {
         },
       );
       await assignment.update({ isActive: false } as any, { transaction });
+      await this.syncCalendar(assignment, transaction);
       return assignment;
     });
   }

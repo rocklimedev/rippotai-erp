@@ -38,6 +38,7 @@ import { ChecklistService } from './checklist.service';
 import { QcSignOffService } from './qc-sign-off.service';
 import { DailySiteReportService } from './daily-site-report.service';
 import { SiteVisitService } from './site-visit.service';
+import { CalendarEvent } from '../calendar/models/calender-event.model';
 import { MockupService } from './mockup.service';
 import { RfiService } from './rfi.service';
 import { QualityCheckHead } from './models/quality-check-head.model';
@@ -90,6 +91,7 @@ import { QualityController } from './quality.controller';
       AdminDailyLog,
       ManpowerEntry,
       VisitAssignment,
+      CalendarEvent,
       SiteVisitLog,
       Mockup,
       Rfi,

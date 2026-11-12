@@ -18,10 +18,10 @@ describe('visit event allocations', () => {
       teamId: null,
       isActive: true,
       purpose: 'Locked purpose',
-      update: jest.fn(),
+      update: jest.fn((v) => Object.assign(assignment, v)),
     };
     const allocations: any = {
-      create: jest.fn((v) => v),
+      create: jest.fn((v) => ({ id: 1, isActive: true, ...v })),
       findByPk: jest.fn().mockResolvedValue(assignment),
       findAll: jest.fn(),
       sequelize: { transaction: jest.fn((cb) => cb(transaction)) },
@@ -44,8 +44,14 @@ describe('visit event allocations', () => {
       findByPk: jest.fn().mockResolvedValue({ id: 'project' }),
     };
     const team: any = { findByPk: jest.fn().mockResolvedValue({ id: 1 }) };
+    const calendar: any = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      destroy: jest.fn(),
+    };
     return {
-      service: new SiteVisitService(allocations, logs, stages, project, team),
+      service: new SiteVisitService(allocations, logs, stages, project, team, calendar),
+      calendar,
       allocations,
       logs,
       stages,
@@ -77,7 +83,40 @@ describe('visit event allocations', () => {
         frequency: null,
         scheduleDays: null,
       }),
+      { transaction },
     );
+  });
+  it('saves a linked all-day event with the assignment in the same transaction', async () => {
+    const { service, calendar } = setup();
+    await service.createAssignment(dto, 'creator');
+    expect(calendar.create).toHaveBeenCalledWith(expect.objectContaining({
+      visit_assignment_id: 1,
+      type: 'site_visit',
+      project_id: 'project',
+      all_day: true,
+      starts_at: new Date('2026-10-10T00:00:00+05:30'),
+      created_by: 'creator',
+    }), { transaction });
+  });
+  it('reschedules the linked event without creating a duplicate', async () => {
+    const { service, calendar } = setup();
+    const event = { update: jest.fn() };
+    calendar.findOne.mockResolvedValue(event);
+    await service.updateAssignment(1, { scheduledDate: '2026-10-11' });
+    expect(event.update).toHaveBeenCalledWith(expect.objectContaining({
+      starts_at: new Date('2026-10-11T00:00:00+05:30'),
+    }), { transaction });
+    expect(calendar.create).not.toHaveBeenCalled();
+  });
+  it('removes cancelled allocations from the calendar', async () => {
+    const { service, calendar } = setup();
+    await service.deactivateAssignment(1);
+    expect(calendar.destroy).toHaveBeenCalledWith({ where: { visit_assignment_id: 1 }, transaction });
+  });
+  it('propagates calendar failures so the assignment transaction rolls back', async () => {
+    const { service, calendar } = setup();
+    calendar.create.mockRejectedValue(new Error('Calendar unavailable'));
+    await expect(service.createAssignment(dto)).rejects.toThrow('Calendar unavailable');
   });
   it('requires date, allocated visitor and architect stage', async () => {
     const { service } = setup();
