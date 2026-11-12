@@ -299,6 +299,7 @@ const PrintDocument = forwardRef(function PrintDocument(
     capturing,
     className,
     cover,
+    header,
     closing,
     pageHeight = 297,
   },
@@ -355,7 +356,7 @@ const PrintDocument = forwardRef(function PrintDocument(
     { label: 'Prepared by', value: preparedBy || 'Rippotai Architecture' },
   ];
 
-  const totalPages = (pages?.length || 0) + 1 + (closing ? 1 : 0);
+  const totalPages = (pages?.length || 0) + (cover === false ? 0 : 1) + (closing ? 1 : 0);
   const headMeta = [reference, date, has(version) ? `v${version}` : ''].filter(has).join(' · ');
   const footMid =
     footerNote || (has(preparedFor || title) ? `Prepared for ${preparedFor || title}` : '');
@@ -369,11 +370,11 @@ const PrintDocument = forwardRef(function PrintDocument(
       style={{ '--pd-page-height': `${pageHeight}mm` }}
       className={`pd-doc ${capturing ? 'is-capturing' : ''} ${className || ''}`}
     >
-      {cover || <Cover docType={docType} title={title} subtitle={subtitle} details={details} />}
+      {cover !== false && (cover || <Cover docType={docType} title={title} subtitle={subtitle} details={details} />)}
 
       {(pages || []).map((idxs, p) => (
         <section key={p} className="pd-page pd-inner">
-          <header className="pd-head">
+          {header || <header className="pd-head">
             <div className="pd-head__brand">
               <img src={mark} alt="" crossOrigin="anonymous" />
               <span>
@@ -387,7 +388,7 @@ const PrintDocument = forwardRef(function PrintDocument(
               </span>
             </div>
             <div className="pd-head__meta">{headMeta}</div>
-          </header>
+          </header>}
           <div className="pd-body">
             {idxs.map((i, k) => {
               const b = flat[i];
@@ -412,7 +413,7 @@ const PrintDocument = forwardRef(function PrintDocument(
               {['Rippotai Architecture', footMid, 'Confidential'].filter(has).join(' · ')}
             </span>
             <span className="pd-foot__page">
-              {p + 2} / {totalPages}
+              {p + (cover === false ? 1 : 2)} / {totalPages}
             </span>
           </footer>
         </section>
