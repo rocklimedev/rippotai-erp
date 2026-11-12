@@ -360,11 +360,11 @@ export class BoqExportService {
         <div class="line">${this.formatValue(projectLocation)}</div>
                 <div class="line">${this.formatValue(clientName)}</div>
       </div>
-      <div class="meta-divider"></div>
+      ${hidePrice ? '' : `<div class="meta-divider"></div>
       <div class="meta-right">
         <div class="label">Estimate Total</div>
         <div class="value">${this.formatCurrency(boq.final_total)}</div>
-      </div>
+      </div>`}
     </div>
 
     <!-- ===== Line items table ===== -->
@@ -388,18 +388,6 @@ export class BoqExportService {
     ${hidePrice ? '' : this.renderSummaryBox(boq)}
 
 
-  </div>
-
-  <!-- ===== Last page: Terms & Conditions ===== -->
-  <div class="section page-break tc-page">
-    <h2>Terms &amp; Conditions</h2>
-    <div class="tc-body">
-      ${
-        this.hasContent(boq.terms_html)
-          ? boq.terms_html
-          : '<p style="color:#B5C4B6;">No terms have been added to this BOQ yet.</p>'
-      }
-    </div>
   </div>
 
 </body>

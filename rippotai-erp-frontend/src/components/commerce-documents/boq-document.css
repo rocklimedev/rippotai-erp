@@ -1,0 +1,29 @@
+.boq-document { font-family: Arial, Helvetica, sans-serif; color: #333; }
+.boq-document .pd-inner { padding: 5mm 4mm 10mm; }
+.boq-header { height: 19mm; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px dashed #aabdaf; }
+.boq-header img { width: 17mm; height: 14mm; object-fit: contain; }
+.boq-header > div { text-align: right; }
+.boq-header h1 { margin: 0 0 1mm; font-size: 19pt; font-weight: 700; }
+.boq-header span { color: #687d7d; font-size: 9pt; }
+.boq-document .pd-body { padding-top: 4mm; }
+.boq-document .pd-measure { width: 202mm; font-family: inherit; }
+.boq-header { flex-shrink: 0; }
+.boq-document .pd-foot { display: none; }
+.boq-document .pd-block { padding-bottom: 3mm; }
+.boq-document .pd-block--tight { padding-bottom: 0; }
+.boq-meta { display: flex; justify-content: space-between; align-items: center; min-height: 12mm; font-size: 10pt; margin-bottom: 1mm; }
+.boq-estimate { border-left: 1px solid #aabdaf; min-width: 42mm; padding-left: 5mm; display: flex; flex-direction: column; }
+.boq-estimate span { color: #687d7d; text-transform: uppercase; font-size: 9pt; }
+.boq-estimate b { font-size: 13pt; }
+.boq-document .pd-subhead { background: #f2f3f3; margin: 0; padding: 2mm 1.5mm; font-size: 10pt; letter-spacing: 0; }
+.boq-document .pd-rows__head { background: #e7ecee; color: #687d7d; padding: 1.8mm 1.5mm; font-size: 8pt; }
+.boq-document .pd-rows__head,
+.boq-document .pd-row { column-gap: 1mm; }
+.boq-document .pd-row { padding: 1.6mm 1.5mm; font-size: 10pt; border-bottom: 1px solid #d9dfdc; gap: 1mm; }
+.boq-document .pd-row span { overflow-wrap: anywhere; }
+.boq-document .pd-row p { display: inline; margin: 0; }
+.boq-document .pd-row--total { color: #194b40; background: white; }
+.boq-cost-summary { margin-top: 3mm; padding: 4mm; border: 1px solid #aabdaf; border-radius: 2mm; font-size: 10pt; }
+.boq-cost-summary h3 { margin: 0 0 3mm; color: #687d7d; text-transform: uppercase; font-size: 10pt; letter-spacing: .5px; }
+.boq-cost-summary > div { display: flex; justify-content: space-between; padding: 1.5mm 0; }
+.boq-cost-summary .boq-final { margin-top: 1mm; padding-top: 2mm; border-top: 1px solid #555; font-size: 12pt; }
