@@ -29,7 +29,7 @@ import monogram from "../../assets/brand/rippotai-monogram.png";
 import { useCompanyProfile } from "./commerce";
 import { has } from "./format";
 import { RowsHead, Row, TextItem, HtmlTerms, htmlToTerms } from "./primitives";
-import { WordCover } from "./word";
+import { WordCover, WLabelTable } from "./word";
 
 const MM = 96 / 25.4; // CSS px per mm
 // Inner page: 297 − 12 (top pad) − 15 (header) − 7 (body pad) − 16 (footer) = 247 mm; keep 1.5 mm spare.
@@ -41,6 +41,50 @@ const WHOLE_TABLE_MAX = 5; // tables with ≤ 5 rows are never split
 const WORD_BODY_HEIGHT_PX = 251.5 * MM;
 
 /* ------------------------------------------------------------ flatten sections → blocks */
+
+// Label/value tables must be measured a row at a time, including when they
+// sit inside a section wrapper with a heading. Otherwise a tall table is
+// placed on one fixed-height sheet and its remaining answers are clipped.
+function splitLabelTables(node) {
+  if (!React.isValidElement(node)) return [node];
+  if (node.type === WLabelTable) {
+    return (node.props.rows || []).filter(Boolean).flatMap((row, rowIndex) => {
+      const parts = [];
+      if (typeof row.value === "string") {
+        // Keep paragraphs readable while bounding even a single long answer.
+        let remaining = row.value;
+        while (remaining.length > 700) {
+          let end = remaining.lastIndexOf("\n", 700);
+          if (end < 350) end = remaining.lastIndexOf(" ", 700);
+          if (end < 1) end = 700;
+          parts.push(remaining.slice(0, end));
+          remaining = remaining.slice(end).trimStart();
+        }
+        parts.push(remaining);
+      } else parts.push(row.value);
+      return parts.map((value, partIndex) => (
+        <WLabelTable
+          {...node.props}
+          key={`${rowIndex}-${partIndex}`}
+          top={node.props.top !== false && rowIndex === 0 && partIndex === 0}
+          rows={[{
+            ...row,
+            label: partIndex ? <>{row.label} (continued)</> : row.label,
+            value,
+            ...(partIndex ? { minHeight: 6 } : {}),
+          }]}
+        />
+      ));
+    });
+  }
+  if (node.type !== "div" && node.type !== React.Fragment) return [node];
+  const children = React.Children.toArray(node.props.children);
+  const expanded = children.map(splitLabelTables);
+  if (expanded.every((items) => items.length === 1)) return [node];
+  return expanded.flat().map((child, index) =>
+    React.cloneElement(node, { key: index, style: index ? undefined : node.props.style }, child),
+  );
+}
 
 function expandBlocks(section, si) {
   const out = []; // { node, isRow?, tableId?, contHead?, tight? }
@@ -182,7 +226,9 @@ function expandBlocks(section, si) {
       !React.isValidElement(spec) &&
       "node" in spec
     ) {
-      if (spec.node) out.push({ node: spec.node, newPage: !!spec.newPage });
+      if (spec.node) splitLabelTables(spec.node).forEach((node, i) =>
+        out.push({ node, newPage: i === 0 && !!spec.newPage }),
+      );
       return;
     }
     // { keep: node } — a block that must stay on the same page as the block before it (e.g. totals under a table)
@@ -195,7 +241,7 @@ function expandBlocks(section, si) {
       out.push({ node: spec.keep, keepWithPrev: true });
       return;
     }
-    out.push({ node: spec });
+    splitLabelTables(spec).forEach((node) => out.push({ node }));
   });
   return out;
 }

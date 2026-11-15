@@ -239,16 +239,21 @@ function OffscreenPrint({ docProps, fileName, onDone }) {
   useEffect(() => {
     let alive = true;
     const id = `ck-${Date.now()}`;
-    toast.loading("Preparing the checklist…", { id });
-    downloadWhenReady(() => ref.current, fileName, { title: `Quality checklist — ${docProps.name}` })
+    // Defer until the effect survives StrictMode's setup/cleanup replay. Two
+    // captures of the same DOM can otherwise race and unmount one another.
+    const timer = setTimeout(() => {
+      toast.loading("Preparing the checklist…", { id });
+      downloadWhenReady(() => ref.current, fileName, { title: `Quality checklist — ${docProps.name}` })
       .then(() => alive && toast.success("Checklist downloaded", { id }))
       .catch((e) => {
         console.error("Checklist PDF failed", e);
-        toast.error("Couldn't create the checklist PDF. Try again.", { id });
+        if (alive) toast.error(e.message || "Couldn't create the checklist PDF. Try again.", { id });
       })
-      .finally(() => onDone());
+      .finally(() => alive && onDone());
+    }, 0);
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

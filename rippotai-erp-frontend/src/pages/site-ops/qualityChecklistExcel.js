@@ -116,7 +116,7 @@ function fillChecklist(ws, { checklist, items, projectName, matched }) {
   let r = 4;
   const itemRows = [];
   for (const [i, [phase, label]] of QUALITY_PHASES.entries()) {
-    const list = items.filter((item) => item.phase === phase).sort((a, b) => a.serial_number - b.serial_number);
+    const list = items.filter((item) => (item.phase || "BEFORE_EXECUTION") === phase).sort((a, b) => a.serial_number - b.serial_number);
     if (!list.length) continue;
     applyRow(ws, r, extend(section), sectionHeight);
     ws.getCell(r, 2).value = labels[i] ?? label;
