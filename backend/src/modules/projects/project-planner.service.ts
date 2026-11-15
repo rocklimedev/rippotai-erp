@@ -47,8 +47,7 @@ import { ProjectPlannerItemLocation } from './models/project_planner_item_locati
 import { ProjectProcurementItem } from './models/project_procurement_items.model';
 import { PlannerTaskTemplate } from './models/planner-task-template.model';
 import { WORKBOOK_TEMPLATE } from './planner-workbook-template';
-import ExcelJS from 'exceljs';
-import { sortWorkbookItems, plannerStatusLabel } from './planner-workbook';
+import { buildPlannerWorkbook } from './planner-excel';
 
 @Injectable()
 export class ProjectPlannerService {
@@ -1076,8 +1075,6 @@ export class ProjectPlannerService {
 
       estimate_finalised_at: payload.estimate_finalised_at ?? null,
 
-      quotation_finalised_at: payload.quotation_finalised_at ?? null,
-
       planned_start_date: payload.planned_start_date ?? null,
 
       planned_end_date: payload.planned_end_date ?? null,
@@ -1282,193 +1279,24 @@ export class ProjectPlannerService {
     };
   }
 
+  /** PROJECT PLANNER TEMPLATE.xlsx filled with this project's planners. */
   async exportProjectWorkbook(projectId: string) {
     const overview = await this.getProjectPlannerOverview(projectId);
-    const workbook = new ExcelJS.Workbook();
-    const items = sortWorkbookItems(
-      overview.planners.flatMap((p) => p.items || []),
-    );
-    const procurement = overview.planners
-      .flatMap((p) => p.procurement_items || [])
-      .sort((a, b) => a.sort_order - b.sort_order);
-    const floors = overview.locations.filter((l) => l.type === 'FLOOR');
-    const leaves = floors.flatMap((f) =>
-      f.children?.length
-        ? f.children.map((c) => ({ ...c, floor: f.name }))
-        : [{ ...f, floor: f.name }],
-    );
-    const cellStatus = (item: ProjectPlannerItem, locationId: string) =>
-      plannerStatusLabel(
-        item.locations?.find((l) => l.location_id === locationId)?.status,
-      );
-    const createSheet = (name: string, headers: string[]) => {
-      const sheet = workbook.getWorksheet(name) || workbook.addWorksheet(name);
-      sheet.mergeCells(1, 1, 1, headers.length);
-      sheet.getCell('A1').value = 'RIPPŌTAI';
-      sheet.mergeCells(2, 1, 2, headers.length);
-      sheet.getCell('A2').value =
-        name === 'Overview'
-          ? 'PROJECT PLANNER'
-          : `${name.toUpperCase()} — PROJECT PLANNER`;
-      sheet.mergeCells(3, 1, 3, headers.length);
-      sheet.getCell('A3').value = overview.project.name;
-      sheet.getRow(4).values = headers;
-      sheet.views = [
-        { state: 'frozen', xSplit: 4, ySplit: name === 'Overview' ? 5 : 4 },
-      ];
-      sheet.pageSetup = {
-        orientation: 'landscape',
-        paperSize: 9,
-        fitToPage: true,
-        fitToWidth: 1,
-        fitToHeight: 0,
-        printTitlesRow: name === 'Overview' ? '1:5' : '1:4',
-      };
-      return sheet;
-    };
-    workbook.addWorksheet('Overview');
-    workbook.addWorksheet('Consultancy');
-    workbook.addWorksheet('Vendor & Procurement');
-    workbook.addWorksheet('PMC');
-    const overviewSheet = createSheet('Overview', [
-      'Sr. No.',
-      'EXECUTION',
-      'DOCUMENTS',
-      'DETAILS',
-      ...leaves.map((l) => l.floor),
-    ]);
-    overviewSheet.getRow(5).values = [
-      '',
-      '',
-      '',
-      '',
-      ...leaves.map((l) => l.name),
+    const ids = [
+      ...new Set(
+        overview.planners
+          .flatMap((p: any) => p.items || [])
+          .map((i: any) => i.assigned_to)
+          .filter(Boolean),
+      ),
     ];
-    let column = 5;
-    for (const floor of floors) {
-      const count = floor.children?.length || 1;
-      if (count > 1) overviewSheet.mergeCells(4, column, 4, column + count - 1);
-      column += count;
-    }
-    items.forEach((item, i) =>
-      overviewSheet.addRow([
-        i + 1,
-        item.phase?.title || '',
-        item.work_name || item.document_type?.name || '',
-        item.details || '',
-        ...leaves.map((l) => cellStatus(item, l.id)),
-      ]),
+    const users = ids.length
+      ? await User.findAll({ where: { id: ids }, attributes: ['id', 'name'] })
+      : [];
+    return buildPlannerWorkbook(
+      overview,
+      Object.fromEntries(users.map((u) => [u.id, u.name])),
     );
-    for (const [name, module] of [
-      ['Consultancy', ProjectPhaseModule.CONSULTANCY],
-      ['PMC', ProjectPhaseModule.PMC],
-    ]) {
-      const sheet = createSheet(name, [
-        'S.no',
-        'PHASE',
-        name === 'Consultancy' ? 'DRAWINGS & DESIGN' : 'WORK',
-        'DETAILS',
-        ...floors.map((f) => f.name),
-        'REMARKS',
-      ]);
-      const rows = items.filter((i) => i.phase?.module === module);
-      let phaseStart = 5;
-      rows.forEach((item, i) => {
-        sheet.addRow([
-          i + 1,
-          item.phase?.title || '',
-          item.work_name || '',
-          item.details || '',
-          ...floors.map((f) => cellStatus(item, f.id)),
-          item.remarks || '',
-        ]);
-        if (i === rows.length - 1 || rows[i + 1].phase_id !== item.phase_id) {
-          if (i + 5 > phaseStart) sheet.mergeCells(phaseStart, 2, i + 5, 2);
-          phaseStart = i + 6;
-        }
-      });
-    }
-    const vendor = createSheet('Vendor & Procurement', [
-      'Sr. No.',
-      'LABOUR CONTRACTOR',
-      'MATERIAL VENDOR',
-      'VENDOR NAME',
-      'ESTIMATE FINALISED',
-      'QUOTATION FINALISED',
-      'START',
-      'END',
-      'PURCHASE',
-      'RECEIVED AT SITE',
-      'REMARKS',
-    ]);
-    vendor.unMergeCells('A3');
-    vendor.getCell('A3').value = overview.project.name;
-    vendor.mergeCells('G3:H3');
-    vendor.getCell('G3').value = 'TIMELINE (LABOUR WORK)';
-    vendor.mergeCells('I3:J3');
-    vendor.getCell('I3').value = 'STATUS (MATERIAL)';
-    procurement.forEach((item, i) =>
-      vendor.addRow([
-        i + 1,
-        item.item_type === 'LABOUR' ? item.category_name : '',
-        item.item_type === 'MATERIAL' ? item.category_name : '',
-        item.vendor_name || item.vendor?.name || '',
-        ...[
-          'estimate_finalised_at',
-          'quotation_finalised_at',
-          'planned_start_date',
-          'planned_end_date',
-          'purchase_date',
-          'received_at_site_date',
-        ].map((key) =>
-          item[key]
-            ? new Date(`${String(item[key]).slice(0, 10)}T00:00:00Z`)
-            : null,
-        ),
-        item.remarks || '',
-      ]),
-    );
-    for (const sheet of workbook.worksheets) {
-      sheet.columns.forEach((col, i) => {
-        col.width = i === 0 ? 9 : i === 2 || i === 3 ? 34 : 22;
-      });
-      sheet.eachRow((row, index) => {
-        row.height = index <= 2 ? 28 : 34;
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.font = {
-            name: 'Lato',
-            size: index === 1 ? 28 : 11,
-            bold: index <= 5 && (index <= 4 || sheet.name === 'Overview'),
-            color: {
-              argb:
-                index === 4 || (sheet.name === 'Overview' && index === 5)
-                  ? 'FFFFFFFF'
-                  : 'FF0D3D2F',
-            },
-          };
-          cell.alignment = {
-            vertical: 'middle',
-            wrapText: true,
-            horizontal: index <= 2 ? 'center' : 'left',
-          };
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FFB7B7B7' } },
-            bottom: { style: 'thin', color: { argb: 'FFB7B7B7' } },
-            left: { style: 'thin', color: { argb: 'FFB7B7B7' } },
-            right: { style: 'thin', color: { argb: 'FFB7B7B7' } },
-          };
-          if (index === 4 || (sheet.name === 'Overview' && index === 5))
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FF0D3D2F' },
-            };
-          if (cell.value instanceof Date) cell.numFmt = 'dd-mmm-yyyy';
-        });
-      });
-    }
-
-    return workbook.xlsx.writeBuffer();
   }
 
   // ============================================================

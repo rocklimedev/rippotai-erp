@@ -2,6 +2,9 @@ import { useRef, useState } from "react";
 import PlannerDocument from "../../components/projects/PlannerDocument";
 import { OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -56,6 +59,7 @@ const array = (response) =>
 
 export function ProjectPlannerWorkspace() {
   const params = useParams();
+  const recordInfo = useRecordInfo("project-planner", params.plannerId);
   const navigate = useNavigate();
 
   // ==========================================================
@@ -268,7 +272,7 @@ export function ProjectPlannerWorkspace() {
           { label: projectName || "Planner" },
         ]}
         title={projectName ? `${projectName} planner` : "Project planner"}
-        subtitle="One planner with the four views from the Excel template. Cells save when you leave them; status changes save immediately."
+        info={params.plannerId ? recordInfo : undefined}
         actions={
           <>
             {overview?.planners?.length > 0 && (
@@ -294,6 +298,7 @@ export function ProjectPlannerWorkspace() {
           </>
         }
       />
+      {params.plannerId && <RecordContext type="project-planner" id={params.plannerId} />}
 
       {!params.plannerId && !params.projectId && (
         <Card title="Project" subtitle="Choose the project this planner belongs to.">
@@ -383,6 +388,7 @@ export function ProjectPlannerWorkspace() {
           )}
         </>
       )}
+      {params.plannerId && <VersionHistory type="project-planner" id={params.plannerId} />}
     </Page>
   );
 }

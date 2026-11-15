@@ -9,7 +9,7 @@ def build(o: Out):
     # Backend enum TeamMemberOwnerType has TEAM; DB enum lacks it -> user team membership fails.
     enum = q("SHOW COLUMNS FROM team_members LIKE 'owner_type'")[0][1]
     if "'TEAM'" not in enum:
-        o.sql("ALTER TABLE team_members MODIFY owner_type enum('PROJECT','PLAN_OF_ACTION','QUOTATION','BOQ','TEAM') NULL")
+        o.sql("ALTER TABLE team_members MODIFY owner_type enum('PROJECT','PLAN_OF_ACTION','BOQ','TEAM') NULL")
 
     now = dt(0, 9)
     # ---------- units ----------
@@ -107,7 +107,7 @@ def build(o: Out):
         }[k]
         rows.append(dict(id=PID[k], name=name, slug=re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-"),
                          client_id=CID[ck], project_type_id=PTID[tk], site_location=loc, description=desc,
-                         priority=prio, status=status, expected_completion_date=end, quotation_count=0,
+                         priority=prio, status=status, expected_completion_date=end,
                          approved_value=budget, created_by=ADMIN, updated_by=ADMIN,
                          created_at=datetime.combine(start, datetime.min.time()).replace(hour=11),
                          updated_at=dt(-(1 + (len(k) % 3)), 16), current_phase=phase, progress_pct=prog,
@@ -205,7 +205,7 @@ def build(o: Out):
                         allows_multiple=int(code.startswith(("MAT_PURCHASE", "MAT_DELIVERY", "EXEC_DAILY", "EXEC_SITE_VISIT"))),
                         requires_revision=int(source.startswith("drawings")),
                         requires_approval=int(code in ("PRE_PROPOSED_LAYOUT", "PLAN_SIGNED_AGREEMENT", "PLAN_SIGNED_CONTRACT", "DES_CONCEPT_DESIGN_02",
-                                                       "WORK_CIVIL_DETAILS", "WORK_STRUCTURE_LAYOUT", "VENDOR_ESTIMATE", "VENDOR_QUOTATION")),
+                                                       "WORK_CIVIL_DETAILS", "WORK_STRUCTURE_LAYOUT", "VENDOR_ESTIMATE")),
                         description=f"{name} - evidence source: {source}", is_active=1, created_at=dt(-200), updated_at=dt(-200)))
     o.ins("document_types", dts)
 
@@ -219,7 +219,7 @@ def build(o: Out):
                             "sisterConcerns": ["Rocklime India Pvt Ltd", "Chhabra Marble Pvt Ltd"]},
         "bank_details": {"accountName": "Rippotai Architecture LLP", "bank": "HDFC Bank", "branch": "Nehru Place, New Delhi",
                          "accountNumber": "50200071234567", "ifsc": "HDFC0000236", "upi": "rippotai@hdfcbank"},
-        "billing": {"defaultGstRate": 18, "invoicePrefix": "RA/INV/", "quotationValidityDays": 30, "currency": "INR",
+        "billing": {"defaultGstRate": 18, "invoicePrefix": "RA/INV/", "currency": "INR",
                     "financialYearStart": "04-01"},
         "signature": {"authorisedSignatory": "Ajay Chhabra", "designation": "Founder & Principal",
                       "signatureUrl": "/brand/signature-ajay.png"},
@@ -232,7 +232,7 @@ def build(o: Out):
     # ---------- terms templates ----------
     terms = [
         ("global", "Standard Terms & Conditions", "GLOBAL", 1,
-         "<ol><li>All rates are exclusive of GST @18% unless mentioned.</li><li>Quotation valid for 30 days from date of issue.</li>"
+         "<ol><li>All rates are exclusive of GST @18% unless mentioned.</li><li>Rates valid for 30 days from date of issue.</li>"
          "<li>Any work beyond approved scope will be treated as an extra item and billed at agreed rates.</li>"
          "<li>Client to provide water and electricity at site free of cost.</li><li>Disputes subject to Delhi jurisdiction only.</li></ol>"),
         ("boq", "BOQ Terms - Turnkey Interiors", "BOQ", 1,

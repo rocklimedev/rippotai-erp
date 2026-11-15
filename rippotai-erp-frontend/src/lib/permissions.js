@@ -79,6 +79,11 @@ export function appForPath(pathname = '') {
 
 // Document / record routes -> the backend resource they read and write.
 const ROUTE_RESOURCES = [
+  // Flow pages under the Design / Build apps (upload-type documents, Pre Design).
+  [/^\/design\/(working|tender)-drawings/, 'drawings'],
+  [/^\/design\/(pre-design|contract|design|material-palette)(\/|$)/, 'documents'],
+  [/^\/build\/agreement/, 'documents'],
+  [/^\/build\/consent-form/, 'projects'],
   [/^\/crm\/(brief|forms\/project-brief)/, 'project-briefs'],
   [/^\/crm\/(recce|forms\/site-reki)/, 'site-recces'],
   [/^\/crm\/(scope-of-work|forms\/scope-of-work)/, 'scope-of-work'],
@@ -91,16 +96,15 @@ const ROUTE_RESOURCES = [
   [/^\/ledger\/boq\/(templates|template)/, 'boq-templates'],
   [/^\/ledger\/boq\/rate-and-item-library/, 'library'],
   [/^\/ledger\/boq/, 'boq'],
-  [/^\/procurement\/estimates/, 'quotations'],
+  [/^\/procurement\/estimates/, 'procurement-estimates'],
+  [/^\/procurement\/quotations/, 'procurement-quotations'],
   [/^\/procurement\/purchase-orders/, 'purchase-orders'],
   [/^\/procurement\/work-order/, 'work-orders'],
   [/^\/procurement\/delivery-challans/, 'delivery-challans'],
   [/^\/procurement\/requirements/, 'procurement-requirements'],
   [/^\/procurement\/rate-sheets/, 'procurement-rate-sheets'],
   [/^\/procurement\/sample-boards/, 'procurement-sample-boards'],
-  [/^\/procurement\/quotations/, 'procurement-quotations'],
   [/^\/procurement\/vendors\/rate-comparison/, 'vendor-rate-comparisons'],
-  [/^\/procurement\/vendors\/shortlists/, 'project-shortlists'],
   [/^\/procurement\/vendors/, 'vendors'],
   [/^\/procurement\/material-procurement/, 'material-procurement'],
   [/^\/site-operations\/daily-reports/, 'site-ops-daily-reports'],

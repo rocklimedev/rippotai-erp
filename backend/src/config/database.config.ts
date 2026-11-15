@@ -12,7 +12,7 @@ export default registerAs(
     database: process.env.DB_NAME,
     autoLoadModels: true,
     synchronize: false,
-    logging: process.env.NODE_ENV === 'development',
+    logging: false,
     define: {
       timestamps: true,
       underscored: true,

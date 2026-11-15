@@ -3,6 +3,7 @@ import {
   LeadType,
   LeadTag,
   LeadColor,
+  LeadService,
   StuckMode,
 } from '@/common/enums/leads.enums';
 
@@ -20,6 +21,7 @@ export class UpdateLeadDto {
   @IsOptional() @IsString() owner?: string;
 
   @IsOptional() @IsEnum(LeadTag) tag?: LeadTag | null;
+  @IsOptional() @IsEnum(LeadService) service?: LeadService;
   @IsOptional() @IsEnum(LeadColor) color?: LeadColor | null;
   @IsOptional() @IsEnum(StuckMode) stuckMode?: StuckMode;
 

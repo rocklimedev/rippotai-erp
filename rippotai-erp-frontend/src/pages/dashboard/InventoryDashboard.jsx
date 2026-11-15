@@ -475,7 +475,7 @@ const InventoryDashboard = () => {
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
                             isReceipt
                               ? "bg-green-50 text-green-700"
-                              : "bg-blue-50 text-blue-700"
+                              : "bg-[#E7EEEB] text-[#0D3D2F]"
                           }`}
                         >
                           {isReceipt ? (

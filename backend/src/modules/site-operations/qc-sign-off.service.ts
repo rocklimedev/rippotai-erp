@@ -10,6 +10,8 @@ import { automationBus } from '@/common/automation-bus';
 import { Project } from '@/modules/projects/models/projects.model';
 import { Step } from '../process-workflow/models/step.model';
 import { Team } from '../process-workflow/models/team.model';
+import { ChecklistTemplateItem } from './models/checklist-template-item.model';
+import { buildExecutionChecklistWorkbook } from './execution-checklist-excel';
 
 @Injectable()
 export class QcSignOffService {
@@ -177,5 +179,79 @@ export class QcSignOffService {
       notes: s.notes,
       clearedForHandoff: s.result === QcResult.PASS,
     }));
+  }
+
+  /**
+   * EXECUTION CHECKLIST TEMPLATE.xlsx for a project: every checklist with a QC
+   * sign-off on the project, its steps and the latest sign-off's item results.
+   */
+  async exportExecutionChecklist(projectId: string) {
+    const project = await Project.findByPk(projectId, {
+      attributes: ['id', 'name'],
+    });
+    if (!project) throw new NotFoundException('Project not found');
+    const signOffs = await this.withTeams(
+      await this.signOffModel.findAll({
+        where: { projectId },
+        order: [
+          ['checkedAt', 'DESC'],
+          ['attemptNumber', 'DESC'],
+        ],
+        include: [
+          { model: this.itemResultModel },
+          { model: Step, attributes: ['id', 'name'] },
+        ],
+      }),
+    );
+    const latest = new Map<number, any>();
+    for (const s of signOffs)
+      if (!latest.has(s.checklistTemplateId))
+        latest.set(s.checklistTemplateId, s);
+    const templates = latest.size
+      ? await this.templateModel.findAll({
+          where: { id: [...latest.keys()] },
+          include: [{ model: ChecklistTemplateItem }],
+          order: [['id', 'ASC']],
+        })
+      : [];
+    return buildExecutionChecklistWorkbook({
+      projectName: project.name,
+      // Plain rows: these models declare public class fields that shadow getters.
+      checklists: templates.map((row) => {
+        const t = row.get({ plain: true }) as any;
+        const s = latest.get(t.id);
+        const items: any[] = [...(t.items || [])].sort(
+          (a: any, b: any) => a.order - b.order,
+        );
+        const results = new Map<number, any>(
+          (s?.itemResults || []).map((r: any) => [r.templateItemId, r]),
+        );
+        return {
+          name: t.name,
+          category: s?.tradeTeam?.name ?? null,
+          description: t.description,
+          step: s?.step?.name ?? null,
+          items: items.map((i) => ({ text: i.text, required: i.isRequired })),
+          signOff: s
+            ? {
+                result: s.result,
+                attempt: s.attemptNumber,
+                checkedBy: s.checkedBy,
+                checkedAt: s.checkedAt,
+                notes: s.notes,
+                items: Object.fromEntries(
+                  items
+                    .map((i, k) => [k, results.get(i.id)])
+                    .filter(([, r]) => r)
+                    .map(([k, r]: any) => [
+                      k,
+                      { result: r.result, remark: r.remark },
+                    ]),
+                ),
+              }
+            : null,
+        };
+      }),
+    });
   }
 }

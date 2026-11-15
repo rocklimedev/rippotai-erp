@@ -357,7 +357,7 @@ export function budgetGuideTemplate(reference = false): CreateBudgetGuideDto {
     pricing_notes: [
       {
         heading: 'What this guide is',
-        text: 'A planning document with indicative rates. It is not a quotation or an offer. The issued proposal and bill of quantities govern the final price.',
+        text: 'A planning document with indicative rates. It is not an offer. The issued proposal and bill of quantities govern the final price.',
       },
       {
         heading: 'Two rate types',

@@ -34,10 +34,21 @@ export class VendorRateComparison extends Model {
   @Column({ type: DataType.TEXT, allowNull: true }) declare notes:
     | string
     | null;
-  @Column({ type: DataType.JSON, allowNull: false }) declare snapshot: Record<
-    string,
-    any
-  >;
+  // MariaDB returns JSON columns as strings; parse on read.
+  @Column({
+    type: DataType.JSON,
+    allowNull: false,
+    get(this: VendorRateComparison) {
+      const value: unknown = this.getDataValue('snapshot');
+      if (typeof value !== 'string') return value;
+      try {
+        return JSON.parse(value) as Record<string, any>;
+      } catch {
+        return null;
+      }
+    },
+  })
+  declare snapshot: Record<string, any>;
   @Default(1) @Column(DataType.INTEGER) declare revision: number;
   @Column(DataType.CHAR(36)) declare created_by: string;
 }

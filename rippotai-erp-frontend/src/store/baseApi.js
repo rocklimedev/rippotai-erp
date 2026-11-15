@@ -50,12 +50,7 @@ export const baseApi = createApi({
     "RolePermissions",
     "Apps",
     "RoleApps",
-    // quotation
-    "Quotation",
-    "QuotationItems",
-    "QuotationVersions",
     "MaterialRequirement",
-    "QuotationDashboard",
     // users
     "Users",
     // vendors
@@ -66,8 +61,6 @@ export const baseApi = createApi({
     "ProjectPlanner",
     "SavedSearches",
     "ProjectLocation",
-    "Shortlists",
-    "VendorQuotations",
     "VendorDashboard",
     // notifications
     "Notifications",
@@ -138,6 +131,7 @@ export const baseApi = createApi({
     "SiteOpsDashboard",
     "Mockups",
     "PurchaseOrders",
+    "ProcurementQuotations",
     "DeliveryChallans",
     "ChecklistTemplates",
     "QcSignOffs",
@@ -154,7 +148,6 @@ export const baseApi = createApi({
     "MaterialMaster",
     "MaterialEstimate",
     "BudgetEstimates",
-    "MaterialQuotation",
     "PurchaseOrder",
     "DeliveryChallan",
     "SiteInventory",

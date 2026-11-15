@@ -376,118 +376,6 @@ export const DASHBOARD_CONFIG: Record<string, AppDashboardConfig> = {
     requiredKeys: ['vendors.total'],
   },
 
-  // ----------------------------------------------------------- Quotations
-  // NOTE: appKey is "quotations" but widget keys keep the "quot." prefix
-  // used in the frontend registry — the two don't need to match.
-  quotations: {
-    widgets: [
-      {
-        key: 'quot.total',
-        name: 'Total Estimates',
-        category: 'App Data',
-        sizes: ['small'],
-        defaultSize: 'small',
-        locked_required: true,
-      },
-      {
-        key: 'quot.awaiting_approval',
-        name: 'Awaiting Approval',
-        category: 'App Data',
-        sizes: ['small'],
-        defaultSize: 'small',
-      },
-      {
-        key: 'quot.drafts',
-        name: 'Draft Estimates',
-        category: 'App Data',
-        sizes: ['small'],
-        defaultSize: 'small',
-      },
-      {
-        key: 'quot.selected',
-        name: 'Selected Estimates',
-        category: 'App Data',
-        sizes: ['medium'],
-        defaultSize: 'medium',
-      },
-      {
-        key: 'quot.value_trend',
-        name: 'Estimate Value Trend',
-        category: 'Reports',
-        sizes: ['large', 'full'],
-        defaultSize: 'large',
-      },
-      {
-        key: 'quot.status_donut',
-        name: 'Estimates by Status',
-        category: 'Reports',
-        sizes: ['medium', 'large'],
-        defaultSize: 'medium',
-      },
-      {
-        key: 'quot.variance_bar',
-        name: 'BOQ vs Estimate Variance',
-        category: 'Reports',
-        sizes: ['medium', 'large'],
-        defaultSize: 'medium',
-      },
-      {
-        key: 'quot.project_wise',
-        name: 'Project-Wise Estimates',
-        category: 'Project Data',
-        sizes: ['large', 'full'],
-        defaultSize: 'full',
-      },
-      {
-        key: 'quot.expiring_soon',
-        name: 'Expiring Soon',
-        category: 'Alerts',
-        sizes: ['medium'],
-        defaultSize: 'medium',
-      },
-      {
-        key: 'quot.boq_variation',
-        name: 'BOQ Variation %',
-        category: 'App Data',
-        sizes: ['small'],
-        defaultSize: 'small',
-      },
-      {
-        key: 'quot.recently_received',
-        name: 'Recently Received',
-        category: 'Recently Used',
-        sizes: ['medium', 'large'],
-        defaultSize: 'medium',
-      },
-      {
-        key: 'quot.recent_comparisons',
-        name: 'Recent Comparisons',
-        category: 'Recently Used',
-        sizes: ['medium'],
-        defaultSize: 'medium',
-      },
-      {
-        key: 'quot.returned',
-        name: 'Returned Estimates',
-        category: 'Alerts',
-        sizes: ['medium'],
-        defaultSize: 'medium',
-      },
-    ],
-    defaultLayout: [
-      { key: 'quot.total', x: 0, y: 0, w: 3, h: 2 },
-      { key: 'quot.awaiting_approval', x: 3, y: 0, w: 3, h: 2 },
-      { key: 'quot.drafts', x: 6, y: 0, w: 3, h: 2 },
-      { key: 'quot.boq_variation', x: 9, y: 0, w: 3, h: 2 },
-      { key: 'quot.value_trend', x: 0, y: 2, w: 6, h: 4 },
-      { key: 'quot.status_donut', x: 6, y: 2, w: 6, h: 4 },
-      { key: 'quot.project_wise', x: 0, y: 6, w: 12, h: 4 },
-      { key: 'quot.recently_received', x: 0, y: 10, w: 6, h: 3 },
-      { key: 'quot.expiring_soon', x: 6, y: 10, w: 6, h: 3 },
-    ],
-    requiredKeys: ['quot.total'],
-  },
-
   // -------------------------------------------------------------- Tasks
   tasks: {
     widgets: [
@@ -1500,14 +1388,7 @@ DASHBOARD_CONFIG.design = groupedDashboard(
 );
 
 DASHBOARD_CONFIG.build = groupedDashboard(
-  [
-    'inventory',
-    'procurement',
-    'siteOperations',
-    'boq',
-    'quotations',
-    'vendors',
-  ],
+  ['inventory', 'procurement', 'siteOperations', 'boq', 'vendors'],
   [
     'inventory.total',
     'inventory.low_stock',

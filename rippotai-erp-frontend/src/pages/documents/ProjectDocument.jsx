@@ -20,7 +20,7 @@ export function ProjectDocuments() {
   return (
     <Shell
       title="Project Documents"
-      subtitle="All documents grouped by category — auto-includes BOQ approvals and selected quotations"
+      subtitle="All documents grouped by category — auto-includes BOQ approvals"
     >
       <Card>
         <label className="text-[13px] font-semibold text-[#333333] mb-1 block">

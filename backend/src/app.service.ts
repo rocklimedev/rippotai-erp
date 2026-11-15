@@ -221,13 +221,7 @@ export class AppService {
         status: 'active',
       },
 
-      // BOQ / Quotations
-      {
-        name: 'Quotations',
-        key: 'quotations',
-        category: 'commercial',
-        status: 'active',
-      },
+      // BOQ / Estimates
       {
         name: 'Estimates',
         key: 'estimates',

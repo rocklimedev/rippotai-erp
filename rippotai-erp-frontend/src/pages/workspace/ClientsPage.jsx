@@ -1,5 +1,5 @@
 // Client directory: /clients
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Users, Phone, Mail, Building2, LayoutGrid, List } from "lucide-react";
 import { Page, PageHeader, Card, Button, Toolbar, ToolbarSpacer, SearchInput, Segmented, Pill, EmptyState, Avatar, Stats, StatTile } from "@/components/inos";
@@ -30,7 +30,6 @@ export default function ClientsPage() {
       clients: clients.length,
       active: list.filter((s) => Number(s.active_projects) > 0).length,
       projects: list.reduce((n, s) => n + Number(s.project_count || 0), 0),
-      value: list.reduce((n, s) => n + Number(s.approved_value || 0), 0),
     };
   }, [sum, clients]);
 
@@ -46,7 +45,6 @@ export default function ClientsPage() {
         <StatTile label="Clients" value={totals.clients} icon={<Users size={16} />} />
         <StatTile label="With active projects" value={totals.active} icon={<Building2 size={16} />} tone="ok" onClick={() => setFilter("active")} active={filter === "active"} />
         <StatTile label="Projects" value={totals.projects} icon={<LayoutGrid size={16} />} tone="info" />
-        <StatTile label="Approved value" value={inr(totals.value)} icon={<List size={16} />} tone="lilac" />
       </Stats>
       <Toolbar>
         <SearchInput value={q} onChange={setQ} placeholder="Search name, contact, phone or address" />

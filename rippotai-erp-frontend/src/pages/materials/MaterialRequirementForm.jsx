@@ -318,7 +318,7 @@ export function MaterialRequirementForm() {
        * persist materialId yet, so materialId is UI-only.
        *
        * Budget/price is intentionally not part of a requirement —
-       * pricing lives on quotations, raised later by procurement.
+       * pricing lives on estimates, raised later by procurement.
        */
       await Promise.all(
         validRows.map((item) =>
@@ -382,7 +382,7 @@ export function MaterialRequirementForm() {
           { label: "New" },
         ]}
         title="New material requirement"
-        subtitle="List what the design needs — procurement raises quotations and prices later."
+        subtitle="List what the design needs — procurement estimates and prices it later."
         actions={
           <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate("/procurement/requirements")}>
             Back to list

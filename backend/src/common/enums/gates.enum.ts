@@ -46,9 +46,6 @@ export enum GateConditionType {
   /** A payment_schedule_milestones row matching a milestone_code must be PAID. */
   PAYMENT_MILESTONE_PAID = 'PAYMENT_MILESTONE_PAID',
 
-  /** The project's quotation(s) of a given status must exist / be approved. */
-  QUOTATION_APPROVED = 'QUOTATION_APPROVED',
-
   /** The project's BOQ must be in an approved state. */
   BOQ_APPROVED = 'BOQ_APPROVED',
 

@@ -33,7 +33,7 @@ import { RequirementStatus } from '../../../common/enums/requirement-status.enum
  *        │       ├── Vendor B rate
  *        │       └── Vendor C rate
  *        │
- *        └── Vendor Quotations
+ *        └── Vendor rates
  *                │
  *                ↓
  *          Rate Comparison
@@ -90,7 +90,6 @@ export class MaterialRequirementController {
    * - sampleBoards
    * - material
    * - material.vendors
-   * - quotations
    */
   @RequirePermission('procurement-requirements:read')
   @Get()
@@ -112,7 +111,6 @@ export class MaterialRequirementController {
    * - sample boards
    * - material master
    * - material vendors
-   * - quotations
    */
   @RequirePermission('procurement-requirements:read')
   @Get('project/:projectId')

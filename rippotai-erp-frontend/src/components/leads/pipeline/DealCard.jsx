@@ -1,13 +1,14 @@
 import { forwardRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CalendarClock, Clock, ListTodo, AlertTriangle, MessageSquare } from 'lucide-react';
+import { CalendarClock, Clock, ListTodo, AlertTriangle, MessageSquare, Pencil } from 'lucide-react';
 import { Avatar, Pill } from '@/components/inos';
-import { formatINR, LEAD_COLORS, TAG_COLORS } from '@/hooks/stages';
+import { formatINR, LEAD_COLORS } from '@/hooks/stages';
 import { shortDate, isPast } from './utils';
+import { ServiceLabel, TempMarker } from './DealBadges';
 
 /** Presentational card — also used inside the DragOverlay. */
 export const DealCardBody = forwardRef(function DealCardBody(
-  { deal, className = '', style, onOpen, ...rest },
+  { deal, className = '', style, onOpen, onEdit, onTag, ...rest },
   ref,
 ) {
   const rail = deal.color ? LEAD_COLORS[deal.color]?.rail : deal.stuck ? 'var(--warn-dot)' : null;
@@ -25,7 +26,7 @@ export const DealCardBody = forwardRef(function DealCardBody(
       ref={ref}
       role="button"
       tabIndex={0}
-      className={`crm-card ${className}`}
+      className={`crm-card ${deal.tag ? `crm-card--${deal.tag.toLowerCase()}` : ''} ${className}`}
       style={{ ...style, '--rail': rail || 'transparent' }}
       onClick={() => onOpen?.(deal)}
       onKeyDown={(e) => {
@@ -36,9 +37,28 @@ export const DealCardBody = forwardRef(function DealCardBody(
       {...rest}
     >
       <span className="crm-card__rail" aria-hidden />
-      <p className="crm-card__title" title={deal.title}>
-        {deal.title}
-      </p>
+      <div className="crm-card__head">
+        <p className="crm-card__title" title={deal.title}>
+          {deal.title}
+        </p>
+        {onEdit && (
+          <button
+            type="button"
+            className="crm-card__edit"
+            aria-label={`Edit ${deal.title}`}
+            title="Edit deal"
+            data-testid="deal-edit"
+            onPointerDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(deal);
+            }}
+          >
+            <Pencil aria-hidden />
+          </button>
+        )}
+      </div>
       {(client || deal.source) && (
         <div className="crm-card__client" title={[client, deal.source].filter(Boolean).join(' · ')}>
           {client}
@@ -80,10 +100,14 @@ export const DealCardBody = forwardRef(function DealCardBody(
             <AlertTriangle size={11} aria-hidden /> Stuck
           </Pill>
         )}
-        {deal.tag && (
-          <Pill tone={TAG_COLORS[deal.tag]?.tone || 'mute'} size="sm">
-            {deal.tag}
-          </Pill>
+      </div>
+
+      <div className="crm-card__marks">
+        <ServiceLabel service={deal.service} />
+        {onTag ? (
+          <TempMarker tag={deal.tag} compact onChange={(t) => onTag(deal, t)} />
+        ) : (
+          deal.tag && <span className={`crm-temp crm-temp--${deal.tag.toLowerCase()}`}>{deal.tag}</span>
         )}
       </div>
 
@@ -101,7 +125,7 @@ export const DealCardBody = forwardRef(function DealCardBody(
 });
 
 /** Draggable card on the board. */
-export default function DealCard({ deal, onOpen }) {
+export default function DealCard({ deal, onOpen, onEdit, onTag }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: deal.id,
     data: { deal },
@@ -111,6 +135,8 @@ export default function DealCard({ deal, onOpen }) {
       ref={setNodeRef}
       deal={deal}
       onOpen={onOpen}
+      onEdit={onEdit}
+      onTag={onTag}
       className={isDragging ? 'is-dragging' : ''}
       {...attributes}
       {...listeners}

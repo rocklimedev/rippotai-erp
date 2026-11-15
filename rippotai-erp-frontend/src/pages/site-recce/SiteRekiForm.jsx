@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useRefill } from "@/components/doc-list/useRefill";
 import { PrefillNotice } from "@/components/PrefillNotice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -537,6 +538,7 @@ export function SiteRekiForm() {
   // ==========================================================
 
   const [projectId, setProjectId] = useState(() => searchParams.get('projectId') || searchParams.get('project_id') || '');
+  useRefill({ type: "site-recce", label: "Site Recce", projectId, enabled: !isEditMode, editPath: (id) => `/crm/recce/${id}/edit` });
 
   // ==========================================================
   // FORM STATE

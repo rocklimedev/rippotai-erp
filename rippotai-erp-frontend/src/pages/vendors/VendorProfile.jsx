@@ -2,15 +2,13 @@ import { appConfirm } from "@/lib/app-dialog";
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetVendorByIdQuery } from "../../api/vendors/vendor.api"; // Adjust path based on your RTK Query exports
-import { useGetQuotationsByVendorQuery } from "../../api/vendors/vendor.api";
-import { formatINR, relativeTime, formatDate } from "@/lib/format";
+import { relativeTime, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import {
   ArrowLeft,
   Star,
   MapPin,
   ShieldCheck,
-  Bookmark,
   FileText,
   Upload,
   Trash2,
@@ -22,7 +20,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AddToShortlistModal } from "./VendorsDashboard";
 
 // Temporary manual API for actions (add mutations to RTK slice later)
 import api from "@/lib/api";
@@ -31,7 +28,6 @@ const TABS = [
   "Overview",
   "Services",
   "Projects",
-  "Quotations",
   "Performance",
   "Documents",
   "Commercial",
@@ -65,12 +61,7 @@ export default function VendorProfile() {
     skip: !id,
   });
 
-  const { data: quotationsResponse } = useGetQuotationsByVendorQuery(id, {
-    skip: !id,
-  });
-
   const [tab, setTab] = useState("Overview");
-  const [shortlistOpen, setShortlistOpen] = useState(false);
   const [note, setNote] = useState("");
   const [uploading, setUploading] = useState(false);
 
@@ -91,11 +82,6 @@ export default function VendorProfile() {
       </div>
     );
   }
-
-  const quotations =
-    quotationsResponse?.data || quotationsResponse?.success
-      ? quotationsResponse.data
-      : [];
 
   const load = () => refetch();
 
@@ -198,19 +184,6 @@ export default function VendorProfile() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setShortlistOpen(true)}
-              className="h-10 px-3 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold flex items-center gap-1"
-              data-testid="profile-shortlist-btn"
-            >
-              <Bookmark size={13} /> Add to Shortlist
-            </button>
-            <button
-              onClick={() => nav(`/quotations/new?vendor=${id}`)}
-              className="h-10 px-3 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold"
-            >
-              Open in Quotations
-            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="h-10 w-10 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] flex items-center justify-center">
@@ -392,51 +365,6 @@ export default function VendorProfile() {
                     <td>{p.type}</td>
                     <td>{p.current_phase}</td>
                     <td>{p.location}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {/* Quotations - Using RTK Query */}
-      {tab === "Quotations" && (
-        <div className="bc-card p-6">
-          {quotations.length === 0 ? (
-            <div className="text-[13px] text-[#B5C4B6]">
-              No quotations linked.
-            </div>
-          ) : (
-            <table className="w-full text-left text-[13px]">
-              <thead>
-                <tr className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] border-b border-[#B5C4B6]">
-                  <th className="py-2">Project</th>
-                  <th>Category</th>
-                  <th className="text-right">Amount</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {quotations.map((q) => (
-                  <tr key={q.id} className="border-b border-[#B5C4B6]">
-                    <td className="py-2">
-                      {q.project_name || q.projectSnapshot?.name}
-                    </td>
-                    <td>{q.category}</td>
-                    <td className="text-right font-semibold">
-                      {formatINR(q.totalAmount || q.amount)}
-                    </td>
-                    <td className="capitalize">{q.status}</td>
-                    <td className="text-right">
-                      <button
-                        onClick={() => nav(`/quotations/${q.id}`)}
-                        className="text-[#333333] font-semibold hover:underline text-[12px]"
-                      >
-                        Open in Quotations
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -659,12 +587,6 @@ export default function VendorProfile() {
         </div>
       )}
 
-      <AddToShortlistModal
-        open={shortlistOpen}
-        onClose={() => setShortlistOpen(false)}
-        vendorId={id}
-        onDone={load}
-      />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Vendor } from './models/vendors.model';
 import { VendorCategory } from './models/vendor-category.model';
 import { VendorBusinessType } from './models/vendor-business-type.model';
-import { Quotation } from '../quotations/models/quotations.model';
 
 import { CreateVendorDto, UpdateVendorDto } from './dto/vendor.dto';
 import { VendorStatus } from '@/common/enums';
@@ -90,28 +89,6 @@ export class VendorsService {
   }
 
   // =========================
-  // GET QUOTATIONS BY VENDOR
-  // =========================
-  async getQuotationsByVendor(vendorId: string) {
-    await this.findOne(vendorId); // Verify vendor exists
-
-    return Quotation.findAll({
-      where: { vendorId },
-      order: [
-        ['quotationDate', 'DESC'],
-        ['created_at', 'DESC'],
-      ],
-      include: [
-        {
-          model: Vendor,
-          as: 'vendor',
-          attributes: ['id', 'name', 'company_name'],
-        },
-      ],
-    });
-  }
-
-  // =========================
   // UPDATE
   // =========================
   async update(id: string, dto: UpdateVendorDto, user?: any): Promise<Vendor> {
@@ -183,6 +160,67 @@ export class VendorsService {
     await this.notificationForVendorService.notifyVendorDeleted(
       vendorName,
       user?.id,
+    );
+  }
+
+  // =========================
+  // EXPORT (CSV)
+  // =========================
+  /** Vendor directory as CSV: human headers, fixed order, UTF-8 BOM (₹/Ō safe in Excel), raw values. */
+  async exportCsv(
+    filters: {
+      status?: VendorStatus;
+      vendor_category_id?: string;
+      business_type_id?: string;
+    } = {},
+  ): Promise<string> {
+    const vendors = await this.findAll(filters);
+    const taxId = (notes: string | null, re: RegExp) =>
+      (String(notes || '').match(re) || [])[1]?.toUpperCase() || '';
+    const headers = [
+      'Vendor Name',
+      'Company',
+      'Position',
+      'Category',
+      'Business Type',
+      'Phone',
+      'Alternate Phone',
+      'Address',
+      'GSTIN',
+      'PAN',
+      'Status',
+      'Notes',
+      'Added On',
+    ];
+    const rows = vendors.map((v) => [
+      v.name,
+      v.company_name,
+      v.position,
+      v.vendorCategory?.name,
+      v.businessType?.name,
+      v.contact_number,
+      v.alternate_contact,
+      v.address,
+      taxId(v.notes, /GSTIN\s*[:-]\s*([0-9A-Z]{15})/i),
+      taxId(v.notes, /PAN\s*[:-]\s*([A-Z]{5}[0-9]{4}[A-Z])/i),
+      v.status
+        ? String(v.status).charAt(0).toUpperCase() +
+          String(v.status).slice(1).toLowerCase().replace(/_/g, ' ')
+        : '',
+      v.notes,
+      v.created_at ? new Date(v.created_at).toISOString().slice(0, 10) : '',
+    ]);
+    const cell = (value: string | number | null | undefined) => {
+      let text = value === null || value === undefined ? '' : String(value);
+      // Neutralise spreadsheet formulas in free text.
+      if (/^[=+\-@\t\r]/.test(text) && !/^[+-]?\d/.test(text))
+        text = `'${text}`;
+      return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    return (
+      '\uFEFF' +
+      [headers, ...rows].map((r) => r.map(cell).join(',')).join('\r\n') +
+      '\r\n'
     );
   }
 }

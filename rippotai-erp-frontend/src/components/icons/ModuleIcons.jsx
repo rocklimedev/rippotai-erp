@@ -312,30 +312,6 @@ export const IconBoq = make("boq", {
   ),
 });
 
-export const IconQuotations = make("quotes", {
-  back: (
-    <rect
-      x="36"
-      y="14"
-      width="30"
-      height="36"
-      rx="6"
-      transform="rotate(22 51 32)"
-    />
-  ),
-  front: (
-    <path d="M16 30l14-14h14a6 6 0 0 1 6 6v40a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6z" />
-  ),
-  glyph: (
-    <g stroke={W} strokeWidth="3" strokeLinecap="round">
-      <circle cx="29" cy="28" r="2.5" fill={W} />
-      <path d="M26 56l14-16" />
-      <circle cx="27" cy="43" r="2" fill={W} />
-      <circle cx="39" cy="54" r="2" fill={W} />
-    </g>
-  ),
-});
-
 export const IconVendors = make("vendors", {
   back: (
     <>
@@ -424,7 +400,6 @@ export const MODULE_ICONS = {
 
   boq: IconBoq,
   projects: IconProjects,
-  quotations: IconQuotations,
   vendors: IconVendors,
   leads: IconLeads,
   clients: IconClients,

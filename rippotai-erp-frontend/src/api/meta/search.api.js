@@ -112,12 +112,6 @@ export const searchApi = baseApi.injectEndpoints({
       }),
     }),
 
-    searchQuotations: builder.query({
-      query: (q) => ({
-        url: "/search/quotations",
-        params: { q },
-      }),
-    }),
 
     // Backend path is /search/site-recces (plural)
     searchSiteRecce: builder.query({
@@ -261,13 +255,6 @@ export const searchApi = baseApi.injectEndpoints({
       invalidatesTags: ["Search"],
     }),
 
-    reindexQuotations: builder.mutation({
-      query: () => ({
-        url: "/search/reindex/quotations",
-        method: "POST",
-      }),
-      invalidatesTags: ["Search"],
-    }),
 
     reindexSiteRecce: builder.mutation({
       query: () => ({
@@ -351,7 +338,6 @@ export const {
   useSearchVendorsQuery,
   useSearchBoqsQuery,
   useSearchBriefsQuery,
-  useSearchQuotationsQuery,
   useSearchSiteRecceQuery,
   useSearchTasksQuery,
   useSearchCalendarQuery,
@@ -374,7 +360,6 @@ export const {
   useReindexVendorsMutation,
   useReindexBoqsMutation,
   useReindexBriefsMutation,
-  useReindexQuotationsMutation,
   useReindexSiteRecceMutation,
   useReindexTasksMutation,
   useReindexCalendarMutation,

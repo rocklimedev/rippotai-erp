@@ -51,7 +51,6 @@ const entityLink = (row) => {
     case "client": return `/clients/${id}`;
     case "task": return `/tasks/${id}`;
     case "vendor": return `/procurement/vendors/${id}`;
-    case "quotation": return `/procurement/estimates/${id}`;
     case "site_recce": return `/crm/recce/${id}`;
     case "brief": case "project_brief": return `/crm/brief/${id}`;
     default: return null;

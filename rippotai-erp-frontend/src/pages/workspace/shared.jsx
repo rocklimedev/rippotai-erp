@@ -59,7 +59,7 @@ export function ProjectPicker({ value, onChange, placeholder = "No project", ...
     <SelectInput value={value || ""} onChange={(e) => onChange(e.target.value || null)} placeholder={placeholder} {...rest}>
       {projects.map((p) => (
         <option key={p.id} value={p.id}>
-          {p.name}
+          {p.code ? `${p.code} · ${p.name}` : p.name}
         </option>
       ))}
     </SelectInput>

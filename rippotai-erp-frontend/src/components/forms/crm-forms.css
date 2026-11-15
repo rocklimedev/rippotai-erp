@@ -105,6 +105,18 @@
   border-color: transparent;
   color: var(--ok-fg);
 }
+/* partly filled section: light-yellow tick (green only when every field is filled) */
+.crmf-nav__item.is-partial .crmf-nav__dot,
+.crmf-step.is-partial .crmf-nav__dot {
+  background: #f3e6c4;
+  border-color: #d9b061;
+  color: #d9b061;
+}
+.crmf-nav__item.is-partial .crmf-nav__dot svg,
+.crmf-step.is-partial .crmf-nav__dot svg,
+.crmf-nav__item.is-done .crmf-nav__dot svg {
+  stroke-width: 3;
+}
 .crmf-nav__dot svg {
   width: 13px;
   height: 13px;

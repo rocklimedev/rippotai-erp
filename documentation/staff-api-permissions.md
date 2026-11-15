@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
+There are 951 routes, 922 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -29,22 +29,22 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | client-portal | `client-portal:create`, `client-portal:deliver`, `client-portal:prepare`, `client-portal:read`, `client-portal:revoke` |
 | clients | `clients:create`, `clients:delete`, `clients:read`, `clients:restore`, `clients:update` |
 | dashboard | `dashboards:read`, `dashboards:reset`, `dashboards:update` |
+| doc-flow | `documents:read`, `projects:read` |
 | documents | `document-requirements:create`, `document-requirements:delete`, `document-requirements:read`, `document-requirements:update`, `document-types:create`, `document-types:delete`, `document-types:read`, `document-types:update`, `documents:approve`, `documents:create`, `documents:delete`, `documents:deliver`, `documents:read`, `documents:update`, `drawings:create`, `drawings:delete`, `drawings:read`, `drawings:update`, `projects:read` |
 | engagement | `activity-logs:create`, `activity-logs:read`, `notifications:delete`, `notifications:read`, `notifications:update` |
 | gates | `gates:clear`, `gates:read`, `gates:reopen`, `phase-definitions:read` |
 | google | `google-calendar:create`, `google-calendar:delete`, `google-calendar:read`, `google-calendar:update`, `google-tasks:complete`, `google-tasks:create`, `google-tasks:delete`, `google-tasks:read`, `google-tasks:update` |
 | leads | `leads:create`, `leads:delete`, `leads:read`, `leads:sync`, `leads:update` |
-| material-procurement | `delivery-challans:create`, `delivery-challans:delete`, `delivery-challans:read`, `delivery-challans:receive`, `delivery-challans:update`, `inventory:adjust`, `inventory:create`, `inventory:deliver`, `inventory:issue`, `inventory:read`, `inventory:return`, `inventory:transfer`, `material-procurement:create`, `material-procurement:delete`, `material-procurement:read`, `material-procurement:submit`, `material-procurement:update`, `materials:create`, `materials:delete`, `materials:read`, `materials:update`, `procurement-estimates:approve`, `procurement-estimates:create`, `procurement-estimates:read`, `procurement-estimates:reject`, `procurement-quotations:accept`, `procurement-quotations:create`, `procurement-quotations:read`, `procurement-quotations:reject`, `procurement-quotations:send`, `procurement-rate-sheets:approve`, `procurement-rate-sheets:create`, `procurement-rate-sheets:delete`, `procurement-rate-sheets:read`, `procurement-rate-sheets:reject`, `procurement-requirements:create`, `procurement-requirements:delete`, `procurement-requirements:read`, `procurement-requirements:update`, `procurement-sample-boards:approve`, `procurement-sample-boards:create`, `procurement-sample-boards:delete`, `procurement-sample-boards:read`, `procurement-sample-boards:reject`, `purchase-orders:approve`, `purchase-orders:cancel`, `purchase-orders:create`, `purchase-orders:delete`, `purchase-orders:read`, `purchase-orders:update`, `vendor-rate-comparisons:create`, `vendor-rate-comparisons:delete`, `vendor-rate-comparisons:read`, `vendor-rate-comparisons:update`, `work-orders:approve`, `work-orders:create`, `work-orders:delete`, `work-orders:read`, `work-orders:reject`, `work-orders:update` |
+| material-procurement | `delivery-challans:create`, `delivery-challans:delete`, `delivery-challans:read`, `delivery-challans:receive`, `delivery-challans:update`, `inventory:adjust`, `inventory:create`, `inventory:deliver`, `inventory:issue`, `inventory:read`, `inventory:return`, `inventory:transfer`, `material-procurement:create`, `material-procurement:delete`, `material-procurement:read`, `material-procurement:submit`, `material-procurement:update`, `materials:create`, `materials:delete`, `materials:read`, `materials:update`, `procurement-estimates:approve`, `procurement-estimates:create`, `procurement-estimates:read`, `procurement-estimates:reject`, `procurement-rate-sheets:approve`, `procurement-rate-sheets:create`, `procurement-rate-sheets:delete`, `procurement-rate-sheets:read`, `procurement-rate-sheets:reject`, `procurement-requirements:create`, `procurement-requirements:delete`, `procurement-requirements:read`, `procurement-requirements:update`, `procurement-sample-boards:approve`, `procurement-sample-boards:create`, `procurement-sample-boards:delete`, `procurement-sample-boards:read`, `procurement-sample-boards:reject`, `purchase-orders:approve`, `purchase-orders:cancel`, `purchase-orders:create`, `purchase-orders:delete`, `purchase-orders:read`, `purchase-orders:update`, `vendor-rate-comparisons:create`, `vendor-rate-comparisons:delete`, `vendor-rate-comparisons:read`, `vendor-rate-comparisons:update`, `work-orders:approve`, `work-orders:create`, `work-orders:delete`, `work-orders:read`, `work-orders:reject`, `work-orders:update` |
 | metas | `terms-templates:create`, `terms-templates:delete`, `terms-templates:read`, `terms-templates:update`, `units:create`, `units:delete`, `units:read`, `units:update` |
 | microsoft | `onedrive:create`, `onedrive:delete`, `onedrive:read`, `onedrive:update`, `onedrive:upload` |
 | payments | `payment-schedules:create`, `payment-schedules:delete`, `payment-schedules:read`, `payment-schedules:update` |
 | plan-of-action | `plan-of-actions:create`, `plan-of-actions:delete`, `plan-of-actions:publish`, `plan-of-actions:read`, `plan-of-actions:update` |
 | process-workflow | `gates:create`, `gates:read`, `workflow-library:assign`, `workflow-library:create`, `workflow-library:delete`, `workflow-library:deliver`, `workflow-library:read`, `workflow-library:update`, `workflow-progress:create`, `workflow-progress:read`, `workflow-progress:sign-off`, `workflow-progress:update`, `workflow-timeline:read`, `workflow:create`, `workflow:read`, `workflow:update` |
+| procurement-quotations | `procurement-quotations:create`, `procurement-quotations:delete`, `procurement-quotations:read`, `procurement-quotations:update`, `purchase-orders:create`, `work-orders:create` |
 | projects | `command-center:approve`, `command-center:authority`, `command-center:complete`, `command-center:read`, `command-center:refresh`, `command-center:review`, `command-center:upload`, `dashboard:read`, `project-dashboard:read`, `project-planners:create`, `project-planners:delete`, `project-planners:generate`, `project-planners:read`, `project-planners:update`, `project-types:create`, `project-types:delete`, `project-types:read`, `project-types:update`, `projects-phases:create`, `projects-phases:delete`, `projects-phases:read`, `projects-phases:update`, `projects:create`, `projects:delete`, `projects:read`, `projects:restore`, `projects:update` |
-| quotations | `quotation-items:create`, `quotation-items:delete`, `quotation-items:read`, `quotation-items:update`, `quotations:approve`, `quotations:create`, `quotations:delete`, `quotations:export`, `quotations:read`, `quotations:restore`, `quotations:select`, `quotations:submit`, `quotations:update` |
 | rbac | `apps:create`, `apps:delete`, `apps:read`, `apps:update`, `permissions:create`, `permissions:delete`, `permissions:read`, `permissions:update`, `rbac:create`, `rbac:delete`, `rbac:read`, `rbac:update`, `role-apps:assign`, `role-apps:grant`, `role-apps:read`, `role-apps:revoke`, `role-apps:update`, `role-permissions:assign`, `role-permissions:grant`, `role-permissions:read`, `role-permissions:revoke` |
 | reki | `site-recces:create`, `site-recces:delete`, `site-recces:read`, `site-recces:restore`, `site-recces:update`, `site-recces:upload` |
-| reports | `reports:read` |
 | scope-of-work | `scope-of-work:create`, `scope-of-work:delete`, `scope-of-work:read`, `scope-of-work:update` |
 | search | `search:read`, `search:reindex` |
 | settings | `settings:create`, `settings:delete`, `settings:read`, `settings:update` |
@@ -53,7 +53,7 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | system | `system:read` |
 | tasks | `tasks:create`, `tasks:delete`, `tasks:read`, `tasks:update` |
 | users | `team:create`, `team:delete`, `team:read`, `team:update`, `user-signatures:delete`, `user-signatures:read`, `user-signatures:upload`, `users:create`, `users:delete`, `users:read`, `users:update` |
-| vendors | `project-shortlists:create`, `project-shortlists:delete`, `project-shortlists:export`, `project-shortlists:read`, `project-shortlists:update`, `shortlist-entries:create`, `shortlist-entries:delete`, `shortlist-entries:read`, `shortlist-entries:select`, `shortlist-entries:update`, `shortlist-packages:apply`, `shortlist-packages:create`, `shortlist-packages:delete`, `shortlist-packages:read`, `vendor-business-types:create`, `vendor-business-types:read`, `vendor-categories:read`, `vendors-saved-searches:create`, `vendors-saved-searches:delete`, `vendors-saved-searches:read`, `vendors:create`, `vendors:delete`, `vendors:read`, `vendors:update` |
+| vendors | `vendor-business-types:create`, `vendor-business-types:read`, `vendor-categories:read`, `vendors-saved-searches:create`, `vendors-saved-searches:delete`, `vendors-saved-searches:read`, `vendors:create`, `vendors:delete`, `vendors:read`, `vendors:update` |
 | workspace | `notes:create`, `notes:delete`, `notes:read`, `notes:update`, `workspace:read` |
 | zoho | `zoho-bigin:create`, `zoho-bigin:delete`, `zoho-bigin:read`, `zoho-bigin:update`, `zoho-calendar:create`, `zoho-calendar:delete`, `zoho-calendar:read`, `zoho-calendar:update`, `zoho-cliq:read`, `zoho-cliq:send`, `zoho-cliq:upload`, `zoho-projects:create`, `zoho-projects:delete`, `zoho-projects:read`, `zoho-projects:update`, `zoho-workdrive:create`, `zoho-workdrive:read`, `zoho-workdrive:upload` |
 
@@ -215,10 +215,8 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | client-portal | `POST /public/client/:token/handover/accept` | PublicClientController.accept | `client-token:accept` | public |
 | client-portal | `POST /public/client/:token/boq/:boqId/approve` | PublicClientController.approve | `client-token:approve` | public |
 | client-portal | `GET /public/client/:token/boq/:boqId` | PublicClientController.boq | `client-token:read` | public |
-| client-portal | `GET /public/client/:token/quotations/compare/:cid` | PublicClientController.compare | `client-token:read` | public |
 | client-portal | `GET /public/client/:token/handover` | PublicClientController.handover | `client-token:read` | public |
 | client-portal | `GET /public/client/:token` | PublicClientController.landing | `client-token:read` | public |
-| client-portal | `POST /public/client/:token/quotations/select` | PublicClientController.select | `client-token:create` | public |
 | client-portal | `POST /public/client/:token/handover/snag` | PublicClientController.snag | `client-token:create` | public |
 | clients | `POST /clients` | ClientsController.create | `clients:create` | staff |
 | clients | `GET /clients` | ClientsController.findAll | `clients:read` | staff |
@@ -231,6 +229,17 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | dashboard | `GET /dashboards/library/:appKey` | DashboardsController.getLibrary | `dashboards:read` | staff |
 | dashboard | `POST /dashboards/:appKey/reset` | DashboardsController.resetDashboard | `dashboards:reset` | staff |
 | dashboard | `PUT /dashboards/:appKey` | DashboardsController.saveDashboard | `dashboards:update` | staff |
+| doc-flow | `GET /document-reviews/pending/count` | DocumentApprovalsController.count | `documents:read` | staff |
+| doc-flow | `GET /document-reviews/pending` | DocumentApprovalsController.pending | `documents:read` | staff |
+| doc-flow | `GET /document-reviews/capabilities` | DocumentReviewsController.capabilities | `documents:read` | staff |
+| doc-flow | `GET /document-reviews/context` | DocumentReviewsController.context | `documents:read` | staff |
+| doc-flow | `GET /document-reviews/existing` | DocumentReviewsController.existing | `documents:read` | staff |
+| doc-flow | `GET /document-reviews` | DocumentReviewsController.list | `documents:read` | staff |
+| doc-flow | `GET /document-reviews/meta` | DocumentReviewsController.meta | `documents:read` | staff |
+| doc-flow | `POST /document-reviews` | DocumentReviewsController.review | `documents:read` | staff |
+| doc-flow | `GET /document-reviews/revisions/:id` | DocumentReviewsController.revision | `documents:read` | staff |
+| doc-flow | `GET /document-reviews/rows` | DocumentReviewsController.rows | `documents:read` | staff |
+| doc-flow | `GET /projects/:id/recent-activity` | ProjectRecentActivityController.recentActivity | `projects:read` | staff |
 | documents | `GET /documents/:projectId/document-register` | DocumentRegisterController.getRegister | `documents:read` | staff |
 | documents | `POST /documents/deliverable-records` | DocumentRegisterController.recordDeliverable | `documents:deliver` | staff |
 | documents | `POST /document-requirements` | DocumentRequirementsController.create | `document-requirements:create` | staff |
@@ -244,12 +253,10 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | documents | `POST /documents/:id/approve` | DocumentsController.approve | `documents:approve` | staff |
 | documents | `POST /documents` | DocumentsController.create | `documents:create` | staff |
 | documents | `GET /documents/:id/download` | DocumentsController.download | `documents:read` | staff |
+| documents | `GET /documents/:id/versions/:versionId/download` | DocumentsController.downloadVersion | `documents:read` | staff |
 | documents | `GET /documents` | DocumentsController.findAll | `documents:read` | staff |
 | documents | `GET /documents/:id` | DocumentsController.findOne | `documents:read` | staff |
-| documents | `GET /documents/dashboard/boq-variance` | DocumentsController.getBoqVariance | `documents:read` | staff |
 | documents | `GET /documents/dashboard/stats` | DocumentsController.getDashboardStats | `documents:read` | staff |
-| documents | `GET /documents/dashboard/draft-estimates` | DocumentsController.getDraftEstimates | `documents:read` | staff |
-| documents | `GET /documents/dashboard/expiring-quotations` | DocumentsController.getExpiringQuotations | `documents:read` | staff |
 | documents | `GET /documents/dashboard/pending` | DocumentsController.getPendingDocuments | `documents:read` | staff |
 | documents | `GET /documents/dashboard/project-wise` | DocumentsController.getProjectWiseDocuments | `documents:read` | staff |
 | documents | `GET /documents/dashboard/recent` | DocumentsController.getRecentDocuments | `documents:read` | staff |
@@ -380,12 +387,6 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | material-procurement | `DELETE /material-procurement/:id` | MaterialProcurementController.remove | `material-procurement:delete` | staff |
 | material-procurement | `POST /material-procurement/:id/submit` | MaterialProcurementController.submit | `material-procurement:submit` | staff |
 | material-procurement | `PATCH /material-procurement/:id` | MaterialProcurementController.update | `material-procurement:update` | staff |
-| material-procurement | `POST /procurement/quotations/:id/accept` | MaterialQuotationController.accept | `procurement-quotations:accept` | staff |
-| material-procurement | `POST /procurement/quotations` | MaterialQuotationController.create | `procurement-quotations:create` | staff |
-| material-procurement | `GET /procurement/quotations` | MaterialQuotationController.findAll | `procurement-quotations:read` | staff |
-| material-procurement | `GET /procurement/quotations/:id` | MaterialQuotationController.findOne | `procurement-quotations:read` | staff |
-| material-procurement | `POST /procurement/quotations/:id/reject` | MaterialQuotationController.reject | `procurement-quotations:reject` | staff |
-| material-procurement | `POST /procurement/quotations/:id/send` | MaterialQuotationController.send | `procurement-quotations:send` | staff |
 | material-procurement | `POST /procurement/rate-sheets/:id/approve` | MaterialRateSheetController.approve | `procurement-rate-sheets:approve` | staff |
 | material-procurement | `POST /procurement/rate-sheets` | MaterialRateSheetController.create | `procurement-rate-sheets:create` | staff |
 | material-procurement | `GET /procurement/rate-sheets/by-requirement/:materialRequirementId` | MaterialRateSheetController.findAllForRequirement | `procurement-rate-sheets:read` | staff |
@@ -493,6 +494,16 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | process-workflow | `POST /:projectId/progress/steps/:stepId/sign-off` | ProgressController.signOff | `workflow-progress:sign-off` | staff |
 | process-workflow | `PATCH /:projectId/progress/steps/:stepId` | ProgressController.updateStepProgress | `workflow-progress:update` | staff |
 | process-workflow | `GET /:projectId/timeline` | TimelineController.getTimeline | `workflow-timeline:read` | staff |
+| procurement-quotations | `POST /procurement-quotations` | ProcurementQuotationsController.create | `procurement-quotations:create` | staff |
+| procurement-quotations | `POST /procurement-quotations/from-comparison` | ProcurementQuotationsController.fromComparison | `procurement-quotations:create` | staff |
+| procurement-quotations | `GET /procurement-quotations/:id` | ProcurementQuotationsController.get | `procurement-quotations:read` | staff |
+| procurement-quotations | `GET /procurement-quotations` | ProcurementQuotationsController.list | `procurement-quotations:read` | staff |
+| procurement-quotations | `POST /procurement-quotations/:id/raise-po` | ProcurementQuotationsController.raisePo | `purchase-orders:create` | staff |
+| procurement-quotations | `POST /procurement-quotations/:id/raise-wo` | ProcurementQuotationsController.raiseWo | `work-orders:create` | staff |
+| procurement-quotations | `DELETE /procurement-quotations/:id` | ProcurementQuotationsController.remove | `procurement-quotations:delete` | staff |
+| procurement-quotations | `PATCH /procurement-quotations/:id/status` | ProcurementQuotationsController.status | `procurement-quotations:update` | staff |
+| procurement-quotations | `PUT /procurement-quotations/:id` | ProcurementQuotationsController.update | `procurement-quotations:update` | staff |
+| procurement-quotations | `GET /procurement-quotations/:id/versions/:version` | ProcurementQuotationsController.version | `procurement-quotations:read` | staff |
 | projects | `GET /dashboard/app-badges` | AppBadgesController.appBadges | `dashboard:read` | staff |
 | projects | `GET /command-center/authority/overview` | AuthorityController.overview | `command-center:authority` | staff |
 | projects | `POST /command-center/projects/:projectId/phases/:phaseId/approve-gate` | CommandCenterController.approveGate | `command-center:approve` | staff |
@@ -520,6 +531,7 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | projects | `GET /milestones/upcoming` | ProjectDashboardController.getUpcomingMilestonesGlobal | `project-dashboard:read` | staff |
 | projects | `GET /dashboards/projects/variance-by-project` | ProjectDashboardController.getVarianceByProject | `project-dashboard:read` | staff |
 | projects | `GET /projects/:id/activity` | ProjectOverviewController.activity | `projects:read` | staff |
+| projects | `GET /projects/:id/document-hub` | ProjectOverviewController.documentHub | `projects:read` | staff |
 | projects | `GET /projects/:id/financial` | ProjectOverviewController.financial | `projects:read` | staff |
 | projects | `GET /projects/:id/pending-work` | ProjectOverviewController.pendingWork | `projects:read` | staff |
 | projects | `GET /projects/:id/vendors` | ProjectOverviewController.vendors | `projects:read` | staff |
@@ -577,39 +589,6 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | projects | `GET /project-types/:id` | ProjectTypeController.findOne | `project-types:read` | staff |
 | projects | `DELETE /project-types/:id` | ProjectTypeController.remove | `project-types:delete` | staff |
 | projects | `PATCH /project-types/:id` | ProjectTypeController.update | `project-types:update` | staff |
-| quotations | `POST /quotations/:quotationId/items` | QuotationItemsController.create | `quotation-items:create` | staff |
-| quotations | `GET /quotations/:quotationId/items` | QuotationItemsController.findAll | `quotation-items:read` | staff |
-| quotations | `DELETE /quotations/:quotationId/items/:itemId` | QuotationItemsController.remove | `quotation-items:delete` | staff |
-| quotations | `PUT /quotations/:quotationId/items` | QuotationItemsController.replaceAll | `quotation-items:update` | staff |
-| quotations | `PATCH /quotations/:quotationId/items/:itemId` | QuotationItemsController.update | `quotation-items:update` | staff |
-| quotations | `PATCH /quotations/:id/approve` | QuotationsController.approve | `quotations:approve` | staff |
-| quotations | `PATCH /quotations/:id/cancel` | QuotationsController.cancel | `quotations:update` | staff |
-| quotations | `GET /quotations/compare` | QuotationsController.compare | `quotations:read` | staff |
-| quotations | `POST /quotations` | QuotationsController.create | `quotations:create` | staff |
-| quotations | `PATCH /quotations/:id/decline` | QuotationsController.decline | `quotations:update` | staff |
-| quotations | `GET /quotations/:id/export/excel` | QuotationsController.exportExcel | `quotations:export` | staff |
-| quotations | `GET /quotations` | QuotationsController.findAll | `quotations:read` | staff |
-| quotations | `GET /quotations/:id` | QuotationsController.findOne | `quotations:read` | staff |
-| quotations | `GET /quotations/boq-variance` | QuotationsController.getBoqVariance | `quotations:read` | staff |
-| quotations | `GET /quotations/expiring-soon` | QuotationsController.getExpiringSoon | `quotations:read` | staff |
-| quotations | `GET /quotations/project-wise` | QuotationsController.getProjectWise | `quotations:read` | staff |
-| quotations | `GET /quotations/status-mix` | QuotationsController.getStatusMix | `quotations:read` | staff |
-| quotations | `GET /quotations/summary` | QuotationsController.getSummary | `quotations:read` | staff |
-| quotations | `GET /quotations/value-trend` | QuotationsController.getValueTrend | `quotations:read` | staff |
-| quotations | `GET /quotations/variation-by-project` | QuotationsController.getVariationByProject | `quotations:read` | staff |
-| quotations | `POST /quotations/:id/mark-selected` | QuotationsController.markSelected | `quotations:select` | staff |
-| quotations | `DELETE /quotations/:id/permanent` | QuotationsController.remove | `quotations:delete` | staff |
-| quotations | `PATCH /quotations/:id/restore` | QuotationsController.restore | `quotations:restore` | staff |
-| quotations | `PATCH /quotations/:id/return` | QuotationsController.returnForEditing | `quotations:update` | staff |
-| quotations | `POST /quotations/quotation-comparisons` | QuotationsController.saveComparison | `quotations:create` | staff |
-| quotations | `DELETE /quotations/:id` | QuotationsController.softDelete | `quotations:delete` | staff |
-| quotations | `PATCH /quotations/:id/submit` | QuotationsController.submit | `quotations:submit` | staff |
-| quotations | `PATCH /quotations/:id` | QuotationsController.update | `quotations:update` | staff |
-| quotations | `POST /quotations/:quotationId/versions` | QuotationVersionsController.create | `quotations:create` | staff |
-| quotations | `DELETE /quotations/versions/:id` | QuotationVersionsController.delete | `quotations:delete` | staff |
-| quotations | `GET /quotations/versions/:id` | QuotationVersionsController.get | `quotations:read` | staff |
-| quotations | `GET /quotations/:quotationId/versions` | QuotationVersionsController.list | `quotations:read` | staff |
-| quotations | `POST /quotations/versions/:id/restore` | QuotationVersionsController.restore | `quotations:restore` | staff |
 | rbac | `GET /role-access/catalogue` | AccessMatrixController.catalogue | `role-permissions:read` | staff |
 | rbac | `GET /role-access/app/:code` | AccessMatrixController.getAppAcrossRoles | `role-permissions:read` | staff |
 | rbac | `GET /role-access/:role_id` | AccessMatrixController.getForRole | `role-permissions:read` | staff |
@@ -655,11 +634,6 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | reki | `POST /site-recces/upload` | SiteRecceController.uploadImage | `site-recces:upload` | staff |
 | reki | `PATCH /site-recces/photos/:photoId/layout` | SiteRecceController.uploadLayoutImage | `site-recces:upload` | staff |
 | reki | `POST /site-recces/:siteRecceId/rooms/:roomId/photos` | SiteRecceController.uploadPhoto | `site-recces:upload` | staff |
-| reports | `GET /reports/by-employee` | ReportsController.getByEmployee | `reports:read` | staff |
-| reports | `GET /reports/by-project` | ReportsController.getByProject | `reports:read` | staff |
-| reports | `GET /reports/by-status` | ReportsController.getByStatus | `reports:read` | staff |
-| reports | `GET /reports/by-vendor` | ReportsController.getByVendor | `reports:read` | staff |
-| reports | `GET /reports/overview` | ReportsController.getOverview | `reports:read` | staff |
 | scope-of-work | `POST /scope-of-work/projects/:projectId/categories` | ScopeOfWorkController.addCategoryToProject | `scope-of-work:create` | staff |
 | scope-of-work | `POST /scope-of-work/categories` | ScopeOfWorkController.createCategory | `scope-of-work:create` | staff |
 | scope-of-work | `POST /scope-of-work/projects/:projectId/complete` | ScopeOfWorkController.createComplete | `scope-of-work:create` | staff |
@@ -699,7 +673,6 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | search | `GET /search/drawings` | SearchController.searchDrawings | `search:read` | staff |
 | search | `GET /search/leads` | SearchController.searchLeads | `search:read` | staff |
 | search | `GET /search/projects` | SearchController.searchProjects | `search:read` | staff |
-| search | `GET /search/quotations` | SearchController.searchQuotations | `search:read` | staff |
 | search | `GET /search/site-recces` | SearchController.searchSiteRecces | `search:read` | staff |
 | search | `GET /search/tasks` | SearchController.searchTasks | `search:read` | staff |
 | search | `GET /search/users` | SearchController.searchUsers | `search:read` | staff |
@@ -748,6 +721,7 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | site-operations | `GET /site-ops/mockups` | MockupController.listAll | `site-ops-mockups:read` | staff |
 | site-operations | `POST /site-ops/mockups` | MockupController.propose | `site-ops-mockups:create` | staff |
 | site-operations | `PATCH /site-ops/mockups/:id/review` | MockupController.review | `site-ops-mockups:update` | staff |
+| site-operations | `GET /site-ops/qc/projects/:projectId/execution-checklist.xlsx` | QcSignOffController.exportExecutionChecklist | `site-ops-qc:read` | staff |
 | site-operations | `GET /site-ops/qc/projects/:projectId/handoff-status` | QcSignOffController.getHandoffStatus | `site-ops-qc:read` | staff |
 | site-operations | `GET /site-ops/qc/projects/:projectId/history` | QcSignOffController.getHistory | `site-ops-qc:read` | staff |
 | site-operations | `GET /site-ops/qc/:id` | QcSignOffController.getSignOff | `site-ops-qc:read` | staff |
@@ -815,6 +789,7 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | site-operations | `POST /site-ops/snag-lists/photos` | SnagListController.uploadPhoto | `site-ops-snag-lists:upload` | staff |
 | site-operations | `POST /architect/visit-stages` | VisitStageController.create | `architect-visit-stages:create` | staff |
 | site-operations | `DELETE /architect/visit-stages/:id` | VisitStageController.deactivate | `architect-visit-stages:delete` | staff |
+| site-operations | `GET /architect/visit-stages/schedule.xlsx` | VisitStageController.exportSchedule | `architect-visit-stages:read` | staff |
 | site-operations | `GET /architect/visit-stages` | VisitStageController.findAll | `architect-visit-stages:read` | staff |
 | site-operations | `GET /architect/visit-stages/:id` | VisitStageController.findOne | `architect-visit-stages:read` | staff |
 | site-operations | `PATCH /architect/visit-stages/:id` | VisitStageController.update | `architect-visit-stages:update` | staff |
@@ -908,29 +883,6 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | users | `DELETE /user-signatures/:userId` | UserSignatureController.deleteSignature | `user-signatures:delete` | staff |
 | users | `GET /user-signatures/:userId` | UserSignatureController.getSignature | `user-signatures:read` | staff |
 | users | `POST /user-signatures` | UserSignatureController.uploadSignature | `user-signatures:upload` | staff |
-| vendors | `POST /project-shortlists` | ProjectShortlistController.create | `project-shortlists:create` | staff |
-| vendors | `GET /project-shortlists/export-both/:projectId` | ProjectShortlistController.exportBoth | `project-shortlists:export` | staff |
-| vendors | `GET /project-shortlists/:id/export` | ProjectShortlistController.exportOne | `project-shortlists:export` | staff |
-| vendors | `GET /project-shortlists` | ProjectShortlistController.findAll | `project-shortlists:read` | staff |
-| vendors | `GET /project-shortlists/by-project/:projectId/:type` | ProjectShortlistController.findByProjectAndType | `project-shortlists:read` | staff |
-| vendors | `GET /project-shortlists/:id` | ProjectShortlistController.findOne | `project-shortlists:read` | staff |
-| vendors | `GET /project-shortlists/:id/grid` | ProjectShortlistController.getGrid | `project-shortlists:read` | staff |
-| vendors | `GET /project-shortlists/:id/workspace` | ProjectShortlistController.getWorkspace | `project-shortlists:read` | staff |
-| vendors | `DELETE /project-shortlists/:id` | ProjectShortlistController.remove | `project-shortlists:delete` | staff |
-| vendors | `PUT /project-shortlists/:id/workspace/row` | ProjectShortlistController.saveWorkspaceRow | `project-shortlists:update` | staff |
-| vendors | `PUT /project-shortlists/:id` | ProjectShortlistController.update | `project-shortlists:update` | staff |
-| vendors | `POST /shortlist-entries/bulk` | ShortlistEntryController.bulkCreate | `shortlist-entries:create` | staff |
-| vendors | `POST /shortlist-entries` | ShortlistEntryController.create | `shortlist-entries:create` | staff |
-| vendors | `GET /shortlist-entries` | ShortlistEntryController.findAll | `shortlist-entries:read` | staff |
-| vendors | `GET /shortlist-entries/:id` | ShortlistEntryController.findOne | `shortlist-entries:read` | staff |
-| vendors | `DELETE /shortlist-entries/:id` | ShortlistEntryController.remove | `shortlist-entries:delete` | staff |
-| vendors | `POST /shortlist-entries/:id/select` | ShortlistEntryController.select | `shortlist-entries:select` | staff |
-| vendors | `PUT /shortlist-entries/:id` | ShortlistEntryController.update | `shortlist-entries:update` | staff |
-| vendors | `POST /shortlist-packages/:id/apply` | ShortlistPackageController.apply | `shortlist-packages:apply` | staff |
-| vendors | `POST /shortlist-packages` | ShortlistPackageController.create | `shortlist-packages:create` | staff |
-| vendors | `GET /shortlist-packages` | ShortlistPackageController.list | `shortlist-packages:read` | staff |
-| vendors | `POST /shortlist-packages/:id/preview` | ShortlistPackageController.preview | `shortlist-packages:read` | staff |
-| vendors | `DELETE /shortlist-packages/:id` | ShortlistPackageController.remove | `shortlist-packages:delete` | staff |
 | vendors | `POST /vendor/business-types` | VendorBusinessTypesController.create | `vendor-business-types:create` | staff |
 | vendors | `GET /vendor/business-types` | VendorBusinessTypesController.findAll | `vendor-business-types:read` | staff |
 | vendors | `GET /vendor/business-types/:id` | VendorBusinessTypesController.findOne | `vendor-business-types:read` | staff |
@@ -940,10 +892,10 @@ There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 | vendors | `GET /vendors/saved-searches` | VendorSavedSearchesController.list | `vendors-saved-searches:read` | staff |
 | vendors | `DELETE /vendors/saved-searches/:id` | VendorSavedSearchesController.remove | `vendors-saved-searches:delete` | staff |
 | vendors | `POST /vendors` | VendorsController.create | `vendors:create` | staff |
+| vendors | `GET /vendors/export` | VendorsController.export | `vendors:read` | staff |
 | vendors | `GET /vendors` | VendorsController.findAll | `vendors:read` | staff |
 | vendors | `GET /vendors/:id` | VendorsController.findOne | `vendors:read` | staff |
 | vendors | `GET /vendors/dashboard/summary` | VendorsController.getDashboardSummary | `vendors:read` | staff |
-| vendors | `GET /vendors/:id/quotations` | VendorsController.getQuotationsByVendor | `vendors:read` | staff |
 | vendors | `GET /vendors/dashboard/availability-mix` | VendorsController.getVendorsAvailabilityMix | `vendors:read` | staff |
 | vendors | `GET /vendors/dashboard/by-category` | VendorsController.getVendorsByCategory | `vendors:read` | staff |
 | vendors | `GET /vendors/dashboard/onboarding-trend` | VendorsController.getVendorsOnboardingTrend | `vendors:read` | staff |

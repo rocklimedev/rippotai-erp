@@ -4,6 +4,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Check, CheckCircle2, Info, AlertTriangle, AlertCircle, Plus, Trash2, Inbox } from "lucide-react";
 import { Page, PageHeader, Progress, EmptyState, SelectInput, Field, Button } from "@/components/inos";
+import { SectionStatus } from "@/components/doc-list/SectionTick";
+import { useSectionCompleteness } from "@/components/doc-list/useSectionCompleteness";
+import { fillLabel } from "@/components/doc-list/doc-utils";
 import "./crm-forms.css";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
@@ -102,10 +105,54 @@ const scrollToId = (id) => {
  * Page frame for long, multi-section forms.
  * nav: [{ id, label, done, count }]
  */
+/**
+ * Completeness of each nav section, read from the sections' own `data-fill`
+ * (set by DocSection from every field it contains) so the navigator and the
+ * section headers always agree. Falls back to the nav item's `done` rule for
+ * an id with no rendered section.
+ */
+function useNavFills(mainRef, nav) {
+  const key = nav.map((n) => `${n.id}:${n.done ? 1 : 0}`).join("|");
+  const read = React.useCallback(() => {
+    const out = {};
+    for (const n of nav) {
+      const el = document.getElementById(n.id);
+      const f = el?.getAttribute("data-fill");
+      out[n.id] = f === "done" || f === "partial" || f === "empty" ? f : n.done ? "done" : "empty";
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const [fills, setFills] = useState({});
+  useEffect(() => {
+    const root = mainRef.current;
+    let raf = 0;
+    const run = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const next = read();
+        setFills((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+      });
+    };
+    run();
+    if (!root) return () => cancelAnimationFrame(raf);
+    const mo = new MutationObserver(run);
+    mo.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-fill"] });
+    return () => {
+      cancelAnimationFrame(raf);
+      mo.disconnect();
+    };
+  }, [mainRef, read]);
+  return fills;
+}
+
 export function DocFormLayout({ crumbs, title, subtitle, actions, nav = [], children, narrow }) {
   const ids = nav.map((n) => n.id);
   const [active, setActive] = useSectionSpy(ids);
-  const done = nav.filter((n) => n.done).length;
+  const mainRef = React.useRef(null);
+  const fills = useNavFills(mainRef, nav);
+  const fillOf = (n) => fills[n.id] || "empty";
+  const done = nav.filter((n) => fillOf(n) === "done").length;
   const listRef = React.useRef(null);
   // On narrow screens the navigator is a horizontal strip: keep the active step in view.
   useEffect(() => {
@@ -134,14 +181,16 @@ export function DocFormLayout({ crumbs, title, subtitle, actions, nav = [], chil
                 <li key={n.id}>
                   <button
                     type="button"
-                    className={cx("crmf-nav__item", active === n.id && "is-active", n.done && "is-done")}
+                    className={cx("crmf-nav__item", active === n.id && "is-active", fillOf(n) !== "empty" && `is-${fillOf(n)}`)}
+                    data-fill={fillOf(n)}
+                    title={`${n.label} — ${fillLabel(fillOf(n))}`}
                     aria-current={active === n.id ? "step" : undefined}
                     onClick={() => {
                       setActive(n.id);
                       scrollToId(n.id);
                     }}
                   >
-                    <span className="crmf-nav__dot">{n.done ? <Check aria-label="Complete" /> : i + 1}</span>
+                    <span className="crmf-nav__dot">{fillOf(n) !== "empty" ? <Check aria-label={fillLabel(fillOf(n))} /> : i + 1}</span>
                     <span className="crmf-nav__label">{n.label}</span>
                     {n.count > 0 && <span className="crmf-nav__count">{n.count}</span>}
                   </button>
@@ -150,7 +199,7 @@ export function DocFormLayout({ crumbs, title, subtitle, actions, nav = [], chil
             </ol>
           </nav>
         )}
-        <div className="crmf-main inos-form">{children}</div>
+        <div className="crmf-main inos-form" ref={mainRef}>{children}</div>
       </div>
     </Page>
   );
@@ -158,11 +207,15 @@ export function DocFormLayout({ crumbs, title, subtitle, actions, nav = [], chil
 
 /** A numbered white form section with an anchor id. `grid` wraps children in the 2-col field grid. */
 export function DocSection({ id, step, title, description, done, actions, grid, children }) {
+  const ref = React.useRef(null);
+  // Every field in the section decides the tick; the form's own `done` rule
+  // only counts for sections without fields (e.g. a list with no rows).
+  const fill = useSectionCompleteness(ref, true, done);
   return (
-    <section id={id} className={cx("inos-form-section crmf-section", done && "is-done")}>
+    <section id={id} ref={ref} className={cx("inos-form-section crmf-section", fill === "done" && "is-done")} data-fill={fill}>
       <div className="crmf-section__head">
         <div className="inos-form-section__head">
-          {step != null && <span className="inos-form-section__step">{done ? <Check size={14} aria-label="Complete" /> : step}</span>}
+          <SectionStatus state={fill} step={step} />
           <div>
             <h2 className="inos-form-section__title">{title}</h2>
             {description && <p className="inos-form-section__desc">{description}</p>}
@@ -293,7 +346,7 @@ export function ProjectPicker({ projects = [], value, onChange, onAdd, loading, 
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name}
+                  {p.code ? `${p.code} · ${p.name}` : p.name}
                 </option>
               ))}
             </SelectInput>

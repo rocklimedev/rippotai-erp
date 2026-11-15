@@ -9,7 +9,10 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
+import { AsyncExport } from '../exports/async-export.decorator';
 import { VisitStageService } from './visit-stage.service';
 import {
   CreateVisitStageDto,
@@ -25,6 +28,26 @@ export class VisitStageController {
   @Get()
   findAll(@Query('include_inactive') inc?: string) {
     return this.service.findAll(inc === 'true');
+  }
+
+  /** GET /architect/visit-stages/schedule.xlsx?projectId= — the visit schedule workbook. */
+  @AsyncExport('architect-visit-schedule')
+  @RequirePermission('architect-visit-stages:read')
+  @Get('schedule.xlsx')
+  async exportSchedule(
+    @Query('projectId') projectId: string | undefined,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.service.exportSchedule(projectId || undefined);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="architect-visit-schedule.xlsx"',
+    );
+    res.send(buffer);
   }
 
   @RequirePermission('architect-visit-stages:read')

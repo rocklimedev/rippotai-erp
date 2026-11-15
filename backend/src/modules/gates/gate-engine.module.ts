@@ -16,7 +16,6 @@ import { DocumentType } from '@/modules/documents/models/document-type.model';
 import { DocumentRequirement } from '@/modules/documents/models/document-requirement.model';
 import { PaymentSchedule } from '@/modules/payments/models/payment-schedule.model';
 import { PaymentScheduleMilestone } from '@/modules/payments/models/payment-schedule-milestone.model';
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Boq } from '@/modules/boqs/models/boq.model';
 import { TeamMember } from '@/modules/users/models/team-member.model';
 import { Task } from '@/modules/tasks/models/task.model';
@@ -26,7 +25,6 @@ import { ConditionRegistry } from './conditions/condition-registry';
 import { DocumentApprovedEvaluator } from './conditions/document-approved.evaluator';
 import { DocumentTypeAllApprovedEvaluator } from './conditions/document-type-all-approved.evaluator';
 import { PaymentMilestonePaidEvaluator } from './conditions/payment-milestone-paid.evaluator';
-import { QuotationApprovedEvaluator } from './conditions/quotation-approved.evaluator';
 import { BoqApprovedEvaluator } from './conditions/boq-approved.evaluator';
 import { MinTeamMembersConfirmedEvaluator } from './conditions/min-team-members-confirmed.evaluator';
 import { TasksCompletedEvaluator } from './conditions/tasks-completed.evaluator';
@@ -47,7 +45,6 @@ import { ActivityLogsModule } from '@/modules/engagement/activity-logs.module';
       DocumentRequirement,
       PaymentSchedule,
       PaymentScheduleMilestone,
-      Quotation,
       Boq,
       TeamMember,
       Task,
@@ -64,7 +61,6 @@ import { ActivityLogsModule } from '@/modules/engagement/activity-logs.module';
     DocumentApprovedEvaluator,
     DocumentTypeAllApprovedEvaluator,
     PaymentMilestonePaidEvaluator,
-    QuotationApprovedEvaluator,
     BoqApprovedEvaluator,
     MinTeamMembersConfirmedEvaluator,
     TasksCompletedEvaluator,

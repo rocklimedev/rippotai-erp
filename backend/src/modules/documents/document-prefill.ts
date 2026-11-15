@@ -14,9 +14,7 @@ export const DOCUMENT_PREFILL_SEQUENCE = [
   },
   { id: 'payment-schedule', model: 'PaymentSchedule' },
   { id: 'plan-of-action', model: 'PlanOfAction' },
-  { id: 'estimates-quotations', model: 'Quotation' },
   { id: 'material-procurement-sheet', model: 'MaterialProcurement' },
-  { id: 'vendor-shortlist', model: 'VendorShortlist' },
   { id: 'boq-vendor-comparison', model: '' },
   { id: 'boq', model: 'Boq' },
   { id: 'purchase-order', model: 'PurchaseOrder' },
@@ -46,7 +44,6 @@ export function boqCategoriesFromPrefill(
 ) {
   for (const key of [
     'material-procurement-sheet',
-    'estimates-quotations',
     'business-proposal',
     'scope-of-work',
   ]) {

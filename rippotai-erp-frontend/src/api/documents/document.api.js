@@ -778,41 +778,6 @@ export const documentApi = baseApi.enhanceEndpoints({ addTagTypes: documentUploa
     }),
 
     /**
-     * GET /documents/dashboard/expiring-quotations
-     *
-     * ?withinDays=7
-     */
-    getExpiringQuotations: builder.query({
-      query: (withinDays = 7) => {
-        const params = new URLSearchParams();
-
-        params.append("withinDays", String(withinDays));
-
-        return `/documents/dashboard/expiring-quotations?${params.toString()}`;
-      },
-
-      providesTags: ["DocumentDashboard"],
-    }),
-
-    /**
-     * GET /documents/dashboard/boq-variance
-     */
-    getDocumentBoqVariance: builder.query({
-      query: () => "/documents/dashboard/boq-variance",
-
-      providesTags: ["DocumentDashboard"],
-    }),
-
-    /**
-     * GET /documents/dashboard/draft-estimates
-     */
-    getDraftEstimates: builder.query({
-      query: () => "/documents/dashboard/draft-estimates",
-
-      providesTags: ["DocumentDashboard"],
-    }),
-
-    /**
      * GET /documents/dashboard/project-wise
      *
      * ?limit=5
@@ -939,9 +904,6 @@ export const {
   useGetDocumentDashboardStatsQuery,
   useGetRecentDocumentsQuery,
   useGetPendingDocumentsQuery,
-  useGetExpiringQuotationsQuery,
-  useGetDocumentBoqVarianceQuery,
-  useGetDraftEstimatesQuery,
   useGetProjectWiseDocumentsQuery,
 
   // ------------------------------------------------------------

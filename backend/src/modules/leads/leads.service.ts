@@ -1,3 +1,4 @@
+import { assignProjectCode } from '../projects/project-code';
 import {
   BadRequestException,
   Injectable,
@@ -21,8 +22,17 @@ import {
   LeadType,
   LeadTag,
   LeadColor,
+  LeadService,
   STAGE_ORDER,
 } from '@/common/enums/leads.enums';
+import {
+  DEAL_TO_CLIENT,
+  DEAL_TO_PROJECT,
+  clientFactPatch,
+  formatSize,
+  isBlank,
+  projectFactPatch,
+} from './deal-project-link';
 
 // ------------------------------------------------------------------
 // INOS runs its own Bigin-style pipeline on local data (`leads`).
@@ -158,6 +168,8 @@ export interface LeadFilters {
   source?: string;
   stage?: string;
   type?: string;
+  service?: string;
+  tag?: string;
   minValue?: string | number;
   maxValue?: string | number;
   from?: string;
@@ -348,6 +360,21 @@ export class LeadsService implements OnModuleInit {
       and.push(f.owner === '__none' ? { owner: null } : { owner: f.owner });
     if (f.source) and.push({ source: f.source });
     if (f.type) and.push({ type: f.type });
+    if (f.service) {
+      const service: string = String(f.service).toUpperCase();
+      if (service === String(LeadService.DESIGN))
+        and.push({
+          [Op.or]: [{ service: LeadService.DESIGN }, { service: null }],
+        });
+      else if (service === String(LeadService.BUILD))
+        and.push({ service: LeadService.BUILD });
+    }
+    if (f.tag) {
+      const tags = String(f.tag)
+        .split(',')
+        .filter((t) => (Object.values(LeadTag) as string[]).includes(t));
+      if (tags.length) and.push({ tag: { [Op.in]: tags } });
+    }
     if (f.stage) {
       const stages = String(f.stage)
         .split(',')
@@ -420,8 +447,18 @@ export class LeadsService implements OnModuleInit {
       nextTask?: LeadTask | null;
       openTasks?: number;
       notesCount?: number;
+      client?: Record<string, any> | null;
+      project?: Record<string, any> | null;
     } = {},
   ) {
+    // Linked client / project rows are the source of truth for shared facts;
+    // the deal's own copies are only a fallback.
+    const c = extra.client || {};
+    const p = extra.project || {};
+    const pick = (...vals: unknown[]) =>
+      (vals.find((v) => !isBlank(v)) as any) ?? null;
+    const projectSize = formatSize(p.site_area, p.site_area_unit);
+    const projectBudget = toNum(p.client_budget);
     const amount = toNum(l.amount) ?? parseBudgetRange(l.budget);
     // timestamps are mapped to created_at / updated_at attributes
     const createdAt: Date = (l.get('created_at') as Date) ?? l.createdAt;
@@ -442,18 +479,27 @@ export class LeadsService implements OnModuleInit {
       title,
       name: title, // legacy consumers (LeadCard / ContactsView) read .name
       dealName: l.dealName,
-      contact: l.name,
+      contact:
+        !isBlank(c.contact_person) &&
+        (isBlank(l.name) || l.name === extra.clientName || l.name === title)
+          ? c.contact_person
+          : l.name,
       company: l.company || extra.clientName || null,
       clientId: l.clientId,
       clientName: extra.clientName ?? null,
       projectId: l.projectId,
-      phone: l.phone,
-      whatsapp: l.whatsapp || l.phone,
-      email: l.email,
+      projectName: p.name ?? null,
+      projectStatus: p.status ?? null,
+      projectTypeName: p.project_type_name ?? null,
+      phone: pick(c.phone, l.phone),
+      whatsapp: pick(l.whatsapp, c.phone, l.phone),
+      email: pick(c.email, l.email),
       type: l.type,
-      location: l.location,
-      size: l.size,
-      budget: l.budget,
+      service: l.service || LeadService.DESIGN,
+      location: pick(p.site_location, l.location),
+      size: pick(projectSize, l.size),
+      budget: projectBudget != null ? fmtINR(projectBudget) : l.budget,
+      clientBudget: projectBudget,
       amount,
       budgetValue: amount,
       amountLabel: fmtINR(amount),
@@ -511,7 +557,11 @@ export class LeadsService implements OnModuleInit {
       ...new Set(leads.map((l) => l.clientId).filter(Boolean)),
     ] as string[];
 
-    const [tasks, noteCounts, clients] = await Promise.all([
+    const projectIds = [
+      ...new Set(leads.map((l) => l.projectId).filter(Boolean)),
+    ] as string[];
+
+    const [tasks, noteCounts, clients, projects] = await Promise.all([
       this.taskModel.findAll({
         where: { leadId: { [Op.in]: ids }, done: false },
         order: [['dueDate', 'ASC']],
@@ -521,11 +571,20 @@ export class LeadsService implements OnModuleInit {
         [ids],
       ),
       clientIds.length
-        ? this.select<{ id: string; name: string }>(
-            'SELECT id, name FROM clients WHERE id IN (?)',
+        ? this.select<Record<string, any>>(
+            'SELECT id, name, contact_person, phone, email FROM clients WHERE id IN (?)',
             [clientIds],
           )
-        : Promise.resolve([] as { id: string; name: string }[]),
+        : Promise.resolve([] as Record<string, any>[]),
+      projectIds.length
+        ? this.select<Record<string, any>>(
+            `SELECT p.id, p.name, p.status, p.site_location, p.site_area, p.site_area_unit,
+                    p.client_budget, t.name AS project_type_name
+               FROM projects p LEFT JOIN project_types t ON t.id = p.project_type_id
+              WHERE p.id IN (?) AND p.deleted_at IS NULL`,
+            [projectIds],
+          )
+        : Promise.resolve([] as Record<string, any>[]),
     ]);
 
     const taskBy = new Map<string, LeadTask[]>();
@@ -534,13 +593,16 @@ export class LeadsService implements OnModuleInit {
       taskBy.get(t.leadId)!.push(t);
     }
     const notesBy = new Map(noteCounts.map((r) => [r.leadId, Number(r.n)]));
-    const clientBy = new Map(clients.map((c) => [c.id, c.name]));
+    const clientBy = new Map(clients.map((c) => [c.id, c]));
+    const projectBy = new Map(projects.map((p) => [p.id, p]));
 
     return leads.map((l) => {
       const open = taskBy.get(l.id) || [];
       const withDue = open.filter((t) => t.dueDate);
       return this.toDeal(l, {
-        clientName: l.clientId ? clientBy.get(l.clientId) || null : null,
+        clientName: l.clientId ? clientBy.get(l.clientId)?.name || null : null,
+        client: l.clientId ? clientBy.get(l.clientId) || null : null,
+        project: l.projectId ? projectBy.get(l.projectId) || null : null,
         nextTask: withDue[0] || open[0] || null,
         openTasks: open.length,
         notesCount: notesBy.get(l.id) || 0,
@@ -620,6 +682,7 @@ export class LeadsService implements OnModuleInit {
       ],
       types: Object.values(LeadType),
       tags: Object.values(LeadTag),
+      services: Object.values(LeadService),
       colors: Object.values(LeadColor),
       zohoConnected: await this.zohoConnected(userId),
     };
@@ -869,6 +932,11 @@ export class LeadsService implements OnModuleInit {
       tag: (Object.values(LeadTag) as string[]).includes(body.tag)
         ? body.tag
         : null,
+      service: (Object.values(LeadService) as string[]).includes(
+        String(body.service || '').toUpperCase(),
+      )
+        ? String(body.service).toUpperCase()
+        : LeadService.DESIGN,
       description: body.description || null,
       closedAt:
         WON_STAGES.has(stage) || stage === LeadStage.LOST ? new Date() : null,
@@ -889,11 +957,189 @@ export class LeadsService implements OnModuleInit {
       } as any);
     }
 
+    // Connect the deal to a project + client so every document autofills.
+    await this.linkProject(actor, lead);
+
     // Best-effort mirror to Bigin (only when connected)
     this.mirrorCreate(actor.id, lead).catch(() => undefined);
 
     const [deal] = await this.hydrate([lead]);
     return { ...deal, owner: deal.owner || 'Unassigned' };
+  }
+
+  // ============================================================
+  // DEAL <-> PROJECT / CLIENT LINK
+  // ============================================================
+
+  /** Project type for the deal's Residential / Commercial / Institutional type. */
+  private async projectTypeFor(type?: string | null) {
+    if (isBlank(type)) return null;
+    const rows = await this.select<{ id: string }>(
+      `SELECT id FROM project_types
+        WHERE deleted_at IS NULL
+          AND (LOWER(name) = LOWER(?) OR LOWER(slug) = LOWER(?) OR LOWER(name) LIKE CONCAT(LOWER(?), '%'))
+        ORDER BY (LOWER(name) = LOWER(?)) DESC, (LOWER(slug) = LOWER(?)) DESC, name
+        LIMIT 1`,
+      Array(5).fill(type),
+    );
+    return rows[0]?.id || null;
+  }
+
+  /**
+   * Make sure the deal points at a client and a project, and that the deal's
+   * facts reach them, so documents opened for the project autofill.
+   * - project linked but no client -> take the project's client
+   * - client + deal name but no project -> link the client's project of that
+   *   name, or create one (status 'lead' until the deal is won)
+   * - copy deal facts into empty project / client fields; fields the user just
+   *   edited on the deal (`changed`) are written through.
+   * Best-effort: a failure here never blocks saving the deal.
+   */
+  async linkProject(actor: Actor, lead: Lead, changed?: string[]) {
+    try {
+      const patch: Record<string, any> = {};
+      if (lead.projectId && !lead.clientId) {
+        const [p] = await this.select<{ client_id: string | null }>(
+          'SELECT client_id FROM projects WHERE id = ? AND deleted_at IS NULL',
+          [lead.projectId],
+        );
+        if (p?.client_id) patch.clientId = p.client_id;
+      }
+      const projectName = String(lead.dealName || '').trim();
+      if (!lead.projectId && lead.clientId && projectName) {
+        const [existing] = await this.select<{ id: string }>(
+          `SELECT id FROM projects
+            WHERE client_id = ? AND deleted_at IS NULL AND LOWER(TRIM(name)) = LOWER(?)
+            ORDER BY created_at DESC LIMIT 1`,
+          [lead.clientId, projectName],
+        );
+        patch.projectId =
+          existing?.id ||
+          (await this.createLeadProject(actor, lead, projectName));
+      }
+      if (Object.keys(patch).length) {
+        await lead.update(patch, { hooks: false });
+        if (patch.projectId)
+          await this.log(
+            lead.id,
+            'update',
+            `Linked to project “${projectName}”`,
+            actor,
+          );
+      }
+
+      const touched = new Set(changed || []);
+      const overwriteProject = new Set(
+        [...touched].flatMap((attr) => DEAL_TO_PROJECT[attr] || []),
+      );
+      const overwriteClient = new Set(
+        [...touched].map((attr) => DEAL_TO_CLIENT[attr]).filter(Boolean),
+      );
+
+      if (lead.projectId) {
+        const Project = this.db.models.Project;
+        const project = Project ? await Project.findByPk(lead.projectId) : null;
+        if (project) {
+          const facts = projectFactPatch(
+            project.get({ plain: true }),
+            {
+              location: lead.location,
+              projectTypeId: await this.projectTypeFor(lead.type),
+              size: lead.size,
+              budget: toNum(lead.amount) ?? parseBudgetRange(lead.budget),
+              expectedClose: lead.expectedClose,
+              timeline: lead.timeline,
+              description: lead.description,
+            },
+            overwriteProject,
+          );
+          if (!project.get('client_id') && lead.clientId)
+            facts.client_id = lead.clientId;
+          if (Object.keys(facts).length)
+            await project.update({ ...facts, updated_by: actor.id || null });
+        }
+      }
+
+      if (lead.clientId) {
+        const [client] = await this.select<Record<string, any>>(
+          'SELECT id, name, contact_person, phone, email FROM clients WHERE id = ? AND deleted_at IS NULL',
+          [lead.clientId],
+        );
+        if (client) {
+          const deal = {
+            // The client's own name is not a contact person.
+            name:
+              lead.name &&
+              lead.name !== client.name &&
+              lead.name !== lead.dealName
+                ? lead.name
+                : null,
+            phone: lead.phone,
+            email: lead.email,
+          };
+          const facts = clientFactPatch(client, deal, overwriteClient);
+          const cols = Object.keys(facts);
+          if (cols.length)
+            await this.db.query(
+              `UPDATE clients SET ${cols.map((c) => `\`${c}\` = ?`).join(', ')} WHERE id = ?`,
+              { replacements: [...cols.map((c) => facts[c]), client.id] },
+            );
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Deal ${lead.id}: project/client link failed: ${error.message}`,
+      );
+    }
+  }
+
+  private async createLeadProject(actor: Actor, lead: Lead, name: string) {
+    const Project = this.db.models.Project;
+    const base =
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || 'project';
+    let slug = base;
+    for (let n = 2; ; n++) {
+      const [taken] = await this.select(
+        'SELECT id FROM projects WHERE slug = ?',
+        [slug],
+      );
+      if (!taken) break;
+      slug = `${base}-${n}`;
+    }
+    const values = {
+      name,
+      slug,
+      client_id: lead.clientId,
+      site_location: lead.location || '',
+      status: 'lead',
+      priority: 'MEDIUM',
+      created_by: actor.id || null,
+    };
+    if (Project) {
+      const project = await Project.create(values as any);
+      return project.get('id') as string;
+    }
+    const [row] = await this.select<{ id: string }>('SELECT UUID() AS id');
+    await this.db.query(
+      'INSERT INTO projects (id, name, slug, client_id, site_location, status, priority, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      {
+        replacements: [
+          row.id,
+          values.name,
+          values.slug,
+          values.client_id,
+          values.site_location,
+          values.status,
+          values.priority,
+          values.created_by,
+        ],
+      },
+    );
+    await assignProjectCode(this.db, row.id);
+    return row.id;
   }
 
   private async findOrCreateClient(nc: Record<string, any>, actor: Actor) {
@@ -955,12 +1201,19 @@ export class LeadsService implements OnModuleInit {
       owner: 'owner',
       ownerId: 'owner',
       tag: 'tag',
+      service: 'service',
       color: 'card colour',
       stuckMode: 'stuck mode',
       followUp: 'follow-up',
       description: 'description',
       lostReason: 'lost reason',
     };
+
+    // Edit form may add a brand-new client.
+    if (!body.clientId && body.newClient?.name?.trim()) {
+      body.clientId = await this.findOrCreateClient(body.newClient, actor);
+      body.company = body.newClient.name.trim();
+    }
 
     // Legacy Bigin-shaped keys from the old LeadCard menu
     if ('Card_Color' in body) body.color = body.Card_Color || null;
@@ -979,6 +1232,10 @@ export class LeadsService implements OnModuleInit {
         key === 'contact' ? 'name' : key === 'title' ? 'dealName' : key;
 
       if (attr === 'amount') value = toNum(value);
+      if (attr === 'service') {
+        value = value ? String(value).toUpperCase() : LeadService.DESIGN;
+        if (!(Object.values(LeadService) as string[]).includes(value)) continue;
+      }
       if (attr === 'color' && value === 'None') value = null;
       if (
         attr === 'type' &&
@@ -1035,6 +1292,8 @@ export class LeadsService implements OnModuleInit {
       );
       this.mirrorUpdate(actor.id, lead).catch(() => undefined);
     }
+    // Keep the linked project / client in step (edited fields are written through).
+    await this.linkProject(actor, lead, Object.keys(patch));
 
     // Stage can also arrive via general update (old card menu)
     const stageIn = normaliseStage(body.stage || body.Stage);
@@ -1081,6 +1340,13 @@ export class LeadsService implements OnModuleInit {
       patch.lostReason = null;
     }
     await lead.update(patch);
+    if (WON_STAGES.has(stage) && lead.projectId) {
+      // A won deal's early project becomes a live project.
+      await this.db.query(
+        "UPDATE projects SET status = 'active' WHERE id = ? AND status = 'lead'",
+        { replacements: [lead.projectId] },
+      );
+    }
 
     const fromLabel = STAGE_LABEL.get(from) || from;
     const toLabel = STAGE_LABEL.get(stage) || stage;

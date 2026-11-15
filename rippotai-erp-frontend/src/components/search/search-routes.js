@@ -1,8 +1,9 @@
 // Keep search navigation aligned with src/router/routes rather than legacy URLs.
+// Budget estimates and material requirements are hidden from INOS (FLOW-SPEC):
+// they have no route here, so search drops them.
 export function pathForEntity(hit) {
   if (!hit?.id) return null;
   const id = encodeURIComponent(hit.id);
-  const projectId = hit.meta?.project_id ?? hit.meta?.projectId;
   const routes = {
     project: `/projects/${id}`,
     client: `/clients/${id}`,
@@ -11,7 +12,6 @@ export function pathForEntity(hit) {
     vendor: `/procurement/vendors/${id}`,
     boq: `/ledger/boq/${id}`,
     project_brief: `/crm/brief/${id}`,
-    quotation: `/procurement/estimates/${id}`,
     site_recce: `/crm/recce/${id}`,
     task: `/tasks/${id}`,
     calendar_event: `/calendar?eventId=${id}${hit.meta?.starts_at ? `&date=${encodeURIComponent(String(hit.meta.starts_at).slice(0, 10))}` : ''}`,
@@ -19,10 +19,6 @@ export function pathForEntity(hit) {
     drawing: `/design-studio/${id}`,
     work_order: `/procurement/work-order/${id}`,
     delivery_challan: `/procurement/delivery-challans/${id}`,
-    budget_estimate: `/ledger/budget-estimate/${id}`,
-    material_requirement: projectId
-      ? `/procurement/${encodeURIComponent(projectId)}/material-requirements?requirementId=${id}`
-      : '/procurement/requirements',
     scope_of_work: `/crm/scope-of-work/${id}`,
     activity_log: '/activity',
   };

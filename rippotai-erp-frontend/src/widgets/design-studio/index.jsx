@@ -67,7 +67,7 @@ export const DesignPendingApprovals = () => {
   return (
     <WidgetShell
       title="Pending Approvals"
-      onClick={() => nav("/crm/design/approvals")}
+      onClick={() => nav("/design-studio/all")}
     >
       <Stat
         value={d?.overview?.pending_approvals ?? "—"}
@@ -158,7 +158,7 @@ export const DesignApprovalsList = () => {
     <WidgetShell title="Pending Approvals">
       <RowList
         rows={rows}
-        onClick={() => nav("/crm/design/approvals")}
+        onClick={() => nav("/design-studio/all")}
         empty="No approvals pending review"
       />
     </WidgetShell>

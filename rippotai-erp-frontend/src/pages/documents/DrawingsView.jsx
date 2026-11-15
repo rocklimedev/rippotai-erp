@@ -2,9 +2,9 @@
 import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { CloudUpload, Download, ExternalLink, FileText, ImageOff } from "lucide-react";
+import { CloudUpload, ImageOff } from "lucide-react";
 
-import { Page, PageHeader, Card, Button, Pill, EmptyState } from "@/components/inos";
+import { Page, PageHeader, Card, Button, EmptyState } from "@/components/inos";
 import { useGetDrawingByIdQuery, useUpdateDrawingMutation } from "../../api/documents/drawing.api";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import { useGetUsersQuery } from "../../api/users/user.api";
@@ -14,17 +14,20 @@ import {
   STATUSES,
   errMessage,
   fileKind,
-  formatBytes,
   formatDate,
   createdAt,
   phaseLabel,
   sortedRevisions,
-  statusTone,
 } from "../design-studio/drawingUtils";
 import "../design-studio/drawings.css";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
+import OpenFileLink from "@/components/record-context/OpenFileLink";
 
 export default function DrawingsView() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("drawing", id);
   const nav = useNavigate();
   const { data: drawing, isLoading, isError } = useGetDrawingByIdQuery(id, { skip: !id });
   const { data: projects = [] } = useGetProjectsQuery({});
@@ -111,18 +114,13 @@ export default function DrawingsView() {
       <PageHeader
         crumbs={crumbs}
         title={drawing.title || "Untitled drawing"}
-        subtitle={`${drawing.drawingNumber} · Rev ${latest?.revision || "—"} · ${project?.name || "Unassigned project"}`}
+        info={recordInfo || [drawing.drawingNumber, project?.name].filter(Boolean).join(" · ")}
         actions={
           <>
-            {fileUrl && (
-              <Button
-                variant="secondary"
-                icon={Download}
-                onClick={() => window.open(fileUrl, "_blank", "noopener,noreferrer")}
-                data-testid="drawing-download"
-              >
-                Download
-              </Button>
+            {latest?.id && (
+              <OpenFileLink button source={`/drawings/${drawing.id}/revisions/${latest.id}/download`} title={latest.filename} testId="drawing-open">
+                Open in new tab
+              </OpenFileLink>
             )}
             <Button variant="primary" icon={CloudUpload} onClick={() => nav(`/design-studio/upload?drawing=${drawing.id}`)}>
               Upload new revision
@@ -130,6 +128,7 @@ export default function DrawingsView() {
           </>
         }
       />
+      <RecordContext type="drawing" id={drawing.id} listTo={`/projects/${drawing.projectId}?tab=drawings`} listLabel="Project drawings" />
 
       <div className="ds-view">
         <Card flush>
@@ -144,9 +143,9 @@ export default function DrawingsView() {
                 <p style={{ margin: 0, color: "var(--text-2)", fontSize: 13, textAlign: "center" }}>
                   CAD files can't be previewed in the browser. Download to open in AutoCAD.
                 </p>
-                <Button variant="soft" icon={ExternalLink} onClick={() => window.open(fileUrl, "_blank", "noopener,noreferrer")}>
+                <OpenFileLink button source={`/drawings/${drawing.id}/revisions/${latest.id}/download`} title={latest.filename}>
                   Open file
-                </Button>
+                </OpenFileLink>
               </div>
             )}
           </div>
@@ -180,74 +179,7 @@ export default function DrawingsView() {
         </div>
       </div>
 
-      <Card flush title="Revision history" subtitle={`${revisions.length} revision${revisions.length === 1 ? "" : "s"} · newest first`}>
-        {!revisions.length ? (
-          <EmptyState icon={FileText} title="No revisions uploaded" />
-        ) : (
-          <div className="inos-table-wrap">
-            <table className="inos-table">
-              <thead>
-                <tr>
-                  <th />
-                  <th>Rev</th>
-                  <th>File</th>
-                  <th>Status</th>
-                  <th>Issue purpose</th>
-                  <th>Issued</th>
-                  <th>Uploaded by</th>
-                  <th className="num">Size</th>
-                  <th className="actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {revisions.map((r, i) => (
-                  <tr key={r.id}>
-                    <td style={{ width: 56 }}>
-                      <FileThumb name={r.filename} mime={r.mime} src={r.url} size="sm" />
-                    </td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <span className="ds-rev">{r.revision}</span>
-                      {i === 0 && (
-                        <span style={{ marginLeft: 8 }}>
-                          <Pill tone="brand" size="sm" dot={false}>
-                            Current
-                          </Pill>
-                        </span>
-                      )}
-                    </td>
-                    <td
-                      style={{ fontWeight: 600, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                      title={r.filename}
-                    >
-                      {r.filename || "—"}
-                    </td>
-                    <td>
-                      <Pill tone={statusTone(r.status)} size="sm">
-                        {r.status || "Draft"}
-                      </Pill>
-                    </td>
-                    <td className="muted">{r.issuePurpose || "—"}</td>
-                    <td className="muted">{formatDate(r.issueDate || createdAt(r))}</td>
-                    <td className="muted">{r.uploadedByName || "—"}</td>
-                    <td className="num muted">{formatBytes(r.size)}</td>
-                    <td className="actions">
-                      {r.url && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          icon={Download}
-                          aria-label={`Download revision ${r.revision}`}
-                          onClick={() => window.open(r.url, "_blank", "noopener,noreferrer")}
-                        />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      <VersionHistory type="drawing" id={drawing.id} />
     </Page>
   );
 }

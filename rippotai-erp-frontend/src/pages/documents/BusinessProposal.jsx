@@ -100,7 +100,8 @@ export function BusinessProposalAll() {
   const openView = async (r) => {
     setViewing(r);
     setPdfUrl(null);
-    if ((r.mime || "").includes("pdf")) {
+    const mime = r.mime || "";
+    if (mime.includes("pdf") || mime.startsWith("image/")) {
       try {
         // triggerDownload hits the same /documents/:id/download endpoint,
         // via the shared RTK Query cache/dedup instead of a bespoke axios call.
@@ -393,17 +394,17 @@ export function BusinessProposalAll() {
               </div>
             </div>
             <div className="flex-1 overflow-auto bg-[#F4F6F7] p-3">
-              {pdfUrl ? (
+              {(viewing.mime || "").startsWith("image/") && pdfUrl ? (
+                <img
+                  alt={viewing.title}
+                  src={pdfUrl}
+                  className="max-w-full max-h-[70vh] mx-auto"
+                />
+              ) : pdfUrl ? (
                 <iframe
                   title="pdf-viewer"
                   src={pdfUrl}
                   className="w-full h-[70vh] rounded"
-                />
-              ) : (viewing.mime || "").startsWith("image/") ? (
-                <img
-                  alt={viewing.title}
-                  src={`${process.env.REACT_APP_BACKEND_URL}/api/documents/${viewing.id}/download`}
-                  className="max-w-full max-h-[70vh] mx-auto"
                 />
               ) : (
                 <div className="text-center py-16 text-[#6B7B7C]">

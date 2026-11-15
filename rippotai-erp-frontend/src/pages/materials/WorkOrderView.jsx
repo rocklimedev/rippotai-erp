@@ -1,4 +1,7 @@
 import { useRef, useState } from "react";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Pencil,
@@ -19,12 +22,10 @@ import { toast } from "sonner";
 
 import WorkOrderPrintDocument from "../../components/commerce-documents/WorkOrderPrintDocument";
 import { DocumentPreview } from "@/components/print-document";
-import { Page, PageHeader, EmptyState, StatusPill, Button as InosButton } from "@/components/inos";
+import { Page, PageHeader, EmptyState, Button as InosButton } from "@/components/inos";
 import { downloadWorkOrderPdf } from "../../components/work-orders/workOrderPdf";
 import {
   getWorkOrderNumber,
-  getProjectName,
-  getVendorName,
 } from "../../components/work-orders/workOrderFormat";
 
 import {
@@ -61,7 +62,7 @@ const STATUS_STYLES = {
 
   APPROVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
 
-  ISSUED: "border-blue-200 bg-blue-50 text-blue-700",
+  ISSUED: "border-[#C5D6CF] bg-[#E7EEEB] text-[#0D3D2F]",
 
   ACKNOWLEDGED: "border-cyan-200 bg-cyan-50 text-cyan-700",
 
@@ -153,6 +154,7 @@ const CANCELLABLE_STATUSES = [
 export default function WorkOrderView() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const recordInfo = useRecordInfo("work-order", id);
 
   const documentRef = useRef(null);
 
@@ -316,14 +318,9 @@ export default function WorkOrderView() {
     <>
       <Page>
         <PageHeader
+        info={recordInfo}
           crumbs={crumbs}
           title={getWorkOrderNumber(workOrder)}
-          subtitle={
-            <span style={{ display: "inline-flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              {workOrder.title || `${getProjectName(workOrder)} · ${getVendorName(workOrder)}`}
-              <StatusPill status={String(status).toLowerCase()} size="sm" />
-            </span>
-          }
           actions={
             <>
               <DropdownMenu>
@@ -367,12 +364,14 @@ export default function WorkOrderView() {
             </>
           }
         />
+        <RecordContext type="work-order" id={id} />
 
         <DocumentPreview>
           <div ref={documentRef}>
             <WorkOrderPrintDocument workOrder={workOrder} />
           </div>
         </DocumentPreview>
+        <VersionHistory type="work-order" id={id} />
       </Page>
 
       {/* Status Confirmation */}

@@ -1,5 +1,6 @@
+import ArchitectVisitScheduleList from "@/pages/doc-lists/ArchitectVisitScheduleList";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   useSiteProjects,
@@ -14,7 +15,7 @@ import {
   useUpdateVisitAssignmentMutation,
   useDeactivateVisitAssignmentMutation,
 } from "@/api/procuerment/site-ops.api";
-import { useGetVisitStagesQuery } from "@/api/site-ops/site-ops.api";
+import { useDownloadVisitScheduleMutation, useGetVisitStagesQuery } from "@/api/site-ops/site-ops.api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,8 +47,16 @@ const message = (e) =>
   Array.isArray(e?.data?.message)
     ? e.data.message.join(", ")
     : e?.data?.message || "Unable to save allocation";
+// Without a project the page is the Architect Site Visit Schedule list.
 export default function VisitAssignmentsPage() {
+  const [params] = useSearchParams();
+  if (!params.get("project") && !params.get("new")) return <ArchitectVisitScheduleList />;
+  return <VisitAssignmentsEditor />;
+}
+
+function VisitAssignmentsEditor() {
   const [projectId, setProjectId] = useProjectParam();
+  const [downloadSchedule, { isLoading: exportingSchedule }] = useDownloadVisitScheduleMutation();
   const { projects, nameOf } = useSiteProjects();
   const teams = useTradeTeams();
   const { data, isLoading, error } = useGetVisitAssignmentsQuery({ projectId });
@@ -127,7 +136,12 @@ export default function VisitAssignmentsPage() {
             site visit schedule.
           </p>
         </div>
-        <Button onClick={() => start()}>Allocate visit</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" disabled={exportingSchedule} onClick={() => downloadSchedule(projectId || undefined)}>
+            {exportingSchedule ? "Preparing Excel…" : "Visit schedule (Excel)"}
+          </Button>
+          <Button onClick={() => start()}>Allocate visit</Button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-3">
         <ProjectPicker

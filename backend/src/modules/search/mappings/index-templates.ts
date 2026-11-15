@@ -19,6 +19,7 @@ function buildMapping(extraProperties: Record<string, unknown>) {
 export const INDEX_MAPPINGS: Record<string, ReturnType<typeof buildMapping>> = {
   projects: buildMapping({
     slug: { type: 'keyword' },
+    code: { type: 'keyword' },
     site_location: { type: 'text', analyzer: 'address_analyzer' },
     description: { type: 'text', analyzer: 'standard_folded' },
     priority: { type: 'keyword' },
@@ -85,21 +86,6 @@ export const INDEX_MAPPINGS: Record<string, ReturnType<typeof buildMapping>> = {
     items_text: { type: 'text', analyzer: 'standard_folded' },
     version: { type: 'integer' },
     locked: { type: 'boolean' },
-  }),
-
-  quotations: buildMapping({
-    quotation_number: {
-      type: 'text',
-      analyzer: 'code_analyzer',
-      fields: { keyword: { type: 'keyword' } },
-    },
-    project_name: { type: 'text', analyzer: 'standard_folded' },
-    vendor_name: { type: 'text', analyzer: 'standard_folded' },
-    boq_reference: { type: 'keyword' },
-    total_amount: { type: 'double' },
-    items_text: { type: 'text', analyzer: 'standard_folded' },
-    comparison_notes: { type: 'text', analyzer: 'standard_folded' },
-    review_remarks: { type: 'text', analyzer: 'standard_folded' },
   }),
 
   project_briefs: buildMapping({

@@ -85,6 +85,7 @@ const STATUS_LABEL = {
   completed: "Completed",
   archived: "Archived",
   on_hold: "On hold",
+  lead: "Lead (pipeline)",
 };
 
 const VIEW_KEY = "inos.projects.view";
@@ -104,7 +105,7 @@ const getProjectName = (project) =>
   getProjectId(project) ||
   "Untitled project";
 
-const getProjectCode = (project) => project?.code || project?.project_code || project?.slug || "";
+const getProjectCode = (project) => project?.code || project?.project_code || "";
 
 const getClientName = (project) => project?.client?.name || project?.clientName || project?.client_name || "";
 
@@ -275,7 +276,7 @@ function ProjectGrid({ projects, phaseTree }) {
             key={id}
             tone={folderToneFor(id)}
             title={getProjectName(project)}
-            subtitle={[location, client].filter(Boolean).join(" · ") || "No site location"}
+            subtitle={[getProjectCode(project), location, client].filter(Boolean).join(" · ") || "No site location"}
             badge={<StatusPill status={getProjectStatus(project)} size="sm" />}
             onClick={() => nav(`/projects/${id}`)}
             meta={
@@ -331,7 +332,7 @@ function ProjectTimeline({ projects, phaseTree, actions }) {
                 {getProjectName(project)}
               </button>
               <div className="pj-trow__sub pj-truncate">
-                {[location, getClientName(project)].filter(Boolean).join(" · ") || "No site location"}
+                {[getProjectCode(project), location, getClientName(project)].filter(Boolean).join(" · ") || "No site location"}
               </div>
             </div>
 
@@ -388,6 +389,7 @@ function ProjectTable({ projects, phaseTree, actions }) {
         <table className="inos-table">
           <thead>
             <tr>
+              <th>Code</th>
               <th>Project</th>
               <th>Client</th>
               <th>Current phase</th>
@@ -403,9 +405,12 @@ function ProjectTable({ projects, phaseTree, actions }) {
               const info = getProjectInfo(project, phaseTree);
               return (
                 <tr key={id} className="is-clickable" onClick={() => nav(`/projects/${id}`)}>
+                  <td className="pj-code" style={{ whiteSpace: "nowrap", fontWeight: 600 }} data-testid="project-code">
+                    {getProjectCode(project) || "—"}
+                  </td>
                   <td style={{ maxWidth: 260 }}>
                     <div className="pj-cell-title pj-truncate">{getProjectName(project)}</div>
-                    <div className="pj-cell-sub pj-truncate">{getLocation(project) || getProjectCode(project)}</div>
+                    <div className="pj-cell-sub pj-truncate">{getLocation(project)}</div>
                   </td>
                   <td className={getClientName(project) ? "" : "muted"}>{getClientName(project) || "—"}</td>
                   <td style={{ maxWidth: 240 }}>
@@ -622,7 +627,6 @@ export default function ProjectsDashboard() {
     <Page className="pj-page">
       <PageHeader
         title="Projects"
-        subtitle="Every project from brief to handover — see where each one stands and open its workspace."
         actions={
           <>
             <Button

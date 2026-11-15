@@ -24,6 +24,7 @@ import {
   MessageCircle,
   FolderPlus,
   Users,
+  Pencil,
 } from 'lucide-react';
 import {
   Button,
@@ -48,7 +49,9 @@ import {
 } from '@/api/connectors/leads.api';
 import { useGetProjectsQuery, useCreateProjectMutation } from '@/api/projects/project.api';
 import { useGetClientsQuery } from '@/api/projects/client.api';
-import { STAGES, PIPELINE_STEPS, stageOf, formatINR, TAG_COLORS } from '@/hooks/stages';
+import { STAGES, PIPELINE_STEPS, stageOf, formatINR } from '@/hooks/stages';
+import { ServiceLabel, TempBadge, TempMarker } from './DealBadges';
+import { SERVICES, serviceLabel } from './dealMeta';
 import { Drawer, DrawerClose } from './Modal';
 import EditableField from './EditableField';
 import { shortDate, dateTime, relative, isPast, todayISO, errorText, parseRupees } from './utils';
@@ -145,7 +148,7 @@ function Fact({ label, children }) {
   );
 }
 
-export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, onAskLost }) {
+export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, onAskLost, onEdit }) {
   const navigate = useNavigate();
   const { data: deal, isLoading, isError } = useGetLeadQuery(dealId, { skip: !dealId });
   const [tab, setTab] = useState('timeline');
@@ -212,6 +215,14 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
 
   const createProjectFromDeal = async () => {
     try {
+      if (deal.clientId) {
+        // The server links (or creates) the client's project of this name and fills its facts.
+        const saved = await updateLead({ id: dealId, dealName: deal.dealName || deal.title }).unwrap();
+        if (saved?.projectId) {
+          toast.success('Project created and linked');
+          return;
+        }
+      }
       const p = await createProject({
         name: deal.title,
         site_location: deal.location || 'To be confirmed',
@@ -264,18 +275,15 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
                   <Pill tone={s.tone === 'mute' ? 'mute' : s.tone} size="sm">
                     {s.label}
                   </Pill>
-                  {deal.tag && (
-                    <Pill tone={TAG_COLORS[deal.tag]?.tone} size="sm">
-                      {deal.tag}
-                    </Pill>
-                  )}
+                  <ServiceLabel service={deal.service} />
+                  <TempBadge tag={deal.tag} />
                   {deal.stuck && (
                     <Pill tone="warn" size="sm">
                       Stuck {deal.daysInStage}d
                     </Pill>
                   )}
                   {deal.zohoId && (
-                    <Pill tone="info" size="sm">
+                    <Pill tone="mute" size="sm">
                       Synced with Bigin
                     </Pill>
                   )}
@@ -316,6 +324,17 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
                       Lost
                     </Button>
                   </>
+                )}
+                {onEdit && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Pencil}
+                    onClick={() => onEdit(deal)}
+                    data-testid="drawer-edit"
+                  >
+                    Edit
+                  </Button>
                 )}
                 <Button
                   variant="ghost"
@@ -713,7 +732,28 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
                         onSave={(v) => save({ location: v })}
                       />
                     </Fact>
+                    <Fact label="Project">
+                      {deal.projectId ? (
+                        <button
+                          type="button"
+                          className="crm-linkbtn"
+                          onClick={() => navigate(`/projects/${deal.projectId}`)}
+                          data-testid="deal-project-link"
+                        >
+                          {deal.projectName || deal.project?.name || 'Open project'}
+                          {deal.projectStatus === 'lead' ? ' · lead' : ''}
+                        </button>
+                      ) : (
+                        <span className="muted">Not linked yet</span>
+                      )}
+                    </Fact>
                   </div>
+                  {deal.projectId && (
+                    <p className="crm-hint-inline" style={{ margin: '8px 0 0' }}>
+                      Phone, email, location and size here are the client&apos;s and project&apos;s
+                      own details — documents use the same values.
+                    </p>
+                  )}
                   {deal.whatsapp && (
                     <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                       <Button
@@ -770,6 +810,16 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
                         onSave={(v) => save({ type: v })}
                       />
                     </Fact>
+                    <Fact label="Service">
+                      <EditableField
+                        value={deal.service || 'DESIGN'}
+                        display={serviceLabel(deal.service)}
+                        type="select"
+                        options={SERVICES}
+                        onSave={(v) => v && save({ service: v })}
+                        testId="deal-service"
+                      />
+                    </Fact>
                     <Fact label="Size">
                       <EditableField
                         value={deal.size || ''}
@@ -777,13 +827,11 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
                         onSave={(v) => save({ size: v })}
                       />
                     </Fact>
-                    <Fact label="Tag">
-                      <EditableField
-                        value={deal.tag || ''}
-                        type="select"
-                        options={['Hot', 'Warm', 'Cold'].map((x) => ({ value: x, label: x }))}
-                        onSave={(v) => save({ tag: v || null })}
-                      />
+                    <Fact label="Temp.">
+                      <TempMarker tag={deal.tag} onChange={(t) => save({ tag: t })} />
+                    </Fact>
+                    <Fact label="Budget">
+                      <span>{deal.budget || '—'}</span>
                     </Fact>
                     <Fact label="Proposal">
                       <span style={{ fontWeight: 550 }}>

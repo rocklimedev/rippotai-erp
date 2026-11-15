@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, IsNotEmpty } from 'class-validator';
-import { LeadType } from '@/common/enums/leads.enums';
+import { LeadService, LeadTag, LeadType } from '@/common/enums/leads.enums';
 
 export class CreateLeadDto {
   @IsString()
@@ -41,4 +41,12 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   source?: string;
+
+  @IsOptional()
+  @IsEnum(LeadService)
+  service?: LeadService;
+
+  @IsOptional()
+  @IsEnum(LeadTag)
+  tag?: LeadTag;
 }

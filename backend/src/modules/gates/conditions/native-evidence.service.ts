@@ -141,14 +141,6 @@ export const NATIVE_EVIDENCE: Readonly<Record<string, NativeSource>> = {
   PLAN_INITIAL_ESTIMATE: estimate,
   PLAN_STANDARD_BOQ: boq,
   VENDOR_ESTIMATE: estimate,
-  VENDOR_QUOTATION: {
-    table: 'quotations',
-    label: 'Vendor quotation',
-    route: '/procurement/estimates/all',
-    deleted: true,
-    accepted: ['SUBMITTED', 'APPROVED'],
-    approved: ['APPROVED'],
-  },
   VENDOR_BOQ: boq,
   EXEC_FINAL_BOQ: { ...boq, accepted: ['APPROVED'] },
 };
@@ -200,7 +192,6 @@ export class NativeEvidenceService {
               payment_schedules: `/ledger/payment-schedule/${row.id}`,
               budget_estimates: `/ledger/budget-estimate/${row.id}`,
               boqs: `/ledger/boq/${row.id}`,
-              quotations: `/procurement/estimates/${row.id}`,
               project_planners: `/projects/${encodeURIComponent(projectId)}`,
             } as Record<string, string>
           )[config.table] ?? config.route)

@@ -22,19 +22,19 @@ export const APP_META = {
   projects: {
     name: "Projects",
     base: "/projects",
-    searchPh: "Search projects, clients, milestones",
+    searchPh: "Search projects, clients",
   },
 
   design: {
     name: "Design",
     base: "/design",
-    searchPh: "Search drawings, CRM, budgets, payments",
+    searchPh: "Search briefs, recces, scope of work, drawings",
   },
 
   build: {
     name: "Build",
     base: "/build",
-    searchPh: "Search inventory, procurement, site operations, BOQ",
+    searchPh: "Search BOQ, PO, WO, procurement, site",
   },
 
   ledger: {
@@ -93,150 +93,89 @@ const I = (label, slug) => ({ label, slug });
 export const APP_MENUS = {
   dashboard: [],
 
+  // ------------------------------------------------------------
+  // PROJECTS: projects list → project page (Overview / Drawings / Documents), clients
+  // ------------------------------------------------------------
   projects: [
-    {
-      label: "Clients",
-      slug: "/clients",
-    },
-    {
-      label: "Documents",
-      items: [
-        I("All Documents", "documents/all"),
-        I("Project Planner", "planner/list"),
-      ],
-    },
-    {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
+    { label: "Projects", slug: "/projects" },
+    { label: "Clients", slug: "/clients" },
   ],
 
   // ------------------------------------------------------------
-  // DESIGN: Design Studio + CRM + Ledger documents
+  // DESIGN (FLOW-SPEC): CRM → Project Setup → Design Studio
   // ------------------------------------------------------------
   design: [
     {
-      label: "Drawings",
-      items: [
-        I("Drawings", "/design-studio/all"),
-        I("Upload", "/design-studio/upload"),
-      ],
-    },
-    {
-      label: "Pipeline",
-      items: [I("Leads", "/crm/pipeline"), I("Sources", "/crm/leads/sources")],
-    },
-
-    {
       label: "CRM",
       items: [
+        I("Pipeline", "/crm/pipeline"),
         I("Client Brief", "/crm/brief/all"),
         I("Site Recce", "/crm/recce/all"),
         I("Scope of Work", "/crm/scope-of-work/all"),
+        I("Pre Design", "/design/pre-design"),
+        I("Contract", "/design/contract"),
+      ],
+    },
+    {
+      label: "Project Setup",
+      items: [
+        I("Payment Schedule", "/ledger/payment-schedule/all"),
         I("Plan of Action", "/crm/plan-of-action/all"),
-        // I("Scope Of Approval", "/crm/scope-of-approval/all"),
-        // I("Pitch Deck", "/crm/pitch-deck/all"),
-        I("Business Proposals", "/crm/business-proposal/all"),
+        I("Project Planner", "/projects/planner/list"),
       ],
     },
     {
-      label: "Budgets & Payments",
+      label: "Design Studio",
       items: [
-        I("Payment Schedules", "/ledger/payment-schedule/all"),
-        I("Budget Estimates", "/ledger/budget-estimates/all"),
-        I("Budget Guides", "/ledger/budget-guides/all"),
-      ],
-    },
-    {
-      label: "Management",
-      items: [
-        I("Projects", "/projects"),
-        I("Clients", "/clients"),
-        I("Activity", "/design-studio/activity"),
-        I("Edit Dashboard", "/design/edit-dashboard"),
-        I("Roles & Permissions", "/design-studio/roles"),
+        I("Design", "/design/design"),
+        I("Material Palette", "/design/material-palette"),
+        I("Working Drawings", "/design/working-drawings"),
+        I("Tender Drawings", "/design/tender-drawings"),
       ],
     },
   ],
 
   // ------------------------------------------------------------
-  // BUILD: Inventory + Procurement + Site Operations + BOQ library
+  // BUILD (FLOW-SPEC): Contracts → Procurement → Ledger → Operations
   // ------------------------------------------------------------
   build: [
     {
-      label: "BOQ Library",
-      items: [
-        I("BOQ", "/ledger/boq/all"),
-        I("Rate and Item Library", "/ledger/boq/rate-and-item-library"),
-        I("BOQ Templates", "/ledger/boq/templates"),
-      ],
-    },
-    {
-      label: "Site Inventory",
-      items: [
-        I("Site Inventory", "/inventory/site-inventory/all"),
-        I("Inventory Transactions", "/inventory/site-inventory/transactions"),
-        I("Record Transaction", "/inventory/site-inventory/transactions/new"),
-      ],
-    },
-
-    {
-      label: "Materials",
-      items: [
-        I("Estimates", "/procurement/estimates/all"),
-        I("Delivery Challans", "/procurement/delivery-challans"),
-        I("Purchase Orders", "/procurement/purchase-orders"),
-        I("Work Order", "/procurement/work-order/all"),
-        I("Requirements", "/procurement/requirements"),
-        I("Vendors", "/procurement/vendors/directory"),
-        I("Procurement Sheet", "/procurement/material-procurement/list"),
-        I("Rate Comparison", "/procurement/vendors/rate-comparison"),
-        I("Rate Sheets", "/procurement/rate-sheets"),
-      ],
+      label: "Contracts",
+      items: [I("Agreement", "/build/agreement"), I("Consent Form", "/build/consent-form")],
     },
     {
       label: "Procurement",
-      items: [],
-    },
-
-    {
-      label: "Site Operations",
       items: [
-        I("Daily Reports", "/site-operations/daily-reports"),
+        I("Vendor Comparison Sheet", "/procurement/vendors/rate-comparison"),
+        I("Quotation", "/procurement/quotations"),
+        I("Procurement Sheet", "/procurement/material-procurement/list"),
+      ],
+    },
+    {
+      label: "Ledger",
+      items: [
+        I("BOQ", "/ledger/boq/all"),
+        I("PO", "/procurement/purchase-orders"),
+        I("WO", "/procurement/work-order/all"),
+        I("Budget Guide", "/ledger/budget-guides/all"),
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        I("Site Inventory", "/inventory/site-inventory/all"),
+        I("Delivery Challan", "/procurement/delivery-challans"),
+        I("Checklist", "/site-operations/checklists"),
+        I("Architect Site Visit Schedule", "/site-operations/visit-assignments"),
+        I("Snag List", "/site-operations/snag-lists"),
+        I("Daily Site Report", "/site-operations/daily-reports"),
         I("Admin DPR", "/site-operations/admin-dpr"),
-        I("Visit Assignments", "/site-operations/visit-assignments"),
-        I("Snag Lists", "/site-operations/snag-lists"),
-        I("Checklists", "/site-operations/checklists"),
-      ],
-    },
-    {
-      label: "Management",
-      items: [
-        I("Projects", "/projects"),
-        I("Activity", "/procurement/activity"),
-        I("Edit Dashboard", "/build/edit-dashboard"),
       ],
     },
   ],
 
-  // ------------------------------------------------------------
-  // LEDGER: BOQ + settings remain
-  // ------------------------------------------------------------
-  ledger: [
-    {
-      label: "Settings",
-      items: [
-        I("Projects", "/projects"),
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
-  ],
+  // Ledger routes (/ledger/…) belong to Design or Build (see navigationAppFor).
+  ledger: [],
 
   adminConsole: [
     {
@@ -264,11 +203,7 @@ export const APP_MENUS = {
     // ------------------------------------------------------------
     {
       label: "Management",
-      items: [
-        I("Projects", "/projects"),
-        I("Activity", "activity"),
-        I("Edit Dashboard", "edit-dashboard"),
-      ],
+      items: [I("Activity", "activity")],
     },
   ],
 
@@ -278,7 +213,6 @@ export const APP_MENUS = {
       items: [
         I("My Tasks", "mine"),
         I("All Tasks", "all"),
-        I("Crucial Work", "crucial-work"),
         I("Overdue", "overdue"),
         I("New Task", "new"),
       ],
@@ -287,28 +221,12 @@ export const APP_MENUS = {
       label: "Notes",
       slug: "notes",
     },
-    {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
   ],
 
   calendar: [
     {
       label: "Calendar",
       items: [I("My Calendar", "mine"), I("Team Calendar", "team")],
-    },
-    {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
     },
   ],
 
@@ -356,13 +274,16 @@ export function navigationAppFor(app, pathname = "") {
     return "build";
   if (app === "ledger") {
     if (
-      /^\/ledger\/(forms\/(payment-schedule|budget-estimate)|payment-schedule|budget-estimates?|budget-guides|aggrements)(\/|$)/.test(
+      /^\/ledger\/(forms\/(payment-schedule|budget-estimate)|payment-schedule|budget-estimates?)(\/|$)/.test(
         pathname,
       )
     )
       return "design";
     return "build";
   }
+  // Project Planner sits in Design › Project Setup.
+  if (app === "projects" && /^\/projects\/planner(\/|$)/.test(pathname))
+    return "design";
   return app;
 }
 
@@ -371,7 +292,8 @@ export function navigationPath(app, slug = "") {
   return path.replace(/\/edit-dashboard$/, "?edit=1");
 }
 
-// Keep shared activity/permission pages registered under their original module.
+// Sub-modules (design_studio, crm, inventory, procurement, siteOperations)
+// have no menu of their own: their pages show the Design / Build menu.
 for (const app of [
   "design_studio",
   "crm",
@@ -379,12 +301,7 @@ for (const app of [
   "procurement",
   "siteOperations",
 ]) {
-  APP_MENUS[app] = [
-    {
-      label: "Settings",
-      items: [I("Activity", "activity"), I("Roles and Permissions", "roles")],
-    },
-  ];
+  APP_MENUS[app] = [];
 }
 
 export function allSlugsFor(app) {

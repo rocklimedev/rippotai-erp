@@ -27,18 +27,15 @@ This is the complete 83-item catalogue mapping against the supplied database sch
 | `DES_CONCEPT_DESIGN_02` | Concept Design 02 — 3D with Material + Furniture Layout | documents (uploaded document) |
 | `DES_DESIGN_DEVELOPMENT_01` | Design Development 01 | documents (uploaded document) |
 | `DES_DESIGN_DEVELOPMENT_02` | Design Development 02 — With Material | documents (uploaded document) |
-| `VENDOR_SHORTLIST` | Vendor Shortlist | documents (uploaded document) |
 | `VENDOR_SITE_VISIT_SCHEDULE` | Site Visit Schedule | documents (uploaded document) |
 | `VENDOR_SITE_MEASUREMENT_SHEET` | Vendor Site Measurement Sheet | documents (uploaded document) |
 | `VENDOR_ESTIMATE` | Estimate | budget_estimates |
-| `VENDOR_QUOTATION` | Quotation | quotations |
 | `VENDOR_BOQ` | BOQ | boqs |
 | `VENDOR_CONTRACTOR_LINEUP` | Contractor Lineup | documents (uploaded document) |
 | `MAT_MATERIAL_REQUIREMENT` | Material Requirement | documents (uploaded document) |
 | `MAT_MATERIAL_RATES_SHEET` | Material Rates Sheet | documents (uploaded document) |
 | `MAT_MATERIAL_LAYOUT_SPECIFICATION` | Material Layouts and Specification | drawings (uploaded drawing) |
 | `MAT_MATERIAL_ESTIMATE` | Material Estimate | documents (uploaded document) |
-| `MAT_MATERIAL_QUOTATION` | Material Quotation | documents (uploaded document) |
 | `MAT_PURCHASE_ORDERS` | Purchase Orders | documents (uploaded document) |
 | `MAT_DELIVERY_CHALLANS` | Delivery Challans | documents (uploaded document) |
 | `MAT_SITE_INVENTORY_REGISTER` | Site Inventory Register | documents (uploaded document) |
@@ -95,10 +92,10 @@ This is the complete 83-item catalogue mapping against the supplied database sch
 - Brief: READY_FOR_DESIGN or SIGNED_OFF; explicit approval requires SIGNED_OFF. Scope: APPROVED or ACCEPTED. Recce has no approval field: its recorded existence can satisfy nonapproval requirements only; analysis/site-brief additionally require existing_condition.
 - Payment schedule must be ACTIVE/COMPLETED and accepted by the client. Token receipt uses a PAID TOKEN milestone in the latest active/completed schedule. This confirms payment, not a separate signed receipt attachment.
 - Plans must be published. Timeline requires phases and duration; the drawings planner requires an active CONSULTANCY planner with dates and nondeleted items.
-- Estimate: submitted/approved unless approval is required. BOQ: pending_approval/approved unless approval is required. Quotation: submitted/approved unless approval is required. Approval always requires the approved state.
+- Estimate: submitted/approved unless approval is required. BOQ: pending_approval/approved unless approval is required. Approval always requires the approved state.
 - Initial/vendor estimates share the budget-estimate source; standard/vendor/final BOQs share the project BOQ source. The schema does not distinguish those document purposes. These are project-level checks, not proof of coverage for every contractor trade.
 - Scope of Approval remains an upload because scope_of_work does not represent a distinct statutory/client approval package. Signed contract/agreement remain uploads.
-- Material-procurement and site-operation model files exist in the repository, but their dedicated tables are absent from the supplied schema. Their catalogue items remain uploads until the tables and lifecycle rules are confirmed. A global vendor record alone does not establish a project shortlist or contractor confirmation.
+- Material-procurement and site-operation model files exist in the repository, but their dedicated tables are absent from the supplied schema. Their catalogue items remain uploads until the tables and lifecycle rules are confirmed. A global vendor record alone does not establish a project engagement or contractor confirmation.
 - No new database columns or destructive backfill are needed. Existing uploaded copies remain stored but do not satisfy native requirements. Apply the earlier gate migration if it has not already been applied; do not rerun its one-time ALTER for this change.
 - Existing gate clearances are not silently changed. Recheck evidence and explicitly reopen approvals that need reassessment.
 - Tested with mocked native queries and TypeScript compilation; not validated against live MySQL.

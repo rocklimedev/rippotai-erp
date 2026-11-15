@@ -21,7 +21,12 @@ export class ProjectSearchService {
     const projectType =
       project.project_type?.name ?? project.projectType?.name ?? '';
     const title = project.name ?? 'Untitled Project';
-    const subtitle = [clientName, project.site_location, project.status]
+    const subtitle = [
+      project.code,
+      clientName,
+      project.site_location,
+      project.status,
+    ]
       .filter(Boolean)
       .join(' · ');
 
@@ -34,6 +39,7 @@ export class ProjectSearchService {
       subtitle,
       status: project.status ?? null,
       searchable_text: [
+        project.code,
         project.name,
         project.slug,
         project.site_location,
@@ -54,6 +60,7 @@ export class ProjectSearchService {
       is_deleted: !!project.deleted_at || !!project.deletedAt,
 
       slug: project.slug,
+      code: project.code ?? null,
       site_location: project.site_location,
       description: project.description,
       priority: project.priority,
@@ -119,6 +126,7 @@ export class ProjectSearchService {
           query: query.trim(),
           fields: [
             'title^6',
+            'code^6',
             'client_name^5',
             'site_location^4',
             'project_type^3',

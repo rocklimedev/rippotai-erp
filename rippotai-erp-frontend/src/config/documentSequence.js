@@ -7,8 +7,8 @@ const create = (id, name, route, prefixes = [], extra = {}) => ({
   prefixes,
   ...extra,
 });
-const upload = (id, name) => ({ id, name, action: "upload" });
-const reference = (id, name) => ({ id, name, action: "reference" });
+// A flow page (Pre Design, upload-type documents, registers) — opened, not created.
+const page = (id, name, route) => ({ id, name, action: "page", route, createRoute: route, prefixes: [route] });
 
 export const DOCUMENT_SEQUENCE = [
   create("client-brief", "Client Brief", "/crm/forms/project-brief", [
@@ -23,11 +23,7 @@ export const DOCUMENT_SEQUENCE = [
     "/crm/scope-of-work",
     "/crm/forms/scope-of-work",
   ]),
-  reference("scope-of-approval", "Scope of Approval"),
-  upload("pre-design", "Pre Design"),
-  upload("client-guide", "Client Guide"),
-  upload("pitch-deck", "Pitch Deck"),
-  reference("specification-budget-guide", "Specification & Budget Guide"),
+  page("pre-design", "Pre Design", "/design/pre-design"),
   create(
     "business-proposal",
     "Business Proposal",
@@ -57,37 +53,24 @@ export const DOCUMENT_SEQUENCE = [
     "/ledger/forms/payment-schedule",
     ["/ledger/payment-schedule", "/ledger/forms/payment-schedule"],
   ),
-  reference("consent-form", "Consent Form"),
-  upload("agreement-consultancy", "Agreement-Consultancy"),
-  upload("contract-execution", "Contract-Execution"),
+  page("contract", "Contract", "/design/contract"),
+  page("agreement", "Agreement", "/build/agreement"),
   create("plan-of-action", "Plan of Action", "/crm/forms/plan-of-action", [
     "/crm/plan-of-action",
     "/crm/forms/plan-of-action",
   ]),
-  upload("design", "Design"),
-  create(
-    "estimates-quotations",
-    "Estimates & Quotations",
-    "/procurement/estimates/new",
-    ["/procurement/estimates", "/procurement/quotations"],
-  ),
-  reference("architect-site-visit-schedule", "Architect Site Visit Schedule"),
-  upload("material-palette", "Material Palette"),
+  page("design", "Design", "/design/design"),
+  page("material-palette", "Material Palette", "/design/material-palette"),
+  page("tender-drawings", "Tender Drawings", "/design/tender-drawings"),
   create(
     "material-procurement-sheet",
-    "Material Procurement Sheet",
+    "Procurement Sheet",
     "/procurement/material-procurement/new",
     ["/procurement/material-procurement"],
   ),
   create(
-    "vendor-shortlist",
-    "Vendor Shortlist",
-    "/procurement/vendors/shortlists",
-    ["/procurement/vendors/shortlists"],
-  ),
-  create(
     "boq-vendor-comparison",
-    "BOQ x Vendor Comparison",
+    "Vendor Comparison Sheet",
     "/procurement/vendors/rate-comparison",
     ["/procurement/vendors/rate-comparison"],
   ),
@@ -107,27 +90,24 @@ export const DOCUMENT_SEQUENCE = [
     "/procurement/delivery-challans/new",
     ["/procurement/delivery-challans"],
   ),
-  upload("tender-drawings", "Tender Drawings"),
-  upload("working-drawings", "Working Drawings"),
-  upload("site-visit-template", "Site Visit Template"),
+  page("working-drawings", "Working Drawings", "/design/working-drawings"),
   create(
     "quality-check-list",
-    "Quality Check List",
+    "Checklist",
     "/site-operations/checklists/workspace",
     ["/site-operations/checklists/workspace", "/site-operations/checklists"],
   ),
-  reference("snag-list", "Snag List"),
-  reference("admin-dpr", "Admin DPR"),
-  reference("crucial-works", "Crucial Works"),
+  page("architect-site-visit-schedule", "Architect Site Visit Schedule", "/site-operations/visit-assignments"),
+  page("snag-list", "Snag List", "/site-operations/snag-lists"),
   create(
     "site-inventory-register",
-    "Site Inventory Register",
+    "Site Inventory",
     "/inventory/site-inventory/all",
     ["/inventory/site-inventory"],
   ),
   create(
     "daily-progress-report",
-    "Daily Progress Report",
+    "Daily Site Report",
     "/site-operations/daily-reports/new",
     ["/site-operations/daily-reports"],
   ),
@@ -143,9 +123,7 @@ const listRoutes = {
   "planner-procurement": "/projects/planner/list",
   "payment-schedule": "/ledger/payment-schedule/all",
   "plan-of-action": "/crm/plan-of-action/all",
-  "estimates-quotations": "/procurement/estimates/all",
   "material-procurement-sheet": "/procurement/material-procurement/list",
-  "vendor-shortlist": "/procurement/vendors/shortlists",
   "boq-vendor-comparison": "/procurement/vendors/rate-comparison",
   boq: "/ledger/boq/all",
   "purchase-order": "/procurement/purchase-orders",
@@ -170,13 +148,10 @@ export function documentDestination(
   const params = new URLSearchParams({ sequence: document.id });
   if (projectId) params.set("projectId", projectId);
   if (document.view) params.set("view", document.view);
-  if (document.action === "upload") params.set("documentName", document.name);
   const route =
-    document.action === "upload"
-      ? "/document/upload"
-      : (create && document.action === "create"
-          ? document.createRoute
-          : document.route) || "/document/reference";
+    (create && document.action === "create"
+      ? document.createRoute
+      : document.route) || "/projects";
   return `${route}?${params}`;
 }
 
@@ -189,8 +164,7 @@ export function currentSequenceDocument(pathname, search) {
     explicit &&
     (pathname === explicit.route ||
       pathname === explicit.createRoute ||
-      (pathname === "/document/reference" && explicit.action === "reference") ||
-      (pathname === "/projects/documents/all" && explicit.action === "upload"))
+      (explicit.action === "page" && pathname.startsWith(explicit.route)))
   )
     return explicit;
   return DOCUMENT_SEQUENCE.find(

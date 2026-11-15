@@ -105,6 +105,17 @@ export default defineConfig({
     }),
   ],
 
+  // Local server: same-origin API proxy so a shared tunnel link works
+  // (start with VITE_BACKEND_URL=/ ; plain localhost:5050 still works too).
+  server: {
+    allowedHosts: true,
+    proxy: {
+      "/api": { target: "http://localhost:5050", changeOrigin: false },
+      "/cdn": { target: "http://localhost:5050", changeOrigin: false },
+      "/socket.io": { target: "http://localhost:5050", ws: true },
+    },
+  },
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

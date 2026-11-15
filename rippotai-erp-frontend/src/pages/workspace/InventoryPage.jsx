@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useGetWsInventoryOverviewQuery } from "@/api/workspace/workspace.api";
 import { useGetProjectsQuery } from "@/api/projects/project.api";
 import { fmtDate, Loading, Meta } from "./shared";
+import SiteInventoryDocList from "@/pages/doc-lists/SiteInventoryDocList";
 
 const num = (n) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const stockState = (r) => {
@@ -19,7 +20,14 @@ const stockState = (r) => {
 const TYPE_TONE = { RECEIPT: "ok", ISSUE: "info", RETURN_TO_VENDOR: "peach", RETURN_FROM_CONTRACTOR: "lilac", ADJUSTMENT_IN: "mute", ADJUSTMENT_OUT: "mute", TRANSFER_IN: "lilac", TRANSFER_OUT: "lilac" };
 const pretty = (s) => String(s || "").replace(/_/g, " ").toLowerCase().replace(/^\w/, (m) => m.toUpperCase());
 
-export default function InventoryPage({ tab: initialTab = "stock" }) {
+// Without a project the stock view is the Site Inventory document list.
+export default function InventoryPage(props) {
+  const [sp] = useSearchParams();
+  if ((props.tab ?? "stock") === "stock" && !sp.get("project_id")) return <SiteInventoryDocList />;
+  return <InventoryRegister {...props} />;
+}
+
+function InventoryRegister({ tab: initialTab = "stock" }) {
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
   const project = sp.get("project_id") || "";

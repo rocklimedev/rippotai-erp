@@ -83,7 +83,7 @@ export class GateEngineService {
   private static readonly INIT_TTL_SECONDS = 10 * 60;
 
   // Computed readiness: derived from data owned by other modules (documents,
-  // tasks, payments, quotations, BOQs, team members). Cached per-project
+  // tasks, payments, BOQs, team members). Cached per-project
   // using a version counter (see invalidateReadinessCache) so writes in
   // those modules can invalidate precisely; the TTL below is only a safety
   // net in case an invalidation call is ever missed somewhere upstream.
@@ -172,7 +172,7 @@ export class GateEngineService {
    *
    * Called internally after clearGate/reopenGate/tickManualCondition.
    * IMPORTANT: any *other* module whose data feeds a gate condition
-   * (documents, drawings, tasks, payments, quotations, BOQs, team members)
+   * (documents, drawings, tasks, payments, BOQs, team members)
    * should call this too after a write that could flip a condition's
    * result — otherwise its effect on gate readiness won't be visible until
    * the READINESS_TTL_SECONDS safety-net TTL expires.

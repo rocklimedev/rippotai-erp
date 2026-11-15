@@ -7,12 +7,10 @@ import {
   Default,
   ForeignKey,
   BelongsTo,
-  HasMany,
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
 import { User } from '@/modules/users/models/user.model';
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { VendorCategory } from './vendor-category.model';
 import { VendorBusinessType } from './vendor-business-type.model';
 import { VendorStatus } from '@/common/enums';
@@ -132,10 +130,6 @@ export class Vendor extends Model<Vendor> {
   })
   declare updater: User;
 
-  @HasMany(() => Quotation, {
-    foreignKey: 'vendor_id',
-  })
-  declare quotations: Quotation[];
   @CreatedAt
   @Column({
     type: DataType.DATE,

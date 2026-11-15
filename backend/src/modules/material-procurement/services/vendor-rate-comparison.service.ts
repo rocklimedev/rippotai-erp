@@ -118,6 +118,25 @@ export class VendorRateComparisonService {
       throw new BadRequestException(
         'Vendor rates must be non-negative numbers',
       );
+    // Finalised vendor per BOQ category (the template's dropdown): { categoryId: vendorId }.
+    if (s.finalised_vendors !== undefined) {
+      const finalised = s.finalised_vendors;
+      if (
+        !finalised ||
+        typeof finalised !== 'object' ||
+        Array.isArray(finalised) ||
+        Object.entries(finalised).some(
+          ([categoryId, vendorId]) =>
+            !s.boq.categories.some((c) => c.id === categoryId) ||
+            (vendorId !== '' &&
+              (typeof vendorId !== 'string' ||
+                !s.selected_vendor_ids.includes(vendorId))),
+        )
+      )
+        throw new BadRequestException(
+          'Finalised vendors must be selected vendors of this sheet',
+        );
+    }
     if (Buffer.byteLength(JSON.stringify(s)) > 2 * 1024 * 1024)
       throw new BadRequestException('Comparison snapshot is too large');
   }

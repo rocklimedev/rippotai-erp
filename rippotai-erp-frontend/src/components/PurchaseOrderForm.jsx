@@ -197,7 +197,6 @@ const getSourceLabel = (value) => {
   const labels = {
     ESTIMATE: 'Estimate',
     BOQ: 'BOQ',
-    QUOTATION: 'Quotation',
     MANUAL: 'Manual',
   };
 
@@ -1084,7 +1083,7 @@ export default function PurchaseOrderForm({
                 value={form.source_type || 'MANUAL'}
                 onChange={(event) => updateForm('source_type', event.target.value)}
               >
-                {['MANUAL', 'ESTIMATE', 'BOQ', 'QUOTATION'].map((value) => (
+                {['MANUAL', 'ESTIMATE', 'BOQ'].map((value) => (
                   <option key={value} value={value}>
                     {getSourceLabel(value)}
                   </option>

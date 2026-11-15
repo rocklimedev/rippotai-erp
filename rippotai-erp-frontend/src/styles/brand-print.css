@@ -1,0 +1,18 @@
+/* Rippotai brand tokens for every client-facing document (screen, PDF, B&W print).
+   Source of truth: docs/BRAND-DOCUMENTS.md. Do not add other colours. */
+:root {
+  --rp-green: #0D3D2F;      /* brand green: headings, key highlights, table headers */
+  --rp-gold: #D9B061;       /* brand gold: thin decorative rules/accents only, never body text */
+  --rp-ink: #1A1A1A;        /* body text */
+  --rp-grey: #4D4D4D;       /* secondary text, labels (never lighter) */
+  --rp-rule: #8C8C8C;       /* table/section rules — visible in B&W */
+  --rp-rule-soft: #BDBDBD;  /* inner cell lines only */
+  --rp-fill: #F2F2F2;       /* subtle fills (totals rows, label columns) */
+  --rp-white: #FFFFFF;
+  --rp-font: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  --rp-size-body: 10pt;     /* min body size */
+  --rp-size-small: 8.5pt;   /* absolute minimum (labels, footers) */
+  --rp-size-h1: 22pt;
+  --rp-size-h2: 14pt;
+  --rp-size-h3: 11.5pt;
+}

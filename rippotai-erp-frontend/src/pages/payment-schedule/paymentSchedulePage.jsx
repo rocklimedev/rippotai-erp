@@ -1,7 +1,10 @@
 import React, { useRef } from "react";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { useParams, useNavigate } from "react-router-dom";
 import { Edit3, Download, FileText } from "lucide-react";
-import { Page, PageHeader, Button, EmptyState, StatusPill } from "@/components/inos";
+import { Page, PageHeader, Button, EmptyState } from "@/components/inos";
 import { DocumentPreview, usePdfDownload, pdfFileName } from "@/components/print-document";
 import PaymentScheduleView from "../../components/payments/PaymentScheduleView";
 import { useGetPaymentScheduleQuery } from "../../api/documents/payment-schedules.api";
@@ -9,6 +12,7 @@ import { useGetPaymentScheduleQuery } from "../../api/documents/payment-schedule
 // Payment schedule viewer: shows exactly what the client receives (A4 pages) and downloads it as a PDF.
 function PaymentSchedulePage() {
   const { scheduleId } = useParams();
+  const recordInfo = useRecordInfo("payment-schedule", scheduleId);
   const nav = useNavigate();
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
@@ -36,14 +40,9 @@ function PaymentSchedulePage() {
   return (
     <Page>
       <PageHeader
+        info={recordInfo}
         crumbs={crumbs}
         title={projectName}
-        subtitle={
-          <span style={{ display: "inline-flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            Payment schedule
-            {schedule.status && <StatusPill status={String(schedule.status).toLowerCase()} size="sm" />}
-          </span>
-        }
         actions={
           <>
             <Button variant="secondary" icon={Edit3} onClick={() => nav(`/ledger/forms/payment-schedule/${scheduleId}/edit`)}>
@@ -60,9 +59,11 @@ function PaymentSchedulePage() {
           </>
         }
       />
+      <RecordContext type="payment-schedule" id={scheduleId} />
       <DocumentPreview>
         <PaymentScheduleView ref={docRef} schedule={schedule} />
       </DocumentPreview>
+      <VersionHistory type="payment-schedule" id={scheduleId} />
     </Page>
   );
 }

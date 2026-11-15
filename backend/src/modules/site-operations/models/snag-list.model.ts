@@ -6,6 +6,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+import { jsonColumn } from '@/common/types/json-column';
 
 @Table({
   tableName: 'snag_lists',
@@ -28,7 +29,7 @@ export class SnagList extends Model<SnagList> {
   declare document_date: string;
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare revision: number;
-  @Column({ type: DataType.JSON, allowNull: false }) declare items: any[];
+  @Column(jsonColumn('items')) declare items: any[];
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare item_count: number;
   @Column({ type: DataType.INTEGER, allowNull: false })
@@ -54,10 +55,7 @@ export class SnagListRevision extends Model<SnagListRevision> {
   declare snag_list_id: string;
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare revision: number;
-  @Column({ type: DataType.JSON, allowNull: false }) declare document: Record<
-    string,
-    any
-  >;
+  @Column(jsonColumn('document')) declare document: Record<string, any>;
   @Column({ type: DataType.BLOB('long'), allowNull: false })
   declare excel_data: Buffer;
   @Column(DataType.CHAR(36)) declare created_by: string | null;

@@ -3,7 +3,6 @@ import AppLayout from "@/layouts/AppLayout";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import BoardView from "@/pages/leads/BoardView";
 
-import ContactsView from "@/pages/leads/ContactsView";
 import SiteRecceList from "@/pages/site-recce/SiteRecceList";
 import ProjectBriefList from "@/pages/brief/ProjectBriefList";
 import PlanOfActionList from "@/pages/plan-of-action/PlanOfActionList";
@@ -25,8 +24,6 @@ import { ScopeOfWorkView } from "../../pages/scope-of-work/ScopeOfWorkView";
 import BusinessProposalList from "@/pages/business-proposal/BusinessProposalList";
 import BusinessProposalView from "@/pages/business-proposal/BusinessProposalView";
 import BusinessProposalWorkspace from "@/pages/business-proposal/BusinessProposalWorkspace";
-import ProposalBuilder from "../../pages/documents/ProposalBuilder";
-import CRMDashboard from "../../pages/dashboard/CRMDashboard";
 import ZohoCrmTestConsole from "../../pages/ZohoCrmTester";
 export const crmRoutes = [
   {
@@ -86,10 +83,6 @@ export const crmRoutes = [
         element: <NewLeadPage />,
       },
 
-      {
-        path: "leads/sources",
-        element: <ContactsView />,
-      },
       {
         path: "leads/crm",
         element: <ZohoCrmTestConsole />,

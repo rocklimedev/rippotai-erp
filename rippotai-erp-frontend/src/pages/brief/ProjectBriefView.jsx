@@ -1,5 +1,8 @@
 import { appConfirm } from "@/lib/app-dialog";
 import { useAuth } from "@/context/AuthContext";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { BRIEF_STATUS_LABELS, briefTransitions } from "./brief-status";
 import React, { useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -15,8 +18,7 @@ import {
   PageHeader,
   Button,
   EmptyState,
-  StatusPill,
-} from "@/components/inos";
+  } from "@/components/inos";
 import ClientBriefDocument from "@/components/brief-document/ClientBriefDocument";
 import {
   useGetProjectBriefQuery,
@@ -29,6 +31,7 @@ import {
 // downloads the same pages as a PDF.
 export function ProjectBriefView() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("client-brief", id);
   const nav = useNavigate();
   const { user } = useAuth();
   const [changeStatus, { isLoading: changingStatus }] =
@@ -128,27 +131,9 @@ export function ProjectBriefView() {
   return (
     <Page>
       <PageHeader
+        info={recordInfo}
         crumbs={crumbs}
         title={project.name || "Client brief"}
-        subtitle={
-          <span
-            style={{
-              display: "inline-flex",
-              gap: 10,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            Client brief · version {brief.version || 1}
-            {brief.status && <StatusPill status={brief.status} size="sm" />}
-            {brief.confirmedDate && (
-              <span>
-                Signed off {brief.confirmedDate}
-                {brief.confirmedBy?.name ? ` by ${brief.confirmedBy.name}` : ""}
-              </span>
-            )}
-          </span>
-        }
         actions={
           <>
             {briefTransitions(
@@ -202,10 +187,12 @@ export function ProjectBriefView() {
           </>
         }
       />
+      <RecordContext type="client-brief" id={id} />
 
       <DocumentPreview>
         <ClientBriefDocument ref={docRef} brief={brief} />
       </DocumentPreview>
+      <VersionHistory type="client-brief" id={id} />
     </Page>
   );
 }

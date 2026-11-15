@@ -21,20 +21,21 @@ export default function DocumentSequenceNavigation({ children }) {
           aria-label="Document sequence"
           className="print:hidden mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white p-4"
         >
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-[#4D4D4D]">
             {DOCUMENT_SEQUENCE.indexOf(current) + 1} /{" "}
             {DOCUMENT_SEQUENCE.length} · {current.name}
           </span>
           {next ? (
             <Link
-              className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+              className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              style={{ background: "#0D3D2F" }}
               to={documentDestination(next, projectId, { create: true })}
             >
               Next Document: {next.name}
               <ArrowRight size={16} />
             </Link>
           ) : (
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-[#4D4D4D]">
               End of document sequence
             </span>
           )}
@@ -52,7 +53,7 @@ export function DocumentReference() {
       <h1 className="text-xl font-semibold">
         {document?.name || "Document reference"}
       </h1>
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm text-[#4D4D4D]">
         Reference only — this document's UI is being built.
       </p>
     </section>

@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import { useGetQcHistoryQuery } from "@/api/procuerment/site-ops.api";
+import { useDownloadExecutionChecklistMutation, useGetQcHistoryQuery } from "@/api/procuerment/site-ops.api";
 import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from "./siteProjects";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -142,6 +142,8 @@ function SummaryCard({ title, value, description, icon: Icon }) {
 
 export default function QcHistoryPage() {
   const [projectId, setProjectId] = useProjectParam();
+  const [downloadExecutionChecklist, { isLoading: exportingChecklist }] =
+    useDownloadExecutionChecklistMutation();
   const { projects, nameOf } = useSiteProjects();
   const projectName = projectId ? nameOf(projectId) : "all projects";
   const [search, setSearch] = useState("");
@@ -314,6 +316,17 @@ export default function QcHistoryPage() {
               <div className="w-full lg:w-[260px]">
                 <ProjectPicker value={projectId} onChange={setProjectId} projects={projects} />
               </div>
+
+              {projectId && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={exportingChecklist}
+                  onClick={() => downloadExecutionChecklist(projectId)}
+                >
+                  {exportingChecklist ? "Preparing Excel…" : "Execution checklist (Excel)"}
+                </Button>
+              )}
 
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

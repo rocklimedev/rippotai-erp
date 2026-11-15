@@ -115,20 +115,6 @@ export class PublicClientController {
 
   @RequirePermission('client-token:read')
   @Public()
-  @Get('quotations/compare/:cid')
-  compare(@Param('token') token: string, @Param('cid') cid: string) {
-    return this.svc.publicCompare(token, cid);
-  }
-
-  @RequirePermission('client-token:create')
-  @Public()
-  @Post('quotations/select')
-  select(@Param('token') token: string, @Body() body: any) {
-    return this.svc.publicSelectQuote(token, body);
-  }
-
-  @RequirePermission('client-token:read')
-  @Public()
   @Get('handover')
   handover(@Param('token') token: string) {
     return this.svc.publicHandover(token);

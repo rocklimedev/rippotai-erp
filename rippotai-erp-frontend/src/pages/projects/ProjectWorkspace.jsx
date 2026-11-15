@@ -1,38 +1,15 @@
-import ProjectDocumentsBoard from "../../components/projects/ProjectDocumentsBoard";
-import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  AlertCircle,
-  ArrowRight,
-  CheckCircle2,
-  Copy,
-  FileText,
-  FolderOpen,
-  GitCommitHorizontal,
-  IndianRupee,
-  ListChecks,
-  Package,
-  Pencil,
-  RefreshCw,
-  Share2,
-  Activity,
-  Users,
-  LayoutDashboard,
-  Receipt,
-  ExternalLink,
-} from "lucide-react";
+// Project page: Overview (status + action required), Drawings, Documents.
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { CheckCircle2, Copy, ExternalLink, FileText, FolderOpen, LayoutDashboard, LayoutGrid, Pencil, RefreshCw, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "@/lib/api";
-import { fmtINR, relativeTime } from "@/lib/format";
-
 import {
   Page,
   PageHeader,
   Card,
   Button,
-  Stats,
-  StatTile,
   Tabs,
   Pill,
   StatusPill,
@@ -41,102 +18,109 @@ import {
   Field,
   TextInput,
   ChoiceGroup,
-  prettyStatus,
 } from "@/components/inos";
 import {
-  PhaseTrack,
-  PhaseLegend,
   Skeleton,
   Modal,
   formatDate,
-  normalizeTreePhases,
-  normalizeWorkspacePhases,
   normalizeCommandCenterPhases,
   commandCenterProgress,
-  phaseProgress,
 } from "@/components/projects/_projects-ui";
+import "@/components/projects/projects-ui.css";
 import { useGetProjectPhasesQuery as useGetCommandCenterPhasesQuery } from "@/api/projects/command-center.api";
-import ProjectTemplatesPanel from "@/components/project-templates/ProjectTemplatesPanel";
-
 import { useGetProjectByIdQuery } from "../../api/projects/project.api";
-import { useGetBoqsQuery } from "../../api/boq/boq.api";
-import { useGetQuotationsQuery } from "../../api/procuerment/quotation.api";
-import {
-  useGetDocumentsQuery,
-  useUpdateDocumentMutation,
-  useGetProjectDocumentPhaseTreeQuery,
-} from "../../api/documents/document.api";
-import ProjectDrawingsPanel from "../design-studio/ProjectDrawingsPanel";
-
-const WORK_BUCKETS = [
-  ["delayed", "Delayed", "bad"],
-  ["due_today", "Due today", "warn"],
-  ["due_this_week", "Due this week", "info"],
-  ["awaiting_approval", "Awaiting approval", "warn"],
-  ["awaiting_client", "Awaiting client", "lilac"],
-  ["blocked", "Blocked", "bad"],
-  ["upcoming", "Upcoming", "mute"],
-];
+import { useGetDocumentHubQuery, useGetProjectPendingWorkQuery } from "@/api/projects/document-hub.api";
+import { PRE_DESIGN_SLOTS, PROJECT_DOCUMENTS } from "@/config/projectDocuments";
+import ProjectDocumentsHub from "@/components/projects/ProjectDocumentsHub";
+import ProjectDrawingsTab from "@/components/projects/ProjectDrawingsTab";
+import { useAccess } from "@/hooks/use-permission";
+import RecentActivity from "@/components/record-context/RecentActivity";
+import { phaseLabel } from "@/components/record-context/codes";
 
 const SHARE_PURPOSES = [
   { value: "project_view", label: "Project view" },
   { value: "boq_approval", label: "BOQ approval" },
-  { value: "quotation_selection", label: "Quotation selection" },
   { value: "handover_acceptance", label: "Handover acceptance" },
 ];
 
-const asArray = (v) => (Array.isArray(v) ? v : Array.isArray(v?.data) ? v.data : []);
-const isMissingDoc = (doc) => doc.status === "MISSING" || doc.required_missing;
+const TABS = [
+  { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "drawings", label: "Drawings", icon: LayoutGrid },
+  { value: "documents", label: "Documents", icon: FileText },
+];
 
 /* ============================================================
-   SECTIONS
+   OVERVIEW
 ============================================================ */
 
-function ActionRequired({ work, docs, onOpenDocuments }) {
-  const items = [
-    ...(work.delayed || []).map((item) => ({ ...item, type: "Delayed", tone: "bad" })),
-    ...(work.blocked || []).map((item) => ({ ...item, type: "Blocked", tone: "bad" })),
-    ...(work.awaiting_approval || []).map((item) => ({ ...item, type: "Approval", tone: "warn" })),
-    ...(work.awaiting_client || []).map((item) => ({ ...item, type: "Client", tone: "lilac" })),
-  ].slice(0, 7);
-  const missingDocs = docs.filter(isMissingDoc);
-  const count = items.length + missingDocs.length;
+function StatusCard({ project, progress }) {
+  const clientName = project.client?.name || project.client?.contact_person;
+  const facts = [
+    ["Status", <StatusPill key="s" status={project.status?.toLowerCase() || "active"} size="sm" />],
+    ["Stage", progress.current?.name || (progress.total && progress.done === progress.total ? "Complete" : "Not started")],
+    ["Client", clientName || "—"],
+    ["Site", project.site_location || "—"],
+    ["Completion", project.expected_completion_date ? formatDate(project.expected_completion_date) : "—"],
+  ];
+  return (
+    <Card title="Project status" actions={<span className="tabular" style={{ fontWeight: 700 }}>{progress.percent}%</span>}>
+      <Progress value={progress.percent} />
+      <dl className="pj-facts" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, margin: "16px 0 0" }}>
+        {facts.map(([k, v]) => (
+          <div key={k}>
+            <dt className="pj-muted" style={{ fontSize: 12 }}>{k}</dt>
+            <dd style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </Card>
+  );
+}
+
+function ActionRequired({ projectId }) {
+  const nav = useNavigate();
+  const { data: work = {} } = useGetProjectPendingWorkQuery(projectId);
+  const { data: hub } = useGetDocumentHubQuery(projectId);
+
+  const items = useMemo(() => {
+    const out = [];
+    (work.delayed || []).forEach((t) => out.push({ key: `d${t.id}`, tone: "bad", tag: "Overdue", title: t.title, sub: t.due_date ? `Due ${formatDate(t.due_date)}` : "", to: `/tasks/${t.id}` }));
+    (work.blocked || []).forEach((t) => out.push({ key: `b${t.id}`, tone: "bad", tag: "Blocked", title: t.title, to: `/tasks/${t.id}` }));
+    (work.awaiting_approval || []).forEach((a) => {
+      const boq = String(a.title || "").startsWith("BOQ: ");
+      out.push({ key: `a${a.id}`, tone: "warn", tag: "Approval", title: a.title, to: boq ? `/ledger/boq/${a.id}` : `/projects/documents/${a.id}` });
+    });
+    if (hub) {
+      // Next documents of the flow this project does not have yet.
+      const missing = PROJECT_DOCUMENTS.filter((d) => d.kind !== "register" && d.key !== "quotation").filter((d) =>
+        d.kind === "stage" ? !PRE_DESIGN_SLOTS.every((s) => hub[s.key]?.count) : !hub[d.key]?.count,
+      );
+      missing.slice(0, 3).forEach((d) =>
+        out.push({
+          key: `m${d.key}`,
+          tone: "mute",
+          tag: "Pending",
+          title: d.name,
+          to: d.kind === "stage" ? d.stagePath(projectId) : d.kind === "form" ? d.createPath(projectId) : `${d.listPath}?projectId=${projectId}`,
+        }),
+      );
+    }
+    return out.slice(0, 10);
+  }, [work, hub, projectId]);
 
   return (
-    <Card
-      flush
-      title="Action required"
-      subtitle="Items that can hold up this project"
-      actions={count ? <Pill tone="bad">{count} open</Pill> : <Pill tone="ok">All clear</Pill>}
-    >
-      {count === 0 ? (
-        <EmptyState icon={CheckCircle2} title="Nothing blocking" text="No blockers, pending approvals or missing documents right now." />
+    <Card flush title="Action required" actions={items.length ? <Pill tone="warn" size="sm">{items.length}</Pill> : <Pill tone="ok" size="sm">All clear</Pill>}>
+      {!items.length ? (
+        <EmptyState icon={CheckCircle2} title="Nothing pending" />
       ) : (
-        <div className="pj-list">
-          {items.map((item, index) => (
-            <div className="pj-list-item" key={item.id || `${item.type}-${index}`}>
-              <Pill tone={item.tone} size="sm">
-                {item.type}
-              </Pill>
-              <div className="pj-list-item__main">
-                <div className="pj-list-item__title">{item.title || item.name || item.description}</div>
-                <div className="pj-list-item__sub">
-                  {item.assignee ? `${item.assignee} · ` : ""}
-                  {item.due_date ? `Due ${formatDate(item.due_date)}` : "Requires attention"}
-                </div>
-              </div>
-            </div>
-          ))}
-          {missingDocs.slice(0, 3).map((doc) => (
-            <button type="button" key={doc.id} onClick={onOpenDocuments} className="pj-list-item">
-              <Pill tone="bad" size="sm">
-                Missing
-              </Pill>
-              <div className="pj-list-item__main">
-                <div className="pj-list-item__title">{doc.name}</div>
-                <div className="pj-list-item__sub">Required document not uploaded</div>
-              </div>
-              <ArrowRight size={15} className="pj-muted" aria-hidden />
+        <div data-testid="action-required">
+          {items.map((it) => (
+            <button type="button" key={it.key} className="pj-action-row pj-list-item" onClick={() => nav(it.to)} style={{ width: "100%", textAlign: "left" }}>
+              <Pill tone={it.tone} size="sm">{it.tag}</Pill>
+              <span className="pj-action-row__main">
+                <span style={{ fontWeight: 600 }}>{it.title}</span>
+                {it.sub && <span className="pj-muted" style={{ fontSize: 12 }}> · {it.sub}</span>}
+              </span>
             </button>
           ))}
         </div>
@@ -145,330 +129,9 @@ function ActionRequired({ work, docs, onOpenDocuments }) {
   );
 }
 
-function WorkloadSnapshot({ work }) {
-  return (
-    <Card flush title="Work & commitments" subtitle="Current workload by urgency">
-      <div className="pj-figures pj-figures--end">
-        {WORK_BUCKETS.map(([key, label, tone]) => {
-          const count = work[key]?.length || 0;
-          return (
-            <div className="pj-figure" key={key}>
-              <div className="pj-figure__value" style={count && tone !== "mute" ? { color: `var(--${tone}-fg)` } : undefined}>
-                {count}
-              </div>
-              <div className="pj-figure__label">{label}</div>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-function DocumentsPanel({ docs, loading, onToggleVisibility, onOpenAll, limit }) {
-  const clientVisible = docs.filter((doc) => !!doc.client_visible).length;
-  const missing = docs.filter(isMissingDoc).length;
-  const list = limit ? docs.slice(0, limit) : docs;
-
-  return (
-    <Card
-      flush
-      title="Document control"
-      subtitle="Project evidence and what the client can see"
-      actions={
-        <Button variant="secondary" size="sm" iconRight={ArrowRight} onClick={onOpenAll}>
-          Checklist
-        </Button>
-      }
-    >
-      <div className="pj-figures">
-        <div className="pj-figure">
-          <div className="pj-figure__value">{docs.length}</div>
-          <div className="pj-figure__label">Uploaded</div>
-        </div>
-        <div className="pj-figure">
-          <div className="pj-figure__value" style={clientVisible ? { color: "var(--ok-fg)" } : undefined}>
-            {clientVisible}
-          </div>
-          <div className="pj-figure__label">Client-visible</div>
-        </div>
-        <div className="pj-figure">
-          <div className="pj-figure__value" style={missing ? { color: "var(--bad-fg)" } : undefined}>
-            {missing}
-          </div>
-          <div className="pj-figure__label">Missing</div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div style={{ padding: 20, display: "grid", gap: 8 }}>
-          <Skeleton height={40} />
-          <Skeleton height={40} />
-        </div>
-      ) : docs.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="No documents yet"
-          text="Upload drawings, approvals and site records from the document checklist."
-          action={
-            <Button variant="soft" size="sm" onClick={onOpenAll}>
-              Open checklist
-            </Button>
-          }
-        />
-      ) : (
-        <div className="pj-list">
-          {list.map((doc) => (
-            <div key={doc.id} className="pj-list-item">
-              <span className="inos-icon-tile inos-icon-tile--sm">
-                <FileText aria-hidden />
-              </span>
-              <div className="pj-list-item__main">
-                <div className="pj-list-item__title">{doc.name || doc.title}</div>
-                <div className="pj-list-item__sub">
-                  {doc.category || "Document"} · {doc.uploaded_by || "—"}
-                </div>
-              </div>
-              <label className="pj-check" title="Visible to client">
-                <input type="checkbox" checked={!!doc.client_visible} onChange={(e) => onToggleVisibility(doc.id, e.target.checked)} />
-                Client
-              </label>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function CommercialFigures({ financial, boqs, quotes, vendors, onOpenBoq, onOpenQuotes }) {
-  const variation = financial?.cost_variation_pct;
-  return (
-    <Card flush title="Commercial & procurement" subtitle="BOQ, quotations, commitments and engaged vendors">
-      <div className="pj-figures">
-        {[
-          ["Approved BOQ", financial ? fmtINR(financial.approved_boq_estimate || 0) : "—"],
-          ["Committed", financial ? fmtINR(financial.committed_cost || 0) : "—"],
-          ["Projected final", financial ? fmtINR(financial.projected_final_cost || 0) : "—"],
-          ["Variation", variation == null ? "—" : `${variation > 0 ? "+" : ""}${variation}%`],
-        ].map(([label, value]) => (
-          <div className="pj-figure" key={label}>
-            <div className="pj-figure__value" style={{ fontSize: 17 }}>
-              {value}
-            </div>
-            <div className="pj-figure__label">{label}</div>
-          </div>
-        ))}
-      </div>
-      <div className="pj-list">
-        <button type="button" className="pj-list-item" onClick={onOpenBoq}>
-          <span className="inos-icon-tile inos-icon-tile--sm">
-            <ListChecks aria-hidden />
-          </span>
-          <div className="pj-list-item__main">
-            <div className="pj-list-item__title">BOQ versions</div>
-          </div>
-          <span className="pj-list-item__end">{boqs.length}</span>
-          <ArrowRight size={15} className="pj-muted" aria-hidden />
-        </button>
-        <button type="button" className="pj-list-item" onClick={onOpenQuotes}>
-          <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--info">
-            <Receipt aria-hidden />
-          </span>
-          <div className="pj-list-item__main">
-            <div className="pj-list-item__title">Quotations</div>
-          </div>
-          <span className="pj-list-item__end">{quotes.length}</span>
-          <ArrowRight size={15} className="pj-muted" aria-hidden />
-        </button>
-        <div className="pj-list-item">
-          <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--lilac">
-            <Users aria-hidden />
-          </span>
-          <div className="pj-list-item__main">
-            <div className="pj-list-item__title">Engaged vendors</div>
-          </div>
-          <span className="pj-list-item__end">{vendors.engaged?.length || 0}</span>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function BoqList({ boqs, loading, onViewAll }) {
-  return (
-    <Card
-      flush
-      title="BOQ versions"
-      subtitle="Budget and costing history"
-      actions={
-        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={onViewAll}>
-          View all
-        </Button>
-      }
-    >
-      {loading ? (
-        <div style={{ padding: 20 }}>
-          <Skeleton height={40} />
-        </div>
-      ) : boqs.length === 0 ? (
-        <EmptyState icon={ListChecks} title="No BOQs yet" text="Bills of quantities for this project will be listed here." />
-      ) : (
-        <div className="pj-list">
-          {boqs.slice(0, 5).map((boq) => (
-            <Link key={boq.id} to={`/ledger/boq/${boq.id}`} className="pj-list-item">
-              <div className="pj-list-item__main">
-                <div className="pj-list-item__title">BOQ v{boq.version}</div>
-                <div className="pj-list-item__sub">{relativeTime(boq.updated_at || boq.created_at)}</div>
-              </div>
-              <StatusPill status={boq.status} size="sm" />
-              <span className="pj-list-item__end">{fmtINR(boq.total_amount || 0)}</span>
-            </Link>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function QuoteList({ quotes, loading, onViewAll }) {
-  return (
-    <Card
-      flush
-      title="Quotations"
-      subtitle="Vendor estimates and selection"
-      actions={
-        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={onViewAll}>
-          View all
-        </Button>
-      }
-    >
-      {loading ? (
-        <div style={{ padding: 20 }}>
-          <Skeleton height={40} />
-        </div>
-      ) : quotes.length === 0 ? (
-        <EmptyState icon={Receipt} title="No quotations yet" text="Vendor quotations linked to this project will be listed here." />
-      ) : (
-        <div className="pj-list">
-          {quotes.slice(0, 5).map((quote) => (
-            <Link key={quote.id} to={`/procurement/estimates/${quote.id}`} className="pj-list-item">
-              <div className="pj-list-item__main">
-                <div className="pj-list-item__title">
-                  {quote.quotationNumber || quote.quotation_number || "Quotation"} · {quote.vendor?.name || quote.vendor_name || "Vendor"}
-                </div>
-                <div className="pj-list-item__sub">{quote.vendor?.vendorCategory?.name || quote.work_category || "—"}</div>
-              </div>
-              {quote.status && <StatusPill status={quote.status} size="sm" />}
-              <span className="pj-list-item__end">
-                {fmtINR(quote.totalAmount || quote.subtotal || quote.subtotals?.total || 0)}
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function RecentActivity({ rows, limit }) {
-  const list = limit ? rows.slice(0, limit) : rows;
-  return (
-    <Card flush title="Recent activity" subtitle="Latest changes on this project">
-      {rows.length === 0 ? (
-        <EmptyState icon={Activity} title="No activity yet" text="Uploads, approvals and edits on this project will show up here." />
-      ) : (
-        <div className="pj-list">
-          {list.map((row, index) => (
-            <div key={row.id || index} className="pj-list-item">
-              <span className="inos-icon-tile inos-icon-tile--sm">
-                <RefreshCw aria-hidden />
-              </span>
-              <div className="pj-list-item__main">
-                <div className="pj-list-item__title" style={{ fontWeight: 550 }}>
-                  {row.description || row.action}
-                </div>
-                <div className="pj-list-item__sub">
-                  {row.actor || row.user || "—"} · {relativeTime(row.at || row.created_at)}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function PhasesCard({ phases, progress, detailed }) {
-  return (
-    <Card
-      title="Phases"
-      subtitle={
-        progress.total
-          ? `${progress.done} of ${progress.total} phases completed${progress.current ? ` · now in ${progress.current.name}` : ""}`
-          : "Delivery phases for this project"
-      }
-      actions={progress.total ? <PhaseLegend /> : null}
-    >
-      {!phases.length ? (
-        <EmptyState icon={GitCommitHorizontal} title="Phases not configured" text="Once phases are set up in the Admin Console, progress will show here." />
-      ) : (
-        <div style={{ display: "grid", gap: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ flex: 1 }}>
-              <Progress value={progress.percent} />
-            </div>
-            <span className="tabular" style={{ fontWeight: 700, fontSize: 15 }}>
-              {progress.percent}%
-            </span>
-          </div>
-          <PhaseTrack phases={phases} />
-          {detailed && (
-            <div className="inos-table-wrap" style={{ margin: "0 -20px -20px", borderTop: "1px solid var(--line)" }}>
-              <table className="inos-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 56 }}>#</th>
-                    <th>Phase</th>
-                    <th>Status</th>
-                    <th className="num">Documents</th>
-                    <th>Next up</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {phases.map((p, i) => (
-                    <tr key={p.id}>
-                      <td className="muted tabular">{String(i + 1).padStart(2, "0")}</td>
-                      <td style={{ fontWeight: 600 }}>{p.name}</td>
-                      <td>
-                        <Pill tone={p.status === "done" ? "ok" : p.status === "current" ? "brand" : "mute"} size="sm">
-                          {p.status === "done" ? "Completed" : p.status === "current" ? "In progress" : "Upcoming"}
-                        </Pill>
-                      </td>
-                      <td className="num">
-                        {p.docCounts ? (
-                          p.docCounts.total ? (
-                            `${p.docCounts.uploaded}/${p.docCounts.total}`
-                          ) : (
-                            <span className="muted">None set</span>
-                          )
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="muted">{p.pendingDocumentName || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-    </Card>
-  );
-}
+/* ============================================================
+   SHARE WITH CLIENT
+============================================================ */
 
 const PURPOSE_LABEL = Object.fromEntries(SHARE_PURPOSES.map((p) => [p.value, p.label]));
 
@@ -632,38 +295,18 @@ function ShareClientModal({ open, onClose, form, setForm, createdLink, onCreate,
 export default function ProjectWorkspace() {
   const { id } = useParams();
   const nav = useNavigate();
-  const [tab, setTab] = useState("overview");
+  const access = useAccess();
+  const [params, setParams] = useSearchParams();
+  const tab = TABS.some((t) => t.value === params.get("tab")) ? params.get("tab") : "overview";
+  const setTab = (value) => {
+    const next = new URLSearchParams(params);
+    if (value === "overview") next.delete("tab");
+    else next.set("tab", value);
+    setParams(next, { replace: true });
+  };
 
   const { data: projectData, isLoading, error, refetch: refetchProject } = useGetProjectByIdQuery(id, { skip: !id });
-
-  const { data: boqsRaw = [], isFetching: boqsLoading, refetch: refetchBoqs } = useGetBoqsQuery({ project_id: id }, { skip: !id });
-
-  const { data: docsRaw = [], isFetching: docsLoading, refetch: refetchDocs } = useGetDocumentsQuery({ project_id: id }, { skip: !id });
-
-  const [updateDocument] = useUpdateDocumentMutation();
-
-  const {
-    data: quotesRaw = [],
-    isFetching: quotesLoading,
-    refetch: refetchQuotes,
-  } = useGetQuotationsQuery({ project_id: id }, { skip: !id });
-
-  // Phase + progress come from the Command Center rollup (same numbers as the Command Center);
-  // the document phase tree is only a fallback if that call fails.
-  const { data: ccPhases, isError: ccError } = useGetCommandCenterPhasesQuery(id, { skip: !id });
-  const { data: phaseTree } = useGetProjectDocumentPhaseTreeQuery(undefined, { skip: !id || !ccError });
-
-  const boqs = asArray(boqsRaw);
-  const docs = asArray(docsRaw);
-  const quotesFromApi = asArray(quotesRaw);
-  const quotes = quotesFromApi.length > 0 ? quotesFromApi : projectData?.quotations || [];
-
-  const [phaseData, setPhaseData] = useState(null);
-  const [work, setWork] = useState({});
-  const [vendors, setVendors] = useState({ engaged: [], attached: [] });
-  const [financial, setFinancial] = useState(null);
-  const [activityRows, setActivityRows] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
+  const { data: ccPhases } = useGetCommandCenterPhasesQuery(id, { skip: !id });
 
   const [shareModal, setShareModal] = useState(false);
   const [shareForm, setShareForm] = useState({
@@ -676,55 +319,20 @@ export default function ProjectWorkspace() {
   });
   const [createdLink, setCreatedLink] = useState(null);
 
-  const loadSupplementary = async () => {
-    if (!id) return;
-    const safe = (p, fallback) => p.then((r) => r ?? { data: fallback }).catch(() => ({ data: fallback }));
 
-    // v1 rollups (ProjectOverviewController). Phase progress comes from the
-    // document phase tree below — there is no /projects/:id/phases route.
-    const [phase, wk, vd, fn, activity] = await Promise.all([
-      Promise.resolve({ data: null }),
-      safe(api.get(`/v1/projects/${id}/pending-work`), {}),
-      safe(api.get(`/v1/projects/${id}/vendors`), { engaged: [], attached: [] }),
-      safe(api.get(`/v1/projects/${id}/financial`), null),
-      safe(api.get(`/v1/projects/${id}/activity?limit=50`), projectData?.recent_activity || []),
-    ]);
-
-    setPhaseData(phase?.data || null);
-    setWork(wk?.data && typeof wk.data === "object" ? wk.data : {});
-    setVendors(vd?.data || { engaged: [], attached: [] });
-    setFinancial(fn?.data || null);
-    setActivityRows(Array.isArray(activity?.data) ? activity.data : projectData?.recent_activity || []);
-  };
-
-  useEffect(() => {
-    if (!id || !projectData) return;
-    loadSupplementary();
+  const openShare = () => {
     setShareForm((current) => ({
       ...current,
-      client_email: projectData.client?.email || "",
-      client_name: projectData.client?.name || projectData.client?.contact_person || "",
+      client_email: current.client_email || projectData?.client?.email || "",
+      client_name: current.client_name || projectData?.client?.name || projectData?.client?.contact_person || "",
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, projectData]);
-
-  const toggleDocVisibility = async (docId, client_visible) => {
-    try {
-      await updateDocument({ id: docId, data: { client_visible } }).unwrap();
-    } catch {
-      toast.error("Failed to update document visibility");
-    }
+    setShareModal(true);
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.allSettled([refetchProject(), refetchBoqs(), refetchDocs(), refetchQuotes(), loadSupplementary()]);
-      toast.success("Project dashboard refreshed");
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  const progress = useMemo(() => {
+    if (ccPhases?.phases?.length) return commandCenterProgress(ccPhases, normalizeCommandCenterPhases(ccPhases));
+    return { percent: 0, total: 0, done: 0, current: null };
+  }, [ccPhases]);
 
   const createLink = async () => {
     const payload = {
@@ -753,47 +361,10 @@ export default function ProjectWorkspace() {
     toast.success("Copied");
   };
 
-  /* -------------------------------------------------- phases */
-
-  const phases = useMemo(() => {
-    if (ccPhases?.phases?.length) return normalizeCommandCenterPhases(ccPhases);
-    if (phaseData?.phases?.length) return normalizeWorkspacePhases(phaseData);
-    const entries = Array.isArray(phaseTree?.projects) ? phaseTree.projects : [];
-    const entry = entries.find((e) => String(e?.id) === String(id));
-    return normalizeTreePhases(entry?.phases || []);
-  }, [ccPhases, phaseData, phaseTree, id]);
-
-  const progress = useMemo(() => {
-    if (ccPhases?.phases?.length) return commandCenterProgress(ccPhases, phases);
-    const base = phaseProgress(phases);
-    if (phaseData?.progress_pct != null) return { ...base, percent: Math.round(Number(phaseData.progress_pct) || 0) };
-    return base;
-  }, [phases, phaseData, ccPhases]);
-
-  const stats = useMemo(() => {
-    const delayed = work.delayed?.length || 0;
-    const blocked = work.blocked?.length || 0;
-    const approvals = work.awaiting_approval?.length || 0;
-    const missingDocs = docs.filter(isMissingDoc).length;
-    return {
-      openActions: delayed + blocked + approvals + missingDocs,
-      docs: docs.length,
-      quotes: quotes.length,
-      vendors: vendors.engaged?.length || 0,
-    };
-  }, [work, docs, quotes, vendors]);
-
-  /* -------------------------------------------------- states */
-
   if (isLoading) {
     return (
       <Page className="pj-page">
-        <PageHeader crumbs={[{ label: "Projects", to: "/projects" }, { label: "Loading…" }]} title="Loading project…" />
-        <Stats>
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={104} />
-          ))}
-        </Stats>
+        <PageHeader title="Project" />
         <Skeleton height={220} />
       </Page>
     );
@@ -802,12 +373,11 @@ export default function ProjectWorkspace() {
   if (error || !projectData) {
     return (
       <Page className="pj-page">
-        <PageHeader crumbs={[{ label: "Projects", to: "/projects" }, { label: "Not found" }]} title="Project unavailable" />
+        <PageHeader title="Project unavailable" />
         <Card>
           <EmptyState
             icon={FolderOpen}
             title="This project could not be loaded"
-            text="It may have been deleted or you may not have access. Try again, or go back to all projects."
             action={
               <div style={{ display: "flex", gap: 8 }}>
                 <Button variant="secondary" icon={RefreshCw} onClick={() => refetchProject()}>
@@ -825,133 +395,44 @@ export default function ProjectWorkspace() {
   }
 
   const p = projectData;
-  const projectStatus = p.status?.toLowerCase() || "active";
-  const clientName = p.client?.name || p.client?.contact_person;
-  const typeName = p.project_type?.name || (typeof p.project_type === "string" ? p.project_type : "");
-  const openDocs = () => nav(`/projects/documents/all?project_id=${id}`);
-  const openBoq = () => nav(`/ledger/boq/all?project=${id}`);
-  const openQuotes = () => nav(`/procurement/estimates/all?project=${id}`);
-  const activity = activityRows.length ? activityRows : p.recent_activity || [];
-
-  const phaseLabel = progress.current?.name || (progress.total && progress.done === progress.total ? "Complete" : "Not started");
+  const members = Array.isArray(p.team_members) ? p.team_members : [];
+  const lead =
+    members.find((m) => /lead/i.test(m.role_label || "")) || members.find((m) => m.is_primary) || members[0];
+  const stage = progress.current?.name || phaseLabel(p.current_phase);
+  const infoLine = [p.code, stage, lead?.user?.name ? `Project lead: ${lead.user.name}` : null].filter(Boolean).join(" · ");
 
   return (
     <Page className="pj-page">
       <PageHeader
-        crumbs={[{ label: "Projects", to: "/projects" }, { label: p.name }]}
         title={p.name}
-        subtitle={[p.site_location || "No site location", clientName, typeName].filter(Boolean).join(" · ")}
+        info={infoLine}
         actions={
           <>
-            <Button variant="ghost" icon={RefreshCw} onClick={handleRefresh} disabled={refreshing} aria-label="Refresh" title="Refresh" />
-            <Button variant="secondary" icon={Pencil} onClick={() => nav(`/projects/${id}/edit`)}>
-              Edit
-            </Button>
-            <Button variant="secondary" icon={Package} onClick={() => nav(`/projects/${id}/handover`)}>
-              Handover
-            </Button>
-            <Button variant="primary" icon={Share2} onClick={() => setShareModal(true)}>
-              Share with client
-            </Button>
+            {access.can("projects", "update") && (
+              <Button variant="secondary" icon={Pencil} onClick={() => nav(`/projects/${id}/edit`)}>
+                Edit
+              </Button>
+            )}
+            {access.can("client-portal", "create") ? (
+              <Button variant="secondary" icon={Share2} onClick={openShare}>
+                Share with client
+              </Button>
+            ) : null}
           </>
         }
       />
 
-      <div className="pj-chip-row" style={{ marginTop: -12 }}>
-        <StatusPill status={projectStatus} />
-        {p.priority && (
-          <Pill tone={p.priority === "CRITICAL" ? "bad" : p.priority === "HIGH" ? "peach" : "mute"} dot={false}>
-            {prettyStatus(String(p.priority).toLowerCase())} priority
-          </Pill>
-        )}
-        {p.expected_completion_date && (
-          <Pill tone="mute" dot={false}>
-            ECD {formatDate(p.expected_completion_date)}
-          </Pill>
-        )}
-        {p.slug && <span className="pj-code">{p.slug}</span>}
-      </div>
-
-      <Stats>
-        <StatTile
-          label="Progress"
-          value={`${progress.percent}%`}
-          meta={progress.total ? `${progress.done} of ${progress.total} phases` : "Phases not configured"}
-          icon={<GitCommitHorizontal />}
-        />
-        <StatTile label="Current phase" value={<span style={{ fontSize: 20 }}>{phaseLabel}</span>} meta={progress.current?.pendingDocumentName || (progress.currentNumber ? `Phase ${progress.currentNumber}` : "Nothing uploaded yet")} icon={<LayoutDashboard />} tone="info" />
-        <StatTile
-          label="Open actions"
-          value={stats.openActions}
-          meta="Blockers, approvals, missing docs"
-          icon={<AlertCircle />}
-          tone={stats.openActions ? "bad" : "ok"}
-          onClick={() => setTab("overview")}
-        />
-        <StatTile label="Documents" value={stats.docs} meta={docsLoading ? "Refreshing…" : "Uploaded to this project"} icon={<FileText />} tone="lilac" onClick={() => setTab("documents")} />
-        <StatTile
-          label="Approved BOQ"
-          value={financial ? fmtINR(financial.approved_boq_estimate || 0) : "—"}
-          meta={`${boqs.length} BOQ version${boqs.length === 1 ? "" : "s"} · ${stats.quotes} quote${stats.quotes === 1 ? "" : "s"}`}
-          icon={<IndianRupee />}
-          tone="peach"
-          onClick={() => setTab("commercial")}
-        />
-      </Stats>
-
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        options={[
-          { value: "overview", label: "Overview", icon: LayoutDashboard },
-          { value: "phases", label: "Phases", icon: GitCommitHorizontal, count: progress.total || undefined },
-          { value: "documents", label: "Documents", icon: FileText, count: docs.length },
-          { value: "templates", label: "Templates", icon: FileText },
-          { value: "drawings", label: "Drawings", icon: FolderOpen },
-          { value: "commercial", label: "Commercial", icon: IndianRupee },
-          { value: "activity", label: "Activity", icon: Activity },
-        ]}
-      />
+      <Tabs value={tab} onChange={setTab} options={TABS} />
 
       {tab === "overview" && (
-        <>
-          <PhasesCard phases={phases} progress={progress} />
-          <div className="pj-two-col">
-            <ActionRequired work={work} docs={docs} onOpenDocuments={openDocs} />
-            <WorkloadSnapshot work={work} />
-          </div>
-          <div className="pj-two-col pj-two-col--even">
-            <DocumentsPanel docs={docs} loading={docsLoading} onToggleVisibility={toggleDocVisibility} onOpenAll={openDocs} limit={5} />
-            <RecentActivity rows={activity} limit={6} />
-          </div>
-          {p.description && (
-            <Card title="Brief">
-              <p style={{ margin: 0, color: "var(--text-2)" }}>{p.description}</p>
-            </Card>
-          )}
-        </>
+        <div className="pj-two-col pj-two-col--even">
+          <StatusCard project={p} progress={progress} />
+          <ActionRequired projectId={id} />
+        </div>
       )}
-
-      {tab === "phases" && <PhasesCard phases={phases} progress={progress} detailed />}
-
-      {tab === "documents" && (
-        <ProjectDocumentsBoard projectId={id} />
-      )}
-
-      {tab === "drawings" && <ProjectDrawingsPanel projectId={id} />}
-      {tab === "templates" && <ProjectTemplatesPanel key={id} project={p} />}
-
-      {tab === "commercial" && (
-        <>
-          <CommercialFigures financial={financial} boqs={boqs} quotes={quotes} vendors={vendors} onOpenBoq={openBoq} onOpenQuotes={openQuotes} />
-          <div className="pj-two-col pj-two-col--even">
-            <BoqList boqs={boqs} loading={boqsLoading} onViewAll={openBoq} />
-            <QuoteList quotes={quotes} loading={quotesLoading} onViewAll={openQuotes} />
-          </div>
-        </>
-      )}
-
-      {tab === "activity" && <RecentActivity rows={activity} />}
+      {tab === "overview" && <RecentActivity projectId={id} projectCode={p.code} />}
+      {tab === "drawings" && <ProjectDrawingsTab projectId={id} />}
+      {tab === "documents" && <ProjectDocumentsHub project={p} />}
 
       <ShareClientModal
         open={shareModal}

@@ -47,7 +47,6 @@ import {
 
 const DATE_FIELDS = [
   { key: 'estimate_finalised_at', label: 'Estimate finalised' },
-  { key: 'quotation_finalised_at', label: 'Quotation finalised' },
   { key: 'planned_start_date', label: 'Start date' },
   { key: 'planned_end_date', label: 'End date' },
   { key: 'purchase_date', label: 'Purchase' },

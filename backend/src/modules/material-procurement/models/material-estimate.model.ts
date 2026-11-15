@@ -7,18 +7,15 @@ import {
   PrimaryKey,
   ForeignKey,
   BelongsTo,
-  HasOne,
 } from 'sequelize-typescript';
 
 import { ApprovalStatus } from '../../../common/enums/approval-status.enum';
 import { MaterialRequirement } from './material-requirement.model';
-import { MaterialQuotation } from './material-quotation.model';
 
 /**
- * 3. Material estimate → quotation.
- * Follows the identical estimate → approval → quotation conversion
- * rule used for trades: an estimate must reach ApprovalStatus.APPROVED
- * before it can be converted into a MaterialQuotation.
+ * 3. Material estimate.
+ * An estimate must reach ApprovalStatus.APPROVED before a purchase
+ * order is raised against it.
  */
 @Table({
   tableName: 'material_estimates',
@@ -74,13 +71,4 @@ export class MaterialEstimate extends Model {
     allowNull: true,
   })
   declare approvedAt: Date;
-
-  // Set true only once the approved estimate has been converted
-  // into a MaterialQuotation — mirrors the trades conversion rule.
-  @Default(false)
-  @Column(DataType.BOOLEAN)
-  declare convertedToQuotation: boolean;
-
-  @HasOne(() => MaterialQuotation)
-  declare quotation: MaterialQuotation;
 }

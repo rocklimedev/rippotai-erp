@@ -41,8 +41,6 @@ export interface ProjectProcurementItemCreationAttributes {
 
   estimate_finalised_at?: string | null;
 
-  quotation_finalised_at?: string | null;
-
   planned_start_date?: string | null;
 
   planned_end_date?: string | null;
@@ -161,7 +159,7 @@ export class ProjectProcurementItem extends Model<
   declare vendor_name: string | null;
 
   // ============================================================
-  // ESTIMATE / QUOTATION DATES
+  // ESTIMATE DATES
   //
   // DATEONLY values are represented as YYYY-MM-DD strings.
   // ============================================================
@@ -171,12 +169,6 @@ export class ProjectProcurementItem extends Model<
     allowNull: true,
   })
   declare estimate_finalised_at: string | null;
-
-  @Column({
-    type: DataType.DATEONLY,
-    allowNull: true,
-  })
-  declare quotation_finalised_at: string | null;
 
   // ============================================================
   // LABOUR TIMELINE

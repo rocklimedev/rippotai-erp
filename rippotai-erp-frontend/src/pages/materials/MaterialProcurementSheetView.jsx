@@ -1,4 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import DeleteMaterialProcurement from "@/components/materials/DeleteMaterialProcurement";
 import {
   ArrowLeft,
@@ -9,7 +12,21 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import {
+  AREA_FORMAT,
+  INR_FORMAT,
+  QTY_FORMAT,
+  addMonogram,
+  finishSheet,
+  saveWorkbook,
+  setWidths,
+  styleBodyRow,
+  styleHeaderRow,
+  styleTotalsRow,
+  writeBrandHeader,
+  xlToday,
+} from "@/lib/brandExcel";
 
 import {
   useGetMaterialProcurementQuery,
@@ -36,7 +53,7 @@ const statusClass = (status) => {
       return "bg-muted text-muted-foreground";
 
     case "SUBMITTED":
-      return "bg-blue-50 text-blue-700";
+      return "bg-[#E7EEEB] text-[#0D3D2F]";
 
     case "IN_PROGRESS":
       return "bg-amber-50 text-amber-700";
@@ -94,6 +111,7 @@ const resolveItem = (item) => {
 export default function MaterialProcurementSheetView() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const recordInfo = useRecordInfo("procurement-sheet", id);
 
   const {
     data: response,
@@ -189,11 +207,9 @@ export default function MaterialProcurementSheetView() {
     }
   };
 
-  /** Download Excel that exactly matches the shared template structure */
-  const handleDownloadExcel = () => {
+  /** Download Excel: same columns as the shared template, in the Rippotai brand format. */
+  const handleDownloadExcel = async () => {
     try {
-      // Title row + blank row + header row (exactly like your template)
-      const title = "MATERIAL PROCUREMENT LIST PROJECT MATERIAL";
       const headers = [
         "S. No.",
         "Area",
@@ -210,79 +226,63 @@ export default function MaterialProcurementSheetView() {
         "Price",
         "Amount",
       ];
+      const last = headers.length;
+      const HEADER = 5;
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Rippotai Architecture";
+      const sheet = workbook.addWorksheet("Material Procurement");
+      setWidths(sheet, [8, 14, 14, 18, 14, 24, 12, 13, 13, 15, 15, 12, 14, 16]);
+      writeBrandHeader(sheet, {
+        title: "Material Procurement List – Project Material",
+        // projectName falls back to the raw project id when the project is not loaded — never print an id.
+        project: projectName === "—" || /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(projectName) ? "" : projectName,
+        meta: [procurement.procurementNo, xlToday()].filter(Boolean).join(" · "),
+        lastCol: last,
+        imageId: await addMonogram(workbook),
+      });
+      sheet.getRow(HEADER).values = headers;
+      styleHeaderRow(sheet.getRow(HEADER), 1, last, { right: [8, 9, 10, 11, 12, 13, 14] });
 
-      const dataRows = resolvedItems.map((item, index) => [
-        item.serialNo ?? index + 1,
-        item.area,
-        item.location,
-        item.material,
-        item.brand,
-        item.name,
-        item.code,
-        numberValue(item.wallArea),
-        numberValue(item.floorArea),
-        numberValue(item.ceilingArea),
-        numberValue(item.totalArea),
-        numberValue(item.quantity),
-        numberValue(item.price),
-        numberValue(item.amount),
-      ]);
+      const formats = {
+        8: AREA_FORMAT,
+        9: AREA_FORMAT,
+        10: AREA_FORMAT,
+        11: AREA_FORMAT,
+        12: QTY_FORMAT,
+        13: INR_FORMAT,
+        14: INR_FORMAT,
+      };
+      resolvedItems.forEach((item, index) => {
+        const row = sheet.getRow(HEADER + 1 + index);
+        row.values = [
+          item.serialNo ?? index + 1,
+          item.area,
+          item.location,
+          item.material,
+          item.brand,
+          item.name,
+          item.code,
+          numberValue(item.wallArea),
+          numberValue(item.floorArea),
+          numberValue(item.ceilingArea),
+          numberValue(item.totalArea),
+          numberValue(item.quantity),
+          numberValue(item.price),
+          numberValue(item.amount),
+        ];
+        styleBodyRow(row, 1, last, formats);
+        row.getCell(1).alignment = { vertical: "top", horizontal: "center" };
+      });
+      const lastItem = HEADER + resolvedItems.length;
+      const totals = sheet.getRow(lastItem + 1);
+      totals.getCell(10).value = "Totals";
+      totals.getCell(11).value = numberValue(totalArea);
+      totals.getCell(12).value = numberValue(totalQuantity);
+      totals.getCell(14).value = numberValue(totalAmount);
+      styleTotalsRow(totals, 1, last, formats);
+      finishSheet(sheet, { headerRow: HEADER, lastCol: last, lastRow: lastItem + 1, filterTo: lastItem });
 
-      // Totals row
-      const totalsRow = [
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "Totals",
-        numberValue(totalArea),
-        numberValue(totalQuantity),
-        "",
-        numberValue(totalAmount),
-      ];
-
-      const sheetData = [
-        [title],
-        [], // blank row under title (matches typical Excel layout)
-        headers,
-        ...dataRows,
-        totalsRow,
-      ];
-
-      const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-
-      // Column widths (reasonable defaults matching the template)
-      worksheet["!cols"] = [
-        { wch: 8 }, // S. No.
-        { wch: 14 }, // Area
-        { wch: 14 }, // Location
-        { wch: 18 }, // Material
-        { wch: 12 }, // Brand
-        { wch: 22 }, // Name
-        { wch: 14 }, // Code
-        { wch: 12 }, // Wall
-        { wch: 12 }, // Floor
-        { wch: 14 }, // Ceiling
-        { wch: 16 }, // Total Area
-        { wch: 12 }, // Quantity
-        { wch: 12 }, // Price
-        { wch: 14 }, // Amount
-      ];
-
-      // Merge title across all columns
-      worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 13 } }];
-
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Material Procurement");
-
-      const fileName = `${procurement.procurementNo || "MP"}-Material-Procurement.xlsx`;
-      XLSX.writeFile(workbook, fileName);
-
+      await saveWorkbook(workbook, `${procurement.procurementNo || "MP"}-Material-Procurement.xlsx`);
       toast.success("Excel downloaded successfully.");
     } catch (err) {
       console.error(err);
@@ -294,8 +294,9 @@ export default function MaterialProcurementSheetView() {
     <div className="space-y-6 pb-10">
       <PageHeader
         title={procurement.procurementNo || "Material Procurement"}
-        description="Material procurement sheet details."
+        description={recordInfo}
       />
+      <RecordContext type="procurement-sheet" id={id} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button
@@ -620,6 +621,7 @@ export default function MaterialProcurementSheetView() {
           </div>
         </CardContent>
       </Card>
+      <VersionHistory type="procurement-sheet" id={id} />
     </div>
   );
 }

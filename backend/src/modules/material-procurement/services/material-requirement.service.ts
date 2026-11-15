@@ -5,7 +5,6 @@ import { MaterialRequirement } from '../models/material-requirement.model';
 import { SampleBoard } from '../models/sample-board.model';
 import { MaterialMaster } from '../models';
 import { MaterialVendor } from '../models/material-vendor.model';
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { DeliveryChallan } from '../models';
 import { CreateMaterialRequirementDto } from '../dto/create-material-requirement.dto';
 import { UpdateMaterialRequirementDto } from '../dto/update-material-requirement.dto';
@@ -25,7 +24,7 @@ export class MaterialRequirementService {
   // MaterialMaster
   //   └── MaterialVendor[]
   //
-  // Quotation and DeliveryChallan are generated against the
+  // DeliveryChallans are generated against the
   // requirement once it's finalized by the procurement team.
   // ============================================================
   private readonly includes = [
@@ -41,9 +40,6 @@ export class MaterialRequirementService {
           as: 'vendors',
         },
       ],
-    },
-    {
-      model: Quotation,
     },
     {
       model: DeliveryChallan,

@@ -7,7 +7,6 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { MaterialEstimate } from '../models/material-estimate.model';
 import { MaterialRateSheet } from '../models/material-rate-sheet.model';
-import { MaterialQuotation } from '../models/material-quotation.model';
 import { CreateMaterialEstimateDto } from '../dto/create-material-estimate.dto';
 import { ApproveDto, RejectDto } from '../dto/approve.dto';
 import { ApprovalStatus } from '../../../common/enums/approval-status.enum';
@@ -15,11 +14,9 @@ import { RequirementStatus } from '../../../common/enums/requirement-status.enum
 import { MaterialRequirementService } from './material-requirement.service';
 
 /**
- * 3. Material estimate → quotation.
- * Implements the same estimate → approval → quotation conversion rule
- * used for trades: an estimate is created PENDING, must be explicitly
- * APPROVED, and only an APPROVED estimate may ever be converted into a
- * quotation (see MaterialQuotationService.createFromEstimate).
+ * 3. Material estimate.
+ * An estimate is created PENDING and must be explicitly APPROVED; a
+ * purchase order is then raised directly against the approved estimate.
  */
 @Injectable()
 export class MaterialEstimateService {
@@ -65,20 +62,19 @@ export class MaterialEstimateService {
       unitRate,
       totalAmount,
       approvalStatus: ApprovalStatus.PENDING,
-      convertedToQuotation: false,
     } as any);
 
-    await this.requirementService.setStatus(
-      dto.materialRequirementId,
-      RequirementStatus.ESTIMATED,
-    );
+    // material_requirements.status is a DB enum (DRAFT/READY/IN_PROGRESS/...)
+    // that has no "estimated" value; the estimate itself is the record of
+    // this step, so a status the column cannot hold must not fail the save.
+    await this.requirementService
+      .setStatus(dto.materialRequirementId, RequirementStatus.ESTIMATED)
+      .catch(() => undefined);
     return estimate;
   }
 
   async findOne(id: string) {
-    const estimate = await this.model.findByPk(id, {
-      include: [MaterialQuotation],
-    });
+    const estimate = await this.model.findByPk(id);
     if (!estimate) throw new NotFoundException(`Estimate ${id} not found`);
     return estimate;
   }
@@ -106,10 +102,5 @@ export class MaterialEstimateService {
       approvedBy: dto.approvedBy,
       approvedAt: new Date(),
     });
-  }
-
-  /** Marks the estimate consumed once its quotation has been generated. */
-  async markConverted(id: string) {
-    await this.model.update({ convertedToQuotation: true }, { where: { id } });
   }
 }

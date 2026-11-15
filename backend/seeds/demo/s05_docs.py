@@ -5,7 +5,7 @@ from pathlib import Path
 from lib import *
 
 CATEGORY = {"BRIEF": "Project Brief", "RECCE": "Site Reki", "PRE": "Pitch", "PLAN": "Agreements", "DES": "3D Views", "TENDER": "Drawings",
-            "WORK": "GFC Drawings", "MOD": "GFC Drawings", "EXEC": "Approvals", "HANDOVER": "Handover Documents", "VENDOR": "Quotations", "MAT": "Other"}
+            "WORK": "GFC Drawings", "MOD": "GFC Drawings", "EXEC": "Approvals", "HANDOVER": "Handover Documents", "VENDOR": "Other", "MAT": "Other"}
 DISC = {"TENDER_ELECTRICAL_LAYOUT": "Electrical", "TENDER_PLUMBING_LAYOUT": "Plumbing", "TENDER_HVAC_LAYOUT": "HVAC", "WORK_STRUCTURE_LAYOUT": "Structural",
         "TENDER_LANDSCAPING": "Landscape", "WORK_LANDSCAPE_DETAILS": "Landscape", "TENDER_CIVIL_LAYOUT": "Civil", "WORK_CIVIL_DETAILS": "Civil"}
 

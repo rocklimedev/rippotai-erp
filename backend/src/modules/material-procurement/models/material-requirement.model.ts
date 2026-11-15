@@ -15,7 +15,6 @@ import { RequirementStatus } from '../../../common/enums/requirement-status.enum
 import { SampleBoard } from './sample-board.model';
 import { MaterialMaster } from './material-master.model';
 
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { DeliveryChallan } from './delivery-challan.model';
 
 @Table({
@@ -110,7 +109,7 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
   // ============================================================
   // BUDGET — REMOVED
   // Pricing/budget is not part of a raw requirement; it belongs
-  // to the quotation / rate-sheet stage further down the flow.
+  // to the estimate / rate-sheet stage further down the flow.
   // ============================================================
 
   // ============================================================
@@ -183,13 +182,6 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
     as: 'sampleBoards',
   })
   declare sampleBoards: SampleBoard[];
-
-  @HasMany(() => Quotation, {
-    foreignKey: 'materialRequirementId',
-    sourceKey: 'id',
-    as: 'quotations',
-  })
-  declare quotations: Quotation[];
 
   // Once the requirement is finalized, procurement raises one or
   // more delivery challans against it to actually supply the material.

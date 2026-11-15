@@ -15,6 +15,13 @@ export async function downloadDocumentPdf(
 ) {
   if (!rootEl) throw new Error('downloadDocumentPdf: rootEl is required');
   rootEl.classList.add('is-capturing');
+  // Tailwind's preflight sets img { display: block }, which breaks html2canvas' font-baseline
+  // probe (a 1×1 gif it measures in this document) and draws every line of text ~1 mm too low
+  // — tick boxes and field rules then sit above their text. Keep the probe inline while capturing.
+  const probeFix = document.createElement('style');
+  probeFix.textContent =
+    'img[src^="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP"]{display:inline!important;vertical-align:baseline!important}';
+  document.head.appendChild(probeFix);
   try {
     await (document.fonts?.ready || Promise.resolve());
     // Private images start without a src while their queued download runs.
@@ -88,6 +95,7 @@ export async function downloadDocumentPdf(
     pdf.save(fileName);
     return null;
   } finally {
+    probeFix.remove();
     rootEl.classList.remove('is-capturing');
   }
 }

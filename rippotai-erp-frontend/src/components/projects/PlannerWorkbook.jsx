@@ -225,7 +225,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
       <section
         className="planner-sheet"
         style={{
-          minWidth: isVendor ? 1800 : Math.max(1100, 650 + columns.length * 150),
+          minWidth: isVendor ? 1660 : Math.max(1100, 650 + columns.length * 150),
         }}
         data-sheet={view}
       >
@@ -242,7 +242,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
         <table>
           <colgroup>
             {(isVendor
-              ? [54, 170, 170, 220, 140, 140, 140, 140, 140, 140, 220]
+              ? [54, 170, 170, 220, 140, 140, 140, 140, 140, 220]
               : [
                   54,
                   180,
@@ -265,7 +265,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
             {isVendor ? (
               <>
                 <tr className="planner-superhead">
-                  <th colSpan={6} />
+                  <th colSpan={5} />
 
                   <th colSpan={2}>TIMELINE (LABOUR WORK)</th>
 
@@ -281,7 +281,6 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                     'MATERIAL VENDOR',
                     'VENDOR NAME',
                     'ESTIMATE FINALISED',
-                    'QUOTATION FINALISED',
                     'START',
                     'END',
                     'PURCHASE',
@@ -355,7 +354,6 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
 
                     {[
                       'estimate_finalised_at',
-                      'quotation_finalised_at',
                       'planned_start_date',
                       'planned_end_date',
                       'purchase_date',

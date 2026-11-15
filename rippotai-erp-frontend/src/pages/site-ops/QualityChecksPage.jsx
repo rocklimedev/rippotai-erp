@@ -1,5 +1,13 @@
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { Fragment, useState, useEffect, useMemo } from "react";
 import DeleteChecklist from "./DeleteChecklist";
+import {
+  PrintBlankChecklist,
+  PrintChecklistButton,
+  PrintTemplateButton,
+} from "@/components/site-ops/ChecklistPrint";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
@@ -64,6 +72,8 @@ function dateInput(value) {
 export default function QualityChecksPage() {
   const [params, setParams] = useSearchParams();
   const projectId = params.get("projectId") || "";
+  const checklistId = params.get("checklistId") || "";
+  const recordInfo = useRecordInfo("checklist", checklistId);
   const {
     data: response,
     isLoading,
@@ -86,9 +96,7 @@ export default function QualityChecksPage() {
           <h1 className="text-2xl font-semibold text-[var(--ink-green)]">
             Quality checklist workspace
           </h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
-            Project work heads and checks before, during, and after execution.
-          </p>
+          {checklistId && recordInfo && <p className="text-[13px] text-[var(--muted)] mt-1">{recordInfo}</p>}
         </div>
         <div className="w-full sm:w-80">
           <label htmlFor="quality-project" className="block text-sm mb-1">
@@ -126,6 +134,7 @@ export default function QualityChecksPage() {
           )}
         </div>
       </div>
+      {checklistId && <RecordContext type="checklist" id={checklistId} />}
       {projectId ? (
         <QualityProject
           key={projectId}
@@ -138,6 +147,7 @@ export default function QualityChecksPage() {
           Select a project to create and inspect its quality checklists.
         </div>
       )}
+      {checklistId && <VersionHistory type="checklist" id={checklistId} />}
     </div>
   );
 }
@@ -169,7 +179,8 @@ function QualityProject({ projectId, projectName, initialId }) {
     <>
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h2 className="text-lg font-semibold">{projectName}</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <PrintBlankChecklist templates={templates} />
           <button
             className="bc-btn-secondary"
             disabled={exporting}
@@ -214,6 +225,7 @@ function QualityProject({ projectId, projectName, initialId }) {
           key={activeId}
           id={activeId}
           projectId={projectId}
+          projectName={projectName}
           onBack={() => setActiveId("")}
         />
       ) : (
@@ -580,6 +592,9 @@ function CreateChecklist({
             </ol>
           </details>
         )}
+        {selected?.has_template && (
+          <PrintTemplateButton workHead={workHead} className="bc-btn-secondary mr-2" />
+        )}
         <button
           className="bc-btn-primary"
           disabled={busy || (!selected && !name.trim())}
@@ -595,7 +610,7 @@ function CreateChecklist({
   );
 }
 
-function ChecklistDetail({ id, projectId, onBack }) {
+function ChecklistDetail({ id, projectId, projectName, onBack }) {
   const {
     currentData: checklist,
     isLoading,
@@ -727,6 +742,7 @@ function ChecklistDetail({ id, projectId, onBack }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-start">
+          <PrintChecklistButton checklist={checklist} projectName={projectName} />
           <button
             className="bc-btn-secondary"
             onClick={() => setShowAdd(!showAdd)}

@@ -1542,16 +1542,6 @@
   {
     "module": "client-portal",
     "controller": "PublicClientController",
-    "handler": "compare",
-    "method": "GET",
-    "path": "/public/client/:token/quotations/compare/:cid",
-    "permission": "client-token:read",
-    "public": true,
-    "file": "src/modules/client-portal/client-portal.controller.ts"
-  },
-  {
-    "module": "client-portal",
-    "controller": "PublicClientController",
     "handler": "handover",
     "method": "GET",
     "path": "/public/client/:token/handover",
@@ -1566,16 +1556,6 @@
     "method": "GET",
     "path": "/public/client/:token",
     "permission": "client-token:read",
-    "public": true,
-    "file": "src/modules/client-portal/client-portal.controller.ts"
-  },
-  {
-    "module": "client-portal",
-    "controller": "PublicClientController",
-    "handler": "select",
-    "method": "POST",
-    "path": "/public/client/:token/quotations/select",
-    "permission": "client-token:create",
     "public": true,
     "file": "src/modules/client-portal/client-portal.controller.ts"
   },
@@ -1698,6 +1678,116 @@
     "permission": "dashboards:update",
     "public": false,
     "file": "src/modules/dashboard/dashboard.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentApprovalsController",
+    "handler": "count",
+    "method": "GET",
+    "path": "/document-reviews/pending/count",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/approvals.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentApprovalsController",
+    "handler": "pending",
+    "method": "GET",
+    "path": "/document-reviews/pending",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/approvals.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "capabilities",
+    "method": "GET",
+    "path": "/document-reviews/capabilities",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "context",
+    "method": "GET",
+    "path": "/document-reviews/context",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "existing",
+    "method": "GET",
+    "path": "/document-reviews/existing",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "list",
+    "method": "GET",
+    "path": "/document-reviews",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "meta",
+    "method": "GET",
+    "path": "/document-reviews/meta",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "review",
+    "method": "POST",
+    "path": "/document-reviews",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "revision",
+    "method": "GET",
+    "path": "/document-reviews/revisions/:id",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
+    "handler": "rows",
+    "method": "GET",
+    "path": "/document-reviews/rows",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "ProjectRecentActivityController",
+    "handler": "recentActivity",
+    "method": "GET",
+    "path": "/projects/:id/recent-activity",
+    "permission": "projects:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
   },
   {
     "module": "documents",
@@ -1832,6 +1922,16 @@
   {
     "module": "documents",
     "controller": "DocumentsController",
+    "handler": "downloadVersion",
+    "method": "GET",
+    "path": "/documents/:id/versions/:versionId/download",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/documents/document.controller.ts"
+  },
+  {
+    "module": "documents",
+    "controller": "DocumentsController",
     "handler": "findAll",
     "method": "GET",
     "path": "/documents",
@@ -1852,39 +1952,9 @@
   {
     "module": "documents",
     "controller": "DocumentsController",
-    "handler": "getBoqVariance",
-    "method": "GET",
-    "path": "/documents/dashboard/boq-variance",
-    "permission": "documents:read",
-    "public": false,
-    "file": "src/modules/documents/document.controller.ts"
-  },
-  {
-    "module": "documents",
-    "controller": "DocumentsController",
     "handler": "getDashboardStats",
     "method": "GET",
     "path": "/documents/dashboard/stats",
-    "permission": "documents:read",
-    "public": false,
-    "file": "src/modules/documents/document.controller.ts"
-  },
-  {
-    "module": "documents",
-    "controller": "DocumentsController",
-    "handler": "getDraftEstimates",
-    "method": "GET",
-    "path": "/documents/dashboard/draft-estimates",
-    "permission": "documents:read",
-    "public": false,
-    "file": "src/modules/documents/document.controller.ts"
-  },
-  {
-    "module": "documents",
-    "controller": "DocumentsController",
-    "handler": "getExpiringQuotations",
-    "method": "GET",
-    "path": "/documents/dashboard/expiring-quotations",
     "permission": "documents:read",
     "public": false,
     "file": "src/modules/documents/document.controller.ts"
@@ -3191,66 +3261,6 @@
   },
   {
     "module": "material-procurement",
-    "controller": "MaterialQuotationController",
-    "handler": "accept",
-    "method": "POST",
-    "path": "/procurement/quotations/:id/accept",
-    "permission": "procurement-quotations:accept",
-    "public": false,
-    "file": "src/modules/material-procurement/controllers/material-quotation.controller.ts"
-  },
-  {
-    "module": "material-procurement",
-    "controller": "MaterialQuotationController",
-    "handler": "create",
-    "method": "POST",
-    "path": "/procurement/quotations",
-    "permission": "procurement-quotations:create",
-    "public": false,
-    "file": "src/modules/material-procurement/controllers/material-quotation.controller.ts"
-  },
-  {
-    "module": "material-procurement",
-    "controller": "MaterialQuotationController",
-    "handler": "findAll",
-    "method": "GET",
-    "path": "/procurement/quotations",
-    "permission": "procurement-quotations:read",
-    "public": false,
-    "file": "src/modules/material-procurement/controllers/material-quotation.controller.ts"
-  },
-  {
-    "module": "material-procurement",
-    "controller": "MaterialQuotationController",
-    "handler": "findOne",
-    "method": "GET",
-    "path": "/procurement/quotations/:id",
-    "permission": "procurement-quotations:read",
-    "public": false,
-    "file": "src/modules/material-procurement/controllers/material-quotation.controller.ts"
-  },
-  {
-    "module": "material-procurement",
-    "controller": "MaterialQuotationController",
-    "handler": "reject",
-    "method": "POST",
-    "path": "/procurement/quotations/:id/reject",
-    "permission": "procurement-quotations:reject",
-    "public": false,
-    "file": "src/modules/material-procurement/controllers/material-quotation.controller.ts"
-  },
-  {
-    "module": "material-procurement",
-    "controller": "MaterialQuotationController",
-    "handler": "send",
-    "method": "POST",
-    "path": "/procurement/quotations/:id/send",
-    "permission": "procurement-quotations:send",
-    "public": false,
-    "file": "src/modules/material-procurement/controllers/material-quotation.controller.ts"
-  },
-  {
-    "module": "material-procurement",
     "controller": "MaterialRateSheetController",
     "handler": "approve",
     "method": "POST",
@@ -4320,6 +4330,106 @@
     "file": "src/modules/process-workflow/timeline.controller.ts"
   },
   {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "create",
+    "method": "POST",
+    "path": "/procurement-quotations",
+    "permission": "procurement-quotations:create",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "fromComparison",
+    "method": "POST",
+    "path": "/procurement-quotations/from-comparison",
+    "permission": "procurement-quotations:create",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "get",
+    "method": "GET",
+    "path": "/procurement-quotations/:id",
+    "permission": "procurement-quotations:read",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "list",
+    "method": "GET",
+    "path": "/procurement-quotations",
+    "permission": "procurement-quotations:read",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "raisePo",
+    "method": "POST",
+    "path": "/procurement-quotations/:id/raise-po",
+    "permission": "purchase-orders:create",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "raiseWo",
+    "method": "POST",
+    "path": "/procurement-quotations/:id/raise-wo",
+    "permission": "work-orders:create",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "remove",
+    "method": "DELETE",
+    "path": "/procurement-quotations/:id",
+    "permission": "procurement-quotations:delete",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "status",
+    "method": "PATCH",
+    "path": "/procurement-quotations/:id/status",
+    "permission": "procurement-quotations:update",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "update",
+    "method": "PUT",
+    "path": "/procurement-quotations/:id",
+    "permission": "procurement-quotations:update",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
+    "module": "procurement-quotations",
+    "controller": "ProcurementQuotationsController",
+    "handler": "version",
+    "method": "GET",
+    "path": "/procurement-quotations/:id/versions/:version",
+    "permission": "procurement-quotations:read",
+    "public": false,
+    "file": "src/modules/procurement-quotations/procurement-quotations.controller.ts"
+  },
+  {
     "module": "projects",
     "controller": "AppBadgesController",
     "handler": "appBadges",
@@ -4585,6 +4695,16 @@
     "handler": "activity",
     "method": "GET",
     "path": "/projects/:id/activity",
+    "permission": "projects:read",
+    "public": false,
+    "file": "src/modules/projects/project-overview.controller.ts"
+  },
+  {
+    "module": "projects",
+    "controller": "ProjectOverviewController",
+    "handler": "documentHub",
+    "method": "GET",
+    "path": "/projects/:id/document-hub",
     "permission": "projects:read",
     "public": false,
     "file": "src/modules/projects/project-overview.controller.ts"
@@ -5160,336 +5280,6 @@
     "file": "src/modules/projects/project-type.controller.ts"
   },
   {
-    "module": "quotations",
-    "controller": "QuotationItemsController",
-    "handler": "create",
-    "method": "POST",
-    "path": "/quotations/:quotationId/items",
-    "permission": "quotation-items:create",
-    "public": false,
-    "file": "src/modules/quotations/quotation-items.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationItemsController",
-    "handler": "findAll",
-    "method": "GET",
-    "path": "/quotations/:quotationId/items",
-    "permission": "quotation-items:read",
-    "public": false,
-    "file": "src/modules/quotations/quotation-items.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationItemsController",
-    "handler": "remove",
-    "method": "DELETE",
-    "path": "/quotations/:quotationId/items/:itemId",
-    "permission": "quotation-items:delete",
-    "public": false,
-    "file": "src/modules/quotations/quotation-items.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationItemsController",
-    "handler": "replaceAll",
-    "method": "PUT",
-    "path": "/quotations/:quotationId/items",
-    "permission": "quotation-items:update",
-    "public": false,
-    "file": "src/modules/quotations/quotation-items.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationItemsController",
-    "handler": "update",
-    "method": "PATCH",
-    "path": "/quotations/:quotationId/items/:itemId",
-    "permission": "quotation-items:update",
-    "public": false,
-    "file": "src/modules/quotations/quotation-items.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "approve",
-    "method": "PATCH",
-    "path": "/quotations/:id/approve",
-    "permission": "quotations:approve",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "cancel",
-    "method": "PATCH",
-    "path": "/quotations/:id/cancel",
-    "permission": "quotations:update",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "compare",
-    "method": "GET",
-    "path": "/quotations/compare",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "create",
-    "method": "POST",
-    "path": "/quotations",
-    "permission": "quotations:create",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "decline",
-    "method": "PATCH",
-    "path": "/quotations/:id/decline",
-    "permission": "quotations:update",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "exportExcel",
-    "method": "GET",
-    "path": "/quotations/:id/export/excel",
-    "permission": "quotations:export",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "findAll",
-    "method": "GET",
-    "path": "/quotations",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "findOne",
-    "method": "GET",
-    "path": "/quotations/:id",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "getBoqVariance",
-    "method": "GET",
-    "path": "/quotations/boq-variance",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "getExpiringSoon",
-    "method": "GET",
-    "path": "/quotations/expiring-soon",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "getProjectWise",
-    "method": "GET",
-    "path": "/quotations/project-wise",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "getStatusMix",
-    "method": "GET",
-    "path": "/quotations/status-mix",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "getSummary",
-    "method": "GET",
-    "path": "/quotations/summary",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "getValueTrend",
-    "method": "GET",
-    "path": "/quotations/value-trend",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "getVariationByProject",
-    "method": "GET",
-    "path": "/quotations/variation-by-project",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "markSelected",
-    "method": "POST",
-    "path": "/quotations/:id/mark-selected",
-    "permission": "quotations:select",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "remove",
-    "method": "DELETE",
-    "path": "/quotations/:id/permanent",
-    "permission": "quotations:delete",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "restore",
-    "method": "PATCH",
-    "path": "/quotations/:id/restore",
-    "permission": "quotations:restore",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "returnForEditing",
-    "method": "PATCH",
-    "path": "/quotations/:id/return",
-    "permission": "quotations:update",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "saveComparison",
-    "method": "POST",
-    "path": "/quotations/quotation-comparisons",
-    "permission": "quotations:create",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "softDelete",
-    "method": "DELETE",
-    "path": "/quotations/:id",
-    "permission": "quotations:delete",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "submit",
-    "method": "PATCH",
-    "path": "/quotations/:id/submit",
-    "permission": "quotations:submit",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationsController",
-    "handler": "update",
-    "method": "PATCH",
-    "path": "/quotations/:id",
-    "permission": "quotations:update",
-    "public": false,
-    "file": "src/modules/quotations/quotations.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationVersionsController",
-    "handler": "create",
-    "method": "POST",
-    "path": "/quotations/:quotationId/versions",
-    "permission": "quotations:create",
-    "public": false,
-    "file": "src/modules/quotations/quotation-versions.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationVersionsController",
-    "handler": "delete",
-    "method": "DELETE",
-    "path": "/quotations/versions/:id",
-    "permission": "quotations:delete",
-    "public": false,
-    "file": "src/modules/quotations/quotation-versions.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationVersionsController",
-    "handler": "get",
-    "method": "GET",
-    "path": "/quotations/versions/:id",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotation-versions.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationVersionsController",
-    "handler": "list",
-    "method": "GET",
-    "path": "/quotations/:quotationId/versions",
-    "permission": "quotations:read",
-    "public": false,
-    "file": "src/modules/quotations/quotation-versions.controller.ts"
-  },
-  {
-    "module": "quotations",
-    "controller": "QuotationVersionsController",
-    "handler": "restore",
-    "method": "POST",
-    "path": "/quotations/versions/:id/restore",
-    "permission": "quotations:restore",
-    "public": false,
-    "file": "src/modules/quotations/quotation-versions.controller.ts"
-  },
-  {
     "module": "rbac",
     "controller": "AccessMatrixController",
     "handler": "catalogue",
@@ -5940,56 +5730,6 @@
     "file": "src/modules/reki/reki.controller.ts"
   },
   {
-    "module": "reports",
-    "controller": "ReportsController",
-    "handler": "getByEmployee",
-    "method": "GET",
-    "path": "/reports/by-employee",
-    "permission": "reports:read",
-    "public": false,
-    "file": "src/modules/reports/reports.controller.ts"
-  },
-  {
-    "module": "reports",
-    "controller": "ReportsController",
-    "handler": "getByProject",
-    "method": "GET",
-    "path": "/reports/by-project",
-    "permission": "reports:read",
-    "public": false,
-    "file": "src/modules/reports/reports.controller.ts"
-  },
-  {
-    "module": "reports",
-    "controller": "ReportsController",
-    "handler": "getByStatus",
-    "method": "GET",
-    "path": "/reports/by-status",
-    "permission": "reports:read",
-    "public": false,
-    "file": "src/modules/reports/reports.controller.ts"
-  },
-  {
-    "module": "reports",
-    "controller": "ReportsController",
-    "handler": "getByVendor",
-    "method": "GET",
-    "path": "/reports/by-vendor",
-    "permission": "reports:read",
-    "public": false,
-    "file": "src/modules/reports/reports.controller.ts"
-  },
-  {
-    "module": "reports",
-    "controller": "ReportsController",
-    "handler": "getOverview",
-    "method": "GET",
-    "path": "/reports/overview",
-    "permission": "reports:read",
-    "public": false,
-    "file": "src/modules/reports/reports.controller.ts"
-  },
-  {
     "module": "scope-of-work",
     "controller": "ScopeOfWorkController",
     "handler": "addCategoryToProject",
@@ -6375,16 +6115,6 @@
     "handler": "searchProjects",
     "method": "GET",
     "path": "/search/projects",
-    "permission": "search:read",
-    "public": false,
-    "file": "src/modules/search/search.controller.ts"
-  },
-  {
-    "module": "search",
-    "controller": "SearchController",
-    "handler": "searchQuotations",
-    "method": "GET",
-    "path": "/search/quotations",
     "permission": "search:read",
     "public": false,
     "file": "src/modules/search/search.controller.ts"
@@ -6868,6 +6598,16 @@
     "permission": "site-ops-mockups:update",
     "public": false,
     "file": "src/modules/site-operations/mockup.controller.ts"
+  },
+  {
+    "module": "site-operations",
+    "controller": "QcSignOffController",
+    "handler": "exportExecutionChecklist",
+    "method": "GET",
+    "path": "/site-ops/qc/projects/:projectId/execution-checklist.xlsx",
+    "permission": "site-ops-qc:read",
+    "public": false,
+    "file": "src/modules/site-operations/qc.controller.ts"
   },
   {
     "module": "site-operations",
@@ -7536,6 +7276,16 @@
     "method": "DELETE",
     "path": "/architect/visit-stages/:id",
     "permission": "architect-visit-stages:delete",
+    "public": false,
+    "file": "src/modules/site-operations/visit-stage.controller.ts"
+  },
+  {
+    "module": "site-operations",
+    "controller": "VisitStageController",
+    "handler": "exportSchedule",
+    "method": "GET",
+    "path": "/architect/visit-stages/schedule.xlsx",
+    "permission": "architect-visit-stages:read",
     "public": false,
     "file": "src/modules/site-operations/visit-stage.controller.ts"
   },
@@ -8471,236 +8221,6 @@
   },
   {
     "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "create",
-    "method": "POST",
-    "path": "/project-shortlists",
-    "permission": "project-shortlists:create",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "exportBoth",
-    "method": "GET",
-    "path": "/project-shortlists/export-both/:projectId",
-    "permission": "project-shortlists:export",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "exportOne",
-    "method": "GET",
-    "path": "/project-shortlists/:id/export",
-    "permission": "project-shortlists:export",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "findAll",
-    "method": "GET",
-    "path": "/project-shortlists",
-    "permission": "project-shortlists:read",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "findByProjectAndType",
-    "method": "GET",
-    "path": "/project-shortlists/by-project/:projectId/:type",
-    "permission": "project-shortlists:read",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "findOne",
-    "method": "GET",
-    "path": "/project-shortlists/:id",
-    "permission": "project-shortlists:read",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "getGrid",
-    "method": "GET",
-    "path": "/project-shortlists/:id/grid",
-    "permission": "project-shortlists:read",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "getWorkspace",
-    "method": "GET",
-    "path": "/project-shortlists/:id/workspace",
-    "permission": "project-shortlists:read",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "remove",
-    "method": "DELETE",
-    "path": "/project-shortlists/:id",
-    "permission": "project-shortlists:delete",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "saveWorkspaceRow",
-    "method": "PUT",
-    "path": "/project-shortlists/:id/workspace/row",
-    "permission": "project-shortlists:update",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ProjectShortlistController",
-    "handler": "update",
-    "method": "PUT",
-    "path": "/project-shortlists/:id",
-    "permission": "project-shortlists:update",
-    "public": false,
-    "file": "src/modules/vendors/project-shortlist.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistEntryController",
-    "handler": "bulkCreate",
-    "method": "POST",
-    "path": "/shortlist-entries/bulk",
-    "permission": "shortlist-entries:create",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-entry.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistEntryController",
-    "handler": "create",
-    "method": "POST",
-    "path": "/shortlist-entries",
-    "permission": "shortlist-entries:create",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-entry.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistEntryController",
-    "handler": "findAll",
-    "method": "GET",
-    "path": "/shortlist-entries",
-    "permission": "shortlist-entries:read",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-entry.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistEntryController",
-    "handler": "findOne",
-    "method": "GET",
-    "path": "/shortlist-entries/:id",
-    "permission": "shortlist-entries:read",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-entry.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistEntryController",
-    "handler": "remove",
-    "method": "DELETE",
-    "path": "/shortlist-entries/:id",
-    "permission": "shortlist-entries:delete",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-entry.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistEntryController",
-    "handler": "select",
-    "method": "POST",
-    "path": "/shortlist-entries/:id/select",
-    "permission": "shortlist-entries:select",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-entry.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistEntryController",
-    "handler": "update",
-    "method": "PUT",
-    "path": "/shortlist-entries/:id",
-    "permission": "shortlist-entries:update",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-entry.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistPackageController",
-    "handler": "apply",
-    "method": "POST",
-    "path": "/shortlist-packages/:id/apply",
-    "permission": "shortlist-packages:apply",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-package.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistPackageController",
-    "handler": "create",
-    "method": "POST",
-    "path": "/shortlist-packages",
-    "permission": "shortlist-packages:create",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-package.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistPackageController",
-    "handler": "list",
-    "method": "GET",
-    "path": "/shortlist-packages",
-    "permission": "shortlist-packages:read",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-package.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistPackageController",
-    "handler": "preview",
-    "method": "POST",
-    "path": "/shortlist-packages/:id/preview",
-    "permission": "shortlist-packages:read",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-package.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "ShortlistPackageController",
-    "handler": "remove",
-    "method": "DELETE",
-    "path": "/shortlist-packages/:id",
-    "permission": "shortlist-packages:delete",
-    "public": false,
-    "file": "src/modules/vendors/shortlist-package.controller.ts"
-  },
-  {
-    "module": "vendors",
     "controller": "VendorBusinessTypesController",
     "handler": "create",
     "method": "POST",
@@ -8792,6 +8312,16 @@
   {
     "module": "vendors",
     "controller": "VendorsController",
+    "handler": "export",
+    "method": "GET",
+    "path": "/vendors/export",
+    "permission": "vendors:read",
+    "public": false,
+    "file": "src/modules/vendors/vendors.controller.ts"
+  },
+  {
+    "module": "vendors",
+    "controller": "VendorsController",
     "handler": "findAll",
     "method": "GET",
     "path": "/vendors",
@@ -8815,16 +8345,6 @@
     "handler": "getDashboardSummary",
     "method": "GET",
     "path": "/vendors/dashboard/summary",
-    "permission": "vendors:read",
-    "public": false,
-    "file": "src/modules/vendors/vendors.controller.ts"
-  },
-  {
-    "module": "vendors",
-    "controller": "VendorsController",
-    "handler": "getQuotationsByVendor",
-    "method": "GET",
-    "path": "/vendors/:id/quotations",
     "permission": "vendors:read",
     "public": false,
     "file": "src/modules/vendors/vendors.controller.ts"

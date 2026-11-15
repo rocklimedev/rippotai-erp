@@ -37,13 +37,23 @@ describe('Admin DPR Excel export', () => {
       ],
     );
     const book = new Workbook();
-    await book.xlsx.load(buffer);
+    await book.xlsx.load(buffer as any);
     const report = book.getWorksheet('ADMIN DAILY REPORT')!;
     const log = book.getWorksheet('Admin Daily Log')!;
+    // Title block, headings and dropdown sheet come from ADMIN DPR TEMPLATE.xlsx.
+    expect(book.worksheets.map((s) => s.name)).toEqual([
+      'ADMIN DAILY REPORT',
+      'Admin Daily Log',
+      'Lists',
+    ]);
     expect(report.getCell('A1').value).toBe('RIPPŌTAI');
-    expect(report.getCell('A6').value).toEqual(
-      new Date('2026-10-06T00:00:00Z'),
-    );
+    expect(report.getCell('A2').value).toBe('DAILY PROGRESS REPORT — ADMIN');
+    expect(report.getCell('A5').value).toBe('DATE');
+    expect(report.getCell('J5').value).toBe('ISSUE/BLOCKERS');
+    expect(report.getCell('K5').value).toBe('PHOTOS ATTACHED');
+    expect(report.getCell('A5').fill).toMatchObject({
+      fgColor: { argb: 'FF0D3D2F' },
+    });
     expect(report.getCell('A6').numFmt).toBe('dd-mmm-yyyy');
     expect(report.getRow(6).values).toEqual([
       ,
@@ -58,28 +68,30 @@ describe('Admin DPR Excel export', () => {
       'Tools',
       'Access pending',
     ]);
+    expect(report.getCell('B6').font).toMatchObject({ name: 'Lato', size: 10 });
     expect(log.getCell('A6').value).toBe('PO');
+    expect(log.getCell('A6').font.italic).toBeFalsy();
     expect(log.getCell('C6').value).toBe('Purchase order approved');
     expect(log.getCell('F6').value).toEqual(new Date('2026-10-07T00:00:00Z'));
-    expect(log.getCell('A22').value).toBeNull();
+    expect(log.getCell('A22').value as string).toMatch(/^Covers approvals/);
     expect(log.state).toBe('visible');
     expect(book.getWorksheet('Lists')!.state).toBe('hidden');
-    expect(report.getCell('C6').dataValidation.formulae).toEqual([
-      "'Lists'!$B$5:$B$8",
+    expect(log.getCell('D6').dataValidation.formulae).toEqual([
+      'Lists!$B$5:$B$8',
     ]);
   });
 
   it('exports entries beyond the original template and removes examples for empty results', async () => {
     const book = new Workbook();
     await book.xlsx.load(
-      await service.buildWorkbook(
+      (await service.buildWorkbook(
         [],
         Array.from({ length: 30 }, (_, i) => ({
           work_type: `Work ${i}`,
           status: 'Pending',
           details: `Details ${i}`,
         })),
-      ),
+      )) as any,
     );
     expect(book.getWorksheet('Admin Daily Log')!.getCell('A35').value).toBe(
       'Work 29',
@@ -87,6 +99,9 @@ describe('Admin DPR Excel export', () => {
     expect(book.getWorksheet('Admin Daily Log')!.getCell('A22').value).toBe(
       'Work 16',
     );
+    expect(
+      book.getWorksheet('Admin Daily Log')!.getCell('A37').value as string,
+    ).toMatch(/^Covers approvals/);
     expect(
       book.getWorksheet('ADMIN DAILY REPORT')!.getCell('A6').value,
     ).toBeNull();

@@ -1,6 +1,6 @@
 import { appConfirm } from "@/lib/app-dialog";
 // Calendar: month / week / agenda over INOS events + task due dates, milestones, payment dues,
-// quotation expiries and site visits. /calendar (team), /calendar/mine, /calendar/team
+// and site visits. /calendar (team), /calendar/mine, /calendar/team
 import React, { useMemo, useState } from "react";
 import ZohoSyncControl, { ZohoSyncBadge } from "./ZohoSyncControl";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -63,7 +63,6 @@ const SOURCES = {
   task: { label: "Task due", tone: "info" },
   milestone: { label: "Milestones", tone: "lilac" },
   payment: { label: "Payments due", tone: "warn" },
-  quotation: { label: "Quote expiry", tone: "peach" },
   site_visit: { label: "Site visits", tone: "ok" },
 };
 const toneOf = (it) =>
@@ -361,9 +360,7 @@ function ItemModal({ it, onClose, onEdit }) {
   const link =
     it.source === "task"
       ? `/tasks/${it.id}`
-      : it.source === "quotation"
-        ? `/procurement/estimates/${it.id}`
-        : it.source === "site_visit"
+      : it.source === "site_visit"
           ? "/site-operations/visit-assignments"
           : it.project_id
             ? `/projects/${it.project_id}`
@@ -401,9 +398,7 @@ function ItemModal({ it, onClose, onEdit }) {
               Open{" "}
               {it.source === "task"
                 ? "task"
-                : it.source === "quotation"
-                  ? "quotation"
-                  : it.source === "site_visit"
+                : it.source === "site_visit"
                     ? "site visits"
                     : "project"}
             </Button>

@@ -61,3 +61,17 @@ test("scope spaces and budget sections are pre-populated from rooms", () => {
   assert.equal(budget.location, "Plot 7");
   assert.equal(budget.client_name, "Mehra");
 });
+
+test("scope project mode comes from the pipeline deal's Design / Build service", () => {
+  const trace = {};
+  const ctx = {
+    shared: { projectMode: "BUILD" },
+    documents: {},
+    sources: { projectMode: { sequence: "pipeline" } },
+  };
+  const next = applyDocumentPrefill({ Overview: { project_mode: "" } }, ctx, "scope", trace);
+  assert.equal(next.Overview.project_mode, "BUILD_ONLY");
+  assert.equal(trace["Overview.project_mode"], "pipeline");
+  const typed = applyDocumentPrefill({ Overview: { project_mode: "DESIGN_BUILD" } }, ctx, "scope");
+  assert.equal(typed.Overview.project_mode, "DESIGN_BUILD");
+});

@@ -189,7 +189,6 @@ const WorkOrderPrintDocument = forwardRef(function WorkOrderPrintDocument({ work
         },
         { label: "Order value", value: rs(wo.total_amount), sub: Number(wo.gst_percentage) ? `Incl. GST @ ${Number(wo.gst_percentage)}%` : "" },
       ]}
-      footerNote={has(contractor) ? `Issued to ${contractor}` : ""}
       preparedFor={contractor}
       reference={no}
       date={fmtDate(wo.work_order_date, { short: true })}

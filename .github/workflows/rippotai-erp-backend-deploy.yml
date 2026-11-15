@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - "backend/**"
-      - "docker-compose.yml"
-      - ".github/workflows/**"
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/**'
 
 jobs:
   route-security:
@@ -36,7 +36,7 @@ jobs:
 
           docker push ghcr.io/rocklimedev/rippotai-erp-api:latest
 
-      - name: Deploy to VPS
+      - name: Deploy to VPS and reload CM Trading Nginx
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: 66.116.204.81
@@ -45,13 +45,49 @@ jobs:
           script: |
             set -e
 
+            echo "======================================"
+            echo "DEPLOYING RIPPOTAI ERP API"
+            echo "======================================"
+
             cd /opt/apps/rippotai-erp-api
 
             echo "${{ secrets.RIPPOTAIERPAPI_GHCR_TOKEN }}" | docker login ghcr.io \
               -u rocklimedev --password-stdin
 
+            echo "Pulling latest Rippotai API images..."
             docker compose pull backend export-worker
+
+            echo "Recreating Rippotai API services..."
             docker compose up -d --force-recreate --remove-orphans backend export-worker
+
+            echo "Checking Rippotai service status..."
             docker compose ps backend export-worker
 
+            echo "======================================"
+            echo "RELOADING EXISTING CM TRADING NGINX"
+            echo "======================================"
+
+            echo "Checking CM Trading Nginx container..."
+            docker inspect -f '{{.State.Running}}' cmtrading-nginx | grep -qx true
+
+            echo "Testing Nginx configuration..."
+            docker exec cmtrading-nginx nginx -t
+
+            echo "Gracefully reloading Nginx..."
+            docker exec cmtrading-nginx nginx -s reload
+
+            echo "Verifying Nginx configuration..."
+            docker exec cmtrading-nginx nginx -t
+
+            echo "Checking CM Trading Nginx status..."
+            docker ps --filter "name=^/cmtrading-nginx$"
+
+            echo "======================================"
+            echo "CLEANING UNUSED DOCKER IMAGES"
+            echo "======================================"
+
             docker image prune -f
+
+            echo "======================================"
+            echo "DEPLOYMENT COMPLETED SUCCESSFULLY"
+            echo "======================================"

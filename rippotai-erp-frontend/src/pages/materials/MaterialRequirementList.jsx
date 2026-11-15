@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import {
   AlertTriangle,
+  Calculator,
   ChevronDown,
   ChevronRight,
   Edit3,
@@ -265,6 +266,8 @@ function ProgressStat({ percentage }) {
 ============================================================ */
 
 function MaterialRequirementRow({ requirement, onView, onEdit }) {
+  const nav = useNavigate();
+  const requirementId = getRequirementId(requirement);
   const itemName = getItemName(requirement);
   const category = getCategory(requirement);
   const selection = getSelection(requirement);
@@ -372,6 +375,25 @@ function MaterialRequirementRow({ requirement, onView, onEdit }) {
 
             <span className="hidden lg:inline">Edit</span>
           </Button>
+
+          {requirementId && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() =>
+                nav(
+                  `/procurement/estimates?material_requirement_id=${encodeURIComponent(requirementId)}`,
+                )
+              }
+              title="Estimate requirement"
+            >
+              <Calculator className="h-[13px] w-[13px]" />
+
+              <span className="hidden lg:inline">Estimate</span>
+            </Button>
+          )}
         </div>
       </div>
     </div>

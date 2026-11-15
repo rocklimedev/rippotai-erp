@@ -9,12 +9,13 @@ import {
   BelongsTo,
   HasMany,
   IsUUID,
+  AfterCreate,
 } from 'sequelize-typescript';
+import { assignProjectCode } from '../project-code';
 import { Client } from '../../clients/models/client.model';
 import { ProjectType } from './project-type.model';
 import { ProjectPriority, ProjectStatus } from '@/common/enums';
 import { User } from '@/modules/users/models/user.model';
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Boq } from '@/modules/boqs/models/boq.model';
 import { TeamMemberOwnerType } from '@/common/enums/team.enums';
 import { TeamMember } from '@/modules/users/models/team-member.model';
@@ -35,6 +36,10 @@ export class Project extends Model<Project> {
 
   @Column({ type: DataType.STRING(255), allowNull: false })
   declare name: string;
+
+  // PRJ-001 … assigned after create (migration 20261115_proto_project_codes).
+  @Column({ type: DataType.STRING(20), allowNull: true })
+  declare code: string | null;
 
   @Column({
     type: DataType.STRING(255),
@@ -92,9 +97,6 @@ export class Project extends Model<Project> {
 
   @Column({ type: DataType.DATEONLY, allowNull: true })
   declare desired_start_date: string | null;
-
-  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
-  declare quotation_count: number;
 
   @Column({
     type: DataType.DECIMAL(15, 2),
@@ -158,9 +160,6 @@ export class Project extends Model<Project> {
   @BelongsTo(() => User, { foreignKey: 'archived_by', as: 'archiver' })
   declare archiver: User;
 
-  @HasMany(() => Quotation, { foreignKey: 'project_id' })
-  declare quotations: Quotation[];
-
   @HasMany(() => Boq, { foreignKey: 'project_id', as: 'boqs' })
   declare boqs: Boq[];
 
@@ -181,4 +180,15 @@ export class Project extends Model<Project> {
     as: 'team_members',
   })
   declare team_members: TeamMember[];
+
+  @AfterCreate
+  static async assignCode(instance: Project, options: any) {
+    if (instance.code || !instance.sequelize) return;
+    const code = await assignProjectCode(
+      instance.sequelize,
+      instance.id,
+      options?.transaction,
+    );
+    if (code) instance.setDataValue('code', code);
+  }
 }

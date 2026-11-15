@@ -1,0 +1,39 @@
+/* Record context strip, version history timeline, recent activity. */
+.rc-card { margin-bottom: 16px; }
+.rc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.rc-head .inos-section-title { margin: 0; }
+.rc-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; font-size: 13px; }
+.rc-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 13px; font-weight: 600; color: var(--inos-ink, #1f2a24);
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+}
+.rc-link:hover { color: var(--inos-brand, #1f3d2f); }
+.rc-empty { font-size: 13px; color: #4d4d4d; margin: 0; }
+
+.rc-timeline { list-style: none; margin: 0; padding: 0 0 0 4px; position: relative; }
+.rc-timeline__item { position: relative; padding: 0 0 18px 24px; }
+.rc-timeline__item::before {
+  content: ""; position: absolute; left: 5px; top: 14px; bottom: 0; width: 1px;
+  background: var(--inos-line, #d9ddd8);
+}
+.rc-timeline__item:last-child { padding-bottom: 0; }
+.rc-timeline__item:last-child::before { display: none; }
+.rc-timeline__dot {
+  position: absolute; left: 0; top: 4px; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--inos-brand, #1f3d2f); box-shadow: 0 0 0 3px var(--inos-surface, #fff), 0 0 0 4px var(--inos-line, #d9ddd8);
+}
+.rc-tone--revise .rc-timeline__dot, .rc-tone--reject .rc-timeline__dot { background: #d9b061; }
+.rc-tone--archive .rc-timeline__dot { background: #9a9a9a; }
+.rc-timeline__title { font-size: 13px; font-weight: 600; color: var(--inos-ink, #1f2a24); }
+.rc-timeline__meta { font-size: 13px; color: #4d4d4d; margin-top: 2px; }
+.rc-timeline__comment { font-size: 13px; color: var(--inos-ink, #1f2a24); margin: 4px 0 0; white-space: pre-wrap; }
+.rc-timeline__body .rc-link { margin-top: 6px; }
+.rc-timeline__chip { margin-left: 6px; vertical-align: middle; }
+
+.rc-code { font-weight: 600; color: var(--inos-ink, #1f2a24); }
+
+@media print {
+  .rc-card { display: none !important; }
+}

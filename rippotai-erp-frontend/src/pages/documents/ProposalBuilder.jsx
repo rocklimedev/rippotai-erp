@@ -1,4 +1,5 @@
 import { appAlert } from "@/lib/app-dialog";
+import "@/components/business-proposal/proposal-template.css";
 import { useCreateBusinessProposalMutation, useUpdateBusinessProposalMutation } from "@/api/documents/business-proposals.api";
 import { toast } from "sonner";
 import React, { useEffect, useRef, useState } from "react";
@@ -30,11 +31,8 @@ import BudgetEstimateSection from "../../components/business-proposal/BudgetEsti
 import PaymentScheduleSection from "../../components/business-proposal/PaymentScheduleSection";
 import NextStepsSection from "../../components/business-proposal/NextStepsSection";
 import ProposalDocument from "../../components/business-proposal/ProposalDocument";
-import {
-  DocumentPreview,
-  downloadDocumentPdf,
-  pdfFileName,
-} from "@/components/print-document";
+import { downloadDeckPdf } from "../../components/business-proposal/proposal-deck/deckPdf";
+import { DocumentPreview, pdfFileName } from "@/components/print-document";
 import ProposalReadinessCheck from "../../components/business-proposal/ProposalReadinessCheck";
 import {
   useGetBudgetEstimatesQuery,
@@ -73,6 +71,7 @@ import {
   mapPaymentScheduleToUpdatePayload,
   mapBudgetEstimateFromApi,
 } from "../../lib/proposalMappers";
+import { evaluateSection, fillLabel } from "@/components/doc-list/doc-utils";
 // Budget Estimate has no real endpoint yet — intentionally kept mocked.
 import { fetchNextSteps } from "../../lib/mockApi";
 
@@ -159,12 +158,17 @@ const EMPTY_PROPOSAL = {
    STEP PROGRESS
 ============================================================ */
 
-function ProposalProgress({ currentStep, onStepChange }) {
+function ProposalProgress({ currentStep, onStepChange, fills = {} }) {
   return (
     <nav className="crmf-stepper" aria-label="Proposal steps">
       {WIZARD_STEPS.map((item, index) => {
-        const completed = currentStep > item.id;
         const active = currentStep === item.id;
+        // Same rule as every form section: green only when every field of the
+        // step was filled, light yellow when partly filled.
+        const fill = active
+          ? "empty"
+          : fills[item.id] || (currentStep > item.id ? "done" : "empty");
+        const completed = fill !== "empty";
         const clickable = item.id <= currentStep;
 
         return (
@@ -181,11 +185,12 @@ function ProposalProgress({ currentStep, onStepChange }) {
               className={[
                 "crmf-step",
                 active ? "is-active" : "",
-                completed ? "is-done" : "",
+                completed ? `is-${fill}` : "",
               ].join(" ")}
+              title={completed ? fillLabel(fill) : undefined}
             >
               <span className="crmf-nav__dot">
-                {completed ? <Check aria-label="Done" /> : item.id + 1}
+                {completed ? <Check aria-label={fillLabel(fill)} /> : item.id + 1}
               </span>
               {item.label}
             </button>
@@ -295,7 +300,18 @@ export default function ProposalBuilder({
     setProjectId(initialProjectId);
   }, [initialProjectId]);
 
-  const [step, setStep] = useState(savedRecord ? 1 : 0);
+  const [step, setStepState] = useState(savedRecord ? 1 : 0);
+  // Completeness of each wizard step, measured from its fields when leaving it.
+  const [stepFills, setStepFills] = useState({});
+  const editRef = useRef(null);
+  const setStep = (next) => {
+    const el = editRef.current;
+    if (el) {
+      const fill = evaluateSection(el, true);
+      setStepFills((prev) => (prev[step] === fill ? prev : { ...prev, [step]: fill }));
+    }
+    setStepState(next);
+  };
   const [view, setView] = useState("edit");
 
   const [savingStep, setSavingStep] = useState(false);
@@ -689,6 +705,7 @@ export default function ProposalBuilder({
         }
       : baseDocs.schedule,
     nextSteps: proposal.nextSteps,
+    projectDetail: proposal.projectDetail,
     generatedAt:
       savedRecord?.snapshot?.docs?.generatedAt || new Date().toISOString(),
   };
@@ -775,7 +792,7 @@ export default function ProposalBuilder({
       const projectName =
         projectData?.name || proposal.projectDetail?.projectName || "Project";
 
-      await downloadDocumentPdf(
+      await downloadDeckPdf(
         documentElement,
         pdfFileName("Business-Proposal", projectName, 1),
         { title: `Business Proposal — ${projectName}` },
@@ -906,7 +923,7 @@ export default function ProposalBuilder({
 
       {view === "edit" && (
         <div className="inos-card" style={{ padding: "8px 10px" }}>
-          <ProposalProgress currentStep={step} onStepChange={setStep} />
+          <ProposalProgress currentStep={step} onStepChange={setStep} fills={stepFills} />
         </div>
       )}
 
@@ -916,6 +933,7 @@ export default function ProposalBuilder({
 
       {view === "edit" && (
         <main
+          ref={editRef}
           className="inos-form"
           style={{ maxWidth: 920, width: "100%", margin: "0 auto" }}
         >

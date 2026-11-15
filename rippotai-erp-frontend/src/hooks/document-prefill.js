@@ -7,7 +7,6 @@ export const FORM_SEQUENCE = {
   budget: "business-proposal",
   payment: "payment-schedule",
   plan: "plan-of-action",
-  quotation: "estimates-quotations",
   procurement: "material-procurement-sheet",
   boq: "boq",
   purchaseOrder: "purchase-order",
@@ -19,6 +18,7 @@ export const FORM_SEQUENCE = {
 export const SOURCE_LABELS = {
   project: "Project details",
   client: "Client details",
+  pipeline: "Pipeline deal",
   "client-brief": "Client Brief",
   "site-recce": "Site Recce",
   "scope-of-work": "Scope of Work",
@@ -28,7 +28,6 @@ export const SOURCE_LABELS = {
   "planner-procurement": "Project Planner",
   "payment-schedule": "Payment Schedule",
   "plan-of-action": "Plan of Action",
-  "estimates-quotations": "Quotation",
   "material-procurement-sheet": "Material Procurement",
   boq: "BOQ",
   "purchase-order": "Purchase Order",
@@ -174,7 +173,6 @@ export function applyDocumentPrefill(current, context, type, trace = {}) {
   const recce = docs["site-recce"];
   const scope = docs["scope-of-work"];
   const budget = docs["business-proposal"];
-  const quotation = docs["estimates-quotations"];
   const boq = docs.boq;
   const po = docs["purchase-order"];
   const planner =
@@ -271,6 +269,12 @@ export function applyDocumentPrefill(current, context, type, trace = {}) {
     );
   }
   if (type === "scope") {
+    // Design / Build from the pipeline deal (Scope of Work stores DESIGN_ONLY / BUILD_ONLY).
+    overview(
+      "project_mode",
+      { DESIGN: "DESIGN_ONLY", BUILD: "BUILD_ONLY" }[shared.projectMode],
+      sourceOf("projectMode"),
+    );
     overview("scope_summary", brief?.areasIncludedInScope, "client-brief");
     overview("specific_exclusions", brief?.areasExcludedFromScope, "client-brief");
     const spaces = rooms?.length
@@ -378,24 +382,8 @@ export function applyDocumentPrefill(current, context, type, trace = {}) {
     }
     collection("phases", [...phases.values()], undefined, "planner-pmc");
   }
-  if (type === "quotation") {
-    const sourceLines = lines(budget);
-    collection(
-      "items",
-      sourceLines.map((item, index) => ({
-        id: `prefill-quote-${index}`,
-        particular: item.name,
-        qty: Number(item.quantity ?? 0),
-        rate: Number(item.rate ?? 0),
-        unit_id: item.unit_id || null,
-        remarks: [item.location, item.notes].filter(Boolean).join(" — "),
-      })),
-      emptyLines(current.items),
-      "business-proposal",
-    );
-  }
   if (type === "procurement") {
-    const sourceLines = lines(quotation);
+    const sourceLines = lines(budget);
     collection(
       "items",
       sourceLines.map((item, index) => {
@@ -425,17 +413,17 @@ export function applyDocumentPrefill(current, context, type, trace = {}) {
         };
       }),
       emptyLines(current.items),
-      "estimates-quotations",
+      "business-proposal",
     );
   }
   if (type === "purchaseOrder") {
-    const source = boq || quotation;
+    const source = boq;
     const sourceLines = lines(source);
     if (sourceLines.length && emptyLines(current.items)) {
-      trace.items = boq ? "boq" : "estimates-quotations";
+      trace.items = "boq";
       next = {
         ...next,
-        source_type: boq ? "BOQ" : "QUOTATION",
+        source_type: "BOQ",
         source_reference_id: source.id,
         items: sourceLines.map((item, index) => {
           const description = item.name || item.particular || "";
@@ -466,11 +454,9 @@ export function applyDocumentPrefill(current, context, type, trace = {}) {
         }),
       };
     }
-    // The quotation's vendor is valid only when that quotation supplies the lines.
-    if (!boq) set("vendor_id", quotation?.vendorId, "estimates-quotations");
   }
   if (type === "workOrder") {
-    const sourceLines = lines(boq || quotation);
+    const sourceLines = lines(boq);
     collection(
       "items",
       sourceLines.map((item, index) => ({
@@ -484,7 +470,7 @@ export function applyDocumentPrefill(current, context, type, trace = {}) {
         sort_order: index + 1,
       })),
       emptyLines(current.items),
-      boq ? "boq" : "estimates-quotations",
+      "boq",
     );
     set("working_hours", recce?.working_hours_allowed, "site-recce");
     set(

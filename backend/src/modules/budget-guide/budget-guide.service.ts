@@ -58,7 +58,17 @@ export class BudgetGuideService {
       throw new NotFoundException('Project not found.');
   }
   private view(row: BudgetGuide) {
-    const data = row.toJSON();
+    const data = row.toJSON() as unknown as Record<string, unknown>;
+    // MariaDB returns JSON columns as strings; parse them before calculating.
+    for (const key of ['plans', 'pricing_notes', 'next_steps']) {
+      if (typeof data[key] === 'string') {
+        try {
+          data[key] = JSON.parse(data[key]) as unknown;
+        } catch {
+          data[key] = [];
+        }
+      }
+    }
     return {
       ...data,
       built_up_area:

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useRefill } from "@/components/doc-list/useRefill";
 import { PrefillNotice } from "@/components/PrefillNotice";
 import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -119,6 +120,7 @@ export function BriefForm() {
   const [projectId, setProjectId] = useState(
     () => searchParams.get("project_id") || searchParams.get("projectId") || "",
   );
+  useRefill({ type: "client-brief", label: "Client Brief", projectId, enabled: !isEditMode, editPath: (id) => `/crm/brief/${id}/edit` });
 
   const [values, setValues] = useState({});
 

@@ -183,7 +183,15 @@ export class CdnService {
     if (!process.env.CDN_HOST) {
       // Open first so missing files can still produce a normal 404 response.
       const file = await fs.open(path.join(root, storageFilename), 'r');
-      await pipeline(file.createReadStream(), destination);
+      try {
+        await pipeline(
+          file.createReadStream({ autoClose: false }),
+          destination,
+        );
+      } finally {
+        // Node >= 24 crashes the process if a FileHandle is left to GC (e.g. client aborted).
+        await file.close().catch(() => undefined);
+      }
       return;
     }
     await withCdnDownloadSlot(async () => {

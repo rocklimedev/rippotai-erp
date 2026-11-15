@@ -16,7 +16,6 @@ import { RedisModule } from '@/common/redis/redis.module';
 import { NotificationForBriefService } from './services/notification-brief.service';
 import { NotificationForCalendarService } from './services/notification-calendar.service';
 import { NotificationForDrawingService } from './services/notification-drawing.service';
-import { NotificationForQuotationService } from './services/notification-quotation.service';
 import { NotificationForClientService } from './services/notification-client.service';
 import { NotificationForVendorService } from './services/notification-vendor.service';
 import { NotificationForUserService } from './services/notification-user.service';
@@ -39,7 +38,6 @@ import { NotificationForLeadService } from './services/notification-lead.service
     NotificationForBriefService,
     NotificationForCalendarService,
     NotificationForDrawingService,
-    NotificationForQuotationService,
     NotificationForClientService,
     NotificationForVendorService,
     NotificationForUserService,
@@ -55,7 +53,6 @@ import { NotificationForLeadService } from './services/notification-lead.service
     NotificationForBriefService,
     NotificationForCalendarService,
     NotificationForDrawingService,
-    NotificationForQuotationService,
     NotificationForClientService,
     NotificationForVendorService,
     NotificationForUserService,

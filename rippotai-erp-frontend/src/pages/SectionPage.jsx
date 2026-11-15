@@ -908,16 +908,6 @@ const SLUG_MAP = {
     title: "Activity",
     el: <ActivityFeed app="projects" />,
   },
-  // Quotations
-  "quotations/roles": { title: "Roles and Permissions", el: <RolesPage /> },
-  "quotations/settings": {
-    title: "Quotation Settings",
-    el: <SettingsPage app="quotations" />,
-  },
-  "quotations/activity": {
-    title: "Activity",
-    el: <ActivityFeed app="quotations" />,
-  },
   // Vendors
   "vendors/roles": { title: "Roles and Permissions", el: <RolesPage /> },
   "vendors/settings": {

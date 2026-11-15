@@ -15,5 +15,18 @@ export class QualityChecklistTemplate extends Model<QualityChecklistTemplate> {
   @Column(DataType.STRING(100)) declare sheet_name: string;
   @Column(DataType.STRING(255)) declare title: string;
   @Column(DataType.STRING(30)) declare version: string;
-  @Column(DataType.JSON) declare checkpoints: WorkHeadCheckpoint[];
+  // MariaDB returns JSON columns as strings; parse on read.
+  @Column({
+    type: DataType.JSON,
+    get(this: QualityChecklistTemplate) {
+      const value: unknown = this.getDataValue('checkpoints');
+      if (typeof value !== 'string') return value ?? [];
+      try {
+        return JSON.parse(value) as WorkHeadCheckpoint[];
+      } catch {
+        return [];
+      }
+    },
+  })
+  declare checkpoints: WorkHeadCheckpoint[];
 }

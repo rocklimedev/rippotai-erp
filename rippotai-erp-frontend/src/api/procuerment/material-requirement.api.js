@@ -49,7 +49,6 @@ export const materialRequirementApi = baseApi.injectEndpoints({
      * - sample boards
      * - material master
      * - material vendors
-     * - quotations
      */
     getMaterialRequirementsByProject: builder.query({
       query: (projectId) => ({
@@ -84,7 +83,6 @@ export const materialRequirementApi = baseApi.injectEndpoints({
      * - sample boards
      * - material master
      * - material vendors
-     * - quotations
      */
     getMaterialRequirement: builder.query({
       query: (id) => ({

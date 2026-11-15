@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
-import TopHeader from "../components/dashboard/TopHeader";
+import AppShell from "@/components/shell/AppShell";
 
 // ====================== SETTINGS LAYOUT (Shell) ======================
 export default function SettingsLayout() {
@@ -29,31 +29,12 @@ export default function SettingsLayout() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-page">
-      <TopHeader app="settings" />
-
-      <main className="p-6 lg:p-8">
-        {/* Increased page width */}
-        <div className="w-full max-w-[1700px] mx-auto">
-          <div className="mb-8">
-            <h1
-              className="text-3xl font-semibold"
-              style={{ color: "var(--ink-green)" }}
-            >
-              Settings
-            </h1>
-
-            <p className="text-[#6B7B7C] mt-1">
-              Manage your account, team, and workspace preferences
-            </p>
-          </div>
-
-          {/* Full-width content card */}
-          <div className="bg-white border border-[rgba(31,69,59,0.14)] rounded-3xl p-8 lg:p-10 shadow-sm min-h-[650px]">
-            <Outlet />
-          </div>
+    <AppShell app="settings">
+      <div className="w-full max-w-[1700px] mx-auto">
+        <div className="bg-white border border-[var(--line)] rounded-2xl p-6 lg:p-8 min-h-[480px]">
+          <Outlet />
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

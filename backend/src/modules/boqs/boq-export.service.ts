@@ -1,13 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import {
-  BoqService,
-  BoqJSON,
-  BoqItemJSON,
-  BoqCategoryJSON,
-  BoqMiscellaneousJSON,
-} from './boq.service';
+import { BoqService, BoqJSON, BoqItemJSON } from './boq.service';
 import * as puppeteer from 'puppeteer';
 import ExcelJS from 'exceljs';
+import { TermsTemplate } from '../metas/models/terms-templates.model';
+import {
+  COMPANY_NAME,
+  brandLogo,
+  dataUri,
+} from '../../common/brand/brand-assets';
+import {
+  buildBudgetModel,
+  paginateBudget,
+  renderBudgetHtml,
+} from './boq-budget-layout';
+import {
+  INR_FORMAT,
+  QTY_FORMAT,
+  brandPrint,
+  freezeAndFilter,
+  setWidths,
+  styleBodyRow,
+  styleGroupRow,
+  styleHeaderRow,
+  styleTotalsRow,
+  writeBrandHeader,
+} from '../../common/brand/excel-brand';
 
 export type PdfVariant =
   | 'internal'
@@ -15,12 +32,6 @@ export type PdfVariant =
   | 'quantity_only'
   | 'vendor_enquiry';
 
-interface CompanyProfile {
-  name: string;
-  logoUrl: string | null;
-}
-
-// Extended interface to fix type issues
 interface BoqProjectJSON {
   name?: string;
   site_location?: string;
@@ -34,76 +45,139 @@ interface BoqProjectJSON {
 export class BoqExportService {
   constructor(private readonly boqService: BoqService) {}
 
+  // ==================================================================== Excel
+
   async toExcel(boqId: string): Promise<{ buffer: Buffer; filename: string }> {
     const boq = await this.boqService.findOne(boqId);
+    const project = boq.project as BoqProjectJSON | undefined;
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Rippotai ERP';
+    workbook.creator = COMPANY_NAME;
     workbook.created = new Date();
-
     const sheet = workbook.addWorksheet('BOQ');
 
-    sheet.columns = [
-      { header: 'S.No', key: 'sno', width: 10 },
-      { header: 'Description', key: 'description', width: 35 },
-      { header: 'Location', key: 'location', width: 25 },
-      { header: 'Unit', key: 'unit', width: 15 },
-      { header: 'Quantity', key: 'quantity', width: 15 },
-      { header: 'Rate', key: 'rate', width: 15 },
-      { header: 'Amount', key: 'amount', width: 20 },
-    ];
-
-    sheet.addRow([this.formatValue(boq.title)]);
-    sheet.addRow([`BOQ Number: ${this.formatValue(boq.boq_number)}`]);
-    sheet.addRow([`Version: ${this.formatValue(boq.version)}`]);
-    sheet.addRow([]);
-
-    const headerRow = sheet.getRow(5);
-    headerRow.font = { bold: true };
-
-    const items = boq.items ?? [];
-    items.forEach((item, index) => {
-      sheet.addRow({
-        sno: index + 1,
-        description: this.formatValue(this.itemLabel(item)),
-        location: this.formatValue(item.location),
-        unit: this.formatValue(item.unit),
-        quantity: this.formatValue(item.quantity),
-        rate: this.formatValue(item.rate),
-        amount: this.formatValue(item.amount),
-      });
+    const LAST = 7;
+    const HEADER = 5;
+    writeBrandHeader(workbook, sheet, {
+      title: this.formatValue(boq.title) || 'Bill of Quantities',
+      project: [
+        project?.name,
+        this.formatValue(boq.location) || project?.site_location,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      meta: [
+        boq.boq_number ? `BOQ no. ${this.formatValue(boq.boq_number)}` : '',
+        `Version ${this.formatValue(boq.version) || 1}`,
+        this.dateText(boq.date),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      lastCol: LAST,
     });
+    sheet.getRow(4).height = 8;
+    setWidths(sheet, [8, 48, 22, 10, 12, 16, 18]);
+
+    const header = sheet.getRow(HEADER);
+    header.values = [
+      'S.No',
+      'Description',
+      'Location',
+      'Unit',
+      'Quantity',
+      'Rate',
+      'Amount',
+    ];
+    styleHeaderRow(header, 1, LAST);
+    [5, 6, 7].forEach(
+      (c) =>
+        (header.getCell(c).alignment = {
+          ...header.getCell(c).alignment,
+          horizontal: 'right',
+        }),
+    );
+
+    const money = { 6: INR_FORMAT, 7: INR_FORMAT, 5: QTY_FORMAT };
+    let r = HEADER;
+    let sno = 0;
+    const addItem = (item: BoqItemJSON) => {
+      sno += 1;
+      const row = sheet.getRow(++r);
+      row.values = [
+        sno,
+        this.itemLabel(item),
+        this.formatValue(item.location) || null,
+        this.formatValue(item.unit) || null,
+        this.num(item.quantity),
+        this.num(item.rate),
+        this.num(item.amount),
+      ];
+      styleBodyRow(row, 1, LAST, money);
+      row.getCell(1).alignment = { vertical: 'top', horizontal: 'center' };
+    };
+
+    const categories = [...(boq.categories ?? [])].sort(
+      (a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0),
+    );
+    const grouped = categories.some((c) => (c.items ?? []).length);
+    if (grouped) {
+      for (const cat of categories) {
+        const items = cat.items ?? [];
+        if (!items.length) continue;
+        const catRow = sheet.getRow(++r);
+        catRow.getCell(2).value = this.formatValue(cat.name);
+        styleGroupRow(catRow, 1, LAST);
+        items.forEach(addItem);
+        const sub = sheet.getRow(++r);
+        sub.getCell(2).value = `Subtotal — ${this.formatValue(cat.name)}`;
+        sub.getCell(7).value = this.num(
+          cat.subtotal ??
+            items.reduce((s, i) => s + (this.num(i.amount) ?? 0), 0),
+        );
+        styleTotalsRow(sub, 1, LAST, { formats: money });
+      }
+    } else {
+      (boq.items ?? []).forEach(addItem);
+    }
+    const lastItemRow = r;
 
     // ---- Miscellaneous (free-form named entries, e.g. Contingency) ----
     const miscRows = boq.miscellaneous ?? [];
+    r += 1;
     if (miscRows.length) {
-      sheet.addRow([]);
-      const miscHeaderRow = sheet.addRow(['Miscellaneous']);
-      miscHeaderRow.font = { bold: true };
-
+      const miscHead = sheet.getRow(++r);
+      miscHead.getCell(2).value = 'Miscellaneous';
+      styleGroupRow(miscHead, 1, LAST);
       miscRows.forEach((m) => {
-        sheet.addRow({
-          description: this.formatValue(
-            m.notes ? `${m.name} (${m.notes})` : m.name,
-          ),
-          amount: this.formatValue(m.value),
-        });
+        const row = sheet.getRow(++r);
+        row.getCell(2).value = this.formatValue(
+          m.notes ? `${m.name} (${m.notes})` : m.name,
+        );
+        row.getCell(7).value = this.num(m.value);
+        styleBodyRow(row, 1, LAST, money);
       });
-
-      sheet.addRow({
-        description: 'Miscellaneous Total',
-        amount: this.formatValue(boq.misc_amount),
-      });
+      const miscTotal = sheet.getRow(++r);
+      miscTotal.getCell(2).value = 'Miscellaneous Total';
+      miscTotal.getCell(7).value = this.num(boq.misc_amount);
+      styleTotalsRow(miscTotal, 1, LAST, { formats: money });
+      r += 1;
     }
 
-    sheet.addRow([]);
-    sheet.addRow({
-      description: 'Total Value',
-      amount: this.formatValue(boq.total_value),
-    });
-    sheet.addRow({
-      description: 'Final Total',
-      amount: this.formatValue(boq.final_total),
+    const total = sheet.getRow(++r);
+    total.getCell(2).value = 'Total Value';
+    total.getCell(7).value = this.num(boq.total_value);
+    styleTotalsRow(total, 1, LAST, { formats: money });
+    const final = sheet.getRow(++r);
+    final.getCell(2).value = 'Final Total';
+    final.getCell(7).value = this.num(boq.final_total);
+    styleTotalsRow(final, 1, LAST, { grand: true, formats: money });
+
+    freezeAndFilter(sheet, HEADER, LAST, lastItemRow);
+    brandPrint(sheet, {
+      orientation: 'portrait',
+      repeatRows: `${HEADER}:${HEADER}`,
+      lastCol: LAST,
+      lastRow: r,
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -113,28 +187,25 @@ export class BoqExportService {
     };
   }
 
+  // ==================================================================== PDF
+  // "Budget Breakdown" — the user's BOQ template (boq-budget-layout.ts, same code as the app's
+  // components/commerce-documents/boqBudgetLayout.js, so server and in-app PDFs are identical).
+
   async toPdf(
     boqId: string,
     variant: PdfVariant,
   ): Promise<{ buffer: Buffer; filename: string }> {
     const boq = await this.boqService.findOne(boqId);
-    const html = this.generatePdfHtml(boq, variant);
-
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
+    const html = this.generatePdfHtml(boq, variant, await this.termsHtml(boq));
+    const browser = await this.launch();
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'load' });
-
+      await this.layout(page, html);
       const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: { top: '16mm', bottom: '16mm', left: '14mm', right: '14mm' },
+        preferCSSPageSize: true,
       });
-
       return {
         buffer: Buffer.from(pdf),
         filename: `${this.formatValue(boq.boq_number || boq.id)}-${variant}.pdf`,
@@ -144,384 +215,71 @@ export class BoqExportService {
     }
   }
 
+  /** PNG of page one for the pre-export check. */
   async pageOneThumbnail(boqId: string, variant: PdfVariant): Promise<Buffer> {
-    const { buffer } = await this.toPdf(boqId, variant);
-    return buffer;
-  }
-
-  // ---------- HTML template ----------
-
-  private generatePdfHtml(boq: BoqJSON, variant: PdfVariant): string {
-    const hidePrice =
-      variant === 'quantity_only' || variant === 'vendor_enquiry';
-    const company = this.getCompanyProfile();
-
-    const categories = this.categoriesForVariant(boq, variant);
-    const date = boq.date
-      ? this.formatValue(boq.date)
-      : new Date().toLocaleDateString('en-IN', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        });
-
-    const project = boq.project as BoqProjectJSON | undefined;
-    const projectName = project?.name || boq.title;
-    const projectLocation = boq.location || project?.site_location;
-    const clientName = project?.client?.name ?? boq.client_name ?? '';
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<style>
-  @page { size: A4; margin: 0; }
-  * { box-sizing: border-box; }
-  body {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    color: #333333;
-    margin: 0;
-  }
-  .section { padding: 0 4mm; }
-  .page-break { page-break-before: always; }
-
-  /* ---- Cover: logo / title / meta ---- */
-  .cover-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-.logo-box {
-  width: 70px;
-  height: 70px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.logo-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-  .title-block { text-align: right; }
-  .title-block h1 {
-    font-size: 22px;
-    margin: 0;
-    line-height: 1.15;
-  }
-  .title-block .date { font-size: 11px; color: #6B7B7C; margin-top: 4px; }
-
-  .divider-dashed {
-    border: none;
-    border-top: 1.5px dashed #B5C4B6;
-    margin: 10px 0 14px;
-  }
-
-  .meta-row {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 18px;
-  }
-  .meta-left { flex: 1; }
-  .meta-left .line { margin: 2px 0; }
-  .meta-left .label { color: #6B7B7C; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
-  .meta-divider {
-    width: 1px;
-    align-self: stretch;
-    background: #B5C4B6;
-    margin: 0 18px;
-  }
-  .meta-right { min-width: 140px; text-align: left; }
-  .meta-right .label { color: #6B7B7C; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
-  .meta-right .value { font-size: 16px; font-weight: bold; margin-top: 3px; }
-
-  /* ---- Table ---- */
-  table { width: 100%; border-collapse: collapse; }
-  thead th {
-    background: #EAEEF0;
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    color: #6B7B7C;
-    text-align: left;
-    border-bottom: 1.5px solid #B5C4B6;
-    padding: 6px 5px;
-  }
-  td {
-    border-bottom: 1px solid #E1E6E2;
-    padding: 5px 5px;
-    vertical-align: top;
-  }
-  td.num, th.num { text-align: right; }
-  td.center, th.center { text-align: center; }
-  tr.cat-row td {
-    background: #F4F6F4;
-    font-weight: bold;
-    padding-top: 9px;
-  }
-  tr.subtotal-row td {
-    border-top: 1px solid #B5C4B6;
-    border-bottom: none;
-    font-weight: bold;
-    color: #1F453B;
-  }
-  tr { page-break-inside: avoid; }
-  thead { display: table-header-group; }
-
-  /* ---- Financial / meta summary ---- */
-  .summary-box {
-    margin-top: 22px;
-    border: 1px solid #B5C4B6;
-    border-radius: 8px;
-    padding: 14px 16px;
-    page-break-inside: avoid;
-  }
-  .summary-box h3 {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    color: #6B7B7C;
-    margin: 0 0 10px;
-  }
-  .summary-line {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
-  }
-  .summary-line.total {
-    border-top: 1.5px solid #333333;
-    margin-top: 6px;
-    padding-top: 8px;
-    font-size: 15px;
-    font-weight: bold;
-  }
-  .misc-block {
-    margin-top: 4px;
-    padding-top: 4px;
-    border-top: 1px dashed #B5C4B6;
-  }
-  .misc-line {
-    display: flex;
-    justify-content: space-between;
-    padding: 2px 0;
-    font-size: 11px;
-    color: #6B7B7C;
-  }
-  .misc-line .misc-name { max-width: 70%; }
-  .misc-line .misc-notes { color: #B5C4B6; font-size: 10px; }
-
-  /* ---- Terms & Conditions (final page) ---- */
-  .tc-page h2 {
-    font-size: 16px;
-    border-bottom: 2px solid #333333;
-    padding-bottom: 6px;
-    margin-bottom: 14px;
-  }
-  .tc-body { font-size: 12px; line-height: 1.6; }
-
-  .footer {
-    margin-top: 30px;
-    font-size: 10px;
-    color: #B5C4B6;
-    text-align: center;
-  }
-</style>
-</head>
-<body>
-
-  <!-- ===== Page 1: cover + meta ===== -->
-  <div class="section">
-    <div class="cover-header">
-      <div class="logo-box">
-<img
-  src="https://media.cmtradingco.com/rippotai_projects/rippotai_logo.png"
-  alt="Company Logo"
-/>
-      </div>
-      <div class="title-block">
-<h1 className="text-[calc(100%+12px)]">
-  <span className="block">Budget</span>
-  <span className="block">Breakdown</span>
-</h1>
-        <div class="date">${this.formatValue(date)}</div>
-      </div>
-    </div>
-
-    <hr class="divider-dashed" />
-
-    <div class="meta-row">
-      <div class="meta-left">
-        <div class="line">${this.formatValue(projectName)}</div>
-        <div class="line">${this.formatValue(projectLocation)}</div>
-                <div class="line">${this.formatValue(clientName)}</div>
-      </div>
-      ${hidePrice ? '' : `<div class="meta-divider"></div>
-      <div class="meta-right">
-        <div class="label">Estimate Total</div>
-        <div class="value">${this.formatCurrency(boq.final_total)}</div>
-      </div>`}
-    </div>
-
-    <!-- ===== Line items table ===== -->
-    <table>
-      <thead>
-        <tr>
-          <th class="center" style="width:34px;">S.No</th>
-          <th>Description</th>
-          <th style="width:90px;">Location</th>
-          <th style="width:70px;">Unit</th>
-          <th class="num" style="width:60px;">Qty</th>
-          ${hidePrice ? '' : '<th class="num" style="width:80px;">Rate</th><th class="num" style="width:95px;">Amount</th>'}
-        </tr>
-      </thead>
-      <tbody>
-        ${this.renderCategoryRows(categories, hidePrice)}
-      </tbody>
-    </table>
-
-    <!-- ===== Financial / meta summary ===== -->
-    ${hidePrice ? '' : this.renderSummaryBox(boq)}
-
-
-  </div>
-
-</body>
-</html>
-`;
-  }
-
-  private renderCategoryRows(
-    categories: BoqCategoryJSON[],
-    hidePrice: boolean,
-  ): string {
-    let sno = 0;
-    const colspan = hidePrice ? 5 : 7;
-
-    return categories
-      .map((cat) => {
-        const itemRows = (cat.items ?? [])
-          .map((item) => {
-            sno += 1;
-            return `
-              <tr>
-                <td class="center">${sno}</td>
-                <td>${this.formatValue(this.itemLabel(item))}</td>
-                <td>${this.formatValue(item.location)}</td>
-                <td>${this.formatValue(item.unit)}</td>
-                <td class="num">${this.formatValue(item.quantity)}</td>
-                ${
-                  hidePrice
-                    ? ''
-                    : `<td class="num">${this.formatCurrency(item.rate)}</td>
-                       <td class="num">${this.formatCurrency(item.amount)}</td>`
-                }
-              </tr>`;
-          })
-          .join('');
-
-        const subtotalRow = hidePrice
-          ? ''
-          : `
-              <tr class="subtotal-row">
-                <td colspan="${colspan - 1}" style="text-align:right;">Subtotal — ${this.formatValue(cat.name)}</td>
-                <td class="num">${this.formatCurrency(cat.subtotal)}</td>
-              </tr>`;
-
-        return `
-          <tr class="cat-row">
-            <td colspan="${colspan}">${this.formatValue(cat.name)}</td>
-          </tr>
-          ${itemRows}
-          ${subtotalRow}
-        `;
-      })
-      .join('');
-  }
-
-  /**
-   * Renders each BoqMiscellaneous row (name + optional notes + value)
-   * inside the cost summary box, followed by the Miscellaneous subtotal
-   * line (boq.misc_amount, computed server-side — see
-   * BoqService.withComputedTotals). Returns '' when there are no rows,
-   * so the summary box looks identical to before this feature existed.
-   */
-  private renderMiscLines(rows: BoqMiscellaneousJSON[]): string {
-    if (!rows.length) return '';
-
-    const lines = rows
-      .map(
-        (m) => `
-      <div class="misc-line">
-        <span class="misc-name">${this.formatValue(m.name)}${
-          m.notes
-            ? ` <span class="misc-notes">(${this.formatValue(m.notes)})</span>`
-            : ''
-        }</span>
-        <span>${this.formatCurrency(m.value)}</span>
-      </div>`,
-      )
-      .join('');
-
-    return `<div class="misc-block">${lines}</div>`;
-  }
-
-  private renderSummaryBox(boq: BoqJSON): string {
-    const extras: Array<[string, unknown]> = [
-      ['Design Amount', boq.design_amount],
-      ['Execution Amount', boq.execution_amount],
-      ['Supervisor Amount', boq.supervisor_amount],
-      ['Additional Total', boq.additional_total],
-    ].filter(([, v]) => Number(v || 0) !== 0) as Array<[string, unknown]>;
-
-    const miscRows = boq.miscellaneous ?? [];
-    const miscAmount = Number(boq.misc_amount || 0);
-
-    return `
-  <div class="summary-box">
-    <h3>Cost Summary</h3>
-    <div class="summary-line"><span>Project Total</span><span>${this.formatCurrency(boq.project_total)}</span></div>
-    ${extras
-      .map(
-        ([label, val]) =>
-          `<div class="summary-line"><span>${label}</span><span>${this.formatCurrency(val)}</span></div>`,
-      )
-      .join('')}
-
-    ${
-      miscAmount !== 0
-        ? `<div class="summary-line"><span>Miscellaneous</span><span>${this.formatCurrency(miscAmount)}</span></div>
-           ${this.renderMiscLines(miscRows)}`
-        : ''
+    const boq = await this.boqService.findOne(boqId);
+    const html = this.generatePdfHtml(boq, variant, await this.termsHtml(boq));
+    const browser = await this.launch();
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({
+        width: 794,
+        height: 1123,
+        deviceScaleFactor: 1,
+      });
+      await this.layout(page, html);
+      const shot = await page.screenshot({
+        type: 'png',
+        clip: { x: 0, y: 0, width: 794, height: 1123 },
+      });
+      return Buffer.from(shot);
+    } finally {
+      await browser.close();
     }
-
-    <div class="summary-line total"><span>Final Total</span><span>${this.formatCurrency(boq.final_total)}</span></div>
-  </div>
-`;
   }
 
-  private categoriesForVariant(
-    boq: BoqJSON,
-    variant: PdfVariant,
-  ): BoqCategoryJSON[] {
-    const categories = boq.categories ?? [];
-    if (variant !== 'client') return categories;
-
-    return categories
-      .map((cat) => ({
-        ...cat,
-        items: (cat.items ?? []).filter((i) => !i.hidden),
-      }))
-      .filter((cat) => (cat.items ?? []).length > 0);
+  /** Load the flow, wait for fonts, then pack it onto A4 sheets in the page. */
+  private async layout(page: puppeteer.Page, html: string) {
+    await page.setContent(html, { waitUntil: 'load' });
+    await page.evaluate('document.fonts.ready');
+    await page.evaluate(
+      `(${paginateBudget.toString()})(document.querySelector('.bb-doc'))`,
+    );
   }
 
-  private itemLabel(item: BoqItemJSON): string {
-    const name = item.name || '';
-    const notes = ((item.notes as string) || '')
+  private launch() {
+    return puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+  }
+
+  /** BOQ terms, else the attached terms template (same rule as the in-app BOQ document). */
+  private async termsHtml(boq: BoqJSON): Promise<string> {
+    if (this.hasContent(boq.terms_html)) return boq.terms_html as string;
+    const id = boq.terms_template_id as string | undefined;
+    if (!id) return '';
+    try {
+      const tpl = await TermsTemplate.findByPk(id);
+      return this.hasContent(tpl?.content_html) ? tpl!.content_html : '';
+    } catch {
+      return '';
+    }
+  }
+
+  /** Unpaginated Budget Breakdown HTML (paginated in the browser by paginateBudget). */
+  generatePdfHtml(boq: BoqJSON, variant: PdfVariant, terms = ''): string {
+    return renderBudgetHtml(
+      buildBudgetModel(boq, {
+        variant,
+        terms,
+        monogramSrc: dataUri(brandLogo('monogram'), 'image/png'),
+      }),
+    );
+  }
+
+  private plainNotes(notes: unknown): string {
+    return String((notes as string) || '')
       .replace(/<br\s*\/?\s*>/gi, '\n')
       .replace(/<\/(?:p|div|li)>/gi, '\n')
       .replace(/<[^>]*>/g, '')
@@ -530,19 +288,37 @@ export class BoqExportService {
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-      .replace(/&amp;/g, '&');
+      .replace(/&amp;/g, '&')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
+  }
+
+  private itemLabel(item: BoqItemJSON): string {
+    const name = item.name || '';
+    const notes = this.plainNotes(item.notes);
     if (name && notes) return `${name} — ${notes}`;
     return name || notes || '';
   }
 
-  private getCompanyProfile(): CompanyProfile {
-    return { name: 'Rippotai ERP', logoUrl: null };
+  private num(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   }
 
-  private formatCurrency(value: any): string {
-    const n = Number(value ?? 0);
-    if (Number.isNaN(n)) return this.formatValue(value);
-    return `₹ ${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  private dateText(value: unknown): string {
+    if (!value) return '';
+    const s = typeof value === 'string' ? value : JSON.stringify(value);
+    const d =
+      value instanceof Date
+        ? value
+        : new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00:00` : s);
+    if (Number.isNaN(d.getTime())) return this.formatValue(value);
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
   private formatValue(value: any): string {

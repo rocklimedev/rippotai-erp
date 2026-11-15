@@ -50,7 +50,7 @@ export function ProjectPicker({ projects = [], value, onChange, invalid, placeho
     const s = q.trim().toLowerCase();
     if (!s) return projects;
     return projects.filter((p) =>
-      [p.name, p.site_location, p.client?.name].filter(Boolean).some((t) => String(t).toLowerCase().includes(s)),
+      [p.code, p.name, p.site_location, p.client?.name].filter(Boolean).some((t) => String(t).toLowerCase().includes(s)),
     );
   }, [projects, q]);
 
@@ -75,7 +75,7 @@ export function ProjectPicker({ projects = [], value, onChange, invalid, placeho
       >
         {selected ? (
           <span className="ds-picker__value">
-            <strong>{selected.name}</strong>
+            <strong>{selected.code ? `${selected.code} · ${selected.name}` : selected.name}</strong>
             {selected.site_location && <span>{selected.site_location}</span>}
           </span>
         ) : (
@@ -122,7 +122,7 @@ export function ProjectPicker({ projects = [], value, onChange, invalid, placeho
                 onClick={() => pick(p)}
               >
                 <span className="ds-picker__value">
-                  <strong>{p.name}</strong>
+                  <strong>{p.code ? `${p.code} · ${p.name}` : p.name}</strong>
                   <span>{[p.client?.name, p.site_location].filter(Boolean).join(" · ") || "—"}</span>
                 </span>
                 {p.id === value && <Check size={15} aria-hidden />}

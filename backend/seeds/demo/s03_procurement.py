@@ -1,4 +1,4 @@
-"""03 Procurement: vendors, materials, requirements, sample boards, rate sheets, estimates, quotations,
+"""03 Procurement: vendors, materials, requirements, sample boards, rate sheets, estimates,
 purchase orders, work orders, delivery challans, site inventory."""
 from lib import *
 
@@ -122,7 +122,7 @@ def build(o: Out):
                            is_preferred=int(j == 0), is_active=1, created_by=UID["rohit"], updated_by=UID["rohit"], created_at=dt(-150), updated_at=dt(-20)))
     o.ins("material_vendors", mv)
 
-    # ---------- material requirements -> sample boards -> rate sheets -> estimates -> material quotations ----------
+    # ---------- material requirements -> sample boards -> rate sheets -> estimates ----------
     reqs = [("kapoor", "FLR-001", "Italian marble for living & dining", "Statuario, book-matched in living; Botticino in dining", "Luxe", "COMPLETED", -120),
             ("kapoor", "PLB-004", "Wall-hung WCs for 6 bathrooms", "Rimless wall-hung WC with concealed cistern", "Contemporary", "COMPLETED", -110),
             ("kapoor", "FLR-005", "Engineered oak flooring - bedrooms", "3-strip oak, matt lacquer", "Warm", "IN_PROGRESS", -30),
@@ -141,7 +141,7 @@ def build(o: Out):
             ("sagar", "FLR-005", "Oak flooring options", "Compare Pergo vs Quick-Step", "Minimal", "DRAFT", -5),
             ("aurum", "CEL-001", "Acoustic ceiling - open office", "Gypsum with acoustic tiles", "Industrial", "READY", -18),
             ("courtyard", "FLR-002", "Botticino for guest rooms", "Sample approval pending", "Indian contemporary", "DRAFT", -2)]
-    mr, sb, rs, est, mq = [], [], [], [], []
+    mr, sb, rs, est = [], [], [], []
     for i, (pk, mc, item, sel, style, st, off) in enumerate(reqs):
         rid = U(f"mreq:{pk}:{mc}")
         m = MBY[mc]
@@ -164,96 +164,14 @@ def build(o: Out):
             est.append(dict(id=eid, material_requirement_id=rid, rate_sheet_id=U(f"rs:{pk}:{mc}:{MATERIAL_VENDOR[m[2]][0]}"), quantity=qty, unit=m[5], unit_rate=m[8],
                             total_amount=round(qty * m[8], 2), approval_status="approved" if st == "COMPLETED" else "pending",
                             approved_by=UNAME["ritika"] if st == "COMPLETED" else None, approved_at=dt(off + 8) if st == "COMPLETED" else None,
-                            converted_to_quotation=int(st == "COMPLETED"), created_at=dt(off + 7)))
-            if st == "COMPLETED":
-                mq.append(dict(id=U(f"mq:{pk}:{mc}"), estimate_id=eid, quotation_number=f"RA/MQ/{2026}/{100 + i}", quotation_date=d(off + 9),
-                               total_amount=round(qty * m[8] * 1.18, 2), terms="Prices inclusive of GST @18%. Delivery within 10 days of PO.",
-                               status="accepted" if i % 2 == 0 else "sent", accepted_at=dt(off + 12) if i % 2 == 0 else None, created_at=dt(off + 9)))
+                            created_at=dt(off + 7)))
     o.ins("material_requirements", mr)
     o.ins("sample_boards", sb)
     o.ins("material_rate_sheets", rs)
     o.ins("material_estimates", est)
-    o.ins("material_quotations", mq)
 
-    build_quotations(o, uid)
     build_pos(o, uid)
     build_wos(o, uid)
-
-
-def proj_snapshot(pk):
-    p = PBYKEY[pk]
-    return {"id": PID[pk], "name": p[1], "site_location": p[4], "client_id": CID[p[2]], "status": p[6], "priority": p[7]}
-
-
-def vendor_snapshot(vk):
-    v = VBY[vk]
-    return {"id": VID[vk], "name": v[1], "company_name": v[2], "contact_number": v[6], "address": v[7], "state": v[8], "status": v[10]}
-
-
-# project, vendor, work category, [(particular, unit, qty, rate)], status, days-ago
-QUOTES = [
-    ("kapoor", "bharat_civil", "Civil", [("Brick masonry 230 mm in CM 1:6", "CUM", 85, 7800), ("Internal plaster 12 mm", "SQFT", 14000, 38), ("Pool shell RCC M30", "CUM", 42, 11500)], "approved", 200),
-    ("kapoor", "sanjay_labour", "Civil", [("Brick masonry 230 mm (labour)", "CUM", 85, 2400), ("Internal plaster 12 mm (labour)", "SQFT", 14000, 14)], "declined", 205),
-    ("kapoor", "sharma_elec", "Electrical", [("Point wiring - light/fan", "PT", 420, 1150), ("Power points 16A", "PT", 120, 1650), ("DB installation & testing", "NOS", 8, 4500)], "approved", 150),
-    ("kapoor", "kalpana", "Carpentry", [("Wardrobes in BWP ply + veneer", "SQFT", 1200, 2650), ("Kitchen base & wall units", "RFT", 42, 14500), ("Wall panelling - fluted", "SQFT", 650, 1450)], "submitted", 20),
-    ("malhotra", "bharat_civil", "Civil", [("RCC M25 slabs and beams", "CUM", 180, 9800), ("Brick masonry 230 mm", "CUM", 140, 7600), ("Waterproofing - terrace", "SQFT", 3200, 95)], "approved", 120),
-    ("malhotra", "aqua_plumb", "Plumbing", [("CPVC internal plumbing per bathroom", "SET", 7, 38000), ("SWR drainage lines", "RMT", 260, 420)], "submitted", 12),
-    ("malhotra", "cool_air", "HVAC", [("VRV system 36 HP supply & install", "LS", 1, 2850000)], "returned_for_editing", 18),
-    ("cmstore", "deepak_stone", "Flooring", [("Marble laying with polishing", "SQFT", 4800, 145), ("Granite plinth fabrication", "RFT", 180, 950)], "approved", 110),
-    ("cmstore", "gyproc_fc", "False Ceiling", [("Gypsum false ceiling with cove", "SQFT", 5200, 115), ("Metal baffle ceiling - gallery", "SQFT", 900, 420)], "approved", 95),
-    ("bhatia", "bharat_civil", "Civil", [("Excavation incl. basement", "CUM", 1400, 450), ("RCC M30 frame", "CUM", 620, 10200), ("Brick masonry", "CUM", 310, 7700)], "approved", 280),
-    ("bhatia", "cool_air", "HVAC", [("VRV 48 HP system", "LS", 1, 3950000), ("Fresh air units", "NOS", 4, 185000)], "submitted", 9),
-    ("bhatia", "glass_tech", "Glass & Aluminium", [("Slim sliding windows DGU", "SQFT", 2600, 1650), ("Frameless glass railing", "RFT", 140, 5200)], "draft", 3),
-    ("oberoi", "kalpana", "Carpentry", [("Modular kitchen", "RFT", 28, 16500), ("Wardrobes - lacquered glass", "SQFT", 780, 2900), ("TV unit & bar", "LS", 1, 385000)], "approved", 150),
-    ("oberoi", "asian_paints", "Painting", [("Royale luxury emulsion 2 coats", "SQFT", 16000, 28), ("PU polish on veneer", "SQFT", 900, 210)], "approved", 60),
-    ("singhania", "gyproc_fc", "False Ceiling", [("Gypsum ceiling with cove", "SQFT", 5200, 118)], "submitted", 7),
-    ("singhania", "sharma_elec", "Electrical", [("Point wiring", "PT", 260, 1200), ("Home automation wiring", "LS", 1, 420000)], "approved", 45),
-    ("aurum", "gyproc_fc", "False Ceiling", [("Acoustic grid ceiling", "SQFT", 11000, 135), ("Gypsum bulkheads", "RFT", 900, 320)], "submitted", 6),
-    ("aurum", "bharat_civil", "Civil", [("Partition walls - drywall", "SQFT", 6200, 145)], "draft", 2),
-    ("rocklime", "kalpana", "Carpentry", [("Display units - HDHMR", "SQFT", 1400, 1850), ("Reception desk - solid surface", "LS", 1, 265000)], "approved", 170),
-    ("tandon", "asian_paints", "Painting", [("Full house repaint", "SQFT", 18000, 26)], "approved", 380),
-]
-
-
-def build_quotations(o, uid):
-    qs, items, vers, comps = [], [], [], {}
-    for i, (pk, vk, wc, lines, st, ago) in enumerate(QUOTES):
-        qid = U(f"quote:{pk}:{vk}:{wc}")
-        sub = sum(qty * rate for _, _, qty, rate in lines)
-        disc = round(sub * (0.03 if i % 3 == 0 else 0), 2)
-        tax = round((sub - disc) * 0.18, 2)
-        total = round(sub - disc + tax, 2)
-        created = dt(-ago, 11)
-        qs.append(dict(id=qid, quotation_number=f"RA/Q/2026/{1001 + i}", current_version=2 if st in ("approved", "returned_for_editing") and i % 2 == 0 else 1,
-                       quotation_date=d(-ago), expiry_date=d(-ago + 30), validity_days=30, comparison_notes=None,
-                       selected_at=dt(-ago + 5) if st == "approved" else None, selected_by=UID["pooja"] if st == "approved" else None, is_selected=int(st == "approved"),
-                       boq_reference=f"BOQ-{PNAME[pk][:3].upper()}-{wc[:3].upper()}", status=st, project_id=PID[pk], vendor_id=VID[vk], material_requirement_id=None,
-                       project_snapshot=proj_snapshot(pk), vendor_snapshot=vendor_snapshot(vk), subtotal=sub, additional_charges=0, global_discount_type="fixed",
-                       global_discount_value=disc, discount=disc, tax_percent=18, tax_amount=tax, total_amount=total,
-                       terms_conditions="50% advance, balance on completion. Rates valid 30 days. GST extra @18%.",
-                       submitted_at=dt(-ago + 1) if st != "draft" else None, submitted_by=UID["rohit"] if st != "draft" else None,
-                       reviewed_at=dt(-ago + 4) if st in ("approved", "declined", "returned_for_editing") else None,
-                       reviewed_by=UID["pooja"] if st in ("approved", "declined", "returned_for_editing") else None,
-                       review_remarks={"approved": "Rates in line with market; approved.", "declined": "L2 - higher than selected vendor.",
-                                       "returned_for_editing": "Please split indoor/outdoor units and add warranty terms."}.get(st),
-                       deleted_at=None, deleted_by=None, created_by=UID["rohit"], updated_by=UID["pooja"], created_at=created, updated_at=dt(-ago + 4)))
-        for j, (part, un, qty, rate) in enumerate(lines):
-            items.append(dict(id=U(f"qitem:{qid}:{j}"), quotation_id=qid, sno=j + 1, particular=part, unit_id=uid[un], rate=rate, quantity=qty,
-                              amount=round(qty * rate, 2), remarks=None))
-        snap = {"quotationNumber": f"RA/Q/2026/{1001 + i}", "subtotal": sub, "taxPercent": 18, "totalAmount": total,
-                "items": [{"sno": j + 1, "particular": part, "quantity": qty, "rate": rate, "amount": qty * rate} for j, (part, un, qty, rate) in enumerate(lines)]}
-        vers.append(dict(id=U(f"qver:{qid}:1"), quotation_id=qid, version=1, snapshot=snap, remarks="Initial submission", created_by=UID["rohit"], created_at=created))
-        if st in ("approved", "returned_for_editing") and i % 2 == 0:
-            vers.append(dict(id=U(f"qver:{qid}:2"), quotation_id=qid, version=2, snapshot=snap, remarks="Revised after negotiation", created_by=UID["rohit"], created_at=created + timedelta(days=3)))
-        comps.setdefault((pk, wc), []).append(qid)
-    o.ins("quotations", qs)
-    o.ins("quotation_items", items)
-    o.ins("quotation_versions", vers)
-    o.ins("quotation_comparisons", [dict(id=U(f"qcmp:{pk}:{wc}"), name=f"{PNAME[pk]} - {wc} comparison", projectId=PID[pk], workCategory=wc, quotationIds=ids,
-                                         comparedAt=dt(-30), createdAt=dt(-30), updatedAt=dt(-30)) for (pk, wc), ids in comps.items() if len(ids) > 1] +
-          [dict(id=U("qcmp:kapoor:all"), name="Kapoor Farmhouse - trade packages", projectId=PID["kapoor"], workCategory=None,
-                quotationIds=comps[("kapoor", "Civil")] + comps[("kapoor", "Electrical")], comparedAt=dt(-140), createdAt=dt(-140), updatedAt=dt(-140))])
-    o.sql("UPDATE projects p SET quotation_count=(SELECT COUNT(*) FROM quotations q WHERE q.project_id=p.id AND q.deleted_at IS NULL)")
 
 
 # project, vendor, [(material, qty)], status, days-ago
@@ -293,11 +211,11 @@ def build_pos(o, uid):
         pos.append(dict(id=poid, po_number=f"RA/PO/26-27/{101 + i:04d}", project_id=PID[pk], site_id=None, vendor_id=VID[vk], po_date=d(-ago),
                         target_delivery_date=d(-ago + 10), agency_name=v[2], contact_person=v[1], phone=v[6], email=None, vendor_gstin=v[9],
                         vendor_pan=v[9][2:12] if v[9] else None, ship_to_address=site_addr(pk), subtotal=sub, discount=disc, gst_percent=18, gst_amount=gst,
-                        cartage=cart, total_amount=round(sub - disc + gst + cart, 2), status=st, source_type=["QUOTATION", "ESTIMATE", "BOQ", "MANUAL"][i % 4],
+                        cartage=cart, total_amount=round(sub - disc + gst + cart, 2), status=st, source_type=["MANUAL", "ESTIMATE", "BOQ", "MANUAL"][i % 4],
                         source_reference_id=None, notes="Deliver between 9 am and 11 am. Call site engineer before dispatch.",
                         terms_and_conditions="30% advance, balance within 15 days of delivery. Material subject to site inspection.",
                         created_by=UID["rohit"], approved_by=UID["pooja"] if st not in ("DRAFT", "PENDING_APPROVAL") else None,
-                        approved_at=dt(-ago + 1) if st not in ("DRAFT", "PENDING_APPROVAL") else None, quotation_id=None,
+                        approved_at=dt(-ago + 1) if st not in ("DRAFT", "PENDING_APPROVAL") else None,
                         created_at=dt(-ago, 12), updated_at=dt(-max(ago - 12, 0), 15)))
         poitems = []
         for j, (m, qty) in enumerate(lines):

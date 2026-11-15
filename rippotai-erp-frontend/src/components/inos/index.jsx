@@ -1,8 +1,12 @@
 // INOS UI primitives — thin React wrappers over styles/inos-theme.css.
 // Use these for every new or redesigned screen so spacing, type and colour stay consistent.
+import { useHeaderPresence, usePageTitle, usePageTitleState } from "@/components/shell/page-title";
+import { buildCrumbs, parentOf } from "@/components/shell/breadcrumbs";
 import React, { forwardRef, useId } from "react";
-import { Link } from "react-router-dom";
-import { Search, ChevronRight, Inbox } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Search, ChevronRight, Inbox } from "lucide-react";
+import { SectionStatus } from "@/components/doc-list/SectionTick";
+import { useSectionCompleteness } from "@/components/doc-list/useSectionCompleteness";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
 
@@ -16,28 +20,70 @@ export function Page({ children, width, className }) {
   );
 }
 
-/** Every page opens with this. crumbs: [{label, to?}] */
-export function PageHeader({ crumbs, eyebrow, title, subtitle, actions, icon }) {
+// Decorative subtitles (sentences) are not shown; short facts are kept as the info line.
+const isInfoLike = (s) => s != null && s !== false && (typeof s !== "string" || (s.trim().length <= 90 && !/[.!?]$/.test(s.trim())));
+
+/**
+ * Every page opens with this: breadcrumb (Home › App › Section › Item › … ›
+ * Current, built automatically from the sidebar), a bold title, ONE info line
+ * and one primary action on the right (secondary actions small / outline).
+ *
+ * title    – page or record name (string preferred; it also becomes the tab title)
+ * info     – one line of facts, e.g. "BOQ-024 · Project: Nagpal Residence · v3 · Updated 14 Nov 2026"
+ * crumbs   – optional extra links between the sidebar item and the title,
+ *            e.g. [{ label: "PRJ-001 · Nagpal Residence", to: "/projects/…" }]
+ * trail    – false: only "Home › Title" (app-independent pages)
+ * actions  – the page's primary action (+ small secondary ones)
+ */
+export function PageHeader({ crumbs, trail = true, eyebrow, title, info, subtitle, actions, icon, auto = false }) {
+  const ctx = usePageTitleState();
+  const nav = useNavigate();
+  const line = info ?? (isInfoLike(subtitle) ? subtitle : null);
+  const titleText = typeof title === "string" ? title : null;
+  usePageTitle(auto ? null : titleText, typeof line === "string" ? line : null);
+  useHeaderPresence(!auto);
+  const list = ctx
+    ? buildCrumbs({ app: ctx.app, active: ctx.active, activeExact: ctx.activeExact, title: titleText, crumbs, trail })
+    : crumbs?.length
+      ? crumbs.map((c, i) => (i === crumbs.length - 1 ? { label: c.label, current: true } : c))
+      : null;
+  const back = () => {
+    if ((window.history.state?.idx ?? 0) > 0) nav(-1);
+    else nav(list ? parentOf(list) : "/dashboard");
+  };
   return (
-    <div className="inos-page-header">
+    <div className="inos-page-header" data-testid={auto ? "auto-page-header" : "page-header"}>
       <div className="inos-page-header__text">
-        {(crumbs?.length || eyebrow) && (
-          <div className="inos-eyebrow">
-            {crumbs?.length
-              ? crumbs.map((c, i) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && <ChevronRight size={12} aria-hidden />}
-                    {c.to ? <Link to={c.to}>{c.label}</Link> : <span>{c.label}</span>}
-                  </React.Fragment>
-                ))
-              : eyebrow}
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        {list?.length ? (
+          <nav className="inos-crumbs" aria-label="Breadcrumb">
+            <ol>
+              {list.map((c, i) => (
+                <li key={i}>
+                  {i > 0 && <ChevronRight size={12} aria-hidden />}
+                  {c.current ? (
+                    <span aria-current="page">{c.label}</span>
+                  ) : c.to ? (
+                    <Link to={c.to}>{c.label}</Link>
+                  ) : (
+                    <span className="inos-crumbs__text">{c.label}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : eyebrow ? (
+          <div className="inos-eyebrow">{eyebrow}</div>
+        ) : null}
+        <div className="inos-page-header__title-row">
+          {ctx && (
+            <button type="button" className="inos-page-header__back" onClick={back} aria-label="Back" title="Back">
+              <ArrowLeft size={18} aria-hidden />
+            </button>
+          )}
           {icon && <span className="inos-icon-tile inos-icon-tile--lg">{icon}</span>}
           <h1 className="inos-title">{title}</h1>
         </div>
-        {subtitle && <p className="inos-subtitle">{subtitle}</p>}
+        {line && <p className="inos-page-header__info">{line}</p>}
       </div>
       {actions && <div className="inos-page-header__actions">{actions}</div>}
     </div>
@@ -249,12 +295,14 @@ export function Tabs({ value, onChange, options }) {
 
 /* ------------------------------------------------------------ forms */
 
-export function FormSection({ step, title, description, children, columns = 2 }) {
+export function FormSection({ step, title, description, children, columns = 2, tick = true }) {
+  const ref = React.useRef(null);
+  const fill = useSectionCompleteness(ref, tick);
   return (
-    <section className="inos-form-section">
+    <section className="inos-form-section" ref={ref} data-fill={tick ? fill : undefined}>
       {(title || description) && (
         <div className="inos-form-section__head">
-          {step != null && <span className="inos-form-section__step">{step}</span>}
+          <SectionStatus state={fill} step={step} enabled={tick} />
           <div>
             {title && <h2 className="inos-form-section__title">{title}</h2>}
             {description && <p className="inos-form-section__desc">{description}</p>}

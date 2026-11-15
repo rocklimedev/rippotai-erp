@@ -178,24 +178,45 @@ describe('unified project planner', () => {
     });
     const data = await instance.exportProjectWorkbook('project');
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(data);
+    await workbook.xlsx.load(data as any);
+    // Sheets, titles and headings of PROJECT PLANNER TEMPLATE.xlsx.
     expect(workbook.worksheets.map((s) => s.name)).toEqual([
-      'Overview',
-      'Consultancy',
-      'Vendor & Procurement',
-      'PMC',
+      'EXECUTION PLANNER',
+      'CONSULTANCY PLANNER',
+      'PROCUREMENT PLANNER',
+      'PROCUREMENT SCHEDULE',
     ]);
-    expect(workbook.getWorksheet('Overview')!.getCell('E4').value).toBe(
-      'Stilt',
+    const exec = workbook.getWorksheet('EXECUTION PLANNER')!;
+    expect(exec.getCell('A1').value).toBe('PROJECT TIMELINE');
+    expect(exec.getCell('B2').value).toBe('Residence');
+    expect(exec.getCell('D4').value).toBe('Activity');
+    expect(exec.getCell('O4').value).toBe('Location Status');
+    expect(exec.getCell('A5').value).toBe('A');
+    expect(exec.getCell('A6').value).toBe(1);
+    expect((exec.getCell('G6').value as any).formula).toBe(
+      'IF(OR(E6="",F6=""),"",F6+E6-1)',
     );
-    expect(workbook.getWorksheet('Overview')!.getCell('E5').value).toBe(
-      'Kitchen',
-    );
-    expect(workbook.getWorksheet('Consultancy')!.rowCount).toBe(44);
-    expect(workbook.getWorksheet('PMC')!.rowCount).toBe(43);
+    expect(exec.getCell('O6').value as string).toContain('Kitchen: Done');
+    // Every PMC task is written once under its phase section; rows end there.
+    const pmcCount = items.filter((i) => i.module === 'PMC').length;
+    let numbered = 0;
+    let r = 5;
+    for (; exec.getCell(r, 1).value !== null; r++)
+      if (typeof exec.getCell(r, 1).value === 'number') numbered++;
+    expect(numbered).toBe(pmcCount);
+    expect(exec.getCell(r, 4).value).toBeNull();
+    const drawings = workbook.getWorksheet('CONSULTANCY PLANNER')!;
+    expect(drawings.getCell('A1').value).toBe('DRAWING LIST');
+    expect(drawings.getCell('B4').value).toBe('Drawing Title');
+    const schedule = workbook.getWorksheet('PROCUREMENT SCHEDULE')!;
+    expect(schedule.getCell('A1').value).toBe('MATERIAL PROCUREMENT LIST');
+    const materials = procurement.filter((p) => p.item_type !== 'LABOUR');
+    const first = materials.findIndex((p) => p.purchase_date);
+    if (first >= 0)
+      expect(schedule.getCell(6 + first, 4).value).toBeInstanceOf(Date);
+    expect(schedule.getCell(6, 2).value).toBe(materials[0].category_name);
     expect(
-      workbook.getWorksheet('Vendor & Procurement')!.getCell('I5').value,
-    ).toBeInstanceOf(Date);
-    expect(workbook.getWorksheet('Vendor & Procurement')!.rowCount).toBe(26);
+      workbook.getWorksheet('PROCUREMENT PLANNER')!.getCell('A1').value,
+    ).toBe('TENDER TRACKER');
   });
 });

@@ -18,8 +18,6 @@ const APPROVED_PUBLIC_ROUTES = [
   'GET public/client/:token',
   'GET public/client/:token/boq/:boqId',
   'POST public/client/:token/boq/:boqId/approve',
-  'GET public/client/:token/quotations/compare/:cid',
-  'POST public/client/:token/quotations/select',
   'GET public/client/:token/handover',
   'POST public/client/:token/handover/accept',
   'POST public/client/:token/handover/snag',

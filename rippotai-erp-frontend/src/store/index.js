@@ -14,14 +14,12 @@ import { sharedDocumentCache } from './shared-document-cache';
 // running that injection before the store is created.
 import "../api/auth/auth.api";
 import "../api/users/rbac.api";
-import "../api/procuerment/quotation.api";
 import "../api/users/user.api";
 import "../api/vendors/vendor.api";
 import "../api/engagement/notification.api";
 import "../api/engagement/activity-logs.api";
 import "../api/projects/project.api";
 import "../api/meta/settings.api";
-import "../api/reports/reports.api";
 import "../api/users/user-signatures.api";
 import "../api/meta/unit.api";
 import "../api/projects/project-type.api";

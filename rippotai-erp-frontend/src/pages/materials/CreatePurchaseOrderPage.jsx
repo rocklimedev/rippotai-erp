@@ -260,14 +260,13 @@ export default function CreatePurchaseOrderPage() {
         vendors={vendors}
         materials={materials}
         /*
-         * Site / quotation / estimate / BOQ data can be supplied
+         * Site / estimate / BOQ data can be supplied
          * later from their respective endpoints.
          *
          * Keep these arrays defined so the child form always receives
          * stable values.
          */
         sites={[]}
-        quotations={[]}
         estimates={[]}
         boqs={[]}
         purchaseOrderItems={purchaseOrderItems}

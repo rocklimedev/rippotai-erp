@@ -68,7 +68,6 @@ const CATEGORY_ORDER = [
 const PRIMARY_CTA = {
   boq: { label: "Create BOQ", to: "/boq/new" },
   projects: { label: "Create Project", to: "/projects/new" },
-  quotations: { label: "Create Estimate", to: "/quotations/new" },
   vendors: { label: "Add Vendor", to: "/vendors/new" },
   documents: { label: "Add Document", to: "/documents/upload" },
   tasks: { label: "Add Task", to: "/tasks/new" },

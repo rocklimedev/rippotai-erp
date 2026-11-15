@@ -32,7 +32,7 @@ export function notificationGroup(notification) {
   if (/^drawing/.test(type)) return "drawings";
   if (/^(boq|payment_schedule)/.test(type)) return "finance";
   if (
-    /^(quotation|purchase_order|work_order|delivery_challan|vendor|shortlist|material|sample_board|inventory)/.test(
+    /^(purchase_order|work_order|delivery_challan|vendor|material|sample_board|inventory)/.test(
       type,
     )
   )
@@ -58,13 +58,10 @@ export function notificationDestination(notification) {
     material: "/procurement",
     material_procurement: "/procurement/material-procurement/list",
     material_requirement: "/procurement/requirements",
-    material_estimate: "/procurement/estimates/all",
-    material_quotation: "/procurement/quotations",
+    material_estimate: "/procurement/estimates",
     material_rate_sheet: "/procurement/rate-sheets",
     sample_board: "/procurement/sample-boards",
     vendor_rate_comparison: "/procurement/vendors/rate-comparison",
-    vendor_shortlist: "/procurement/vendors/shortlists",
-    shortlist_package: "/procurement/vendors/shortlists",
     boq: "/ledger/boq/all",
     boq_template: "/ledger/boq/templates",
     boq_library: "/ledger/boq/rate-and-item-library",
@@ -121,9 +118,8 @@ export function notificationDestination(notification) {
     work_order: `/procurement/work-order/${id}`,
     delivery_challan: `/procurement/delivery-challans/${id}`,
     material_procurement: `/procurement/material-procurement/${id}`,
-    material_estimate: `/procurement/estimates/${id}`,
+    material_estimate: "/procurement/estimates",
     vendor_rate_comparison: `/procurement/vendors/rate-comparison/${id}`,
-    vendor_shortlist: `/procurement/vendors/shortlists/${id}`,
     boq: `/ledger/boq/${id}`,
     boq_template: `/ledger/boq/template/${id}/editor`,
     payment_schedule: `/ledger/payment-schedule/${id}`,
@@ -133,7 +129,6 @@ export function notificationDestination(notification) {
     daily_site_report: `/site-operations/daily-reports/${id}`,
     inventory: `/inventory/site-inventory/transactions/${id}`,
     calendar_event: "/calendar",
-    quotation: "/procurement/quotations",
     document: "/projects/documents/all",
   };
   return (

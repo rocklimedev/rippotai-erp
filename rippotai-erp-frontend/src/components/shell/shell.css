@@ -1,0 +1,195 @@
+/* INOS app shell — global top bar across the page, app sidebar below it,
+   page content with breadcrumb header. */
+:root {
+  --topbar-h: 60px;
+}
+.inos-shell {
+  --side-w: 244px;
+  --side-w-collapsed: 68px;
+  min-height: 100vh;
+  background: var(--canvas);
+}
+.inos-shell.is-collapsed { --side-w: var(--side-w-collapsed); }
+.inos-shell__main {
+  margin-left: var(--side-w);
+  min-width: 0;
+  transition: margin-left 160ms ease;
+}
+.inos-shell__content { padding: 24px 32px 48px; min-width: 0; }
+.inos-shell__page { min-width: 0; }
+.inos-autohead { max-width: 1360px; margin: 0 auto 20px; }
+
+/* ---------- global top bar ---------- */
+.inos-topbar {
+  position: sticky; top: 0; z-index: 45;
+  height: var(--topbar-h);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.inos-topbar__menu {
+  display: none;
+  width: 38px; height: 38px; flex: 0 0 auto; border-radius: 10px;
+  align-items: center; justify-content: center;
+  color: var(--text); border: 1px solid var(--line); background: #fff;
+}
+.inos-topbar__brand { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.inos-topbar__brand img { width: 30px; height: 30px; object-fit: contain; }
+.inos-topbar__brand span { font-weight: 800; letter-spacing: 0.16em; font-size: 15px; color: var(--brand); }
+.inos-topbar__sep { width: 1px; height: 24px; background: var(--line); flex: 0 0 auto; }
+.inos-topbar__apps {
+  display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  height: 34px; padding: 0 12px; border-radius: 8px;
+  border: 1px solid var(--line-strong); background: #fff;
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
+.inos-topbar__apps:hover, .inos-topbar__apps[data-state="open"] { border-color: var(--brand); color: var(--brand); }
+.inos-topbar__search { margin-left: auto; flex: 0 1 300px; min-width: 0; display: flex; }
+/* CommandShellSearch's trigger shown as a wide input-like field */
+.inos-topbar__search [data-testid="topbar-search"] {
+  width: 100% !important; height: 36px !important;
+  justify-content: flex-start !important; gap: 8px;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--line-strong) !important;
+  background: var(--surface-2) !important;
+}
+.inos-topbar__search [data-testid="topbar-search"] svg { width: 15px; height: 15px; color: var(--text-3) !important; flex: 0 0 auto; }
+.inos-topbar__search [data-testid="topbar-search"]::after {
+  content: "Search anything";
+  font-size: 13px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.inos-topbar__search [data-testid="topbar-search"]:hover { border-color: var(--brand) !important; background: #fff !important; }
+.inos-topbar__tools { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.inos-topbar__tools > button:not([data-testid="topbar-user"]), .inos-topbar__tools > a, .inos-topbar__tools > * > button { width: 40px; height: 40px; }
+.inos-topbar__tools [data-testid="topbar-user"] { height: 40px; padding: 0 2px; margin-left: 4px; }
+.inos-topbar__tool { position: relative; width: 40px; height: 40px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: var(--brand); }
+.inos-topbar__tool:hover { background: var(--surface-2); }
+.inos-topbar__dot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 999px; border: 1.5px solid #fff; }
+.inos-topbar__badge {
+  position: absolute; top: 3px; right: 1px; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px; background: var(--gold); color: #1c2a25;
+  font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px #fff;
+}
+
+/* ---------- sidebar (below the top bar) ---------- */
+.inos-side {
+  position: fixed;
+  top: var(--topbar-h); bottom: 0; left: 0;
+  z-index: 40;
+  width: var(--side-w);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-right: 1px solid var(--line);
+  transition: width 160ms ease, transform 180ms ease;
+}
+.inos-side__body { flex: 1 1 auto; overflow-y: auto; padding: 14px 12px 16px; }
+.inos-side__head { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+.inos-side__collapse {
+  width: 28px; height: 28px; border-radius: 8px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-3);
+}
+.inos-side__collapse:hover { background: var(--surface-2); color: var(--text); }
+
+.inos-side__app {
+  flex: 1 1 auto;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px; border-radius: 10px;
+  color: var(--text); min-width: 0;
+}
+.inos-side__app:hover, .inos-side__app.is-active { background: var(--brand-50); }
+.inos-side__app-icon { width: 30px; height: 30px; flex: 0 0 auto; display: inline-flex; }
+.inos-side__app-icon svg { width: 100%; height: 100%; }
+.inos-side__app-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.inos-side__menu { list-style: none; margin: 0; padding: 0; }
+.inos-side__menu ul { list-style: none; margin: 0; padding: 0; }
+.inos-side__section {
+  margin: 16px 10px 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-3);
+}
+.inos-side__section--toggle { width: calc(100% - 20px); padding: 0; display: flex; align-items: center; justify-content: space-between; background: none; border: 0; cursor: pointer; text-align: left; }
+.inos-side__section--toggle:hover { color: var(--brand); }
+.inos-side__section--toggle svg { transition: transform .15s ease; flex: 0 0 auto; }
+.inos-side__section--toggle svg.is-closed { transform: rotate(-90deg); }
+.inos-side__divider { height: 1px; background: var(--line); margin: 10px 8px; }
+.inos-side__item {
+  display: flex; align-items: center;
+  min-height: 36px; padding: 6px 10px; border-radius: 8px;
+  font-size: 14px; font-weight: 500; color: var(--text);
+}
+.inos-side__item > span:not(.inos-side__initial) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inos-side__item:hover { background: var(--surface-2); }
+.inos-side__item.is-active { background: var(--brand-50); color: var(--brand); font-weight: 650; box-shadow: inset 3px 0 0 var(--brand); }
+.inos-side__initial {
+  width: 28px; height: 28px; border-radius: 8px; margin: 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; background: var(--surface-2);
+}
+
+/* shortcuts at the bottom */
+.inos-side__foot { flex: 0 0 auto; border-top: 1px solid var(--line); padding: 2px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
+.inos-side__foot .inos-side__section { margin: 12px 10px 4px; }
+.inos-side__shortcut {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 36px; padding: 6px 10px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 500; color: var(--text);
+}
+.inos-side__shortcut svg { flex: 0 0 auto; color: var(--brand); }
+.inos-side__shortcut:hover { background: var(--surface-2); }
+.inos-side__shortcut.is-active { background: var(--brand-50); color: var(--brand); font-weight: 650; }
+.inos-side__shortcut-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.inos-side__shortcut-text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inos-side__shortcut-text small { font-size: 13px; color: var(--text-3); font-weight: 500; }
+
+/* collapsed rail */
+.inos-side.is-collapsed .inos-side__body { padding: 10px 8px; }
+.inos-side.is-collapsed .inos-side__head { flex-direction: column; }
+.inos-side.is-collapsed .inos-side__app { justify-content: center; padding: 4px 0; width: 100%; }
+.inos-side.is-collapsed .inos-side__item { padding: 4px 0; justify-content: center; }
+.inos-side.is-collapsed .inos-side__item.is-active { box-shadow: none; }
+.inos-side.is-collapsed .inos-side__foot { padding: 8px; align-items: center; }
+.inos-side.is-collapsed .inos-side__shortcut { justify-content: center; padding: 6px; }
+
+/* app switcher tiles */
+.inos-side__app-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 10px; font-size: 13px; color: var(--text); text-align: center; }
+.inos-side__app-tile:hover, .inos-side__app-tile.is-active { background: var(--brand-50); }
+.inos-side__app-tile-icon { width: 36px; height: 36px; display: inline-flex; }
+.inos-side__app-tile-icon svg { width: 100%; height: 100%; }
+
+/* page <h1> lifted into the shell's page header */
+.inos-shell__page h1.is-lifted-title { display: none !important; }
+
+/* ---------- small screens: off-canvas sidebar ---------- */
+.inos-side__scrim { position: fixed; inset: var(--topbar-h) 0 0 0; z-index: 39; background: rgba(0, 0, 0, 0.3); }
+@media (max-width: 1023px) {
+  .inos-shell__main { margin-left: 0; }
+  .inos-side { width: 272px; max-width: 86vw; transform: translateX(-100%); box-shadow: var(--shadow-md); }
+  .inos-side.is-mobile-open { transform: translateX(0); }
+  .inos-side.is-collapsed { width: 272px; }
+  .inos-side__collapse { display: none; }
+  .inos-topbar__menu { display: inline-flex; }
+  .inos-shell__content { padding: 20px 20px 40px; }
+}
+@media (max-width: 767px) {
+  :root { --topbar-h: 56px; }
+  .inos-topbar { gap: 6px; padding: 0 10px; }
+  .inos-topbar__brand span, .inos-topbar__sep { display: none; }
+  .inos-topbar__apps { width: 36px; padding: 0; justify-content: center; }
+  .inos-topbar__apps span { display: none; }
+  .inos-topbar__search { flex: 0 0 auto; }
+  .inos-topbar__search [data-testid="topbar-search"] { width: 40px !important; padding: 0 !important; justify-content: center !important; border: 0 !important; background: none !important; }
+  .inos-topbar__search [data-testid="topbar-search"]::after { content: none; }
+  .inos-topbar__search [data-testid="topbar-search"] svg { width: 19px; height: 19px; color: var(--brand) !important; }
+  .inos-topbar__tools > button:not([data-testid="topbar-user"]), .inos-topbar__tools > a, .inos-topbar__tools > * > button { width: 36px; height: 36px; }
+  .inos-shell__content { padding: 16px 16px 40px; }
+}
+@media print {
+  .inos-side, .inos-topbar, .inos-autohead { display: none !important; }
+  .inos-shell__main { margin-left: 0 !important; }
+  .inos-shell__content { padding: 0 !important; }
+}

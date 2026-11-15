@@ -15,7 +15,7 @@ import { RoleApp } from './role-app.model';
 export class App extends Model<App> {
   @PrimaryKey
   @Column({ type: DataType.STRING(50) })
-  declare code: string; // 'boq' | 'projects' | 'quotations' | 'vendors' | 'documents' | 'leads' | 'tasks' | 'calendar'
+  declare code: string; // 'boq' | 'projects' | 'vendors' | 'documents' | 'leads' | 'tasks' | 'calendar'
 
   @Column({ type: DataType.STRING(100), allowNull: false })
   declare name: string;

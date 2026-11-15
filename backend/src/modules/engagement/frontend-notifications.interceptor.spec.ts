@@ -171,7 +171,7 @@ describe('Frontend notification integration', () => {
     }
   });
 
-  it('avoids passing child IDs as planner or shortlist IDs', async () => {
+  it('avoids passing child IDs as planner IDs', async () => {
     const { run, broadcast } = setup(
       'ProjectPlannerController',
       'updatePlannerItem',
@@ -180,14 +180,6 @@ describe('Frontend notification integration', () => {
     await run({ id: 'child', planner_id: 'parent' });
     expect(broadcast.broadcast).toHaveBeenCalledWith(
       expect.objectContaining({ entity_id: 'parent' }),
-    );
-    const unresolved = setup('ShortlistEntryController', 'remove', {
-      method: 'DELETE',
-      params: { id: 'child' },
-    });
-    await unresolved.run(undefined);
-    expect(unresolved.broadcast.broadcast).toHaveBeenCalledWith(
-      expect.objectContaining({ entity_id: undefined }),
     );
   });
 

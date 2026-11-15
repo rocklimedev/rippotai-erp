@@ -31,6 +31,7 @@ import {
   useGetLeadsQuery,
   useGetLeadsMetaQuery,
   useMoveStageMutation,
+  useUpdateLeadMutation,
   useSyncLeadsFromZohoMutation,
 } from "@/api/connectors/leads.api";
 import { STAGES, stageOf, formatINR } from "@/hooks/stages";
@@ -250,6 +251,8 @@ export default function BoardView() {
   const sort = params.get("sort") || "newest";
   const showClosed = params.get("closed") !== "0";
   const openDealId = params.get("deal");
+  const service = params.get("service") || "";
+  const temp = params.get("tag") || "";
 
   const filters = useMemo(
     () => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ""])),
@@ -264,11 +267,22 @@ export default function BoardView() {
     setParams(next, { replace: true });
   };
 
-  const query = { q, sort, ...filters };
+  const query = { q, sort, ...filters, service, tag: temp };
   const { data: meta } = useGetLeadsMetaQuery();
   const board = useGetBoardQuery(query, { skip: view !== "board" });
   const list = useGetLeadsQuery(query, { skip: view !== "list" });
   const [moveStage] = useMoveStageMutation();
+  const [updateLead] = useUpdateLeadMutation();
+  const [editDeal, setEditDeal] = useState(null);
+
+  // One-click Hot / Warm / Cold marker on cards and rows.
+  const setTemp = (deal, tag) =>
+    updateLead({ id: deal.id, tag })
+      .unwrap()
+      .then(() =>
+        toast.success(tag ? `${deal.title} marked ${tag}` : `${deal.title}: temperature cleared`),
+      )
+      .catch((err) => toast.error(errorText(err, "Couldn't save.")));
   const [syncZoho, { isLoading: syncing }] = useSyncLeadsFromZohoMutation();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -441,6 +455,34 @@ export default function BoardView() {
         </div>
       </div>
 
+      <div className="crm-quickfilters" data-testid="pipeline-quickfilters">
+        <span className="crm-quickfilters__label">Service</span>
+        <div data-testid="service-filter">
+          <Segmented
+            value={service || "all"}
+            onChange={(v) => update({ service: v === "all" ? "" : v })}
+            options={[
+              { value: "all", label: "All" },
+              { value: "DESIGN", label: "Design" },
+              { value: "BUILD", label: "Build" },
+            ]}
+          />
+        </div>
+        <span className="crm-quickfilters__label">Temperature</span>
+        <div data-testid="temp-filter">
+          <Segmented
+            value={temp || "all"}
+            onChange={(v) => update({ tag: v === "all" ? "" : v })}
+            options={[
+              { value: "all", label: "All" },
+              { value: "Hot", label: "Hot" },
+              { value: "Warm", label: "Warm" },
+              { value: "Cold", label: "Cold" },
+            ]}
+          />
+        </div>
+      </div>
+
       {chips.length > 0 && (
         <div className="crm-chips">
           {chips.map((c) => (
@@ -477,7 +519,7 @@ export default function BoardView() {
           />
         </Card>
       ) : view === "board" ? (
-        allDeals.length === 0 && !q && !chips.length ? (
+        allDeals.length === 0 && !q && !chips.length && !service && !temp ? (
           <Card>
             <EmptyState
               title="No deals yet"
@@ -500,6 +542,8 @@ export default function BoardView() {
             onMove={doMove}
             onOpen={openDeal}
             onQuickAdd={quickAdd}
+            onEdit={setEditDeal}
+            onTag={setTemp}
           />
         )
       ) : (
@@ -509,6 +553,8 @@ export default function BoardView() {
           onOpen={openDeal}
           onMove={doMove}
           onCreate={() => quickAdd("capture")}
+          onEdit={setEditDeal}
+          onTag={setTemp}
         />
       )}
 
@@ -520,6 +566,13 @@ export default function BoardView() {
         onCreated={(d) => update({ deal: d.id })}
       />
 
+      <QuickCreateDeal
+        open={!!editDeal}
+        onOpenChange={(o) => !o && setEditDeal(null)}
+        deal={editDeal}
+        meta={meta}
+      />
+
       <DealDrawer
         dealId={openDealId}
         open={!!openDealId}
@@ -527,6 +580,7 @@ export default function BoardView() {
         meta={meta}
         onMove={doMove}
         onAskLost={(d) => setLostDeal(d)}
+        onEdit={setEditDeal}
       />
 
       <LostReasonModal
