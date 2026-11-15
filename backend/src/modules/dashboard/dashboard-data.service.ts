@@ -477,7 +477,6 @@ export class DashboardDataService {
             'purchase_order',
             'delivery_challan',
             'inventory',
-            'quotation',
             'vendor',
           ],
           8,
@@ -808,10 +807,7 @@ export class DashboardDataService {
       this.activity(null, 8),
       this.q(`
           SELECT * FROM (
-            SELECT q.id, CONCAT('Quotation ', COALESCE(q.quotation_number,'')) title, p.name description, 'High' priority, q.created_at at
-              FROM quotations q LEFT JOIN projects p ON p.id = q.project_id WHERE q.status = 'submitted'
-            UNION ALL
-            SELECT po.id, CONCAT('PO ', COALESCE(po.po_number,'')), COALESCE(po.agency_name, p.name), 'Medium', po.created_at
+            SELECT po.id, CONCAT('PO ', COALESCE(po.po_number,'')) title, COALESCE(po.agency_name, p.name) description, 'Medium' priority, po.created_at at
               FROM purchase_orders po LEFT JOIN projects p ON p.id = po.project_id WHERE po.status = 'PENDING_APPROVAL'
             UNION ALL
             SELECT m.id, CONCAT('Mockup: ', m.name), COALESCE(m.finish_type,'Finish mockup'), 'Medium', m.created_at

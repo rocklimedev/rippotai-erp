@@ -1,13 +1,10 @@
 import AppLayout from "@/layouts/AppLayout";
 import { Navigate } from "react-router-dom";
 import PaymentSchedulePage from "../../pages/payment-schedule/paymentSchedulePage";
-import AppDashboard from "@/components/dashboard/AppDashboard";
 import PaymentScheduleList from "@/pages/payment-schedule/PaymentScheduleList";
 import { PaymentScheduleForm } from "@/pages/payment-schedule/PaymentScheduleForm";
-import BudgetEstimateList from "../../pages/budget-estimate/BudgetEstimateList";
 import BudgetEstimateForm from "../../pages/budget-estimate/BudgetEstimateForm";
 import BudgetEstimateView from "../../pages/budget-estimate/BudgetEstimatesView";
-import LedgerDashboard from "../../pages/dashboard/LedgerDashboard";
 import LedgerList from "../../pages/LedgerList";
 import BoqDashboard from "@/pages/boq/BoqDashboard";
 import BoqNew from "@/pages/boq/BoqNew";
@@ -76,10 +73,6 @@ export const ledgerRoutes = [
         path: "forms/payment-schedule/:id/edit",
         element: <PaymentScheduleForm />,
       },
-      {
-        path: "budget-estimates/all",
-        element: <BudgetEstimateList />,
-      },
       { path: "budget-guides/all", element: <BudgetGuideList /> },
       { path: "budget-guides/new", element: <BudgetGuideEditor /> },
       { path: "budget-guides/:id/edit", element: <BudgetGuideEditor /> },
@@ -95,10 +88,6 @@ export const ledgerRoutes = [
         path: "budget-estimate/:id",
         element: <BudgetEstimateView />,
       },
-      {
-        path: "aggrements/all",
-        element: <PaymentScheduleForm />,
-      },
       { path: "boq/all", element: <BoqDashboard /> },
       { path: "boq/new", element: <BoqNew /> },
       { path: "boq/templates", element: <BoqTemplatesList /> },
@@ -107,12 +96,13 @@ export const ledgerRoutes = [
       { path: "boq/rate-and-item-library", element: <BoqLibraryPage /> },
       { path: "boq/activity", element: <BoqActivityPage /> },
       { path: "boq/:id/versions", element: <BoqVersions /> },
+      // Document views sit in the shell (global top bar, sidebar, breadcrumb).
+      { path: "boq/:id/preview", element: <BoqPreview /> },
+      { path: "budget-guides/:id", element: <BudgetGuidePreview /> },
     ],
   },
   // These live outside the AppLayout shell (full-bleed workspace views)
   { path: "/ledger/boq/:id", element: <BoqWorkspace /> },
-  { path: "/ledger/boq/:id/preview", element: <BoqPreview /> },
-  { path: "/ledger/budget-guides/:id", element: <BudgetGuidePreview /> },
 ];
 
 export default ledgerRoutes;

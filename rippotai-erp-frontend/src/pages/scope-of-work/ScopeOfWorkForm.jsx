@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useRefill } from "@/components/doc-list/useRefill";
 import { useDispatch } from 'react-redux';
 import { PrefillNotice } from '@/components/PrefillNotice';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
@@ -109,6 +110,7 @@ export function ScopeOfWorkForm() {
   const initialProjectId = searchParams.get('project_id') || searchParams.get('projectId') || '';
 
   const [projectId, setProjectId] = React.useState(initialProjectId);
+  useRefill({ type: "scope-of-work", label: "Scope of Work", projectId, enabled: !isEditMode, editPath: (id) => `/crm/forms/scope-of-work/${id}/edit` });
 
   // Inline errors appear only after the first submit attempt
   const [submitAttempted, setSubmitAttempted] = React.useState(false);

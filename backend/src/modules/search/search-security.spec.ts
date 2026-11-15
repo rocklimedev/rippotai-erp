@@ -141,7 +141,6 @@ describe('Search authentication and global visibility', () => {
     '/vendors',
     '/boqs',
     '/briefs',
-    '/quotations',
     '/site-recces',
     '/tasks',
     '/calendar',

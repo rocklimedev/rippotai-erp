@@ -14,7 +14,7 @@ const registered = fs.readdirSync(folder).filter((name) => name.endsWith('.jsx')
   });
 });
 
-const entities = ['project', 'client', 'user', 'lead', 'vendor', 'boq', 'project_brief', 'quotation', 'site_recce', 'task', 'calendar_event', 'document', 'drawing', 'work_order', 'delivery_challan', 'budget_estimate', 'material_requirement', 'scope_of_work', 'activity_log'];
+const entities = ['project', 'client', 'user', 'lead', 'vendor', 'boq', 'project_brief', 'site_recce', 'task', 'calendar_event', 'document', 'drawing', 'work_order', 'delivery_challan', 'scope_of_work', 'activity_log'];
 for (const entity_type of entities) {
   test(`${entity_type} opens a registered application route`, () => {
     const result = pathForEntity({ entity_type, id: 'record', meta: { project_id: 'project' } });
@@ -39,4 +39,8 @@ test('encodes identifiers and excludes unknown or incomplete results', () => {
   assert.equal(pathForEntity({ entity_type: 'project', id: 'a/b' }), '/projects/a%2Fb');
   assert.equal(pathForEntity({ entity_type: 'unknown', id: 'record' }), null);
   assert.equal(pathForEntity({ entity_type: 'project' }), null);
+});
+test('hidden documents are not offered by search', () => {
+  assert.equal(pathForEntity({ entity_type: 'budget_estimate', id: 'record' }), null);
+  assert.equal(pathForEntity({ entity_type: 'material_requirement', id: 'record', meta: { project_id: 'p' } }), null);
 });

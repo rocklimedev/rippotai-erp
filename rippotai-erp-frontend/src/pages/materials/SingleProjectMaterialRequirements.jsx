@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 import { useGetMaterialRequirementsByProjectQuery } from "../../api/procuerment/material-requirement.api";
+import MaterialPaletteButton from "@/components/material-palette/MaterialPaletteButton";
 
 /* ============================================================
    BRAND
@@ -311,6 +312,8 @@ export default function SingleProjectMaterialRequirements() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
+
+          <MaterialPaletteButton projectId={projectId} requirements={rows} />
 
           <Button type="button" className={BRAND} onClick={handleCreate}>
             <Plus className="h-4 w-4" />

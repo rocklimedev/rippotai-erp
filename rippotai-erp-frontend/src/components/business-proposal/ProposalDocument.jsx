@@ -1,20 +1,9 @@
-// Business Proposal — one client-ready PDF that pulls the saved scope, plan, budget and payment
+// Business Proposal — one client-ready document that pulls the saved scope, plan, budget and payment
 // schedule of a project together. Built on the shared print kit and the same section builders the
 // individual documents use, so the proposal always matches them.
-import React, { forwardRef, useMemo } from "react";
-import {
-  PrintDocument,
-  KV,
-  kvHas,
-  SignOff,
-  has,
-  fmtDate,
-  money,
-} from "@/components/print-document";
-import welcomeImage from "@/assets/proposal/welcome.png";
-import coverImage from "@/assets/proposal/cover.jpg";
-import mark from "@/assets/rippotai_mark.png";
-import "./proposal-template.css";
+import { forwardRef } from "react";
+import ProposalDeck from "./proposal-deck/ProposalDeck";
+import { KV, kvHas, SignOff, has, fmtDate } from "@/components/print-document";
 import { buildSowSections } from "@/pages/scope-of-work/ScopeOfWorkView";
 import {
   buildPoaSections,
@@ -153,95 +142,83 @@ export function buildProposalSections({
       />,
     ],
   });
-  const presentation = {
-    "The project": ["02 PROJECT DETAILS", "Project Snapshot.", "The fixed facts we are designing and sequencing around."],
-    "How the execution runs": ["04 OUR PLAN", "Our Plan.", "The approach and programme for your project."],
-    "Phases": ["PROPOSED TIMELINES", "From Planning To Handover.", "Your saved programme, phase by phase."],
-    "Scope summary": ["05 SCOPE OF WORK", "Services Confirmed In Your Brief.", "A summary of what sits inside this proposal."],
-    "Scope of work": ["SCOPE OF WORK", "The Scope, In Detail.", "Work organised by trade."],
-    "Not included": ["SCOPE OF WORK", "Not In This Scope.", "Items to be handled separately."],
-    "Budget estimate": ["BUDGET ESTIMATE", "Your Project Investment.", "The current estimate and its breakdown."],
-    "Commercial summary": ["OUR FEES", "One Fee. Open Books Underneath It.", "The saved commercial breakdown for your project."],
-    "Payment schedule": ["HOW YOU PAY", "Your Payment Plan.", "The agreed basis for your payment schedule."],
-    "Payment milestones": ["HOW YOU PAY", "Pay By Stage.", "Payments linked to the milestones below."],
-    "Terms": ["OUR FEES", "Good To Know.", "The terms that accompany your payment schedule."],
-    "Next steps": ["NEXT STEPS", "From Review To Mobilization.", "Simple decisions, in the right order."],
-    "Acceptance": ["ACCEPTANCE", "Ready For The Next Step.", "Confirm the proposal below."],
+  // Fixed order of the proposal; every section uses the standard kit heading (numbered).
+  const order = [
+    "The project",
+    "How the execution runs",
+    "Phases",
+    "Scope summary",
+    "Scope of work",
+    "Not included",
+    "Budget estimate",
+    "Commercial summary",
+    "Payment schedule",
+    "Payment milestones",
+    "Terms",
+    "Next steps",
+    "Acceptance",
+  ];
+  const titles = {
+    "The project": "Project details",
+    "How the execution runs": "Our plan",
+    Phases: "Timeline, phase by phase",
+    "Commercial summary": "Our fees",
   };
-  const order = ["The project", "How the execution runs", "Phases", "Scope summary", "Scope of work", "Not included", "Budget estimate", "Commercial summary", "Payment schedule", "Payment milestones", "Terms", "Next steps", "Acceptance"];
-  const arranged = sections.sort((a, b) => order.indexOf(a.title) - order.indexOf(b.title)).map((section) => {
-    const [label, heading, intro] = presentation[section.title];
-    return { ...section, newPage: true, title: label, intro: undefined, rows: undefined, blocks: [
-      <div className="bp-editorial-heading" key="heading"><h2>{heading}</h2><p>{intro}</p></div>,
-      ...(section.rows ? [{ table: section.rows }] : []), ...(section.blocks || []),
-    ] };
-  });
-  const commercialIndex = arranged.findIndex((s) => s.title === "BUDGET ESTIMATE" || s.title === "OUR FEES" || s.title === "HOW YOU PAY");
-  if (commercialIndex >= 0) arranged.splice(commercialIndex, 0, {
-    newPage: true,
-    blocks: [<div className="bp-divider" key="divider"><h2>The Proposal</h2><span /></div>],
-  });
-  arranged.unshift({
-    title: "01 WELCOME NOTE", newPage: true,
+  const arranged = sections
+    .sort((a, b) => order.indexOf(a.title) - order.indexOf(b.title))
+    .map((section) => ({ ...section, title: titles[section.title] || section.title }));
+
+  // How we work — the firm's standard process, printed as plain lists.
+  const principles = [
+    "One point of contact",
+    "Nothing hidden in the BOQ",
+    "Sign-off before spend",
+    "Stage-wise progress",
+  ];
+  const gates = ["Brief", "Concept", "BOQ freeze", "GFC drawings", "Execution", "Handover"];
+  const projectIndex = arranged.findIndex((section) => section.title === "Project details");
+  arranged.splice(projectIndex >= 0 ? projectIndex + 1 : 0, 0, {
+    title: "How we work",
     blocks: [
-      <div key="welcome-title" className="bp-editorial-heading bp-welcome"><h2>A considered vision<br />for your space.</h2></div>,
-      <img key="welcome-art" className="bp-welcome-art" src={welcomeImage} alt="Architectural illustration of a living space" />,
-      <div key="welcome" className="bp-welcome-card"><p>Thank you{client.name ? `, ${client.name},` : ""} for trusting Rippotai. This proposal brings together the scope, programme, budget and payment schedule for {project.name || "your project"}.</p><div><strong>Rippotai</strong><small>ARCHITECTURE · INTERIORS · TURNKEY</small></div></div>,
+      <div key="principles">
+        <span className="pd-label">Our principles</span>
+        <ol className="pd-terms">
+          {principles.map((label, i) => (
+            <li key={label}>
+              <span className="pd-terms__n">{i + 1}.</span>
+              <span>{label}</span>
+            </li>
+          ))}
+        </ol>
+      </div>,
+      {
+        table: {
+          label: "Process gates — you sign off at every gate",
+          cols: ["Gate", "Stage"],
+          template: "20mm 1fr",
+          keepWhole: true,
+          items: gates.map((label, i) => ({ key: label, cells: [String(i + 1), label] })),
+        },
+      },
     ],
   });
-  const projectIndex = arranged.findIndex((section) => section.title === "02 PROJECT DETAILS");
-  arranged.splice(projectIndex >= 0 ? projectIndex + 1 : 1, 0, {
-    title: "03 HOW WE WORK", newPage: true,
+  arranged.unshift({
+    title: "Welcome",
     blocks: [
-      <div className="bp-editorial-heading" key="heading"><h2>Clear gates. Clean approvals.</h2><p>A clear path from the first brief to handover.</p></div>,
-      <div className="bp-principles" key="principles">{["One Point Of Contact", "Nothing Hidden In BOQ", "Sign-off Before Spend", "Stage-wise Progress"].map((label, i) => <div key={label}><span>{String(i + 1).padStart(2, "0")}</span>{label}</div>)}</div>,
-      <div key="gates"><span className="pd-label">PROCESS GATES</span><div className="bp-gates">{["Brief", "Concept", "BOQ Freeze", "GFC Drawings", "Execution", "Handover"].map((label, i) => <div key={label}><span>{i + 1}</span>{label}</div>)}</div><p className="bp-caption">YOU SIGN OFF AT EVERY GATE</p></div>,
+      <p key="welcome" className="pd-text">
+        Thank you{client.name ? `, ${client.name},` : ""} for trusting Rippotai. This proposal
+        brings together the scope, programme, budget and payment schedule for{" "}
+        {project.name || "your project"}.
+      </p>,
     ],
   });
   return arranged;
 }
 
+// The client-facing proposal is the original BUSINESS PROPOSAL TEMPLATE deck (540 × 960 pt pages):
+// see proposal-deck/ProposalDeck.jsx. buildProposalSections stays for A4 print-kit consumers.
 const ProposalDocument = forwardRef(function ProposalDocument(props, ref) {
-  const { project = {}, schedule, budget } = props;
-  const sections = useMemo(() => buildProposalSections(props), [props]);
-  const client = project.client || {};
-  const date = fmtDate(props.generatedAt || new Date());
-  const total =
-    Number(schedule?.totalPayable) || Number(budget?.total_amount) || 0;
-  return (
-    <PrintDocument
-      ref={ref}
-      className="bp-template"
-      pageHeight={373.333}
-      numbered={false}
-      cover={<section className="pd-page bp-cover">
-        <img className="bp-cover-art" src={coverImage} alt="Rippotai architectural staircase" />
-        <div className="bp-cover-panel"><h1>BUSINESS<br />PROPOSAL</h1><span className="bp-gold-rule" /><h2>{project.name || "Your Project"}</h2><p>{project.site_location}<br />{client.name}</p><small>{date}</small></div>
-      </section>}
-      closing={<section className="pd-page bp-closing"><img src={mark} alt="Rippotai" /><div className="bp-wordmark">RIPPŌTAI</div><h2>Let’s bring your vision home.</h2><span className="bp-gold-rule" /><p>ARCHITECTURE · INTERIORS · TURNKEY</p></section>}
-      docType="Business Proposal"
-      title={project.name || "Project"}
-      subtitle="Scope, plan, budget and payments — in one place."
-      coverDetails={[
-        { label: "Prepared for", value: client.name, sub: client.phone },
-        { label: "Project", value: project.name },
-        { label: "Site", value: project.site_location },
-        {
-          label: "Proposal value",
-          value: total ? money(total) : "",
-          sub: total ? "Including GST" : "",
-        },
-        { label: "Date", value: date },
-        {
-          label: "Prepared by",
-          value: props.preparedBy || "Rippotai Architecture",
-        },
-      ]}
-      preparedFor={client.name || project.name}
-      date={date}
-      sections={sections}
-    />
-  );
+  return <ProposalDeck ref={ref} {...props} />;
 });
 
 export default ProposalDocument;

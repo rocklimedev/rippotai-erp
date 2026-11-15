@@ -5,7 +5,6 @@ import { VendorCategory } from './models/vendor-category.model';
 import { Project } from '../projects/models/projects.model';
 import { Op, fn, col, literal } from 'sequelize';
 import { VendorStatus } from '@/common/enums';
-import { Quotation } from '../quotations/models/quotations.model';
 import { QueryTypes } from 'sequelize';
 @Injectable()
 export class VendorDashboardService {
@@ -18,9 +17,6 @@ export class VendorDashboardService {
 
     @InjectModel(Project)
     private projectModel: typeof Project,
-
-    @InjectModel(Quotation)
-    private quotationModel: typeof Quotation,
   ) {}
   /**
    * Dashboard summary
@@ -104,7 +100,7 @@ export class VendorDashboardService {
 
   /**
    * Project-wise assigned vendors
-   * Aggregates vendors per project (via quotations)
+   * Aggregates vendors per project (via purchase and work orders)
    */
   async getVendorsProjectWise() {
     const projects = await this.projectModel.sequelize!.query(
@@ -115,9 +111,12 @@ export class VendorDashboardService {
       COUNT(DISTINCT q.vendor_id) AS assigned_vendor_count,
       GROUP_CONCAT(DISTINCT vc.name) AS categories
     FROM projects p
-    LEFT JOIN quotations q
+    LEFT JOIN (
+      SELECT project_id, vendor_id FROM purchase_orders WHERE vendor_id IS NOT NULL
+      UNION
+      SELECT project_id, vendor_id FROM work_orders WHERE vendor_id IS NOT NULL
+    ) q
       ON q.project_id = p.id
-      AND q.deleted_at IS NULL
     LEFT JOIN vendors v
       ON v.id = q.vendor_id
     LEFT JOIN vendor_categories vc

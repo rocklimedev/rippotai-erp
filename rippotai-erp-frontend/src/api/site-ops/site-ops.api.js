@@ -4,6 +4,25 @@ export const siteOpsApi = baseApi.injectEndpoints({
     // ============================================================
     // Visit Stages (master)
     // ============================================================
+    // ARCHITECT SITE VISIT SCHEDULE TEMPLATE.xlsx (async export job).
+    downloadVisitSchedule: builder.mutation({
+      query: (projectId) => ({
+        url: "/architect/visit-stages/schedule.xlsx",
+        params: projectId ? { projectId } : undefined,
+        responseHandler: async (response) => {
+          if (!response.ok) return { message: "Schedule export failed" };
+          const url = URL.createObjectURL(await response.blob());
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "architect-visit-schedule.xlsx";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          return { success: true };
+        },
+      }),
+    }),
     getVisitStages: builder.query({
       query: (params) => ({
         url: "/architect/visit-stages",
@@ -471,6 +490,7 @@ export const siteOpsApi = baseApi.injectEndpoints({
 export const {
   // Visit stages
   useGetVisitStagesQuery,
+  useDownloadVisitScheduleMutation,
   useGetVisitStageByIdQuery,
   useCreateVisitStageMutation,
   useUpdateVisitStageMutation,

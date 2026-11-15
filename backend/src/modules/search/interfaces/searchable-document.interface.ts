@@ -61,7 +61,6 @@ export type EntityType =
   | 'vendor'
   | 'boq'
   | 'project_brief'
-  | 'quotation'
   | 'site_recce'
   | 'task'
   | 'calendar_event'

@@ -8,7 +8,7 @@ import {
 
 // Standard PO conditions (printed on every Rippotai PO), followed by any PO-specific terms.
 export const PO_STANDARD_TERMS = [
-  "This PO is issued only against an approved BOQ line or an accepted Quotation.",
+  "This PO is issued only against an approved BOQ line, estimate or rate comparison.",
   "Material must match the approved sample / specification exactly — brand, batch and grade.",
   "Delivery only against this PO number; unannounced deliveries may be refused at site.",
   "Invoice must reference this PO number and be accompanied by the signed Delivery Challan.",
@@ -190,7 +190,6 @@ const PurchaseOrderDocument = forwardRef(function PurchaseOrderDocument({ po, pr
         { label: "Order value", value: rs(po.total_amount), sub: Number(po.gst_percent) ? `Incl. GST @ ${Number(po.gst_percent)}%` : "" },
       ]}
       preparedFor={po.agency_name}
-      footerNote={has(po.agency_name) ? `Issued to ${po.agency_name}` : ""}
       reference={po.po_number}
       date={fmtDate(po.po_date, { short: true })}
       sections={sections}

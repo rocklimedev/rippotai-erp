@@ -19,7 +19,6 @@ export enum CalendarEventType {
   NOTE = 'note',
   TIMELINE = 'timeline',
   MILESTONE_DUE = 'milestone_due',
-  QUOTATION_DEADLINE = 'quotation_deadline',
   SITE_VISIT = 'site_visit',
   HANDOVER = 'handover',
   PERSONAL = 'personal',
@@ -35,10 +34,6 @@ export class CalendarEvent extends Model<CalendarEvent> {
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
   declare id: string;
-
-  // Unique source link: visit allocations own their calendar representation.
-  @Column({ type: DataType.INTEGER, allowNull: true, unique: true })
-  declare visit_assignment_id: number | null;
 
   @Column({ type: DataType.STRING(255), allowNull: false })
   declare title: string;

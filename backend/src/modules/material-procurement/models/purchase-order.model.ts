@@ -9,10 +9,7 @@ import {
   Unique,
   Index,
   HasMany,
-  ForeignKey,
-  BelongsTo,
 } from 'sequelize-typescript';
-import { MaterialQuotation } from './material-quotation.model';
 import type {
   CreationOptional,
   InferAttributes,
@@ -35,7 +32,6 @@ export enum PurchaseOrderStatus {
 export enum PurchaseOrderSourceType {
   ESTIMATE = 'ESTIMATE',
   BOQ = 'BOQ',
-  QUOTATION = 'QUOTATION',
   MANUAL = 'MANUAL',
 }
 
@@ -229,21 +225,4 @@ export class PurchaseOrder extends Model<
 
   @HasMany(() => PurchaseOrderItem)
   declare items?: PurchaseOrderItem[];
-
-  // ============================================================
-  // QUOTATION REFERENCE
-  // ============================================================
-
-  @AllowNull(true)
-  @Index
-  @ForeignKey(() => MaterialQuotation)
-  @Column(DataType.UUID)
-  declare quotation_id: string | null;
-
-  @BelongsTo(() => MaterialQuotation, {
-    foreignKey: 'quotation_id',
-    onDelete: 'SET NULL',
-    onUpdate: 'CASCADE',
-  })
-  declare quotation?: MaterialQuotation;
 }

@@ -1,9 +1,12 @@
 import React, { useRef, useState } from "react";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { useNavigate, useParams } from "react-router-dom";
 import { Ban, Check, ChevronDown, Download, Edit3, FileText, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import { Page, PageHeader, Button, EmptyState, StatusPill, TextArea } from "@/components/inos";
+import { Page, PageHeader, Button, EmptyState, TextArea } from "@/components/inos";
 import { DocumentPreview, usePdfDownload } from "@/components/print-document";
 import PurchaseOrderDocument, { purchaseOrderFileName } from "@/components/commerce-documents/PurchaseOrderDocument";
 import {
@@ -46,6 +49,7 @@ const errMsg = (e, fallback) => e?.data?.message || e?.message || fallback;
 // Purchase order viewer: the A4 pages the vendor receives, plus the approval actions.
 export default function PurchaseOrderView() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("purchase-order", id);
   const nav = useNavigate();
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
@@ -143,14 +147,9 @@ export default function PurchaseOrderView() {
   return (
     <Page>
       <PageHeader
+        info={recordInfo}
         crumbs={crumbs}
         title={po.po_number || "Purchase order"}
-        subtitle={
-          <span style={{ display: "inline-flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            Purchase order · {po.agency_name || "No vendor"}
-            <StatusPill status={status.toLowerCase()} size="sm" />
-          </span>
-        }
         actions={
           <>
             {canCancel && (
@@ -197,6 +196,7 @@ export default function PurchaseOrderView() {
           </>
         }
       />
+      <RecordContext type="purchase-order" id={id} />
 
       <DocumentPreview>
         <PurchaseOrderDocument ref={docRef} po={po} project={project} />
@@ -228,6 +228,7 @@ export default function PurchaseOrderView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <VersionHistory type="purchase-order" id={id} />
     </Page>
   );
 }

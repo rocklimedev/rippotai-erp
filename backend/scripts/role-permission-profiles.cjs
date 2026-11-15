@@ -55,8 +55,6 @@ const designRead = caps(
     'boq-activity',
     'library',
     'materials',
-    'project-shortlists',
-    'shortlist-entries',
     'vendors',
     'vendor-categories',
     'vendor-business-types',
@@ -72,8 +70,6 @@ const designWrite = caps(
     'document-requirements',
     'project-planners',
     'boq',
-    'project-shortlists',
-    'shortlist-entries',
   ],
   ['create', 'update'],
 );
@@ -128,12 +124,9 @@ const siteUploads = [
 const commercialRead = caps(
   [
     'budget-estimates',
-    'quotations',
-    'quotation-items',
     'payment-schedules',
     'purchase-orders',
     'procurement-estimates',
-    'procurement-quotations',
     'procurement-rate-sheets',
     'procurement-sample-boards',
     'material-procurement',
@@ -156,7 +149,6 @@ const senior = [
   'command-center:upload',
   'quality-checklists:export',
   'site-ops-snag-lists:export',
-  'reports:read',
 ];
 const junior = [
   ...common,
@@ -189,11 +181,6 @@ const lead = [
   'client-portal:create',
   'client-portal:prepare',
   'client-portal:deliver',
-  'quotations:create',
-  'quotations:update',
-  'quotations:submit',
-  'quotation-items:create',
-  'quotation-items:update',
   'budget-estimates:create',
   'budget-estimates:update',
 ];

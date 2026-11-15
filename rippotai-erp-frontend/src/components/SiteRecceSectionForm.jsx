@@ -219,7 +219,7 @@ function ExistingSiteLayouts({ images, onChange, onFileUpload, busy, onBusyChang
         }}
         aria-busy={busy}
         style={{
-          border: `2px dashed ${dragging && !disabled ? 'var(--primary, #2563eb)' : 'var(--border, #cbd5e1)'}`,
+          border: `2px dashed ${dragging && !disabled ? 'var(--primary, #0D3D2F)' : 'var(--border, #cbd5e1)'}`,
           borderRadius: 8,
           padding: 24,
           textAlign: 'center',

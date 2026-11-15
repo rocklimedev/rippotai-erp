@@ -390,9 +390,8 @@ export class BoqController {
   }
 
   /**
-   * Legacy server-rendered (puppeteer) BOQ PDF in the old layout. The app no longer calls it:
-   * downloads and the copy attached on approval are produced client-side with the shared
-   * print kit (components/commerce-documents/BoqDocument). Kept for API compatibility only.
+   * Server-rendered (puppeteer) BOQ PDF — "Budget Breakdown", the same layout + pagination code
+   * as the app's in-browser download (boq-budget-layout.ts ↔ frontend boqBudgetLayout.js).
    */
   @AsyncExport('boq-pdf')
   @RequirePermission('boq:export')

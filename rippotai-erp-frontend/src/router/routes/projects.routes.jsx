@@ -1,18 +1,15 @@
 import { Navigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
-import AppDashboard from "@/components/dashboard/AppDashboard";
 import ProjectsDashboard from "@/pages/projects/ProjectsDashboard";
 import ProjectNew from "@/pages/projects/ProjectNew";
 import ProjectWorkspace from "@/pages/projects/ProjectWorkspace";
 import ProjectHandover from "@/pages/projects/ProjectHandover";
-import ProjectActivity from "@/pages/projects/ProjectActivity";
 import ProjectPlannerList from "../../pages/projects/ProjectPlannerList";
 import ProjectPlannerView from "../../pages/projects/ProjectPlannerView";
 import ProjectPlannerWorkspace from "../../pages/projects/ProjectPlannerWorkspace";
-import { DocumentsAll } from "@/pages/documents/DocumentsAll";
 import DocumentView from "@/pages/documents/DocumentView";
 import { DocumentUpload } from "@/pages/documents/DocumentUpload";
-import { DocumentReference } from "@/components/documents/DocumentSequenceNavigation";
+import SnapshotView from "@/pages/records/SnapshotView";
 
 export const projectsRoutes = [
   {
@@ -23,7 +20,6 @@ export const projectsRoutes = [
     blockRoles: ["client"],
     children: [
       { path: "upload", element: <DocumentUpload /> },
-      { path: "reference", element: <DocumentReference /> },
     ],
   },
   {
@@ -38,7 +34,6 @@ export const projectsRoutes = [
 
       // "/projects/all" is the projects list (the index page), not a project id.
       { path: "all", element: <Navigate to="/projects" replace /> },
-      { path: "activity", element: <ProjectActivity /> },
       { path: "new", element: <ProjectNew /> },
       { path: ":id/handover", element: <ProjectHandover /> },
       { path: ":id/edit", element: <ProjectNew /> },
@@ -46,9 +41,9 @@ export const projectsRoutes = [
       { path: "planner/create", element: <ProjectPlannerWorkspace /> },
       { path: "planner/:plannerId", element: <ProjectPlannerView /> },
       { path: ":id", element: <ProjectWorkspace /> },
-      { path: "documents/all", element: <DocumentsAll /> },
       { path: "documents/upload", element: <DocumentUpload /> },
       { path: "documents/:id", element: <DocumentView /> },
+      { path: "records/:type/snapshot/:snapshotId", element: <SnapshotView /> },
     ],
   },
 ];

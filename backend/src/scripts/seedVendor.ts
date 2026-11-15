@@ -8,10 +8,7 @@ import { VendorStatus } from '@/common/enums';
 
 import * as dotenv from 'dotenv';
 import { User } from '@/modules/users/models/user.model';
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Role } from '@/modules/rbac/models/role.model';
-import { QuotationVersion } from '@/modules/quotations/models/quotation-versions.model';
-import { QuotationItem } from '@/modules/quotations/models/quotation-items.model';
 import { Project } from '@/modules/projects/models/projects.model';
 import { ActivityLog } from '@/modules/engagement/models/activity-log.model';
 import { AuthToken } from '@/modules/auth/models/auth-token.model';
@@ -37,10 +34,7 @@ const sequelize = new Sequelize({
     VendorCategory,
     VendorBusinessType,
     User,
-    Quotation,
     Role,
-    QuotationVersion,
-    QuotationItem,
     Project,
     ActivityLog,
     AuthToken,

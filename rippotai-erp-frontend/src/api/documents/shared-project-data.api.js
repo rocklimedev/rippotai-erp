@@ -4,7 +4,7 @@ const api = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDocumentPrefill: builder.query({
       query: ({ projectId, sequence }) => `/projects/${projectId}/document-prefill/${sequence}`,
-      providesTags: ['Projects', 'ProjectBriefs', 'SiteRecces', 'ScopeOfWork', 'BudgetEstimates', 'ProjectPlanner', 'PaymentSchedule', 'PlanOfActions', 'Quotation', 'MaterialProcurement', 'BOQ', 'PurchaseOrders', 'WorkOrders', 'DeliveryChallans'],
+      providesTags: ['Projects', 'ProjectBriefs', 'SiteRecces', 'ScopeOfWork', 'BudgetEstimates', 'ProjectPlanner', 'PaymentSchedule', 'PlanOfActions', 'MaterialProcurement', 'BOQ', 'PurchaseOrders', 'WorkOrders', 'DeliveryChallans'],
     }),
     getSharedProjectData: builder.query({
       query: (id) => `/projects/${id}/shared-document-data`,

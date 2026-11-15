@@ -60,7 +60,6 @@ export class TeamService {
   //
   //   PROJECT
   //   PLAN_OF_ACTION
-  //   QUOTATION
   //   BOQ
   //   etc.
   //
@@ -192,12 +191,12 @@ export class TeamService {
         // and owner_type / owner_id are BOTH null. That is the only
         // shape the `team_members.owner_type` ENUM in the DB allows
         // for a non-owner-scoped row — the enum only contains
-        // 'PROJECT' | 'PLAN_OF_ACTION' | 'QUOTATION' | 'BOQ', it has
+        // 'PROJECT' | 'PLAN_OF_ACTION' | 'BOQ', it has
         // no 'TEAM' member. Do NOT filter on owner_type: 'TEAM' —
         // that value cannot exist in this column and the lookup will
         // never match anything.
         //
-        // PROJECT / PLAN_OF_ACTION / BOQ / QUOTATION memberships are
+        // PROJECT / PLAN_OF_ACTION / BOQ memberships are
         // owner-scoped (owner_type/owner_id set) and must NOT be
         // used as the Admin Team.
         // ----------------------------------------------------------
@@ -545,8 +544,8 @@ export class TeamService {
           // IMPORTANT:
           // Admin Team membership = team_id set, owner_type/owner_id
           // both null. The DB's owner_type ENUM does not contain a
-          // 'TEAM' value ('PROJECT' | 'PLAN_OF_ACTION' | 'QUOTATION'
-          // | 'BOQ' only), so this must NOT be written as
+          // 'TEAM' value ('PROJECT' | 'PLAN_OF_ACTION' | 'BOQ'
+          // only), so this must NOT be written as
           // TeamMemberOwnerType.TEAM.
           owner_type: null,
           owner_id: null,
@@ -1115,7 +1114,7 @@ export class TeamService {
         user_id: userId,
 
         // Only the canonical Admin Team roster rows. Owner-scoped
-        // rows (PROJECT / PLAN_OF_ACTION / QUOTATION / BOQ) also
+        // rows (PROJECT / PLAN_OF_ACTION / BOQ) also
         // carry team_id (inherited from the resolved Admin Team in
         // replaceAll) but are NOT Admin Team memberships, and must
         // be excluded here or a user in N owner-scoped contexts

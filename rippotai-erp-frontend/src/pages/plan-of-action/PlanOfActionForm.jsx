@@ -1,4 +1,5 @@
 import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
+import { useRefill } from "@/components/doc-list/useRefill";
 import { PrefillNotice } from "@/components/PrefillNotice";
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useState } from "react";
@@ -324,6 +325,7 @@ export function PlanOfActionForm() {
   const [projectId, setProjectId] = useState(
     () => searchParams.get("project_id") || searchParams.get("projectId") || "",
   );
+  useRefill({ type: "plan-of-action", label: "Plan of Action", projectId, enabled: !isEditMode, editPath: (id) => `/crm/forms/plan-of-action/${id}/edit` });
 
   /* ============================================================
      FORM STATE

@@ -15,6 +15,7 @@ import {
   LeadType,
   LeadTag,
   LeadColor,
+  LeadService,
   StuckMode,
   DocStatus,
 } from '@/common/enums/leads.enums';
@@ -155,6 +156,14 @@ export class Lead extends Model<Lead> {
     allowNull: true,
   })
   declare tag: LeadTag | null;
+
+  // Design or Build engagement (pipeline label + filter).
+  @Default(LeadService.DESIGN)
+  @Column({
+    type: DataType.ENUM(...Object.values(LeadService)),
+    allowNull: true,
+  })
+  declare service: LeadService | null;
 
   @Column({
     type: DataType.ENUM(...Object.values(LeadColor)),

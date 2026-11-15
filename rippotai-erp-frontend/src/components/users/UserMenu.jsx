@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export default function UserMenu() {
+export default function UserMenu({ side = "bottom", align = "end", compact = false } = {}) {
   const { user, logout } = useAuth();
 
   const nav = useNavigate();
@@ -84,7 +84,7 @@ export default function UserMenu() {
           {/* USER NAME + ROLE */}
           {/* -------------------------------------------------- */}
 
-          <div className="text-left hidden lg:block min-w-0 max-w-[160px]">
+          <div className={compact ? "hidden" : "text-left min-w-0 max-w-[160px]"}>
             <div
               title={user?.name || 'User'}
               className="text-[13.5px] font-semibold leading-tight truncate"
@@ -123,7 +123,7 @@ export default function UserMenu() {
       {/* DROPDOWN CONTENT */}
       {/* ------------------------------------------------------ */}
 
-      <DropdownMenuContent align="end" className="w-[240px] bc-card border-0 p-1">
+      <DropdownMenuContent side={side} align={align} className="w-[240px] bc-card border-0 p-1">
         {/* ---------------------------------------------------- */}
         {/* USER INFO */}
         {/* ---------------------------------------------------- */}

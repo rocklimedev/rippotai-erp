@@ -17,6 +17,8 @@ export enum ProjectStatus {
   COMPLETED = 'completed',
   ON_HOLD = 'on_hold',
   INACTIVE = 'inactive',
+  // Early project created from a pipeline deal; becomes ACTIVE when the deal is won.
+  LEAD = 'lead',
 }
 export enum ProjectPriority {
   LOW = 'LOW',
@@ -62,15 +64,6 @@ export enum VendorStatus {
   INACTIVE = 'inactive',
   BLACKLISTED = 'blacklisted',
   BLOCKED = 'blocked',
-}
-
-export enum QuotationStatus {
-  DRAFT = 'draft',
-  SUBMITTED = 'submitted',
-  APPROVED = 'approved',
-  RETURNED_FOR_EDITING = 'returned_for_editing',
-  DECLINED = 'declined',
-  CANCELLED = 'cancelled',
 }
 
 export enum NotificationType {
@@ -120,19 +113,6 @@ export enum NotificationType {
   LEAD_NOTE_ADDED = 'lead_note_added',
   LEAD_PROPOSAL_SENT = 'lead_proposal_sent',
   LEAD_DELETED = 'lead_deleted',
-
-  // =========================
-  // QUOTATIONS
-  // =========================
-  QUOTATION_CREATED = 'quotation_created',
-  QUOTATION_UPDATED = 'quotation_updated',
-  QUOTATION_SUBMITTED = 'quotation_submitted',
-  QUOTATION_APPROVED = 'quotation_approved',
-  QUOTATION_RETURNED_FOR_EDITING = 'quotation_returned_for_editing',
-  QUOTATION_DECLINED = 'quotation_declined',
-  QUOTATION_CANCELLED = 'quotation_cancelled',
-  QUOTATION_DELETED = 'quotation_deleted',
-  QUOTATION_RESTORED = 'quotation_restored',
 
   // =========================
   // VENDORS
@@ -271,21 +251,6 @@ export enum ActivityAction {
   LEAD_NOTE_ADDED = 'lead_note_added',
   LEAD_PROPOSAL_SENT = 'lead_proposal_sent',
   LEAD_DELETED = 'lead_deleted',
-
-  // =====================
-  // QUOTATIONS
-  // =====================
-  QUOTATION_CREATED = 'quotation_created',
-  QUOTATION_UPDATED = 'quotation_updated',
-  QUOTATION_SUBMITTED = 'quotation_submitted',
-  QUOTATION_APPROVED = 'quotation_approved',
-  QUOTATION_RETURNED = 'quotation_returned',
-  QUOTATION_DECLINED = 'quotation_declined',
-  QUOTATION_CANCELLED = 'quotation_cancelled',
-  QUOTATION_DELETED = 'quotation_deleted',
-  QUOTATION_REVISION_CREATED = 'quotation_revision_created',
-  QUOTATION_SENT_TO_CLIENT = 'quotation_sent_to_client',
-  QUOTATION_RESTORED = 'quotation_restored',
 
   // =====================
   // VENDORS

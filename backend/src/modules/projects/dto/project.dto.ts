@@ -97,8 +97,7 @@ export class CreateProjectDto {
   // created_by, updated_by, archived_by, deleted_by
   // are intentionally absent.
   //
-  // approved_value / quotation_count are also
-  // intentionally absent because they are computed.
+  // approved_value is also intentionally absent.
 }
 
 // ============================================

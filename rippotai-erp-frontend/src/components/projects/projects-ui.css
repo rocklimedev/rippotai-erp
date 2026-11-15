@@ -753,3 +753,37 @@ button.pj-list-item:hover {
     flex-basis: 100%;
   }
 }
+
+/* ---- Flow restructure: Pre Design slots, project document hub ---- */
+.pj-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.pj-hub-actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+.pj-hub-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.pj-action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.pj-action-row:first-child {
+  border-top: 0;
+}
+.pj-action-row__main {
+  flex: 1;
+  min-width: 0;
+}

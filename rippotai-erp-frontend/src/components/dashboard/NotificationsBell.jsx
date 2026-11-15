@@ -27,7 +27,7 @@ import {
   useDeleteUserNotificationsMutation,
 } from "../../api/engagement/notification.api";
 
-export default function NotificationsBell() {
+export default function NotificationsBell({ side = "bottom", align = "end" } = {}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const pollingInterval = usePollingInterval(60_000);
@@ -125,7 +125,8 @@ export default function NotificationsBell() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        align="end"
+        side={side}
+        align={align}
         className="w-[380px] max-w-[92vw] border-0 p-1"
       >
         <DropdownMenuLabel className="flex items-center justify-between px-3 py-2">

@@ -54,7 +54,6 @@ test("new user-facing domains open real workspaces and registers", () => {
     work_order: "/procurement/work-order/parent",
     delivery_challan: "/procurement/delivery-challans/parent",
     project_planner: "/projects/planner/parent",
-    vendor_shortlist: "/procurement/vendors/shortlists/parent",
     daily_site_report: "/site-operations/daily-reports/parent",
     rfi: "/site-operations/rfis",
     team: "/console/users",

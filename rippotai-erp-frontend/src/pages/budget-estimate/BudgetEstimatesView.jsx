@@ -114,7 +114,7 @@ export function buildEstimateSections(estimate, termsHtml) {
       {
         keep: (
           <Note key="n">
-            This is a budget estimate to guide decisions, not a quotation. Final costs are confirmed once the BOQ is priced and approved.
+            This is a budget estimate to guide decisions, not a price offer. Final costs are confirmed once the BOQ is priced and approved.
           </Note>
         ),
       },
@@ -235,7 +235,6 @@ export default function BudgetEstimateView() {
           ref={docRef}
           docType="Budget Estimate"
           title={projectName}
-          subtitle="An early, trade-wise view of what the project will cost."
           coverDetails={[
             { label: "Prepared for", value: estimate.client_name },
             { label: "Project", value: projectName },

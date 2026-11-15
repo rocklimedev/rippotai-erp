@@ -1,4 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import DeleteAdminDpr from "./DeleteAdminDpr";
 import { toast } from "sonner";
 import { Page, PageHeader, Card, Button } from "@/components/inos";
@@ -69,6 +72,7 @@ function DocumentSection({ title, rows, fields }) {
 }
 export default function AdminDprDetailPage() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("admin-dpr", id);
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetAdminDprDocumentQuery(id);
   const [download, exporting] = useDownloadSavedAdminDprMutation();
@@ -95,9 +99,9 @@ export default function AdminDprDetailPage() {
   return (
     <Page>
       <PageHeader
+        info={recordInfo}
         eyebrow="Site Operations · Saved DPR"
         title={data.title}
-        subtitle={`Saved ${new Date(data.created_at).toLocaleString("en-IN")}${data.created_by_name ? ` by ${data.created_by_name}` : ""}`}
         actions={
           <div style={{ display: "flex", gap: 12 }}>
             <DeleteAdminDpr document={data} onDeleted={() => navigate("/site-operations/admin-dpr")} />
@@ -120,6 +124,7 @@ export default function AdminDprDetailPage() {
           </div>
         }
       />
+      <RecordContext type="admin-dpr" id={id} />
       <Card>
         <p>
           <strong>Projects:</strong>{" "}
@@ -146,6 +151,7 @@ export default function AdminDprDetailPage() {
         rows={data.logs || []}
         fields={logFields}
       />
+      <VersionHistory type="admin-dpr" id={id} />
     </Page>
   );
 }

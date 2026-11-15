@@ -56,6 +56,9 @@ export const leadsApi = baseApi.injectEndpoints({
         { type: "Leads", id: "BOARD" },
         { type: "Leads", id: "META" },
         "LeadActivity",
+        // the deal creates / fills its project and client
+        "Projects",
+        "Clients",
       ],
     }),
 
@@ -65,6 +68,8 @@ export const leadsApi = baseApi.injectEndpoints({
         { type: "Leads", id: "BOARD" },
         { type: "Leads", id },
         "LeadActivity",
+        "Projects",
+        "Clients",
       ],
     }),
 

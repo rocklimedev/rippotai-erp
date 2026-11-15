@@ -1,14 +1,21 @@
 import { appConfirm } from '@/lib/app-dialog';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
 import { Avatar, Button, Card, EmptyState, SelectInput } from '@/components/inos';
 import { STAGES, stageOf, formatINR } from '@/hooks/stages';
 import { useDeleteLeadMutation, useUpdateLeadMutation } from '@/api/connectors/leads.api';
 import { shortDate, isPast, errorText } from './utils';
+import { ServiceLabel, TempMarker } from './DealBadges';
 
 const COLS = [
   { key: 'title', label: 'Deal', get: (d) => (d.title || '').toLowerCase() },
+  { key: 'service', label: 'Service', get: (d) => d.service || 'DESIGN' },
+  {
+    key: 'tag',
+    label: 'Temperature',
+    get: (d) => ({ Hot: 0, Warm: 1, Cold: 2 })[d.tag] ?? 3,
+  },
   { key: 'stage', label: 'Stage', get: (d) => STAGES.findIndex((s) => s.id === d.stage) },
   { key: 'amount', label: 'Value', num: true, get: (d) => d.amount ?? -1 },
   { key: 'owner', label: 'Owner', get: (d) => (d.owner || '').toLowerCase() },
@@ -19,7 +26,7 @@ const COLS = [
 ];
 
 /** Sortable table with inline stage pill and bulk actions. */
-export default function DealsList({ deals, meta, onOpen, onMove, onCreate }) {
+export default function DealsList({ deals, meta, onOpen, onMove, onCreate, onEdit, onTag }) {
   const [sort, setSort] = useState({ key: 'createdAt', dir: 'desc' });
   const [selected, setSelected] = useState(() => new Set());
   const [bulkStage, setBulkStage] = useState('');
@@ -215,9 +222,30 @@ export default function DealsList({ deals, meta, onOpen, onMove, onCreate }) {
                       aria-label={`Select ${d.title}`}
                     />
                   </td>
+                  <td className="crm-cell-deal">
+                    <div className="crm-cell-deal__row">
+                      <div style={{ minWidth: 0 }}>
+                        <div className="crm-cell-title">{d.title}</div>
+                        <div className="crm-cell-sub">{d.clientName || d.company || d.contact}</div>
+                      </div>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={Pencil}
+                          aria-label={`Edit ${d.title}`}
+                          title="Edit deal"
+                          data-testid="deal-row-edit"
+                          onClick={() => onEdit?.(d)}
+                        />
+                      </span>
+                    </div>
+                  </td>
                   <td>
-                    <div className="crm-cell-title">{d.title}</div>
-                    <div className="crm-cell-sub">{d.clientName || d.company || d.contact}</div>
+                    <ServiceLabel service={d.service} />
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <TempMarker tag={d.tag} compact onChange={(t) => onTag?.(d, t)} />
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <select

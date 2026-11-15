@@ -268,7 +268,7 @@ export default function VendorNew() {
             </Grid>
           </DocSection>
 
-          <DocSection step={2} title="What they supply" description="Used to filter vendors when raising quotations.">
+          <DocSection step={2} title="What they supply" description="Used to filter vendors when raising orders.">
             <Grid cols={2}>
               <Field label="Vendor category" htmlFor="w-cat">
                 <SelectInput

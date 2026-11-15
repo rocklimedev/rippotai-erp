@@ -106,14 +106,6 @@ const EVENT_TYPES = [
     color: "#537DB5",
   },
   {
-    value: "quotation_deadline",
-    label: "Deadline",
-    bg: "#FCECEC",
-    text: "#9A3D3D",
-    dot: "#C65A5A",
-    color: "#C65A5A",
-  },
-  {
     value: "note",
     label: "Note",
     bg: "#EDE0F5",

@@ -1,10 +1,10 @@
 import { appConfirm } from "@/lib/app-dialog";
-// Client detail: /clients/:id — contact card, projects, payments, quotations, documents, notes.
-import React, { useMemo, useState } from "react";
+// Client detail: /clients/:id — contact card, projects, payments, documents, notes.
+import { useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Pencil, Plus, Phone, Mail, MapPin, Building2, Wallet, FileText, StickyNote, Receipt, Trash2, Users } from "lucide-react";
-import { Page, PageHeader, Card, Button, Tabs, Pill, StatusPill, EmptyState, Avatar, Stats, StatTile, Progress } from "@/components/inos";
+import { Pencil, Plus, Phone, Mail, MapPin, Building2, Wallet, FileText, StickyNote, Trash2, Users } from "lucide-react";
+import { Page, PageHeader, Card, Button, Tabs, Pill, StatusPill, EmptyState, Stats, StatTile, Progress } from "@/components/inos";
 import { useGetWsClientOverviewQuery } from "@/api/workspace/workspace.api";
 import { useDeleteClientMutation } from "@/api/projects/client.api";
 import { NoteCard, NoteEditor } from "./NotesPage";
@@ -34,7 +34,6 @@ export default function ClientDetail() {
     const overdue = data.milestones.filter((m) => m.due_date && daysFromToday(m.due_date) < 0 && !/paid/i.test(m.status) && Number(m.paid_amount || 0) < Number(m.amount || 0));
     return {
       active: data.projects.filter((p) => p.status === "active").length,
-      value: data.projects.reduce((n, p) => n + Number(p.approved_value || 0), 0),
       payable, paid, overdue: overdue.length,
     };
   }, [data]);
@@ -53,7 +52,6 @@ export default function ClientDetail() {
   const tabs = [
     { value: "projects", label: "Projects", icon: Building2, count: data.projects.length },
     { value: "payments", label: "Payments", icon: Wallet, count: data.milestones.length },
-    { value: "quotations", label: "Quotations", icon: Receipt, count: data.quotations.length },
     { value: "documents", label: "Documents", icon: FileText, count: data.documents.length },
     { value: "notes", label: "Notes", icon: StickyNote, count: data.notes.length },
   ];
@@ -86,7 +84,6 @@ export default function ClientDetail() {
         <div style={{ display: "grid", gap: 20, minWidth: 0 }}>
           <Stats>
             <StatTile label="Active projects" value={`${stats.active} / ${data.projects.length}`} icon={<Building2 size={16} />} tone="ok" />
-            <StatTile label="Approved value" value={inr(stats.value)} icon={<Receipt size={16} />} tone="lilac" />
             <StatTile label="Received" value={inr(stats.paid)} meta={stats.payable ? `of ${inr(stats.payable)} scheduled` : "No schedule yet"} icon={<Wallet size={16} />} tone="info" />
             <StatTile label="Overdue payments" value={stats.overdue} icon={<Wallet size={16} />} tone={stats.overdue ? "bad" : "ok"} onClick={() => setTab("payments")} />
           </Stats>
@@ -132,27 +129,6 @@ export default function ClientDetail() {
                       </tr>
                     );
                   })}
-                </Table>
-              )}
-            </Card>
-          )}
-
-          {tab === "quotations" && (
-            <Card flush>
-              {!data.quotations.length ? (
-                <EmptyState icon={Receipt} title="No quotations for this client's projects" />
-              ) : (
-                <Table head={["Quotation", "Project", "Date", "Valid until", { label: "Total", num: true }, "Status"]}>
-                  {data.quotations.map((q) => (
-                    <tr key={q.id} className="is-clickable" onClick={() => navigate(`/procurement/estimates/${q.id}`)}>
-                      <td style={{ fontWeight: 600 }}>{q.quotation_number}</td>
-                      <td>{q.project_name}</td>
-                      <td>{fmtDate(q.quotation_date)}</td>
-                      <td>{q.expiry_date ? fmtDate(q.expiry_date) : "—"}</td>
-                      <td className="num tabular">{inr(q.total_amount)}</td>
-                      <td><StatusPill status={q.status} size="sm" /></td>
-                    </tr>
-                  ))}
                 </Table>
               )}
             </Card>

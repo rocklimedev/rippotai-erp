@@ -145,11 +145,11 @@ export default function ClientPortalRoutes() {
     <Routes>
       <Route path="/:token" element={<ClientLanding />} />
       <Route path="/:token/boq/:boqId" element={<ClientBoq />} />
-      <Route
-        path="/:token/quotations/compare/:cid"
-        element={<ClientCompare />}
-      />
       <Route path="/:token/handover" element={<ClientHandover />} />
+      <Route
+        path="*"
+        element={<ErrorScreen code={404} message="This link is not valid." />}
+      />
     </Routes>
   );
 }
@@ -283,17 +283,6 @@ function ClientLanding() {
           data-testid="cta-review-boq"
         >
           Review Bill of Quantities →
-        </button>
-      )}
-      {purpose === "quotation_selection" && data.link.target_id && (
-        <button
-          onClick={() =>
-            nav(`/client/${token}/quotations/compare/${data.link.target_id}`)
-          }
-          className="mt-8 px-6 py-3 bg-[#1F453B] text-white rounded-lg font-semibold text-[14px]"
-          data-testid="cta-select-vendor"
-        >
-          Select Vendor →
         </button>
       )}
       {purpose === "handover_acceptance" && (
@@ -530,219 +519,6 @@ function ClientBoq() {
             needs revision.
           </div>
         </div>
-      )}
-    </ClientShell>
-  );
-}
-
-function ClientCompare() {
-  const { token, cid } = useParams();
-  const [data, setData] = useState(null);
-  const [err, setErr] = useState(null);
-  const [selectId, setSelectId] = useState(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [comments, setComments] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(null);
-
-  useEffect(() => {
-    publicApi
-      .get(`/public/client/${token}/quotations/compare/${cid}`)
-      .then((r) => {
-        setData(r.data);
-        setName(r.data.link.client_name || "");
-      })
-      .catch((e) => setErr(e?.response));
-  }, [token, cid]);
-
-  const submit = async () => {
-    if (!selectId) return toast.error("Please select a vendor");
-    if (!name.trim()) return toast.error("Signatory name required");
-    setBusy(true);
-    try {
-      await publicApi.post(`/public/client/${token}/quotations/select`, {
-        quotation_id: selectId,
-        signatory_name: name,
-        signatory_email: email,
-        comments,
-      });
-      setDone(true);
-      toast.success("Vendor selected");
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed");
-    }
-    setBusy(false);
-  };
-
-  if (err)
-    return (
-      <ErrorScreen
-        code={err.status || "!"}
-        message={err.data?.detail || "Link invalid"}
-      />
-    );
-  if (!data)
-    return (
-      <div className="min-h-screen bg-[#EAEEF0] flex items-center justify-center text-[#6B7B7C]">
-        Loading…
-      </div>
-    );
-
-  const lowestId = data.quotations.reduce(
-    (a, b) => (a.final_total < b.final_total ? a : b),
-    data.quotations[0],
-  )?.id;
-
-  return (
-    <ClientShell
-      project={{ name: data.comparison.project_name }}
-      purpose="quotation_selection"
-    >
-      <h1
-        className="text-[36px] font-bold text-[#333333]"
-        style={{
-          fontFamily: "'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif",
-        }}
-      >
-        {data.comparison.name}
-      </h1>
-      <p className="text-[13px] text-[#6B7B7C] mt-1">
-        {data.comparison.work_category} · Compare and select your preferred
-        vendor.
-      </p>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        {data.quotations.map((q) => (
-          <div
-            key={q.id}
-            className={`bg-white rounded-xl border-2 p-5 ${selectId === q.id ? "border-[#1F453B]" : "border-[#B5C4B6]"} ${q.id === lowestId ? "ring-2 ring-[#1F453B]/20" : ""}`}
-            data-testid={`client-vendor-${q.id}`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="text-[14px] font-bold text-[#333333]">
-                  {q.vendor_name}
-                </div>
-                {q.rating && (
-                  <div className="text-[11.5px] text-[#333333] mt-0.5">
-                    ★ {q.rating.toFixed(1)} · {q.completed_projects || 0}{" "}
-                    projects · {q.on_time_pct || 0}% on-time
-                  </div>
-                )}
-              </div>
-              {q.id === lowestId && (
-                <span className="text-[10px] font-bold bg-[#1F453B] text-white px-1.5 py-0.5 rounded uppercase">
-                  Lowest
-                </span>
-              )}
-            </div>
-            <div className="text-[32px] font-bold text-[#333333] mt-3">
-              {fmtINR(q.final_total)}
-            </div>
-            <div className="text-[11px] text-[#B5C4B6] mt-1">
-              Final total (all inclusive)
-            </div>
-            <div className="mt-4 space-y-1.5 text-[12px]">
-              <div className="flex justify-between">
-                <span className="text-[#6B7B7C]">Warranty</span>
-                <span className="font-semibold">
-                  {q.warranty_months || 0} months
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6B7B7C]">Delivery</span>
-                <span className="font-semibold">
-                  {q.delivery_timeline_days || 0} days
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6B7B7C]">Completion</span>
-                <span className="font-semibold">
-                  {q.completion_timeline_days || 0} days
-                </span>
-              </div>
-            </div>
-            {q.exclusions?.length > 0 && (
-              <div className="mt-3 text-[11px] text-[#B5C4B6]">
-                Excludes: {q.exclusions.join(", ")}
-              </div>
-            )}
-            <button
-              onClick={() => setSelectId(q.id)}
-              disabled={q.selected || done}
-              className={`mt-4 w-full py-2 rounded-lg text-[13px] font-semibold ${selectId === q.id ? "bg-[#1F453B] text-white" : "border border-[#B5C4B6] text-[#6B7B7C]"}`}
-              data-testid={`btn-select-${q.id}`}
-            >
-              {q.selected
-                ? "✓ Selected"
-                : selectId === q.id
-                  ? "Selected"
-                  : "Select This Vendor"}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {done ? (
-        <div className="mt-8 bg-[#EAEEF0] border border-[#1F453B]/20 rounded-xl p-6 text-center">
-          <div className="text-[18px] font-bold text-[#333333]">
-            ✓ Vendor Selection Confirmed
-          </div>
-          <div className="text-[13px] text-[#6B7B7C] mt-1">
-            Thank you. Our team will proceed with the selected vendor.
-          </div>
-        </div>
-      ) : (
-        selectId && (
-          <div className="mt-8 bg-white rounded-xl p-6 border border-[#B5C4B6]">
-            <div className="text-[15px] font-bold text-[#333333] mb-3">
-              Confirm Selection
-            </div>
-            <div className="grid md:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[12px] font-semibold text-[#6B7B7C]">
-                  Signatory Name *
-                </label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px]"
-                  data-testid="select-name"
-                />
-              </div>
-              <div>
-                <label className="text-[12px] font-semibold text-[#6B7B7C]">
-                  Email
-                </label>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px]"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="text-[12px] font-semibold text-[#6B7B7C]">
-                  Comments (optional)
-                </label>
-                <textarea
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  rows={2}
-                  className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px]"
-                />
-              </div>
-            </div>
-            <button
-              onClick={submit}
-              disabled={busy}
-              className="mt-4 px-6 py-2.5 bg-[#1F453B] text-white rounded-lg font-semibold text-[13px]"
-              data-testid="btn-confirm-select"
-            >
-              Confirm Selection
-            </button>
-          </div>
-        )
       )}
     </ClientShell>
   );

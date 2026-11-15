@@ -158,8 +158,6 @@ describe('Global default-deny auth with public client links', () => {
     ['get', ''],
     ['get', '/boq/boq-a'],
     ['post', '/boq/boq-a/approve'],
-    ['get', '/quotations/compare/comparison'],
-    ['post', '/quotations/select'],
     ['get', '/handover'],
     ['post', '/handover/accept'],
     ['post', '/handover/snag'],

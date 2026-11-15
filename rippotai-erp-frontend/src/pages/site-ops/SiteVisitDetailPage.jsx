@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -8,6 +8,9 @@ import {
 } from "@/api/procuerment/site-ops.api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { DocumentPreview } from "@/components/print-document";
+import SiteVisitDocument from "@/components/site-visit/SiteVisitDocument";
+import { downloadDeckPdf } from "@/components/business-proposal/proposal-deck/deckPdf";
 export default function SiteVisitDetailPage() {
   const { id } = useParams();
   const { data: visit, isLoading, error } = useGetAllocatedVisitQuery(id);
@@ -15,6 +18,8 @@ export default function SiteVisitDetailPage() {
   const [checkIn, { isLoading: checkingIn }] = useCheckInSiteVisitMutation();
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("SCHEDULED");
+  const docRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
   useEffect(() => {
     if (visit) {
       setNotes(visit.notes || "");
@@ -31,9 +36,29 @@ export default function SiteVisitDetailPage() {
   const allocation = visit.visitAssignment;
   return (
     <div className="mx-auto max-w-3xl space-y-5 p-6">
-      <Link className="underline" to="/site-operations/site-visits">
-        Back to visits
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link className="underline" to="/site-operations/site-visits">
+          Back to visits
+        </Link>
+        <Button
+          type="button"
+          disabled={downloading}
+          onClick={async () => {
+            setDownloading(true);
+            try {
+              const name = String(visit.project?.name || "Site").replace(/[^\w-]+/g, "-");
+              await downloadDeckPdf(docRef.current, `Site-Visit_${name}_${visit.actualVisitAt ? String(visit.actualVisitAt).slice(0, 10) : visit.scheduledDate}.pdf`, { title: "Site Visit" });
+            } catch (e) {
+              console.error(e);
+              toast.error("Couldn't create the PDF. Try again.");
+            } finally {
+              setDownloading(false);
+            }
+          }}
+        >
+          {downloading ? "Preparing PDF…" : "Download PDF"}
+        </Button>
+      </div>
       <h1 className="text-2xl font-semibold">
         {allocation?.stageName || visit.purpose || "Site visit"}
       </h1>
@@ -97,6 +122,12 @@ export default function SiteVisitDetailPage() {
           Check in
         </Button>
       )}
+      {/* The report the visit exports — SITE VISIT TEMPLATE (US Letter, 3 pages) */}
+      <div style={{ marginLeft: "calc(50% - 50vw + 24px)", width: "calc(100vw - 48px)" }}>
+        <DocumentPreview>
+          <SiteVisitDocument ref={docRef} visit={visit} />
+        </DocumentPreview>
+      </div>
     </div>
   );
 }

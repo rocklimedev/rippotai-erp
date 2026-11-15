@@ -32,18 +32,18 @@ export class PdfGeneratorService {
       doc.moveDown(0.3);
       doc
         .fontSize(10)
-        .fillColor('#6B7B7C')
+        .fillColor('#4D4D4D')
         .text(`${docNo} · ${projectName}`, { align: 'center' });
       doc.moveDown(1.2);
-      doc.fillColor('#333333');
+      doc.fillColor('#1A1A1A');
 
       for (const [sectionTitle, fields] of Object.entries(sections || {})) {
         doc
           .fontSize(13)
-          .fillColor('#1F453B')
+          .fillColor('#0D3D2F')
           .text(sectionTitle, { underline: true });
         doc.moveDown(0.3);
-        doc.fontSize(10).fillColor('#333333');
+        doc.fontSize(10).fillColor('#1A1A1A');
         for (const [key, value] of Object.entries(fields || {})) {
           if (!value) continue;
           doc.font('Helvetica-Bold').text(`${key}: `, { continued: true });
@@ -55,10 +55,10 @@ export class PdfGeneratorService {
       if (attachmentsSummary?.length) {
         doc
           .fontSize(13)
-          .fillColor('#1F453B')
+          .fillColor('#0D3D2F')
           .text('Attachments', { underline: true });
         doc.moveDown(0.3);
-        doc.fontSize(10).fillColor('#333333');
+        doc.fontSize(10).fillColor('#1A1A1A');
         for (const a of attachmentsSummary) {
           doc.text(`• ${a.filename}${a.remark ? ` — ${a.remark}` : ''}`);
         }

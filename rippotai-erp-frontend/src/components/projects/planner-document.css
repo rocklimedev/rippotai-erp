@@ -1,0 +1,37 @@
+/* Project planner in the Word template family (no reference PDF; follows CLIENT BRIEF / SCOPE OF WORK). */
+.pd-doc.wd-pl .wd-cover__title {
+  font-size: 17pt;
+  letter-spacing: 2pt;
+}
+.pd-doc.wd-pl .wd-cover__subtitle {
+  font-size: 7pt;
+  letter-spacing: 1.6pt;
+}
+.pd-doc .wd-pl-phase {
+  font-size: 11pt;
+  color: var(--wd-green);
+  line-height: 1.25;
+  margin: 2mm 0 2.6mm;
+}
+.pd-doc .wd-pl-t.wd-thead {
+  font-size: 6.5pt;
+  letter-spacing: 1.4pt;
+  color: var(--wd-sage);
+  border-bottom-width: 1pt;
+}
+.wd-pl-t.wd-thead > span {
+  padding: 0 1.6mm 1.4mm 0;
+}
+.pd-doc .wd-pl-t.wd-row {
+  min-height: 7.9mm;
+  font-size: 8pt;
+}
+.wd-pl-t.wd-row > span {
+  padding: 1.8mm 1.6mm 1.6mm 0;
+}
+.pd-doc .wd-pl-t.wd-row > span:nth-child(2) {
+  color: var(--wd-green);
+}
+.wd-pl .pd-block {
+  padding-bottom: 4mm;
+}

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { Model, ModelStatic, Op, Transaction } from 'sequelize';
+import { Model, ModelStatic, Op, QueryTypes, Transaction } from 'sequelize';
 import {
   SHARED_PROJECT_FIELDS,
   canReceiveSharedData,
@@ -44,12 +44,23 @@ export class SharedProjectDataService implements OnModuleInit {
       facts[key] = project.get(field);
     Object.assign(facts, {
       projectName: project.get('name'),
+      projectCode: project.get('code') ?? null,
       clientName: client?.get('name'),
       clientContactPerson: client?.get('contact_person'),
       clientPhone: client?.get('phone'),
       clientEmail: client?.get('email'),
       clientAddress: client?.get('address'),
     });
+    // Design / Build chosen on the pipeline deal -> Scope of Work "Project mode".
+    try {
+      const [deal] = await this.sequelize.query<{ service: string | null }>(
+        'SELECT service FROM leads WHERE project_id = ? AND service IS NOT NULL ORDER BY updated_at DESC LIMIT 1',
+        { replacements: [projectId], type: QueryTypes.SELECT, transaction },
+      );
+      if (deal?.service) facts.projectMode = deal.service;
+    } catch {
+      // leads table / column not present: no mode to offer
+    }
     return facts;
   }
 
@@ -298,7 +309,12 @@ export class SharedProjectDataService implements OnModuleInit {
       if (isMissingSharedValue(shared[key]) && !isMissingSharedValue(value)) {
         shared[key] = value;
         sources[key] = {
-          sequence: key.startsWith('client') ? 'client' : 'project',
+          sequence:
+            key === 'projectMode'
+              ? 'pipeline'
+              : key.startsWith('client')
+                ? 'client'
+                : 'project',
           id: projectId,
         };
       }

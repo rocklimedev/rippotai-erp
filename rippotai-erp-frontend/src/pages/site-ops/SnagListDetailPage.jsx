@@ -1,4 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import DeleteSnagList from "./DeleteSnagList";
 import { toast } from "sonner";
 import { Page, PageHeader, Card, Button } from "@/components/inos";
@@ -9,6 +12,7 @@ import {
 import { snagError } from "./SnagListsPage";
 export default function SnagListDetailPage() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("snag-list", id);
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetSnagDocumentQuery(id);
   const [download, downloading] = useDownloadSnagDocumentMutation();
@@ -30,9 +34,9 @@ export default function SnagListDetailPage() {
   return (
     <Page>
       <PageHeader
+        info={recordInfo}
         eyebrow="Site Operations · Snag List"
         title={data.title}
-        subtitle={`${data.project_name} · ${data.document_date} · Revision ${data.revision}`}
         actions={
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <DeleteSnagList document={data} onDeleted={() => navigate("/site-operations/snag-lists")} />
@@ -63,6 +67,7 @@ export default function SnagListDetailPage() {
           </div>
         }
       />
+      <RecordContext type="snag-list" id={id} />
       <Card
         title={`${data.item_count} snag rows · ${data.open_count} not closed`}
       >
@@ -142,6 +147,7 @@ export default function SnagListDetailPage() {
           </table>
         </div>
       </Card>
+      <VersionHistory type="snag-list" id={id} />
     </Page>
   );
 }

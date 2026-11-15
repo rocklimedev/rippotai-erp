@@ -93,7 +93,11 @@ export class NasStagingService {
             if (missingFile(error)) return false;
             throw error;
           }
-          await pipeline(file.createReadStream(), destination);
+          try {
+            await pipeline(file.createReadStream({ autoClose: false }), destination);
+          } finally {
+            await file.close().catch(() => undefined);
+          }
           return true;
         },
         read: async (name) => {

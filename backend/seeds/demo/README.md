@@ -19,7 +19,7 @@ seeds/demo/run.sh s03_procurement s05_docs   # just some sections
 |---|---|
 | s01_core | units, project types, 12 staff users + teams, 15 clients, 14 projects (phase/progress/value), project gates + transition log, 83-item document catalogue, settings (company profile, bank, billing, signature), T&C templates |
 | s02_crm | 25 deals across all pipeline stages (+notes, activity, tasks), project briefs (all child tables), site recces (+rooms/photos), plans of action, scope of work (+spaces/items) |
-| s03_procurement | 20 vendors, 45 materials + vendor price list, requirements, sample boards, rate sheets, estimates, material quotations, vendor quotations (+items/versions), POs, work orders (+stages/terms), delivery challans, inventory transactions |
+| s03_procurement | 20 vendors, 45 materials + vendor price list, requirements, sample boards, rate sheets, estimates, POs, work orders (+stages/terms), delivery challans, inventory transactions |
 | s04_finance | rate library, BOQ templates, BOQs with versions, budget estimates (+versions), payment schedules + milestones, project milestones |
 | s05_docs | document requirements for every project x doc type, uploaded documents (+versions), drawing register (+revisions), proposals |
 | s06_siteops | process phases/steps, QC checklists + sign-offs (incl. failures), daily site reports (8 weeks) + manpower, visit assignments + logs, RFIs, mock-ups, step progress |

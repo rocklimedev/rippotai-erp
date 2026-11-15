@@ -1,4 +1,5 @@
 import MonthlyMilestoneBuilder from "@/components/payments/MonthlyMilestoneBuilder";
+import { useRefill } from "@/components/doc-list/useRefill";
 import { PrefillNotice } from "@/components/PrefillNotice";
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -144,6 +145,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   const [projectId, setProjectId] = React.useState(
     () => (!isEdit && (searchParams.get("projectId") || searchParams.get("project_id"))) || "",
   );
+  useRefill({ type: "payment-schedule", label: "Payment Schedule", projectId, enabled: !isEdit, editPath: (id) => `/ledger/forms/payment-schedule/${id}/edit` });
 
   // ============================================================
   // FORM STATE

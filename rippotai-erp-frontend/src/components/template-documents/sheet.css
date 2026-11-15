@@ -1,0 +1,174 @@
+/* Sheet documents — replicas of the original Google-Sheets templates (PO / WO / DC / Estimate).
+   Units are PDF points so values can be read straight off the reference PDFs. */
+
+.ts-doc {
+  --ts-green: #0d3d2f; /* titles, section labels, TOTAL */
+  --ts-band: #0c3c2e; /* VENDOR / SHIP TO band */
+  --ts-sage: #3f5c52; /* tagline, signature captions */
+  --ts-ink: #242724; /* row numbers, body text */
+  --ts-grey: #636363; /* Name · ____ lines */
+  --ts-rule: 0.71pt solid #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #000;
+  font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+.ts-doc *,
+.ts-doc *::before,
+.ts-doc *::after {
+  box-sizing: border-box;
+}
+.ts-doc div,
+.ts-doc span,
+.ts-doc p {
+  font-family: inherit;
+  letter-spacing: 0;
+  margin: 0;
+}
+.ts-measure {
+  position: absolute !important;
+  left: -30000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.ts-page {
+  width: 595.28pt;
+  height: 841.89pt;
+  position: relative;
+  background: #fff;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 12px 32px -12px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+.ts-doc.is-capturing .ts-page {
+  box-shadow: none;
+}
+.ts-frame {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+}
+.ts-frame--border {
+  border: var(--ts-rule);
+}
+.ts-seg {
+  display: flow-root;
+}
+.ts-doc .ts-bottom {
+  margin-top: auto;
+}
+.ts-pageno {
+  position: absolute;
+  font-size: 7pt;
+  color: var(--ts-grey);
+}
+
+.ts-calibri {
+  font-family: 'Calibri', 'Carlito', 'Lato', Arial, sans-serif !important;
+}
+.ts-arial {
+  font-family: Arial, 'Liberation Sans', Helvetica, sans-serif !important;
+}
+.ts-bold {
+  font-weight: 700;
+}
+.ts-green {
+  color: var(--ts-green);
+}
+.ts-abs {
+  position: absolute;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* rows built from cells with template borders */
+.ts-row {
+  display: flex;
+  align-items: stretch;
+}
+.ts-cell {
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
+.ts-cell--mid {
+  align-items: center;
+}
+.ts-cell--top {
+  align-items: flex-start;
+}
+.ts-cell > .ts-in {
+  width: 100%;
+}
+.ts-r {
+  border-right: var(--ts-rule);
+}
+.ts-b {
+  border-bottom: var(--ts-rule);
+}
+.ts-t {
+  border-top: var(--ts-rule);
+}
+.ts-l {
+  border-left: var(--ts-rule);
+}
+.ts-center {
+  text-align: center;
+}
+.ts-right {
+  text-align: right;
+}
+.ts-sub {
+  display: block;
+  color: var(--ts-grey);
+  font-size: 0.82em;
+  line-height: 1.25;
+}
+.ts-unit {
+  color: var(--ts-grey);
+  font-size: 0.62em;
+  white-space: nowrap;
+}
+.ts-signline {
+  color: var(--ts-grey);
+  white-space: nowrap;
+  line-height: 1;
+}
+.ts-signline__v {
+  color: var(--ts-ink);
+}
+.ts-terms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ts-terms li {
+  display: flex;
+  color: var(--ts-ink);
+}
+.ts-terms li > b {
+  font-weight: 400;
+  color: #000;
+  flex: none;
+}
+
+/* html2canvas measures each font's baseline with a 1×1 probe <img> appended to <body>; Tailwind's
+   preflight makes images display:block, which pushes every captured line ~0.5 em down. Restore the
+   inline probe while a sheet document is being captured (scoped so other documents are untouched). */
+body:has(.ts-doc.is-capturing) > div > img[width='1'][height='1'] {
+  display: inline !important;
+}
+
+/* Estimate sheet: hairline (0.43 pt) rules like the Google-Sheets export */
+.ts-doc.ts-estimate {
+  --ts-rule: 0.43pt solid #000;
+}

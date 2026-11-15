@@ -23,7 +23,6 @@ import { LeadSearchService } from './services/lead-search.service';
 import { VendorSearchService } from './services/vendor-search.service';
 import { BoqSearchService } from './services/boq-search.service';
 import { BriefSearchService } from './services/brief-search.service';
-import { QuotationSearchService } from './services/quotation-search.service';
 import { SiteRecceSearchService } from './services/site-recce-search.service';
 import { TaskSearchService } from './services/task-search.service';
 import { CalendarSearchService } from './services/calendar-search.service';
@@ -48,7 +47,6 @@ export class SearchController {
     private readonly vendorSearch: VendorSearchService,
     private readonly boqSearch: BoqSearchService,
     private readonly briefSearch: BriefSearchService,
-    private readonly quotationSearch: QuotationSearchService,
     private readonly siteRecceSearch: SiteRecceSearchService,
     private readonly taskSearch: TaskSearchService,
     private readonly calendarSearch: CalendarSearchService,
@@ -130,12 +128,6 @@ export class SearchController {
   }
 
   @RequirePermission('search:read')
-  @Get('quotations')
-  searchQuotations(@Query('q') q: string, @Req() req: any) {
-    return this.searchEntity('quotation', q, req);
-  }
-
-  @RequirePermission('search:read')
   @Get('site-recces')
   searchSiteRecces(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('site_recce', q, req);
@@ -199,7 +191,6 @@ export class SearchController {
       ['vendors', () => this.vendorSearch.reindexAll()],
       ['boqs', () => this.boqSearch.reindexAll()],
       ['briefs', () => this.briefSearch.reindexAll()],
-      ['quotations', () => this.quotationSearch.reindexAll()],
       ['site_recces', () => this.siteRecceSearch.reindexAll()],
       ['tasks', () => this.taskSearch.reindexAll()],
       ['calendar_events', () => this.calendarSearch.reindexAll()],
@@ -245,7 +236,6 @@ export class SearchController {
       vendors: () => this.vendorSearch.reindexAll(),
       boqs: () => this.boqSearch.reindexAll(),
       briefs: () => this.briefSearch.reindexAll(),
-      quotations: () => this.quotationSearch.reindexAll(),
       'site-recces': () => this.siteRecceSearch.reindexAll(),
       tasks: () => this.taskSearch.reindexAll(),
       calendar: () => this.calendarSearch.reindexAll(),
@@ -295,7 +285,6 @@ export class SearchController {
         'vendors',
         'boqs',
         'briefs',
-        'quotations',
         'site_recces',
         'tasks',
         'calendar_events',

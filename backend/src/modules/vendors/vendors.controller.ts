@@ -11,7 +11,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { VendorsService } from './vendors.service';
 import { VendorDashboardService } from './vendor-dashboard.service';
@@ -57,21 +59,36 @@ export class VendorsController {
   }
 
   // =========================
+  // EXPORT (CSV) — declared before :id so "export" is not read as an id
+  // =========================
+  @RequirePermission('vendors:read')
+  @Get('export')
+  async export(
+    @Res() res: Response,
+    @Query('status') status?: VendorStatus,
+    @Query('vendor_category_id') vendor_category_id?: string,
+    @Query('business_type_id') business_type_id?: string,
+  ) {
+    const csv = await this.vendorsService.exportCsv({
+      status,
+      vendor_category_id,
+      business_type_id,
+    });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Vendor-Directory_${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
+    res.send(csv);
+  }
+
+  // =========================
   // GET ONE
   // =========================
   @RequirePermission('vendors:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.vendorsService.findOne(id);
-  }
-
-  // =========================
-  // GET QUOTATIONS BY VENDOR
-  // =========================
-  @RequirePermission('vendors:read')
-  @Get(':id/quotations')
-  getQuotationsByVendor(@Param('id') id: string) {
-    return this.vendorsService.getQuotationsByVendor(id);
   }
 
   // =========================

@@ -126,19 +126,6 @@ export class AuthorityService {
       ),
       this.queue(
         {
-          key: 'quotations',
-          label: 'Vendor quotations submitted',
-          description: 'Vendor quotations submitted for review and selection.',
-          group: 'approvals',
-          link: '/procurement/estimates/all',
-        },
-        `SELECT x.id, x.quotation_number title, CONCAT_WS(' · ', v.name, p.name) sub, x.total_amount amount, x.submitted_at date
-           FROM quotations x ${P} LEFT JOIN vendors v ON v.id = x.vendor_id
-          WHERE x.deleted_at IS NULL AND x.status = 'submitted' ORDER BY x.submitted_at`,
-        (r) => `/procurement/estimates/${r.id}`,
-      ),
-      this.queue(
-        {
           key: 'budget_estimates',
           label: 'Budget estimates to approve',
           description:

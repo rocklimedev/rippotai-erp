@@ -24,9 +24,7 @@ import { VendorsModule } from './modules/vendors/vendors.module';
 import { ActivityLogsModule } from './modules/engagement/activity-logs.module';
 import { NotificationsModule } from './modules/engagement/notifications.module';
 
-// Quotations / BOQ
-import { QuotationsModule } from './modules/quotations/quotations.module';
-
+// BOQ
 import { BoqModule } from './modules/boqs/boq.module';
 
 // Meta
@@ -50,17 +48,17 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { CdnModule } from './modules/cdn/cdn.module';
 import { SearchModule } from './modules/search/search.module';
 
-// Reports
-import { ReportsModule } from './modules/reports/reports.module';
 import { TeamModule } from './modules/users/team.module';
 import { PlanOfActionsModule } from './modules/plan-of-action/plan-of-actions.module';
 import { PaymentSchedulesModule } from './modules/payments/payment-schedule.module';
 import { ProcessWorkflowModule } from './modules/process-workflow/process-workflow.module';
 import { SiteOperationsModule } from './modules/site-operations/site-operations.module';
 import { MaterialProcurementModule } from './modules/material-procurement/material-procurement.module';
+import { ProcurementQuotationsModule } from './modules/procurement-quotations/procurement-quotations.module';
 import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module';
 import { BudgetEstimateModule } from './modules/budget-estimate/budget-estimate.module';
 import { BudgetGuideModule } from './modules/budget-guide/budget-guide.module';
+import { DocFlowModule } from './modules/doc-flow/doc-flow.module';
 import { BusinessProposalsModule } from './modules/business-proposals/business-proposals.module';
 import { GatesModule } from './modules/gates/gates.module';
 import { ZohoModule } from './modules/zoho/zoho.module';
@@ -123,10 +121,8 @@ import { ExportJobsModule } from './modules/exports/export-jobs.module';
     NotificationsModule,
     GatesModule,
     // ============================================================
-    // Quotations / BOQ
+    // BOQ
     // ============================================================
-    QuotationsModule,
-
     BoqModule,
 
     // ============================================================
@@ -154,6 +150,7 @@ import { ExportJobsModule } from './modules/exports/export-jobs.module';
     LeadsModule,
     BudgetEstimateModule,
     BudgetGuideModule,
+    DocFlowModule,
     BusinessProposalsModule,
     // ============================================================
     // Infrastructure
@@ -163,10 +160,10 @@ import { ExportJobsModule } from './modules/exports/export-jobs.module';
     ProcessWorkflowModule,
     SiteOperationsModule,
     MaterialProcurementModule,
+    ProcurementQuotationsModule,
     // ============================================================
-    // Reports
+    // Integrations
     // ============================================================
-    ReportsModule,
     ZohoModule,
     MicrosoftModule,
     GoogleModule,

@@ -32,28 +32,28 @@ const CHECKS = [
     label: "Scope of Work",
     description: "Scope items and categories must be completed.",
     icon: ClipboardList,
-    path: (projectId) => `/projects/${projectId}/scope-of-work`,
+    path: (projectId) => `/crm/forms/scope-of-work?projectId=${projectId}`,
   },
   {
     key: "planOfAction",
     label: "Plan of Action",
     description: "Project phases and planned actions must be completed.",
     icon: ListChecks,
-    path: (projectId) => `/projects/${projectId}/plan-of-action`,
+    path: (projectId) => `/crm/forms/plan-of-action?projectId=${projectId}`,
   },
   {
     key: "budgetEstimate",
     label: "Budget Estimate",
     description: "The project budget estimate must be available.",
     icon: Wallet,
-    path: (projectId) => `/projects/${projectId}/budget-estimate`,
+    path: (projectId) => `/ledger/forms/budget-estimate?projectId=${projectId}`,
   },
   {
     key: "paymentSchedule",
     label: "Payment Schedule",
     description: "Payment milestones and terms must be configured.",
     icon: CreditCard,
-    path: (projectId) => `/projects/${projectId}/payment-schedule`,
+    path: (projectId) => `/ledger/forms/payment-schedule?projectId=${projectId}`,
   },
 ];
 

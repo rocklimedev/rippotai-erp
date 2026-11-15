@@ -3,6 +3,8 @@
 import React from "react";
 import { Plus, Trash2, Loader2, AlertCircle, Info, CheckCircle2, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/inos";
+import { SectionStatus } from "@/components/doc-list/SectionTick";
+import { useSectionCompleteness } from "@/components/doc-list/useSectionCompleteness";
 import { formatINR } from "@/lib/format";
 import "./commerce-forms.css";
 
@@ -19,13 +21,15 @@ export const todayISO = () => {
 };
 
 /** Numbered form section with optional right-side actions, flush body (for tables) and footer. */
-export function DocSection({ step, title, description, actions, children, flush, footer, className, id }) {
+export function DocSection({ step, title, description, actions, children, flush, footer, className, id, tick = true }) {
+  const ref = React.useRef(null);
+  const fill = useSectionCompleteness(ref, tick);
   return (
-    <section id={id} className={cx("inos-form-section cf-section", flush && "cf-section--flush", className)}>
+    <section id={id} ref={ref} className={cx("inos-form-section cf-section", flush && "cf-section--flush", className)} data-fill={tick ? fill : undefined}>
       {(title || actions) && (
         <div className="cf-section__head">
           <div className="inos-form-section__head">
-            {step != null && <span className="inos-form-section__step">{step}</span>}
+            <SectionStatus state={fill} step={step} enabled={tick} />
             <div>
               {title && <h2 className="inos-form-section__title">{title}</h2>}
               {description && <p className="inos-form-section__desc">{description}</p>}

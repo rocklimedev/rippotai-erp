@@ -189,32 +189,60 @@ describe('Snag List documents', () => {
     );
     await expect(service.download('missing')).rejects.toThrow('not found');
   });
-  it('exports only the Snag list sheet, all nine fields and rows beyond the template', async () => {
+  it('fills SNAG LIST TEMPLATE.xlsx: a category sheet per group, checkpoints and rows beyond the template', async () => {
     const service = new SnagListExportService();
     const buffer = await service.build({
       ...dto,
       project_name: 'Project A',
       revision: 2,
-      items: Array.from({ length: 30 }, (_, index) => ({
-        ...dto.items[0],
-        observation: index === 0 ? '=SUM(A1:A2)' : `Observation ${index}`,
-      })),
+      items: [
+        ...Array.from({ length: 30 }, (_, index) => ({
+          ...dto.items[0],
+          category: 'Civil',
+          observation: index === 0 ? '=SUM(A1:A2)' : `Observation ${index}`,
+        })),
+        { ...dto.items[0], category: 'Plumbing', observation: 'Leak' },
+      ],
     });
     const book = new Workbook();
     await book.xlsx.load(buffer as any);
-    expect(book.worksheets).toHaveLength(1);
-    const sheet = book.getWorksheet('Snag list')!;
-    expect(sheet.getCell('A1').value).toBe(dto.title);
-    expect(sheet.getCell('A2').value).toContain('Revision 2');
-    expect(sheet.getCell('E4').value).toBe('=SUM(A1:A2)');
-    expect(sheet.getCell('F4').value).toEqual(
+    expect(book.worksheets.map((s) => s.name)).toEqual([
+      '1. Civil',
+      '2. Plumbing',
+    ]);
+    const sheet = book.getWorksheet('1. Civil')!;
+    expect(sheet.getCell('B2').value).toBe('1. CIVIL');
+    expect(sheet.getCell('B2').fill).toMatchObject({
+      fgColor: { argb: 'FF0D3D2F' },
+    });
+    expect(sheet.getCell('B3').value).toContain('Revision 2');
+    expect(
+      ['B4', 'C4', 'D4', 'E4', 'F4', 'G4', 'H4', 'I4'].map(
+        (a) => sheet.getCell(a).value,
+      ),
+    ).toEqual([
+      'No.',
+      'Checkpoint',
+      'Yes / No / NA',
+      'Remarks',
+      'Location',
+      'Scope',
+      'Status',
+      'Photo',
+    ]);
+    expect(sheet.getCell('B5').value).toBe('1.1');
+    expect(sheet.getCell('C5').value).toBe('=SUM(A1:A2)');
+    expect(sheet.getCell('I5').value).toEqual(
       expect.objectContaining({ hyperlink: dto.items[0].photos[0] }),
     );
-    expect(sheet.getCell('I4').value).toBe('Inspect again');
-    expect(sheet.getCell('A33').value).toBe(30);
-    expect(sheet.getCell('E33').value).toBe('Observation 29');
-    expect(sheet.getCell('H4').dataValidation.formulae).toEqual([
+    expect(sheet.getCell('B34').value).toBe('1.30');
+    expect(sheet.getCell('C34').value).toBe('Observation 29');
+    expect(sheet.getCell('D34').dataValidation.formulae).toEqual([
+      '"Yes,No,NA"',
+    ]);
+    expect(sheet.getCell('H34').dataValidation.formulae).toEqual([
       '"Open,In Progress,Rectified,Closed"',
     ]);
+    expect(book.getWorksheet('2. Plumbing')!.getCell('B5').value).toBe('2.1');
   });
 });

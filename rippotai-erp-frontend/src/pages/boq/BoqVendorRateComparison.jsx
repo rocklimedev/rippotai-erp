@@ -1,4 +1,9 @@
 import { appConfirm } from '@/lib/app-dialog';
+import { toCsv } from '@/lib/brandExcel';
+import { downloadXlsx } from '@/lib/xlsxTemplate';
+import vendorComparisonTemplate from '@/assets/xlsx-templates/vendor-comparison.xlsx?url';
+import { buildVendorComparisonWorkbook } from './vendorComparisonExcel';
+import FinaliseVendorsCard from './FinaliseVendorsCard';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DeleteRateComparison from '@/components/materials/DeleteRateComparison';
@@ -27,6 +32,9 @@ import {
 import { toast } from 'sonner';
 
 import { Shell, Card } from '../../hooks/shared';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
 
 import { useGetBoqsQuery, useGetBoqByIdQuery } from '../../api/boq/boq.api';
 
@@ -227,6 +235,7 @@ export default function BoqVendorRateComparison() {
 }
 
 function ComparisonWorkspace({ initialSheet }) {
+  const recordInfo = useRecordInfo('vendor-comparison', initialSheet?.id);
   const navigate = useNavigate();
   const [title, setTitle] = useState(initialSheet?.title || '');
   const [notes, setNotes] = useState(initialSheet?.notes || '');
@@ -330,6 +339,11 @@ function ComparisonWorkspace({ initialSheet }) {
   const [vendorNames, setVendorNames] = useState(initialSheet?.snapshot?.vendor_names || {});
 
   const [vendorRates, setVendorRates] = useState(initialSheet?.snapshot?.vendor_rates || {});
+
+  // Finalised vendor per BOQ category { categoryId: vendorId } — the template's dropdown.
+  const [finalisedVendors, setFinalisedVendors] = useState(
+    initialSheet?.snapshot?.finalised_vendors || {},
+  );
 
   const [expandedCategories, setExpandedCategories] = useState({});
 
@@ -652,6 +666,7 @@ function ComparisonWorkspace({ initialSheet }) {
     selectedVendorIds,
     vendorNames,
     vendorRates,
+    finalisedVendors,
   });
   const [savedState, setSavedState] = useState(editState);
   const dirty = editState !== savedState;
@@ -669,7 +684,7 @@ function ComparisonWorkspace({ initialSheet }) {
   const saveSheet = async () => {
     if (!title.trim() || !projectId || !selectedBoqId || !boq || boqDetailLoading) {
       toast.error('Enter a sheet name and select a project and its BOQ before saving.');
-      return;
+      return null;
     }
     if (
       Object.values(vendorRates).some(
@@ -677,7 +692,7 @@ function ComparisonWorkspace({ initialSheet }) {
       )
     ) {
       toast.error('Vendor rates must be non-negative numbers.');
-      return;
+      return null;
     }
     const snapshot = {
       schema_version: 1,
@@ -712,6 +727,14 @@ function ComparisonWorkspace({ initialSheet }) {
       })),
       vendor_names: vendorNames,
       vendor_rates: vendorRates,
+      finalised_vendors: Object.fromEntries(
+        Object.entries(finalisedVendors).filter(
+          ([categoryId, vendorId]) =>
+            vendorId &&
+            categories.some((category) => String(category.id) === String(categoryId)) &&
+            selectedVendorIds.some((id) => String(id) === String(vendorId)),
+        ),
+      ),
       rows: allRows.map((row) => ({
         item_id: row.itemId,
         category_id: row.categoryId,
@@ -760,8 +783,10 @@ function ComparisonWorkspace({ initialSheet }) {
       setVendorSnapshots(snapshot.vendors);
       toast.success('Rate comparison sheet saved');
       if (!initialSheet) navigate(comparisonPath + '/' + sheet.id + '/edit', { replace: true });
+      return sheet;
     } catch (error) {
       toast.error(apiError(error));
+      return null;
     }
   };
 
@@ -819,6 +844,61 @@ function ComparisonWorkspace({ initialSheet }) {
   // EXPORT
   // ==========================================================
 
+  // VENDOR COMPARISON TEMPLATE.xlsx: summary + one trade sheet per BOQ category.
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const exportExcel = async () => {
+    if (!allRows.length) {
+      toast.error('No BOQ items available to export.');
+      return;
+    }
+    setExportingExcel(true);
+    try {
+      const project = projects.find((p) => String(p.id) === String(projectId));
+      const byCategory = new Map();
+      allRows.forEach((row) => {
+        const key = String(row.categoryId);
+        if (!byCategory.has(key)) {
+          const finalIndex = selectedVendors.findIndex(
+            (vendor) => String(getVendorId(vendor)) === String(finalisedVendors[key]),
+          );
+          byCategory.set(key, {
+            name: row.categoryName || 'General',
+            items: [],
+            finalised:
+              finalIndex >= 0 ? getComparisonVendorName(selectedVendors[finalIndex], finalIndex) : '',
+          });
+        }
+        const spec = getItemSpecification(row.item);
+        const unit = getItemUnit(row.item);
+        const details = [spec !== '-' && spec, unit !== '-' && `Unit: ${unit}`].filter(Boolean).join('  ·  ');
+        byCategory.get(key).items.push({
+          description: [getItemDescription(row.item), details].filter(Boolean).join('\n'),
+          qty: row.qty,
+          boqRate: row.boqRate,
+          rates: selectedVendors.map((vendor) => getVendorRate(row.itemId, getVendorId(vendor))),
+        });
+      });
+      const buffer = await buildVendorComparisonWorkbook(vendorComparisonTemplate, {
+        projectName: project?.name || boq?.project?.name || '',
+        clientName: project?.client?.name || project?.client_name || '',
+        title,
+        notes,
+        vendors: selectedVendors.map((vendor, index) => getComparisonVendorName(vendor, index)),
+        categories: [...byCategory.values()],
+      });
+      downloadXlsx(
+        buffer,
+        `${title?.trim() || 'Vendor-Comparison'}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      );
+      toast.success('Vendor comparison exported.');
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not create the Excel file.');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   const exportCsv = () => {
     if (!allRows.length) {
       toast.error('No BOQ items available to export.');
@@ -869,25 +949,14 @@ function ComparisonWorkspace({ initialSheet }) {
         row.l1?.rate || '',
         row.l1 ? getComparisonVendorName(row.l1.vendor, row.l1.vendorIndex) : '',
         row.l1?.amount || '',
-        row.l1 ? row.variancePercent / 100 : '',
+        row.l1 ? Math.round(row.variancePercent * 100) / 100 : '',
       );
 
       return values;
     });
 
-    const csv = [headers, ...data]
-      .map((row) =>
-        row
-          .map((value) => {
-            const stringValue = value === null || value === undefined ? '' : String(value);
-
-            return `"${stringValue.replace(/"/g, '""')}"`;
-          })
-          .join(','),
-      )
-      .join('\n');
-
-    const blob = new Blob([csv], {
+    // UTF-8 BOM + CRLF so Excel opens ₹ / names correctly; numbers stay raw.
+    const blob = new Blob([toCsv([headers, ...data])], {
       type: 'text/csv;charset=utf-8;',
     });
 
@@ -897,7 +966,7 @@ function ComparisonWorkspace({ initialSheet }) {
 
     anchor.href = url;
 
-    anchor.download = `BOQ-Vendor-Rate-Comparison-${Date.now()}.csv`;
+    anchor.download = `BOQ-Vendor-Rate-Comparison_${new Date().toISOString().slice(0, 10)}.csv`;
 
     document.body.appendChild(anchor);
 
@@ -984,11 +1053,9 @@ function ComparisonWorkspace({ initialSheet }) {
               Vendor Rate Comparison
             </div>
 
-            <h1 className="text-2xl font-bold text-[#1F453B]">Vendor Rate Comparison Sheet</h1>
+            <h1 className="text-2xl font-bold text-[#1F453B]">{initialSheet?.title || 'Vendor Rate Comparison Sheet'}</h1>
 
-            <p className="mt-1 text-sm text-gray-500">
-              Compare vendor quotations against the actual BOQ rate category by category.
-            </p>
+            {recordInfo && <p className="mt-1 text-[13px] text-gray-600">{recordInfo}</p>}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -1047,13 +1114,25 @@ function ComparisonWorkspace({ initialSheet }) {
             <button
               type="button"
               onClick={exportCsv}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#17372f]"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               <Download size={16} />
-              Export CSV
+              CSV
+            </button>
+
+            <button
+              type="button"
+              onClick={exportExcel}
+              disabled={exportingExcel}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#17372f] disabled:opacity-60"
+            >
+              <FileSpreadsheet size={16} />
+              {exportingExcel ? 'Exporting…' : 'Export Excel'}
             </button>
           </div>
         </div>
+
+        {initialSheet?.id && <RecordContext type="vendor-comparison" id={initialSheet.id} />}
 
         {/* ================================================== */}
         {/* CONTROLS */}
@@ -1493,6 +1572,33 @@ function ComparisonWorkspace({ initialSheet }) {
           </Card>
         )}
 
+        {categorySummaries.length > 0 && selectedVendors.length > 0 && (
+          <FinaliseVendorsCard
+            sheetId={initialSheet?.id}
+            projectId={projectId}
+            dirty={dirty}
+            saving={saving}
+            onSave={saveSheet}
+            categories={categorySummaries}
+            vendors={selectedVendors.map((vendor, index) => ({
+              id: String(getVendorId(vendor)),
+              name: getComparisonVendorName(vendor, index),
+            }))}
+            categoryTotal={(categoryId, vendorId) =>
+              allRows
+                .filter((row) => String(row.categoryId) === String(categoryId))
+                .reduce((sum, row) => {
+                  const rate = getVendorRate(row.itemId, vendorId);
+                  return sum + (rate > 0 ? (row.qty > 0 ? row.qty * rate : rate) : 0);
+                }, 0)
+            }
+            finalised={finalisedVendors}
+            onFinalise={(categoryId, vendorId) =>
+              setFinalisedVendors((previous) => ({ ...previous, [categoryId]: vendorId }))
+            }
+          />
+        )}
+
         {/* ================================================== */}
         {/* RATE COMPARISON */}
         {/* ================================================== */}
@@ -1779,6 +1885,8 @@ function ComparisonWorkspace({ initialSheet }) {
             </div>
           )}
         </Card>
+
+        {initialSheet?.id && <VersionHistory type="vendor-comparison" id={initialSheet.id} />}
 
         {/* ================================================== */}
         {/* VENDOR MODAL */}

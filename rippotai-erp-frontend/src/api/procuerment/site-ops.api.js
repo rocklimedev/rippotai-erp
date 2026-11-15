@@ -424,7 +424,7 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["SiteVisits", "WsCalendar"],
+      invalidatesTags: ["SiteVisits"],
     }),
 
     updateVisitAssignment: builder.mutation({
@@ -433,7 +433,7 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["SiteVisits", "WsCalendar"],
+      invalidatesTags: ["SiteVisits"],
     }),
 
     getVisitAssignmentsByProject: builder.query({
@@ -453,7 +453,7 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         url: `/site-ops/visits/assignments/${id}/deactivate`,
         method: "PATCH",
       }),
-      invalidatesTags: ["SiteVisits", "WsCalendar"],
+      invalidatesTags: ["SiteVisits"],
     }),
 
     logSiteVisit: builder.mutation({
@@ -539,6 +539,25 @@ export const siteOperationsApi = baseApi.injectEndpoints({
       ],
     }),
     // GET /site-ops/qc/history?projectId=<uuid>&from&to&status — all projects when projectId is omitted
+    // EXECUTION CHECKLIST TEMPLATE.xlsx for a project (async export job).
+    downloadExecutionChecklist: builder.mutation({
+      query: (projectId) => ({
+        url: `/site-ops/qc/projects/${projectId}/execution-checklist.xlsx`,
+        responseHandler: async (response) => {
+          if (!response.ok) return { message: "Checklist export failed" };
+          const url = URL.createObjectURL(await response.blob());
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "execution-checklist.xlsx";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          return { success: true };
+        },
+      }),
+    }),
+
     getQcHistory: builder.query({
       query: (arg = {}) => {
         const { projectId, from, to, status } = typeof arg === "string" ? { projectId: arg } : arg || {};
@@ -605,6 +624,7 @@ export const {
   useGetQcProjectHistoryQuery,
   useGetQcHandoffStatusQuery,
   useGetQcHistoryQuery,
+  useDownloadExecutionChecklistMutation,
   useGetProjectQcHandoffStatusQuery,
   useGetProjectQcHistoryQuery,
   useGetProjectRfisQuery,

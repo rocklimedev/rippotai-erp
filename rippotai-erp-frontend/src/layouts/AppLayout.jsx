@@ -1,10 +1,14 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import TopHeader from "../components/dashboard/TopHeader";
+import AppShell from "@/components/shell/AppShell";
+import { lastApp } from "@/components/shell/last-app";
 import DocumentSequenceNavigation from "@/components/documents/DocumentSequenceNavigation";
 import { navigationAppFor } from "@/config/appNav";
-/* ---- Main AppLayout: only header + main, no sidebar ---- */
+
+/* ---- Main AppLayout: global top bar + app sidebar + page (breadcrumb header) ----
+   app="auto" (app-independent pages such as My approvals) keeps the sidebar of
+   the app the user came from. */
 export default function AppLayout({ app }) {
   const { user, ready } = useAuth();
   const navigate = useNavigate();
@@ -32,14 +36,12 @@ export default function AppLayout({ app }) {
   // in the meantime to avoid a flash of protected content.
   if (!user) return null;
 
+  const shellApp = app === "auto" ? lastApp() : navigationAppFor(app, location.pathname);
   return (
-    <div className="min-h-screen bg-page">
-      <TopHeader app={navigationAppFor(app, location.pathname)} />
-      <main className="px-5 py-6 lg:px-8 lg:py-8">
-        <DocumentSequenceNavigation>
-          <Outlet />
-        </DocumentSequenceNavigation>
-      </main>
-    </div>
+    <AppShell app={shellApp}>
+      <DocumentSequenceNavigation>
+        <Outlet />
+      </DocumentSequenceNavigation>
+    </AppShell>
   );
 }

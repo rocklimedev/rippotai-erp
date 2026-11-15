@@ -69,7 +69,6 @@ export const CATEGORIES = [
   "Project Brief",
   "Site Reki",
   "BOQs",
-  "Quotations",
   "Drawings",
   "GFC Drawings",
   "3D Views",

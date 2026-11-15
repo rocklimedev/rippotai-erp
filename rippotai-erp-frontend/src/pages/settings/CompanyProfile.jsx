@@ -1,5 +1,5 @@
 // Admin Console → Company profile. Letterhead, tax ids, bank account and billing
-// defaults printed on quotations, POs, work orders and challans.
+// defaults printed on POs, work orders and challans.
 // Stored in the settings table as JSON: company_profile, bank_details, billing
 // (read by print-document/commerce.jsx → useCompanyProfile()).
 import React, { useEffect, useMemo, useState } from "react";
@@ -48,7 +48,6 @@ const EMPTY = {
   branch: "",
   upi: "",
   defaultGstRate: "18",
-  quotationValidityDays: "30",
   invoicePrefix: "",
 };
 
@@ -126,7 +125,6 @@ export default function CompanyProfile() {
       branch: s(b.branch),
       upi: s(b.upi),
       defaultGstRate: s(bl.defaultGstRate ?? 18),
-      quotationValidityDays: s(bl.quotationValidityDays ?? 30),
       invoicePrefix: s(bl.invoicePrefix),
     });
   }, [data, settings, dirty]);
@@ -200,10 +198,6 @@ export default function CompanyProfile() {
           ...stored.bl,
           defaultGstRate:
             form.defaultGstRate === "" ? 18 : Number(form.defaultGstRate),
-          quotationValidityDays:
-            form.quotationValidityDays === ""
-              ? 30
-              : Number(form.quotationValidityDays),
           invoicePrefix: t(form.invoicePrefix),
         },
       }).unwrap();
@@ -236,7 +230,7 @@ export default function CompanyProfile() {
       <PageHeader
         crumbs={adminCrumbs("Company profile")}
         title="Company profile"
-        subtitle="Letterhead, tax registration and bank details printed on quotations, purchase orders, work orders and challans."
+        subtitle="Letterhead, tax registration and bank details printed on purchase orders, work orders and challans."
         actions={
           bankReady ? (
             <Pill tone="ok">Bank details on PDFs</Pill>
@@ -407,7 +401,7 @@ export default function CompanyProfile() {
             <FormSection
               step={3}
               title="Bank account"
-              description="Shown in the “Bank details” section of quotations. Leave the account number empty to hide it."
+              description="Shown in the “Bank details” section of printed documents. Leave the account number empty to hide it."
             >
               <Field label="Bank name">
                 <TextInput
@@ -461,8 +455,8 @@ export default function CompanyProfile() {
             <FormSection
               step={4}
               title="Billing defaults"
-              description="Pre-filled on new quotations and invoices."
-              columns={3}
+              description="Pre-filled on new invoices and orders."
+              columns={2}
             >
               <Field label="Default GST rate (%)" error={errors.defaultGstRate}>
                 <TextInput
@@ -472,14 +466,6 @@ export default function CompanyProfile() {
                   value={form.defaultGstRate}
                   onChange={set("defaultGstRate")}
                   invalid={!!errors.defaultGstRate}
-                />
-              </Field>
-              <Field label="Quotation validity (days)">
-                <TextInput
-                  type="number"
-                  min={1}
-                  value={form.quotationValidityDays}
-                  onChange={set("quotationValidityDays")}
                 />
               </Field>
               <Field label="Invoice prefix" optional>

@@ -180,8 +180,6 @@ export class CalendarService {
   ): Promise<CalendarEvent> {
     const event = await this.findOne(id);
 
-    this.assertNotVisitAssignment(event);
-
     if (dto.starts_at || dto.ends_at) {
       this.assertValidRange(
         dto.starts_at ?? event.starts_at.toISOString(),
@@ -204,7 +202,6 @@ export class CalendarService {
 
   async remove(id: string, user?: any): Promise<{ id: string; deleted: true }> {
     const event = await this.findOne(id);
-    this.assertNotVisitAssignment(event);
     const eventTitle = event.title;
 
     await event.destroy();
@@ -224,12 +221,6 @@ export class CalendarService {
   }
 
   // ==================== PRIVATE HELPERS ====================
-
-  private assertNotVisitAssignment(event: CalendarEvent) {
-    if (event.visit_assignment_id != null) {
-      throw new BadRequestException('Manage this calendar event through its visit assignment');
-    }
-  }
 
   private assertValidRange(starts_at: string, ends_at?: string) {
     if (!ends_at) return;

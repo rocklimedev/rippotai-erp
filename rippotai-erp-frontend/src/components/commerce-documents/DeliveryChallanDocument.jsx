@@ -7,6 +7,8 @@ export const deliveryChallanFileName = (dc) =>
   `Delivery-Challan_${String(dc?.challan_number || "draft").replace(/[^\w-]+/g, "-")}.pdf`;
 
 const n = (v) => Number(v || 0);
+// dispatched_by / received_by hold user ids — never print a raw id as a signatory name.
+const person = (v) => (has(v) && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/i.test(String(v)) ? v : "");
 
 const DeliveryChallanDocument = forwardRef(function DeliveryChallanDocument(
   { challan: dc, project, vendor, purchaseOrder },
@@ -107,11 +109,11 @@ const DeliveryChallanDocument = forwardRef(function DeliveryChallanDocument(
           <SignOff
             key="s"
             left={{
-              name: dc.dispatched_by || ven.company_name || ven.name || "Supplier",
+              name: person(dc.dispatched_by) || ven.company_name || ven.name || "Supplier",
               role: ["Dispatched by", dc.dispatched_at ? fmtDate(dc.dispatched_at, { short: true }) : ""].filter(has).join(" · "),
             }}
             right={{
-              name: dc.received_by || company.name,
+              name: person(dc.received_by) || company.name,
               role: ["Received at site", dc.received_at ? fmtDate(dc.received_at, { short: true }) : ""].filter(has).join(" · "),
             }}
           />,

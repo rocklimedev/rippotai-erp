@@ -1,7 +1,7 @@
 // Daily Site Report — A4 PDF built on the shared print kit.
 // Sections mirror the form 1:1 (basics, manpower, work, materials, equipment, issues, safety, photos, plan).
 import React, { forwardRef, useMemo } from "react";
-import { PrintDocument, KV, Stats, Pill, Note } from "@/components/print-document";
+import { PrintDocument, KV, Stats, Note } from "@/components/print-document";
 import {
   weatherLabel,
   siteConditionLabel,
@@ -32,7 +32,7 @@ export function buildDailyReportSections(r) {
       heading,
       cols: ["Material", "#Quantity", "Remarks"],
       template: "1fr 34mm 55mm",
-      items: rows.map((m, i) => ({ key: `${heading}-${i}`, cells: [m.name, qtyText(m), m.remarks || "—"] })),
+      items: rows.map((m, i) => ({ key: `${heading}-${i}`, cells: [m.name, qtyText(m), m.remarks || ""] })),
     },
   });
 
@@ -70,7 +70,7 @@ export function buildDailyReportSections(r) {
             cols: ["Trade", "Contractor / agency", "#Headcount"],
             template: "1fr 1fr 30mm",
             items: [
-              ...(r.manpower || []).map((m, i) => ({ key: `m${i}`, cells: [tradeLabel(m.trade), m.contractorName || "—", String(m.headcount)] })),
+              ...(r.manpower || []).map((m, i) => ({ key: `m${i}`, cells: [tradeLabel(m.trade), m.contractorName || "", String(m.headcount)] })),
               { key: "total", variant: "total", cells: ["Total on site", "", String(total)] },
             ],
           }
@@ -78,14 +78,13 @@ export function buildDailyReportSections(r) {
     },
     {
       title: "Work done today",
-      intro: avgProgress.length ? "Progress is the cumulative % complete for each activity." : undefined,
       rows: (r.workItems || []).length
         ? {
-            cols: ["Activity", "Location / area", "#Progress"],
-            template: "1fr 50mm 24mm",
+            cols: ["Activity", "Location / area", avgProgress.length ? "#Progress (cumulative)" : "#Progress"],
+            template: "1fr 50mm 32mm",
             items: (r.workItems || []).map((w, i) => ({
               key: `w${i}`,
-              cells: [w.activity, w.location || "—", w.progress != null ? `${w.progress}%` : "—"],
+              cells: [w.activity, w.location || "", w.progress != null ? `${w.progress}%` : ""],
             })),
           }
         : undefined,
@@ -101,7 +100,7 @@ export function buildDailyReportSections(r) {
         ? {
             cols: ["Equipment", "#Count", "#Hours"],
             template: "1fr 26mm 26mm",
-            items: (r.equipment || []).map((e, i) => ({ key: `e${i}`, cells: [e.name, e.count != null ? String(e.count) : "—", e.hours != null ? String(e.hours) : "—"] })),
+            items: (r.equipment || []).map((e, i) => ({ key: `e${i}`, cells: [e.name, e.count != null ? String(e.count) : "", e.hours != null ? String(e.hours) : ""] })),
           }
         : undefined,
     },
@@ -118,7 +117,7 @@ export function buildDailyReportSections(r) {
                 it.description,
                 <span key="p" style={{ display: "inline-flex", gap: "1.5mm", flexWrap: "wrap" }}>
                   {impactLabel(it.impact)}
-                  {it.needsAttention ? <Pill tone="rose">Needs attention</Pill> : null}
+                  {it.needsAttention ? <b>· Needs attention</b> : null}
                 </span>,
               ],
             })),

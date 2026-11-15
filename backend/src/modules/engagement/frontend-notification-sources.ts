@@ -73,17 +73,6 @@ export const FRONTEND_NOTIFICATION_SOURCES: FrontendNotificationSource[] = [
     actions: { create: 'created', approve: 'approved', reject: 'rejected' },
   },
   {
-    controller: 'MaterialQuotationController',
-    entity: 'material_quotation',
-    label: 'Material Quotation',
-    actions: {
-      create: 'created',
-      send: 'sent',
-      accept: 'accepted',
-      reject: 'rejected',
-    },
-  },
-  {
     controller: 'MaterialRateSheetController',
     entity: 'material_rate_sheet',
     label: 'Material Rate Sheet',
@@ -127,26 +116,6 @@ export const FRONTEND_NOTIFICATION_SOURCES: FrontendNotificationSource[] = [
     entity: 'vendor_rate_comparison',
     label: 'Vendor Rate Comparison',
     actions: { create: 'created', update: 'updated' },
-  },
-  {
-    controller: 'ProjectShortlistController',
-    entity: 'vendor_shortlist',
-    label: 'Vendor Shortlist',
-    idParam: 'id',
-    actions: { ...crud, saveWorkspaceRow: 'updated' },
-  },
-  {
-    controller: 'ShortlistEntryController',
-    entity: 'vendor_shortlist',
-    label: 'Shortlist Entry',
-    idFields: ['shortlist_id', 'shortlistId', 'projectShortlistId'],
-    actions: { ...crud, bulkCreate: 'added', select: 'selected' },
-  },
-  {
-    controller: 'ShortlistPackageController',
-    entity: 'shortlist_package',
-    label: 'Shortlist Package',
-    actions: { create: 'created', apply: 'applied', remove: 'deleted' },
   },
   {
     controller: 'BoqController',

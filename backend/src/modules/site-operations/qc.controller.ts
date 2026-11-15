@@ -8,7 +8,10 @@ import {
   Query,
   ParseIntPipe,
   ParseUUIDPipe,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
+import { AsyncExport } from '../exports/async-export.decorator';
 import { ChecklistService } from './checklist.service';
 import { QcSignOffService } from './qc-sign-off.service';
 import {
@@ -98,6 +101,26 @@ export class QcSignOffController {
   @Get('projects/:projectId/history')
   getHistory(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.qcService.getProjectHistory(projectId);
+  }
+
+  /** EXECUTION CHECKLIST TEMPLATE.xlsx filled with the project's QC checklists. */
+  @AsyncExport('qc-execution-checklist')
+  @RequirePermission('site-ops-qc:read')
+  @Get('projects/:projectId/execution-checklist.xlsx')
+  async exportExecutionChecklist(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.qcService.exportExecutionChecklist(projectId);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="execution-checklist.xlsx"',
+    );
+    res.send(buffer);
   }
 
   /** Latest pass/fail/rework per phase+trade — whether handoff to the next trade is currently clear. */

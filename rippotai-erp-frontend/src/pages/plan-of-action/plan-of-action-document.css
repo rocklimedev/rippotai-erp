@@ -1,0 +1,233 @@
+/* PLAN OF ACTION TEMPLATE (.docx) — margins 19.05 mm, gold footer rule, Lato Light. */
+
+.wd-poa .wd-inner,
+.wd-poa .wd-cover {
+  padding-left: 19.05mm;
+  padding-right: 19.05mm;
+  padding-top: 19.05mm;
+}
+.pd-doc.wd-poa .pd-measure {
+  width: 171.9mm;
+}
+.pd-doc.wd-poa .wd-foot {
+  left: 19.05mm;
+  right: 19.05mm;
+  bottom: auto;
+  top: 269.1mm;
+  height: 0;
+  border-top: 0.75pt solid var(--wd-gold);
+  font-size: 0;
+}
+.pd-doc.wd-poa .wd-poa-cover .wd-cover__title {
+  margin-top: -6.4mm;
+  font-size: 14.5pt;
+  font-weight: 300;
+  letter-spacing: 0.2pt;
+}
+.wd-poa-cover .wd-cover__rows {
+  left: 19.05mm;
+  width: 171.9mm;
+}
+.wd-poa-cover .wd-cover__row--wide .wd-cover__field {
+  display: block;
+}
+.pd-doc .wd-poa-cover .wd-cover__label {
+  font-size: 6pt;
+  letter-spacing: 0.2pt;
+  margin-bottom: 1.4mm !important;
+  padding-left: 6.4mm;
+}
+.pd-doc .wd-poa-cover .wd-cover__value {
+  border-bottom-color: #ece6d6;
+  padding-left: 6.4mm;
+}
+.wd-poa-cover .wd-cover__row,
+.wd-poa-cover .wd-cover__row--wide {
+  margin-bottom: 4.4mm;
+}
+
+/* headings */
+.wd-poa .wd-sec.wd-poa-head {
+  padding-top: 0;
+  padding-bottom: 16.6mm;
+  margin-bottom: 4.6mm;
+}
+.wd-poa .wd-sec.wd-poa-head.wd-sec--plain {
+  padding-bottom: 0;
+  margin-bottom: 5.4mm;
+}
+.wd-poa .wd-sec.wd-poa-head--terms {
+  padding-bottom: 14.6mm;
+  margin-bottom: 7.6mm;
+}
+.pd-doc.wd-poa .wd-poa-head .wd-sec__title {
+  font-size: 26pt;
+  line-height: 1.1;
+}
+.pd-doc.wd-poa .wd-poa-head--terms .wd-sec__title {
+  font-size: 22pt;
+}
+.pd-doc.wd-poa .wd-poa-head--sub .wd-sec__title {
+  font-size: 15pt;
+}
+.wd-poa .wd-poa-head--sub {
+  margin-top: 10mm;
+}
+
+/* How the execution runs */
+.pd-doc .wd-poa-lead {
+  margin: 0 0 12mm;
+  font-size: 7.5pt;
+  font-weight: 300;
+  line-height: 1.9;
+  color: #555;
+  white-space: pre-line;
+}
+.wd-poa-stats {
+  display: grid;
+  grid-template-columns: 55mm 55mm;
+  border-top: 0.75pt solid var(--wd-gold);
+  width: 110mm;
+  padding-top: 3.4mm;
+  margin-bottom: 15mm;
+}
+.pd-doc .wd-poa-stats__v {
+  font-size: 17pt;
+  font-weight: 300;
+  line-height: 1.2;
+  min-height: 7mm;
+}
+.pd-doc .wd-poa-stats__l {
+  margin-top: 2.6mm;
+  font-size: 5.5pt;
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--wd-sage);
+  max-width: 42mm;
+}
+.pd-doc .wd-poa-label {
+  font-size: 6pt;
+  letter-spacing: 2pt;
+  color: var(--wd-green);
+  margin-bottom: 9mm;
+}
+.wd-poa-gantt__row {
+  display: grid;
+  grid-template-columns: 7mm 1fr;
+  align-items: center;
+  height: 8.2mm;
+}
+.pd-doc .wd-poa-gantt__p {
+  font-size: 6pt;
+  color: var(--wd-green);
+}
+.wd-poa-gantt__track {
+  position: relative;
+  height: 3.4mm;
+}
+.wd-poa-gantt__bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--wd-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.wd-poa-gantt__bar--gold {
+  background: var(--wd-gold);
+}
+.wd-poa-gantt__bar--marker {
+  width: 3mm;
+  background: #000;
+}
+.pd-doc .wd-poa-gantt__bar span {
+  font-size: 3.5pt;
+  color: #fff;
+  white-space: nowrap;
+}
+.wd-poa-gantt__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 7mm;
+  padding-bottom: 0.6mm;
+  border-bottom: 0.75pt solid var(--wd-gold);
+}
+.pd-doc .wd-poa-gantt__axis span {
+  font-size: 5.5pt;
+  color: var(--wd-green);
+  font-weight: 400;
+}
+
+/* phase table */
+.pd-doc .wd-poa-t.wd-thead {
+  font-size: 6pt;
+  letter-spacing: 2pt;
+  color: var(--wd-green);
+  border-bottom-width: 1.25pt;
+}
+.wd-poa-t.wd-thead > span {
+  padding: 0 0 2.2mm;
+}
+.pd-doc .wd-poa-t.wd-row {
+  min-height: 12mm;
+  border-bottom: 0.75pt solid var(--wd-gold);
+  font-size: 7.5pt;
+}
+.wd-poa-t.wd-row > span {
+  padding: 3.6mm 2mm 4mm 0;
+}
+.pd-doc .wd-poa-t__no {
+  font-size: 6.5pt;
+  color: var(--wd-gold);
+  letter-spacing: 1pt;
+}
+.pd-doc .wd-poa-t__phase {
+  font-size: 9.5pt;
+}
+.pd-doc .wd-poa-t__detail {
+  font-weight: 300;
+  color: #444;
+  line-height: 1.6;
+}
+.pd-doc .wd-poa-t__detail .wd-row__sub {
+  font-size: 5pt;
+  letter-spacing: 1.2pt;
+  color: var(--wd-sage);
+  margin-top: 1.6mm;
+}
+.pd-doc .wd-poa-t__time {
+  font-size: 7.5pt;
+}
+
+/* terms */
+.wd-poa-term {
+  display: grid;
+  grid-template-columns: 11.3mm 1fr;
+  padding: 1.6mm 0 1.8mm;
+  border-bottom: 0.75pt solid var(--wd-gold);
+}
+.pd-doc .wd-poa-term__n {
+  font-size: 6.5pt;
+  color: var(--wd-gold);
+  padding-top: 0.4mm;
+}
+.pd-doc .wd-poa-term__t {
+  font-size: 8pt;
+  font-weight: 400;
+  margin-bottom: 1.2mm;
+}
+.pd-doc .wd-poa-term__b {
+  font-size: 7pt;
+  font-weight: 300;
+  line-height: 1.55;
+  color: #444;
+}
+.pd-doc .wd-poa-term__b:first-child {
+  font-size: 8pt;
+  font-weight: 400;
+  color: var(--wd-ink);
+}

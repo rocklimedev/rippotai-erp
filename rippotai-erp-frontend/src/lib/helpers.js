@@ -73,9 +73,9 @@ export const STATUS_CONFIG = {
   },
   returned_for_editing: {
     label: "Returned",
-    bg: "bg-blue-50",
-    text: "text-blue-600",
-    border: "border-blue-200",
+    bg: "bg-[#E7EEEB]",
+    text: "text-[#0D3D2F]",
+    border: "border-[#C5D6CF]",
   },
   resubmitted: {
     label: "Resubmitted",
@@ -121,9 +121,9 @@ export const STATUS_CONFIG = {
   },
   completed: {
     label: "Completed",
-    bg: "bg-blue-50",
-    text: "text-blue-600",
-    border: "border-blue-200",
+    bg: "bg-[#E7EEEB]",
+    text: "text-[#0D3D2F]",
+    border: "border-[#C5D6CF]",
   },
   on_hold: {
     label: "On Hold",

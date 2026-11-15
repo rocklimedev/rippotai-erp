@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useRefill } from "@/components/doc-list/useRefill";
 import { PrefillNotice } from "@/components/PrefillNotice";
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -167,6 +168,7 @@ export default function CreateMaterialProcurementSheet() {
   // ============================================================
 
   const [projectId, setProjectId] = useState(projectIdFromUrl || "");
+  useRefill({ type: "procurement-sheet", label: "Procurement Sheet", projectId, enabled: !isEdit, editPath: (id) => `/procurement/material-procurement/${id}/edit` });
 
   const [remarks, setRemarks] = useState("");
 

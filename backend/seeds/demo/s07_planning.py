@@ -80,7 +80,7 @@ def build(o: Out):
             base = start + int(p[11] * pos / 9.5)
             proc.append(dict(id=U(f"proc:{pk}:{n}"), planner_id=plid, template_key=f"{typ}-{n}", item_type=typ, category_name=cat,
                              vendor_id=vid(vk) if vk and st != "NOT_STARTED" else None, vendor_name=None,
-                             estimate_finalised_at=d(base) if st != "NOT_STARTED" else None, quotation_finalised_at=d(base + 7) if st != "NOT_STARTED" else None,
+                             estimate_finalised_at=d(base) if st != "NOT_STARTED" else None,
                              planned_start_date=d(base + 10), planned_end_date=d(base + 40), purchase_date=d(base + 12) if st == "COMPLETED" and typ == "MATERIAL" else None,
                              received_at_site_date=d(base + 22) if st == "COMPLETED" and typ == "MATERIAL" else None, status=st, remarks=None, sort_order=n,
                              created_by=UID["pooja"], created_at=dt(start + 30), updated_at=dt(-1), deleted_at=None))
@@ -119,14 +119,14 @@ def build(o: Out):
     # ---------- tasks ----------
     tasks = []
     tdefs = [("Share revised living room layout with client", "sagar", "neha", "high", 1, 4), ("Finalise Statuario slab selection at Chhabra Marble", "singhania", "neha", "high", 2, 3),
-             ("Review VRV quotation from CoolAir", "bhatia", "pooja", "critical", 0, 2), ("Issue GFC set - ground floor", "malhotra", "arjun", "high", 5, 16),
+             ("Review VRV rates from CoolAir", "bhatia", "pooja", "critical", 0, 2), ("Issue GFC set - ground floor", "malhotra", "arjun", "high", 5, 16),
              ("Collect PHASE_03 payment from Mr. Kapoor", "kapoor", "sunita", "critical", -3, 1), ("Prepare snag list for Rocklime EC", "rocklime", "sandeep", "medium", 1, 5),
              ("Client walkthrough - Oberoi apartment", "oberoi", "imran", "medium", 3, 2), ("Site recce measurement - Arora Foods", "arora", "kabir", "high", 2, 6),
              ("Concept presentation - Gupta Villa", "gupta", "arjun", "high", 6, 12), ("Hotel key plan options (22 keys)", "courtyard", "ritika", "critical", 9, 20),
              ("Tender drawings - electrical layout", "aurum", "kabir", "medium", 12, 10), ("Follow up landlord NOC", "brew", "vivek", "low", 20, 1),
              ("Raise PO for BWP ply - Kapoor wardrobes", "kapoor", "rohit", "medium", 1, 1), ("Weekly MIS to Ajay", None, "anjali", "medium", 4, 3),
              ("Update rate library with Q3 marble prices", None, "pooja", "low", 25, 4), ("Reconcile vendor ledger - Bharat Builders", None, "sunita", "medium", 8, 6),
-             ("Waterproofing warranty from contractor", "tandon", "manoj", "low", 45, 1), ("Home automation vendor shortlist", "singhania", "neha", "medium", 14, 5),
+             ("Waterproofing warranty from contractor", "tandon", "manoj", "low", 45, 1), ("Home automation vendor selection", "singhania", "neha", "medium", 14, 5),
              ("Mock-up review: fluted veneer panel", "bhatia", "ritika", "high", 0, 2), ("Close RFI - column clash bedroom 2", "malhotra", "arjun", "critical", -1, 2),
              ("Plan of action - Courtyard hotel", "courtyard", "anjali", "high", 7, 8), ("Prepare Q2 portfolio shoot list", None, "kabir", "low", 60, 6)]
     for i, (t, pk, who, pr, due, hrs) in enumerate(tdefs):
@@ -155,7 +155,7 @@ def build(o: Out):
     spec = [("client_meeting", "Design review - {p}", ["ritika", "neha"], 11, 90), ("site_visit", "Site visit - {p}", ["sandeep", "arjun"], 10, 120),
             ("internal_meeting", "Weekly project review", ["ajay", "ritika", "anjali", "pooja"], 16, 60), ("vendor_call", "Vendor call - marble lot confirmation ({p})", ["pooja", "rohit"], 15, 30),
             ("presentation", "Concept presentation - {p}", ["ritika", "arjun", "vivek"], 12, 90), ("milestone_due", "Milestone due - {p}", ["anjali"], 9, 0),
-            ("quotation_deadline", "Quotation deadline - {p}", ["pooja"], 18, 0), ("handover", "Handover walkthrough - {p}", ["ajay", "sandeep"], 11, 120)]
+            ("milestone_due", "Vendor rates due - {p}", ["pooja"], 18, 0), ("handover", "Handover walkthrough - {p}", ["ajay", "sandeep"], 11, 120)]
     projs = [p[0] for p in PROJECTS if p[6] != "completed"]
     for i in range(70):
         day = -40 + i * 2 - (i % 3)

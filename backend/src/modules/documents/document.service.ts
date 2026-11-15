@@ -367,6 +367,27 @@ export class DocumentsService {
 
     this.assertNotLocked(document);
 
+    // The first upload lives only on the document row; keep it in the
+    // revision history before the row is overwritten by the new file.
+    if (
+      document.storageFilename &&
+      (await this.versionModel.count({ where: { documentId } })) === 0
+    ) {
+      await this.versionModel.create({
+        documentId,
+        version: document.version ?? 'V1',
+        filename: document.filename,
+        storageFilename: document.storageFilename,
+        url: document.url,
+        mime: document.mime,
+        size: document.size,
+        status: document.status,
+        remarks: document.remarks,
+        uploadedBy: document.uploadedBy,
+        uploadedByName: document.uploadedByName,
+      } as any);
+    }
+
     const { filename, url } = await this.cdnService.uploadFile(file);
 
     const nextVersionLabel =

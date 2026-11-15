@@ -1,0 +1,511 @@
+/* Word template family (see word.jsx). Sizes are the .docx values: pt for text, mm for layout. */
+
+.pd-doc--word {
+  --wd-gold: #d9b061;
+  --wd-green: #0d3d2f;
+  --wd-sage: #7e9a92;
+  --wd-rule: #d9d9d6;
+  --wd-ink: #000000;
+  color: var(--wd-ink);
+}
+/* The templates set Lato Light in bold, which Word renders as a faux-bold Light — visually
+   Lato Regular. Regular (400) is therefore the family's base weight. */
+.pd-doc--word .pd-page,
+.pd-doc--word .pd-measure {
+  font-weight: 400;
+  color: var(--wd-ink);
+}
+.pd-doc--word .pd-measure {
+  width: 171.2mm;
+}
+.pd-doc--word .pd-block,
+.pd-doc--word .pd-block--end {
+  padding-bottom: 0;
+}
+
+/* ------------------------------------------------------------ cover */
+.wd-cover {
+  padding: 22.9mm 19.4mm 0;
+}
+.wd-cover__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.wd-cover__brand img {
+  display: block;
+  height: auto;
+}
+.pd-doc .wd-cover__title {
+  margin: 4.6mm 0 0;
+  font-size: 12pt;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 2pt;
+  color: var(--wd-green);
+  text-transform: uppercase;
+}
+.pd-doc .wd-cover__subtitle {
+  margin: 1.5mm 0 0;
+  font-size: 6pt;
+  letter-spacing: 1pt;
+  color: var(--wd-sage);
+  text-transform: uppercase;
+}
+.wd-cover__rows {
+  position: absolute;
+  left: 19.4mm;
+  width: 171.2mm;
+}
+.wd-cover__row {
+  display: grid;
+  grid-template-columns: 85.5mm 85.7mm;
+  margin-bottom: 6.6mm;
+}
+.wd-cover__row > .wd-cover__field:first-child {
+  padding-right: 5.3mm;
+}
+.wd-cover__row--wide {
+  grid-template-columns: 1fr;
+  margin-bottom: 8.6mm;
+}
+.wd-cover__row--wide .wd-cover__field {
+  display: grid;
+  grid-template-columns: 42.8mm 1fr;
+  align-items: end;
+}
+.pd-doc .wd-cover__label {
+  display: block;
+  font-size: 5pt;
+  line-height: 1.2;
+  letter-spacing: 0.4pt;
+  color: var(--wd-sage);
+  text-transform: uppercase;
+}
+.wd-cover__row:not(.wd-cover__row--wide) .wd-cover__label {
+  margin-bottom: 2.4mm;
+}
+.pd-doc .wd-cover__value {
+  display: block;
+  min-height: 3.6mm;
+  padding-bottom: 0.6mm;
+  border-bottom: 0.5pt solid var(--wd-rule);
+  font-size: 8pt;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--wd-ink);
+}
+.pd-doc .wd-cover__value--gold {
+  border-bottom: 0.75pt solid var(--wd-gold);
+}
+
+/* ------------------------------------------------------------ inner page */
+.wd-inner {
+  display: flex;
+  flex-direction: column;
+  padding: 22.9mm 19.4mm 0;
+}
+.wd-body {
+  flex: 1;
+  min-height: 0;
+}
+.pd-doc .wd-foot {
+  position: absolute;
+  left: 19.4mm;
+  bottom: 11.4mm;
+  font-size: 4.5pt;
+  line-height: 1;
+  letter-spacing: 0.6pt;
+  color: var(--wd-sage);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ headings */
+.wd-sec {
+  padding-top: 3.5mm;
+  padding-bottom: 6.6mm;
+  border-bottom: 1pt solid var(--wd-ink);
+  margin-bottom: 9mm;
+}
+.wd-sec__line {
+  display: flex;
+  align-items: baseline;
+}
+.pd-doc .wd-sec__no {
+  font-size: 10pt;
+  color: var(--wd-gold);
+  margin-right: 3.6mm;
+  font-variant-numeric: tabular-nums;
+}
+.pd-doc .wd-sec__title {
+  margin: 0;
+  font-size: 15pt;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--wd-ink);
+}
+.pd-doc .wd-sub {
+  font-size: 6.5pt;
+  line-height: 1.2;
+  letter-spacing: 0.7pt;
+  text-transform: uppercase;
+  color: var(--wd-ink);
+  padding-bottom: 4.3mm;
+  border-bottom: 0.75pt solid var(--wd-gold);
+  margin-bottom: 7.6mm;
+}
+.pd-doc .wd-sub--plain {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 4mm;
+}
+.pd-doc .wd-sub__tail {
+  margin-left: 2mm;
+  font-size: 4.5pt;
+  letter-spacing: 0.5pt;
+}
+.pd-doc .wd-intro {
+  margin: 0 0 5mm;
+  font-size: 5.5pt;
+  line-height: 1.45;
+  color: var(--wd-sage);
+}
+.pd-doc .wd-value {
+  font-size: 9pt;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--wd-ink);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------ fields */
+.wd-fields {
+  display: grid;
+  column-gap: 0;
+  row-gap: 10.4mm;
+  margin-bottom: 11.5mm;
+}
+.wd-fields > .wd-field:nth-child(odd) {
+  padding-right: 4.6mm;
+}
+.wd-field {
+  min-width: 0;
+}
+.pd-doc .wd-field__label {
+  display: block;
+  font-size: 8pt;
+  line-height: 1.2;
+  color: var(--wd-ink);
+}
+.pd-doc .wd-field__value {
+  box-sizing: border-box;
+  min-height: 7mm;
+  padding: 1.5mm 0 0.9mm;
+  border-bottom: 0.5pt solid var(--wd-rule);
+  font-size: 9pt;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--wd-ink);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------ tick boxes */
+.wd-box {
+  position: relative;
+  box-sizing: border-box;
+  width: 2.3mm;
+  height: 2.3mm;
+  flex-shrink: 0;
+  display: block;
+  border: 0.75pt solid var(--wd-ink);
+  background: #fff;
+}
+.wd-box__tick {
+  position: absolute;
+  left: 0.72mm;
+  top: 0.12mm;
+  width: 0.62mm;
+  height: 1.3mm;
+  border-right: 0.9pt solid var(--wd-ink);
+  border-bottom: 0.9pt solid var(--wd-ink);
+  transform: rotate(40deg);
+}
+.wd-check {
+  display: flex;
+  align-items: center;
+  min-height: 5.5mm;
+  font-size: 8pt;
+  line-height: 1.25;
+}
+.wd-check--indent {
+  margin-left: 3mm;
+}
+.pd-doc .wd-check__label {
+  margin-left: 4.7mm;
+  color: var(--wd-ink);
+  min-width: 0;
+}
+.pd-doc .wd-blank {
+  display: inline-block;
+  min-width: 30mm;
+  margin-left: 1mm;
+  border-bottom: 0.5pt solid var(--wd-ink);
+  line-height: 1.1;
+  vertical-align: baseline;
+}
+.pd-doc .wd-blank--filled {
+  min-width: 0;
+  padding: 0 1mm;
+  font-weight: 400;
+}
+/* answer to an option question in a filled document (chosen option(s) only) */
+.pd-doc .wd-answer .wd-field__value {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.wd-checks {
+  display: grid;
+  row-gap: 2mm;
+  margin-bottom: 8mm;
+}
+.wd-checkcols {
+  display: grid;
+  align-items: start;
+}
+.wd-checkcols--foot {
+  margin-top: 0;
+}
+.pd-doc .wd-checkcol__head {
+  font-size: 10pt;
+  line-height: 1.2;
+  margin-bottom: 1mm;
+  color: var(--wd-ink);
+}
+
+/* ------------------------------------------------------------ tables */
+.wd-thead,
+.wd-row {
+  display: grid;
+  gap: 0;
+}
+.pd-doc .wd-thead {
+  border-bottom: 1pt solid var(--wd-ink);
+  font-size: 7.5pt;
+  line-height: 1.2;
+  letter-spacing: 0.3pt;
+  text-transform: uppercase;
+  color: var(--wd-ink);
+}
+.wd-thead > span {
+  padding: 2mm 0.8mm 4.4mm;
+  min-width: 0;
+}
+.wd-row > span {
+  padding: 2mm 0.8mm;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.wd-thead > span:first-child,
+.wd-row > span:first-child {
+  padding-left: 0;
+}
+.wd-thead > span:not(:last-child),
+.wd-row > span:not(:last-child) {
+  border-right: 0.5pt solid var(--wd-rule);
+}
+.pd-doc .wd-row {
+  min-height: 13.8mm;
+  border-bottom: 0.5pt solid var(--wd-rule);
+  font-size: 8.5pt;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--wd-ink);
+}
+.pd-doc .wd-row__strong {
+  font-weight: 700;
+}
+.pd-doc .wd-row__sub {
+  display: block;
+  font-size: 7pt;
+  font-weight: 300;
+  color: var(--wd-sage);
+  margin-top: 0.5mm;
+}
+
+/* label | value ruled table */
+.wd-ltable {
+  display: grid;
+}
+.wd-ltable > div {
+  box-sizing: border-box;
+  border-bottom: 0.5pt solid var(--wd-rule);
+  padding: 2.2mm 1.5mm;
+  min-width: 0;
+}
+.wd-ltable--top > div:nth-child(-n + 2) {
+  border-top: 0.5pt solid var(--wd-rule);
+}
+.pd-doc .wd-ltable__label {
+  border-right: 0.5pt solid var(--wd-rule);
+  padding-left: 0;
+  font-size: 6pt;
+  line-height: 1.35;
+  color: var(--wd-green);
+}
+.pd-doc .wd-ltable__label--green {
+  font-size: 10pt;
+  line-height: 1.25;
+  padding-top: 3mm;
+}
+.pd-doc .wd-ltable__label--ink {
+  color: var(--wd-ink);
+  font-size: 8pt;
+}
+.pd-doc .wd-ltable__value {
+  font-size: 9pt;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--wd-ink);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ruled writing lines */
+.wd-lines {
+  position: relative;
+  box-sizing: border-box;
+}
+.wd-lines__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  margin-top: -0.5pt;
+  border-bottom: 0.5pt solid var(--wd-rule);
+}
+.pd-doc .wd-lines__text {
+  position: relative;
+  font-size: 9pt;
+  font-weight: 400;
+  line-height: var(--wd-line);
+  padding-top: calc(var(--wd-line) / 2 - 2.2mm);
+  color: var(--wd-ink);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* signatures */
+.wd-sign {
+  min-width: 0;
+}
+.pd-doc .wd-sign__label {
+  font-size: 4.5pt;
+  letter-spacing: 0.9pt;
+  text-transform: uppercase;
+  color: var(--wd-ink);
+  margin-bottom: 8mm;
+}
+.wd-sign__rule {
+  border-bottom: 1pt solid var(--wd-ink);
+  margin-bottom: 1.6mm;
+}
+.wd-sign__rule--gold {
+  border-bottom-color: var(--wd-gold);
+}
+.pd-doc .wd-sign__line {
+  font-size: 4.5pt;
+  line-height: 1.9;
+  color: var(--wd-ink);
+}
+.pd-doc .wd-sign__fill {
+  font-size: 7pt;
+  font-weight: 400;
+  margin-left: 1mm;
+}
+
+/* ------------------------------------------------------------ helpers */
+.pd-doc .wd-thead--lg {
+  font-size: 11pt;
+  letter-spacing: 0.4pt;
+}
+.wd-table--open > span {
+  border-right: 0 !important;
+}
+.pd-doc .wd-table--open.wd-thead {
+  font-size: 6.5pt;
+  letter-spacing: 0.7pt;
+}
+.pd-doc .wd-table--open.wd-row {
+  min-height: 9.2mm;
+}
+.wd-goldrule {
+  border-bottom: 0.75pt solid var(--wd-gold);
+}
+.wd-twocol {
+  display: grid;
+  grid-template-columns: 85.5mm 1fr;
+}
+.wd-twocol > div:first-child,
+.wd-twocol > .wd-fields:first-child {
+  padding-right: 4.6mm;
+}
+.pd-doc .wd-muted {
+  color: var(--wd-sage);
+  font-weight: 300;
+}
+.wd-refimg {
+  display: block;
+  max-width: 100%;
+  max-height: 50mm;
+  object-fit: contain;
+  margin-top: 1.5mm;
+}
+.wd-budget-opts .wd-check {
+  min-height: 3.7mm;
+}
+.wd-procgrid {
+  display: grid;
+  grid-template-columns: 85.5mm 1fr;
+  align-items: start;
+}
+.wd-proc .wd-check {
+  min-height: 5.25mm;
+  font-size: 6.5pt;
+}
+.pd-doc .wd-procgroup__head {
+  font-size: 6.5pt;
+  line-height: 1.2;
+  padding-bottom: 2.4mm;
+  border-bottom: 0.5pt solid var(--wd-rule);
+  margin: 0 4.6mm 3.6mm 0;
+  color: var(--wd-ink);
+}
+.pd-doc .wd-procgroup__head > span {
+  color: var(--wd-gold);
+  margin-right: 2.4mm;
+}
+
+/* section heading without the black rule (SOW "02 Work Type", "03 Area-wise scope matrix") */
+.wd-sec.wd-sec--plain {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+/* cover variant: every line is label-above-rule (SCOPE OF WORK, PLAN OF ACTION) */
+.wd-cover--stacked .wd-cover__row--wide .wd-cover__field {
+  display: block;
+}
+.pd-doc .wd-cover--stacked .wd-cover__label {
+  font-size: 8.5pt;
+  letter-spacing: 0;
+  color: #636363;
+  margin-bottom: 1.6mm !important;
+}
+.wd-cover--stacked .wd-cover__row,
+.wd-cover--stacked .wd-cover__row--wide {
+  margin-bottom: 1.8mm;
+}

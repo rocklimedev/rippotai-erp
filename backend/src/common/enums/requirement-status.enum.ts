@@ -3,7 +3,6 @@ export enum RequirementStatus {
   SUBMITTED = 'submitted',
   IN_SOURCING = 'in_sourcing',
   ESTIMATED = 'estimated',
-  QUOTED = 'quoted',
   ORDERED = 'ordered',
   CLOSED = 'closed',
 }

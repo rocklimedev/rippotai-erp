@@ -9,7 +9,18 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import {
+  QTY_FORMAT,
+  addMonogram,
+  finishSheet,
+  saveWorkbook,
+  setWidths,
+  styleBodyRow,
+  styleHeaderRow,
+  writeBrandHeader,
+  xlToday,
+} from "@/lib/brandExcel";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
@@ -312,140 +323,110 @@ export default function ProjectInventoryRegisterPage() {
   const recordUrl = (type) =>
     `/inventory/transactions/new?project_id=${projectId}&type=${type}`;
 
-  /* ---------- multi-sheet Excel download ---------- */
-  const exportExcel = () => {
-    const sheetFromRows = (columns, sourceRows) => {
-      const header = columns.map((c) => c.label);
-      const body = sourceRows.map((row) =>
-        columns.map((c) => {
-          const v = c.get(row);
-          return v === null || v === undefined ? "" : v;
-        }),
-      );
-      return [header, ...body];
+  /* ---------- multi-sheet Excel download (Rippotai brand format) ---------- */
+  const exportExcel = async () => {
+    const HEADER = 5;
+    const DATE_KEYS = ["date", "last_movement"];
+    const excelValue = (col, row) => {
+      if (DATE_KEYS.includes(col.key)) {
+        const v = row[col.key];
+        if (!v) return null;
+        const d = new Date(`${String(v).slice(0, 10)}T00:00:00Z`);
+        return Number.isNaN(d.getTime()) ? String(v) : d;
+      }
+      if (col.align === "right") {
+        const n = Number(row[col.key]);
+        return row[col.key] === null || row[col.key] === undefined || !Number.isFinite(n) ? null : n;
+      }
+      const v = col.get(row);
+      return v === null || v === undefined || v === "" ? null : v;
     };
 
-    // 1. Material Received
-    const receivedAoA = sheetFromRows(RECEIVED_COLUMNS, dataByTab.received);
-    const receivedSheetData = [
-      ["RIPPŌTAI"],
-      ["SITE INVENTORY REGISTER — MATERIAL RECEIVED"],
-      [
-        projectName
-          ? `${projectName} · every delivery in`
-          : "Maintained by the Site Supervisor. Every delivery is entered on the day it arrives.",
-      ],
-      [],
-      ...receivedAoA,
-    ];
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Rippotai Architecture";
+    const imageId = await addMonogram(workbook);
+    const addRegister = (name, title, columns, sourceRows, widths) => {
+      const sheet = workbook.addWorksheet(name);
+      const last = columns.length;
+      setWidths(sheet, widths);
+      writeBrandHeader(sheet, {
+        title,
+        project: projectName,
+        meta: `Exported ${xlToday()}`,
+        lastCol: last,
+        imageId,
+      });
+      sheet.getRow(HEADER).values = columns.map((c) => c.label);
+      styleHeaderRow(sheet.getRow(HEADER), 1, last, {
+        right: columns.map((c, i) => (c.align === "right" ? i + 1 : null)).filter(Boolean),
+      });
+      const formats = Object.fromEntries(
+        columns.map((c, i) => [i + 1, c.align === "right" ? QTY_FORMAT : undefined]).filter(([, f]) => f),
+      );
+      sourceRows.forEach((r, i) => {
+        const row = sheet.getRow(HEADER + 1 + i);
+        row.values = columns.map((c) => excelValue(c, r));
+        styleBodyRow(row, 1, last, formats);
+      });
+      finishSheet(sheet, { headerRow: HEADER, lastCol: last, lastRow: HEADER + sourceRows.length });
+    };
 
-    // 2. Material Issued
-    const issuedAoA = sheetFromRows(ISSUED_COLUMNS, dataByTab.issued);
-    const issuedSheetData = [
-      ["RIPPŌTAI"],
-      ["SITE INVENTORY REGISTER — MATERIAL ISSUED"],
-      [
-        projectName
-          ? `${projectName} · what leaves the store`
-          : "What leaves the store and who took it. This is what makes the balance meaningful.",
-      ],
-      [],
-      ...issuedAoA,
-    ];
+    addRegister(
+      "Material Received",
+      "Site Inventory Register — Material Received",
+      RECEIVED_COLUMNS,
+      dataByTab.received,
+      [13, 34, 14, 28, 22, 10, 10, 16, 14, 14, 28, 14, 14, 28, 13],
+    );
+    addRegister(
+      "Material Issued",
+      "Site Inventory Register — Material Issued",
+      ISSUED_COLUMNS,
+      dataByTab.issued,
+      [13, 34, 12, 10, 26, 22, 14, 28, 13],
+    );
+    addRegister(
+      "Stock in Store",
+      "Site Inventory Register — Stock in Store",
+      BALANCE_COLUMNS,
+      dataByTab.balance,
+      [36, 14, 10, 14, 12, 14, 14, 16],
+    );
 
-    // 3. Stock in Store
-    const balanceAoA = sheetFromRows(BALANCE_COLUMNS, dataByTab.balance);
-    const balanceSheetData = [
-      ["RIPPŌTAI"],
-      ["SITE INVENTORY REGISTER — STOCK IN STORE"],
-      [
-        projectName
-          ? `${projectName} · current balance of every material`
-          : "Current balance of every material. Derived from all receipts and issues.",
-      ],
-      [],
-      ...balanceAoA,
+    // Lists (same dropdown source as the original workbook)
+    const lists = workbook.addWorksheet("Lists");
+    setWidths(lists, [16, 14, 22]);
+    writeBrandHeader(lists, { title: "Dropdown Lists", lastCol: 3, imageId });
+    lists.getRow(HEADER).values = ["Yes / No", "Unit", "Work / Trade"];
+    styleHeaderRow(lists.getRow(HEADER), 1, 3);
+    const yesNoList = ["Yes", "No", "Not applicable"];
+    const units = ["nos", "sq ft", "sq m", "rft", "m", "kg", "bag", "box", "litre", "set", "roll", "bundle"];
+    const trades = [
+      "Civil",
+      "Demolition",
+      "Electrical",
+      "Plumbing",
+      "HVAC / Mechanical",
+      "Tiling & Stone",
+      "False Ceiling / POP",
+      "Mill Work",
+      "Metal Work",
+      "Painting & Polish",
+      "Glass & Glazing",
+      "Loose Furniture",
+      "General / Site",
     ];
-
-    // 4. Lists (same dropdown source as the original workbook)
-    const listsSheetData = [
-      ["DROPDOWN LISTS"],
-      ["Edit these to change the dropdown options on the register sheets."],
-      [],
-      ["YES / NO", "UNIT", "WORK / TRADE"],
-      ["Yes", "nos", "Civil"],
-      ["No", "sq ft", "Demolition"],
-      ["Not applicable", "sq m", "Electrical"],
-      ["", "rft", "Plumbing"],
-      ["", "m", "HVAC / Mechanical"],
-      ["", "kg", "Tiling & Stone"],
-      ["", "bag", "False Ceiling / POP"],
-      ["", "box", "Mill Work"],
-      ["", "litre", "Metal Work"],
-      ["", "set", "Painting & Polish"],
-      ["", "roll", "Glass & Glazing"],
-      ["", "bundle", "Loose Furniture"],
-      ["", "", "General / Site"],
-    ];
-
-    const wb = XLSX.utils.book_new();
-
-    const wsReceived = XLSX.utils.aoa_to_sheet(receivedSheetData);
-    const wsIssued = XLSX.utils.aoa_to_sheet(issuedSheetData);
-    const wsBalance = XLSX.utils.aoa_to_sheet(balanceSheetData);
-    const wsLists = XLSX.utils.aoa_to_sheet(listsSheetData);
-
-    // column widths matching the paper register
-    wsReceived["!cols"] = [
-      { wch: 12 },
-      { wch: 34 },
-      { wch: 14 },
-      { wch: 28 },
-      { wch: 22 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 28 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 28 },
-      { wch: 12 },
-    ];
-    wsIssued["!cols"] = [
-      { wch: 12 },
-      { wch: 34 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 26 },
-      { wch: 22 },
-      { wch: 14 },
-      { wch: 28 },
-      { wch: 12 },
-    ];
-    wsBalance["!cols"] = [
-      { wch: 36 },
-      { wch: 14 },
-      { wch: 10 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 16 },
-    ];
-    wsLists["!cols"] = [{ wch: 16 }, { wch: 14 }, { wch: 22 }];
-
-    XLSX.utils.book_append_sheet(wb, wsReceived, "Material Received");
-    XLSX.utils.book_append_sheet(wb, wsIssued, "Material Issued");
-    XLSX.utils.book_append_sheet(wb, wsBalance, "Stock in Store");
-    XLSX.utils.book_append_sheet(wb, wsLists, "Lists");
+    trades.forEach((t, i) => {
+      const row = lists.getRow(HEADER + 1 + i);
+      row.values = [yesNoList[i] || null, units[i] || null, t];
+      styleBodyRow(row, 1, 3);
+    });
+    lists.views = [{ state: "frozen", ySplit: HEADER, showGridLines: false }];
 
     const fileName = `site-inventory-register-${
       projectName ? projectName.replace(/\s+/g, "-").toLowerCase() + "-" : ""
     }${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-    XLSX.writeFile(wb, fileName);
+    await saveWorkbook(workbook, fileName);
   };
 
   /* ---------- guards ---------- */

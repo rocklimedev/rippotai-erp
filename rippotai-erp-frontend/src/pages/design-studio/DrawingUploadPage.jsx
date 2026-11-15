@@ -506,17 +506,13 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
             />
           </div>
 
+          {items.length > 0 && (
           <Card
             flush
-            title={items.length ? `Upload queue · ${items.length} file${items.length > 1 ? "s" : ""}` : "How it works"}
-            subtitle={
-              items.length
-                ? "Click a file to edit its details. Tick several to edit them together."
-                : "Three steps from your drafting software to the project register."
-            }
+            title={`Upload queue · ${items.length} file${items.length > 1 ? "s" : ""}`}
+            subtitle="Click a file to edit its details. Tick several to edit them together."
             actions={
-              items.length ? (
-                <>
+              <>
                   {doneCount > 0 && (
                     <Button variant="ghost" size="sm" icon={CheckCircle2} onClick={clearDone}>
                       Clear uploaded
@@ -537,25 +533,9 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
                     </Button>
                   )}
                 </>
-              ) : null
             }
           >
-            {!items.length ? (
-              <div className="ds-steps">
-                {[
-                  ["Add files", "Drag sheets in from your computer. Names are read from the file names."],
-                  ["Tag them once", "Pick the project, phase; numbers auto-continue the project's series."],
-                  ["Upload", "Each file is stored with its revision and issue date, ready to share."],
-                ].map(([t, d], i) => (
-                  <div className="ds-step" key={t}>
-                    <span className="ds-step__n">{i + 1}</span>
-                    <p className="ds-step__t">{t}</p>
-                    <p className="ds-step__d">{d}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
+            <>
                 <div className="ds-queue__bar">
                   <input
                     type="checkbox"
@@ -661,9 +641,9 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
                     );
                   })}
                 </div>
-              </>
-            )}
+            </>
           </Card>
+          )}
 
           {/* Recent drawings for the project */}
           <Card

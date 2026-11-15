@@ -166,7 +166,7 @@ export const ACCESS_CATALOGUE: AccessApp[] = [
   {
     code: 'dashboard',
     name: 'Dashboard',
-    description: 'Home dashboard, widgets and reports',
+    description: 'Home dashboard and widgets',
     launcher: false,
     parts: [
       part(
@@ -175,7 +175,6 @@ export const ACCESS_CATALOGUE: AccessApp[] = [
         ['dashboards', 'dashboard'],
         'Home dashboard and its widget grid',
       ),
-      part('dashboard.reports', 'Reports', ['reports']),
     ],
   },
   {
@@ -245,12 +244,6 @@ export const ACCESS_CATALOGUE: AccessApp[] = [
     launcher: true,
     parts: [
       doc('build.boq', 'BOQ', ['boq', 'boq-activity']),
-      doc(
-        'build.quotation',
-        'Quotation / estimate',
-        ['quotations', 'quotation-items'],
-        'Priced quotations and estimates built from the BOQ',
-      ),
       part('build.boq-library', 'Rate & item library, BOQ templates', [
         'boq-catalog',
         'boq-templates',
@@ -267,14 +260,12 @@ export const ACCESS_CATALOGUE: AccessApp[] = [
       doc('build.procurement-sheet', 'Procurement sheet', [
         'material-procurement',
       ]),
-      doc('build.vendor-quotation', 'Vendor quotation', [
-        'procurement-quotations',
-      ]),
       doc('build.rate-sheet', 'Rate sheet', ['procurement-rate-sheets']),
       doc('build.sample-board', 'Sample board', ['procurement-sample-boards']),
       doc('build.rate-comparison', 'Rate comparison', [
         'vendor-rate-comparisons',
       ]),
+      doc('build.quotation', 'Quotation', ['procurement-quotations']),
       doc('build.purchase-order', 'Purchase order (PO)', ['purchase-orders']),
       doc('build.work-order', 'Work order (WO)', ['work-orders']),
       doc('build.delivery-challan', 'Delivery challan', ['delivery-challans']),
@@ -283,11 +274,6 @@ export const ACCESS_CATALOGUE: AccessApp[] = [
         'vendor-categories',
         'vendor-business-types',
         'vendors-saved-searches',
-      ]),
-      part('build.shortlists', 'Vendor shortlists', [
-        'project-shortlists',
-        'shortlist-entries',
-        'shortlist-packages',
       ]),
       doc('build.daily-report', 'Daily site report', [
         'site-ops-daily-reports',

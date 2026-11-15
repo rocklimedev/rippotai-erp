@@ -1,6 +1,11 @@
 import { appConfirm } from "@/lib/app-dialog";
-// Plan of Action — how execution runs, phase by phase. Clean A4 document on the shared print kit.
-import React, { useMemo, useRef } from "react";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
+// Plan of Action — a filled copy of the user's PLAN OF ACTION TEMPLATE.docx (Word family of the
+// print kit): logo cover, How the Execution runs (stats + phase overlap chart), PLAN OF ACTION
+// phase table, Terms & Conditions; gold footer rule on every page.
+import { useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Edit3, Trash2, Download, CheckCircle2, FileText } from "lucide-react";
@@ -9,19 +14,16 @@ import {
   PageHeader,
   Button,
   EmptyState,
-  StatusPill,
-} from "@/components/inos";
+  } from "@/components/inos";
 import {
   PrintDocument,
   DocumentPreview,
-  Stats,
-  HtmlTerms,
   htmlToTerms,
-  SubHead,
+  coverRows,
+  useProjectPeople,
   usePdfDownload,
   pdfFileName,
   has,
-  fmtDate,
   titleCase,
   bySort,
 } from "@/components/print-document";
@@ -31,6 +33,7 @@ import {
   usePublishPlanOfActionMutation,
 } from "../../api/documents/plan-of-actions.api";
 import { useGetClientByIdQuery } from "../../api/projects/client.api";
+import "./plan-of-action-document.css";
 
 function durationLabel(min, max) {
   if (!has(min) && !has(max)) return "";
@@ -66,37 +69,41 @@ function bars(phases) {
     r.dur > 0
       ? {
           left: (r.start / span) * 100,
-          width: Math.max(3, (r.dur / span) * 100),
+          width: Math.max(2.5, (r.dur / span) * 100),
         }
       : { left: (r.start / span) * 100, marker: true },
   );
 }
 
+/** PHASE OVERLAP — INDICATIVE: the template's bar chart (green bars, snag/handover in gold). */
 function Timeline({ phases }) {
   const b = bars(phases);
   return (
-    <div>
-      <SubHead>Phase overlap — indicative</SubHead>
-      <div className="pd-gantt">
-        {phases.map((p, i) => (
-          <div key={p.id} className="pd-gantt__row">
-            <div className="pd-gantt__label">
-              <small>{String(i + 1).padStart(2, "0")}</small>
-              {p.title}
-            </div>
-            <div className="pd-gantt__track">
-              <div
-                className={`pd-gantt__bar ${b[i].marker ? "pd-gantt__bar--marker" : ""}`}
-                style={{
-                  left: `${Math.min(b[i].left, 97)}%`,
-                  width: b[i].marker
-                    ? undefined
-                    : `${Math.min(b[i].width, 100 - b[i].left)}%`,
-                }}
-              />
+    <div className="wd-poa-gantt">
+      <div className="wd-poa-label">PHASE OVERLAP — INDICATIVE</div>
+      {phases.map((p, i) => (
+        <div key={p.id} className="wd-poa-gantt__row">
+          <span className="wd-poa-gantt__p">P{i + 1}</span>
+          <div className="wd-poa-gantt__track">
+            <div
+              className={`wd-poa-gantt__bar ${
+                b[i].marker ? "wd-poa-gantt__bar--marker" : ""
+              } ${/snag|handover/i.test(p.title) ? "wd-poa-gantt__bar--gold" : ""}`}
+              style={{
+                left: `${Math.min(b[i].left, 97)}%`,
+                width: b[i].marker
+                  ? undefined
+                  : `${Math.min(b[i].width, 100 - b[i].left)}%`,
+              }}
+            >
+              {!b[i].marker && <span>{p.title.toUpperCase()}</span>}
             </div>
           </div>
-        ))}
+        </div>
+      ))}
+      <div className="wd-poa-gantt__axis">
+        <span>SITE START</span>
+        <span>HANDOVER</span>
       </div>
     </div>
   );
@@ -127,75 +134,110 @@ export function buildPoaSections(poa, phases) {
   const total =
     poa.total_duration_label ||
     durationLabel(poa.total_duration_min_days, poa.total_duration_max_days);
-  const overview = [];
-  if (has(poa.execution_description))
-    overview.push({ text: { value: poa.execution_description } });
-  const stats = [
-    {
-      value: String(poa.total_phases || phases.length || "").padStart(2, "0"),
-      label: "Execution phases, from site start to handover",
-    },
-    {
-      value: total,
-      label: "Indicative site duration with overlaps, subject to the terms",
-    },
-  ].filter((s) => has(s.value) && s.value !== "00");
-  if (stats.length) overview.push(<Stats key="stats" items={stats} />);
-  if (phases.length > 1) overview.push(<Timeline key="tl" phases={phases} />);
-  if (overview.length)
-    sections.push({ title: "How the execution runs", blocks: overview });
+  const count = poa.total_phases || phases.length;
 
+  /* How the Execution runs */
+  sections.push({
+    title: "How the Execution runs",
+    unnumbered: true,
+    headClass: "wd-poa-head",
+    blocks: [
+      <div key="o">
+        {has(poa.execution_description) && (
+          <p className="wd-poa-lead">{poa.execution_description}</p>
+        )}
+        <div className="wd-poa-stats">
+          <div>
+            <div className="wd-poa-stats__v">{has(count) ? String(count).padStart(2, "0") : ""}</div>
+            <div className="wd-poa-stats__l">Execution phases from services to handover</div>
+          </div>
+          <div>
+            <div className="wd-poa-stats__v">{total}</div>
+            <div className="wd-poa-stats__l">Indicative site duration with overlaps, subject to Terms</div>
+          </div>
+        </div>
+      </div>,
+      phases.length > 0 && <Timeline key="tl" phases={phases} />,
+    ].filter(Boolean),
+  });
+
+  /* PLAN OF ACTION — phase table */
   if (phases.length)
     sections.push({
-      title: "Phases",
-      intro:
-        "What happens in each phase and how long it usually takes on site.",
-      rows: {
-        cols: ["Phase", "What happens", "#Duration"],
-        template: "32% 1fr 30mm",
-        items: phases.map((p, i) => ({
-          key: p.id,
-          cells: [
-            { text: `${String(i + 1).padStart(2, "0")}  ${p.title}` },
-            {
-              // Master description first, then this plan's own details.
-              text: [p.description, p.details].filter(has).join("\n\n"),
-              sub: [p.parallel, p.inclusion].filter(has).join(" · "),
-              strong: false,
-            },
-            durationLabel(p.min, p.max),
-          ],
-        })),
-      },
+      title: "PLAN OF ACTION",
+      unnumbered: true,
+      headClass: "wd-poa-head wd-sec--plain",
+      blocks: [
+        {
+          table: {
+            skin: "word",
+            className: "wd-table--open wd-poa-t",
+            allowSplit: true,
+            cols: ["", "Phase", "Detail", "Timeline"],
+            template: "12.3mm 42.3mm 1fr 31.7mm",
+            items: phases.map((p, i) => ({
+              key: p.id,
+              cells: [
+                { text: String(i + 1).padStart(2, "0"), className: "wd-poa-t__no" },
+                { text: p.title, className: "wd-poa-t__phase" },
+                {
+                  text: [p.description, p.details].filter(has).join("\n\n"),
+                  sub: [p.parallel && `PARALLEL — ${p.parallel}`, p.inclusion && `INCLUDES — ${p.inclusion}`]
+                    .filter(Boolean)
+                    .join("\n"),
+                  className: "wd-poa-t__detail",
+                },
+                { text: durationLabel(p.min, p.max).toUpperCase(), className: "wd-poa-t__time" },
+              ],
+            })),
+          },
+        },
+      ],
     });
 
-  if (poa.team_members?.length) {
-    const team = bySort(poa.team_members, "sort_order").filter((m) =>
-      has(m.user?.name || m.name),
-    );
-    if (team.length)
-      sections.push({
-        title: "Your team",
-        rows: {
-          cols: ["Name", "Role"],
-          template: "40% 1fr",
-          items: team.map((m, i) => ({
-            key: m.id || i,
-            cells: [
-              m.user?.name || m.name,
-              [m.role_label, m.is_primary && "Primary contact"]
-                .filter(Boolean)
-                .join(" · "),
-            ],
-          })),
-        },
-      });
-  }
-
-  if (htmlToTerms(poa.terms_content_snapshot).length)
+  /* Team (INOS data the template does not show; kept in the same table style) */
+  const team = bySort(poa.team_members || [], "sort_order").filter((m) => has(m.user?.name || m.name));
+  if (team.length)
     sections.push({
-      title: "Terms",
-      blocks: [<HtmlTerms key="t" html={poa.terms_content_snapshot} />],
+      title: "Your team",
+      unnumbered: true,
+      newPage: false,
+      headClass: "wd-poa-head wd-poa-head--sub wd-sec--plain",
+      blocks: [
+        {
+          table: {
+            skin: "word",
+            className: "wd-table--open wd-poa-t",
+            cols: ["Name", "Role"],
+            template: "54.6mm 1fr",
+            items: team.map((m, i) => ({
+              key: m.id || i,
+              cells: [
+                { text: m.user?.name || m.name, className: "wd-poa-t__phase" },
+                [m.role_label, m.is_primary && "Primary contact"].filter(Boolean).join(" · "),
+              ],
+            })),
+          },
+        },
+      ],
+    });
+
+  /* Terms & Conditions */
+  const terms = htmlToTerms(poa.terms_content_snapshot || poa.terms_version?.content_html);
+  if (terms.length)
+    sections.push({
+      title: "Terms & Conditions",
+      unnumbered: true,
+      headClass: "wd-poa-head wd-poa-head--terms",
+      blocks: terms.map((t, i) => (
+        <div key={i} className="wd-poa-term">
+          <span className="wd-poa-term__n">{String(i + 1).padStart(2, "0")}</span>
+          <div>
+            {t.title && <div className="wd-poa-term__t">{t.title}</div>}
+            {t.body && <div className="wd-poa-term__b">{t.body}</div>}
+          </div>
+        </div>
+      )),
     });
 
   return sections;
@@ -203,6 +245,7 @@ export function buildPoaSections(poa, phases) {
 
 export function PlanOfActionView() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("plan-of-action", id);
   const nav = useNavigate();
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
@@ -222,6 +265,7 @@ export function PlanOfActionView() {
     usePublishPlanOfActionMutation();
 
   const phases = useMemo(() => normalizePoaPhases(poa), [poa]);
+  const people = useProjectPeople(poa?.project_id || poa?.project?.id);
   const sections = useMemo(
     () => (poa ? buildPoaSections(poa, phases) : []),
     [poa, phases],
@@ -287,29 +331,13 @@ export function PlanOfActionView() {
   const cl = project.client || client || {};
   const projectName = project.name || "Project";
   const version = poa.version || 1;
-  const date = fmtDate(poa.published_at || poa.updated_at || poa.created_at);
-  const lead =
-    (poa.team_members || []).find((m) => m.is_primary) ||
-    (poa.team_members || [])[0];
 
   return (
     <Page>
       <PageHeader
+        info={recordInfo}
         crumbs={crumbs}
         title={projectName}
-        subtitle={
-          <span
-            style={{
-              display: "inline-flex",
-              gap: 10,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            Plan of action · version {version}
-            {poa.status && <StatusPill status={poa.status} size="sm" />}
-          </span>
-        }
         actions={
           <>
             <Button
@@ -353,29 +381,34 @@ export function PlanOfActionView() {
           </>
         }
       />
+      <RecordContext type="plan-of-action" id={id} />
       <DocumentPreview>
         <PrintDocument
           ref={docRef}
+          variant="word"
+          className="wd-poa"
           docType="Plan of Action"
+          footerLabel={"\u200b"}
+          bodyHeight={241}
+          numbered={false}
           title={projectName}
-          subtitle="How the work will run on site, phase by phase."
-          coverDetails={[
-            { label: "Prepared for", value: cl.name, sub: cl.phone },
-            { label: "Project", value: projectName },
-            { label: "Site", value: project.site_location },
-            { label: "Date", value: date, sub: `Version ${version}` },
-            {
-              label: "Prepared by",
-              value: lead?.user?.name || lead?.name || "Rippotai Architecture",
-              sub: lead ? lead.role_label || "Rippotai Architecture" : "",
-            },
-          ]}
-          preparedFor={cl.name || projectName}
-          date={date}
-          version={version}
+          wordCover={{
+            title: "PLAN OF ACTION",
+            className: "wd-poa-cover",
+            logoWidth: 70,
+            logoTop: 48,
+            rowsTop: 236.5,
+            rows: coverRows({
+              project: projectName,
+              address: project.site_location,
+              client: cl.name,
+              ...people,
+            }),
+          }}
           sections={sections}
         />
       </DocumentPreview>
+      <VersionHistory type="plan-of-action" id={id} />
     </Page>
   );
 }

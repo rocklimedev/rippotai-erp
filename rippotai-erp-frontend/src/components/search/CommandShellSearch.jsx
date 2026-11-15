@@ -58,7 +58,6 @@ const ENTITY_ICON = {
   vendor: Truck,
   boq: ClipboardList,
   project_brief: FileStack,
-  quotation: FileText,
   site_recce: PenTool,
   task: CheckSquare,
   calendar_event: Calendar,
@@ -66,7 +65,7 @@ const ENTITY_ICON = {
   drawing: PenTool,
   work_order: ClipboardList,
   delivery_challan: Truck,
-  budget_estimate: ClipboardList,
+  scope_of_work: FileText,
 };
 
 const ENTITY_LABEL = {
@@ -77,7 +76,6 @@ const ENTITY_LABEL = {
   vendor: 'Vendor',
   boq: 'BOQ',
   project_brief: 'Brief',
-  quotation: 'Quotation',
   site_recce: 'Site Recce',
   task: 'Task',
   calendar_event: 'Calendar',
@@ -85,7 +83,7 @@ const ENTITY_LABEL = {
   drawing: 'Drawing',
   work_order: 'Work Order',
   delivery_challan: 'Delivery Challan',
-  budget_estimate: 'Budget Estimate',
+  scope_of_work: 'Scope of Work',
 };
 
 // ============================================================

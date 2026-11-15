@@ -76,22 +76,6 @@ import {
   VendorsAttention,
 } from "./vendors";
 
-import {
-  QuotTotal,
-  QuotAwaitingApproval,
-  QuotDrafts,
-  QuotSelected,
-  QuotValueTrend,
-  QuotStatusDonut,
-  QuotVarianceBar,
-  QuotProjectWise,
-  QuotExpiringSoonList,
-  QuotBoqVariance,
-  QuotRecentlyReceived,
-  QuotRecentComparisons,
-  QuotReturned,
-  QuotAwaitingReview,
-} from "./quots";
 
 import {
   CalendarTodayW,
@@ -255,23 +239,6 @@ export const WIDGETS = {
   // legacy
   "vendors.by_category": VendorsByCategory,
   "vendors.saved_searches": VendorsSavedSearches,
-
-  // Quotations
-  "quot.total": QuotTotal,
-  "quot.awaiting_approval": QuotAwaitingApproval,
-  "quot.drafts": QuotDrafts,
-  "quot.selected": QuotSelected,
-  "quot.value_trend": QuotValueTrend,
-  "quot.status_donut": QuotStatusDonut,
-  "quot.variance_bar": QuotVarianceBar,
-  "quot.project_wise": QuotProjectWise,
-  "quot.expiring_soon": QuotExpiringSoonList,
-  "quot.boq_variation": QuotBoqVariance,
-  "quot.recently_received": QuotRecentlyReceived,
-  "quot.recent_comparisons": QuotRecentComparisons,
-  "quot.returned": QuotReturned,
-  // legacy
-  "quot.awaiting_review": QuotAwaitingReview,
 
   // Materials
   "procurement.total_procurement": MatTotalMaterials,

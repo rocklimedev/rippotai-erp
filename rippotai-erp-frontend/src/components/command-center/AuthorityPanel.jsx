@@ -167,7 +167,7 @@ function MoneyView({ money, onOpen }) {
   );
 }
 
-const PURPOSE = { project_view: "Project view", boq_approval: "BOQ approval", quotation_selection: "Vendor selection", handover_acceptance: "Handover" };
+const PURPOSE = { project_view: "Project view", boq_approval: "BOQ approval", handover_acceptance: "Handover" };
 
 function AccessView({ access, onOpen }) {
   const s = access.summary;

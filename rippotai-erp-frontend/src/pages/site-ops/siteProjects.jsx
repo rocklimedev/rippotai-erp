@@ -61,7 +61,7 @@ export function ProjectPicker({ value, onChange, allLabel = "All projects", plac
       <option value="">{placeholder || allLabel}</option>
       {list.map((p) => (
         <option key={p.id} value={p.id}>
-          {p.name}
+          {p.code ? `${p.code} · ${p.name}` : p.name}
         </option>
       ))}
     </SelectInput>

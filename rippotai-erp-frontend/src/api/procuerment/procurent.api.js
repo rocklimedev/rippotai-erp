@@ -151,53 +151,6 @@ export const procurementApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // MATERIAL QUOTATIONS
-    // =====================================================
-
-    createMaterialQuotation: builder.mutation({
-      query: (body) => ({
-        url: "/procurement/quotations",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["MaterialQuotation"],
-    }),
-
-    getMaterialQuotations: builder.query({
-      query: () => "/procurement/quotations",
-      providesTags: ["MaterialQuotation"],
-    }),
-
-    getMaterialQuotation: builder.query({
-      query: (id) => `/procurement/quotations/${id}`,
-      providesTags: ["MaterialQuotation"],
-    }),
-
-    sendMaterialQuotation: builder.mutation({
-      query: (id) => ({
-        url: `/procurement/quotations/${id}/send`,
-        method: "POST",
-      }),
-      invalidatesTags: ["MaterialQuotation"],
-    }),
-
-    acceptMaterialQuotation: builder.mutation({
-      query: (id) => ({
-        url: `/procurement/quotations/${id}/accept`,
-        method: "POST",
-      }),
-      invalidatesTags: ["MaterialQuotation"],
-    }),
-
-    rejectMaterialQuotation: builder.mutation({
-      query: (id) => ({
-        url: `/procurement/quotations/${id}/reject`,
-        method: "POST",
-      }),
-      invalidatesTags: ["MaterialQuotation"],
-    }),
-
-    // =====================================================
     // SITE INVENTORY
     // =====================================================
 
@@ -274,17 +227,6 @@ export const {
   useGetMaterialEstimatesForRequirementQuery,
   useApproveMaterialEstimateMutation,
   useRejectMaterialEstimateMutation,
-
-  // =====================================================
-  // MATERIAL QUOTATIONS
-  // =====================================================
-
-  useCreateMaterialQuotationMutation,
-  useGetMaterialQuotationsQuery,
-  useGetMaterialQuotationQuery,
-  useSendMaterialQuotationMutation,
-  useAcceptMaterialQuotationMutation,
-  useRejectMaterialQuotationMutation,
 
   // =====================================================
   // SITE INVENTORY

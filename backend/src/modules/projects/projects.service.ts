@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, fn, col, literal, WhereOptions } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 import { ConflictException } from '@nestjs/common';
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Project } from './models/projects.model';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
@@ -13,7 +12,6 @@ import { ClientsService } from '../clients/clients.service';
 
 import { User } from '@/modules/users/models/user.model';
 import { Role } from '@/modules/rbac/models/role.model';
-import { Vendor } from '../vendors/models/vendors.model';
 import { TeamMember } from '../users/models/team-member.model';
 import { TeamMemberOwnerType } from '@/common/enums/team.enums';
 @Injectable()
@@ -232,50 +230,7 @@ export class ProjectsService {
 
       subQuery: false,
 
-      attributes: {
-        exclude: ['quotation_count', 'approved_value'],
-
-        include: [
-          [
-            literal(`(
-            SELECT COUNT(*)
-            FROM quotations q
-            WHERE q.project_id = Project.id
-            AND q.deleted_at IS NULL
-          )`),
-            'quotation_count',
-          ],
-
-          [
-            literal(`(
-            SELECT COALESCE(SUM(q.total_amount), 0)
-            FROM quotations q
-            WHERE q.project_id = Project.id
-            AND q.deleted_at IS NULL
-          )`),
-            'quotation_total',
-          ],
-
-          [
-            literal(`(
-            SELECT COALESCE(SUM(q.total_amount), 0)
-            FROM quotations q
-            WHERE q.project_id = Project.id
-            AND q.status = 'approved'
-            AND q.deleted_at IS NULL
-          )`),
-            'approved_value',
-          ],
-        ],
-      },
-
       include: [
-        {
-          model: Quotation,
-          as: 'quotations',
-          required: false,
-          attributes: [],
-        },
         {
           association: 'client',
           attributes: [
@@ -307,73 +262,7 @@ export class ProjectsService {
     const project = await this.projectModel.findByPk(id, {
       subQuery: false,
 
-      attributes: {
-        include: [
-          [
-            fn('COALESCE', fn('SUM', col('quotations.total_amount')), 0),
-            'quotation_total',
-          ],
-          [
-            fn(
-              'COALESCE',
-              fn(
-                'SUM',
-                literal(`CASE
-                WHEN quotations.status = 'approved'
-                THEN quotations.total_amount
-                ELSE 0
-              END`),
-              ),
-              0,
-            ),
-            'approved_value',
-          ],
-        ],
-      },
-
       include: [
-        {
-          model: Quotation,
-          attributes: [
-            'id',
-            'quotationNumber',
-            'status',
-            'quotationDate',
-            'totalAmount',
-            'subtotal',
-            'taxAmount',
-            'vendorId',
-          ],
-          required: false,
-
-          include: [
-            {
-              model: Vendor,
-              attributes: [
-                'id',
-                'name',
-                'company_name',
-                'contact_number',
-                'alternate_contact',
-                'address',
-                'status',
-                'notes',
-              ],
-
-              include: [
-                {
-                  association: 'vendorCategory',
-                  attributes: ['id', 'name'],
-                },
-                {
-                  association: 'businessType',
-                  attributes: ['id', 'name'],
-                },
-              ],
-            },
-          ],
-        },
-
         {
           association: 'client',
           attributes: [
@@ -411,17 +300,6 @@ export class ProjectsService {
           attributes: ['id', 'name', 'email'],
           required: false,
         },
-      ],
-
-      group: [
-        'Project.id',
-        'quotations.id',
-        'quotations->vendor.id',
-        'client.id',
-        'project_type.id',
-        'creator.id',
-        'updater.id',
-        'archiver.id',
       ],
 
       paranoid: !includeDeleted,

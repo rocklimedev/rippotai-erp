@@ -6,8 +6,6 @@ export * from './material-rate-sheet.model';
 
 export * from './material-estimate.model';
 
-export * from './material-quotation.model';
-
 export * from './purchase-order.model';
 
 export * from './purchase-order-item.model';

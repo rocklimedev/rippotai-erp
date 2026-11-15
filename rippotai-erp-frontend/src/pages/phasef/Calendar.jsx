@@ -30,8 +30,8 @@ const EVENT_TYPES = [
   {
     value: "client_meeting",
     label: "Client Meeting",
-    color: "bg-blue-50 text-blue-700 border-blue-100",
-    dot: "bg-blue-500",
+    color: "bg-[#E7EEEB] text-[#0D3D2F] border-[#C5D6CF]",
+    dot: "bg-[#E7EEEB]0",
     zohoColor: "#4A90E2",
   },
   {
@@ -68,13 +68,6 @@ const EVENT_TYPES = [
     color: "bg-emerald-50 text-emerald-700 border-emerald-100",
     dot: "bg-emerald-500",
     zohoColor: "#10B981",
-  },
-  {
-    value: "quotation_deadline",
-    label: "Quotation Deadline",
-    color: "bg-red-50 text-red-700 border-red-100",
-    dot: "bg-red-500",
-    zohoColor: "#EF4444",
   },
   {
     value: "handover",
@@ -543,10 +536,7 @@ export function CalendarMine() {
 
   const siteVisits = events.filter((event) => event.type === "site_visit");
 
-  const deadlines = events.filter(
-    (event) =>
-      event.type === "quotation_deadline" || event.type === "milestone_due",
-  );
+  const deadlines = events.filter((event) => event.type === "milestone_due");
 
   const busy = calendarsLoading || eventsLoading;
 
@@ -585,8 +575,8 @@ export function CalendarMine() {
 
         <Card>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Clock3 size={18} className="text-blue-600" />
+            <div className="w-10 h-10 rounded-xl bg-[#E7EEEB] flex items-center justify-center">
+              <Clock3 size={18} className="text-[#0D3D2F]" />
             </div>
 
             <div>
@@ -932,8 +922,7 @@ export function CalendarTeam() {
   const siteVisits = monthEvents.filter((event) => event.type === "site_visit");
 
   const deadlines = monthEvents.filter(
-    (event) =>
-      event.type === "quotation_deadline" || event.type === "milestone_due",
+    (event) => event.type === "milestone_due",
   );
 
   const monthLabel = monthDate.toLocaleDateString("en-IN", {
@@ -1133,8 +1122,8 @@ export function CalendarTeam() {
               <div className="text-[11px] text-[#7A8586]">Client meetings</div>
             </div>
 
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Clock3 size={18} className="text-blue-600" />
+            <div className="w-10 h-10 rounded-xl bg-[#E7EEEB] flex items-center justify-center">
+              <Clock3 size={18} className="text-[#0D3D2F]" />
             </div>
           </div>
         </Card>

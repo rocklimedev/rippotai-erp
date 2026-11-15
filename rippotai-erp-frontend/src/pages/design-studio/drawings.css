@@ -138,21 +138,6 @@
   .ds-qrow__state { grid-column: 3 / 4; align-items: flex-start; }
 }
 
-/* How-it-works (queue empty) */
-.ds-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
-.ds-step { padding: 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
-.ds-step:last-child { border-right: 0; }
-.ds-step__n {
-  width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center;
-  background: var(--brand-50); color: var(--brand); font-weight: 700; font-size: 12.5px;
-}
-.ds-step__t { font-weight: 650; color: var(--text); margin: 0; }
-.ds-step__d { font-size: var(--fs-sm); color: var(--text-2); margin: 0; line-height: 1.5; }
-@media (max-width: 720px) {
-  .ds-steps { grid-template-columns: 1fr; }
-  .ds-step { border-right: 0; border-bottom: 1px solid var(--line); }
-}
-
 /* Details panel */
 .ds-details .inos-card__body { display: flex; flex-direction: column; gap: 18px; }
 .ds-scope {

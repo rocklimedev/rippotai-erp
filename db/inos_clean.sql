@@ -79,7 +79,8 @@ INSERT INTO `_local_migrations` VALUES
 ('20261027_scope_category_optional_slug.sql','2026-10-29 18:31:16'),
 ('20261027_site_recce_room_measurement_precision.sql','2026-10-29 18:31:16'),
 ('20261027_snag_list_delete_permission.sql','2026-10-29 18:31:16'),
-('20261027_vendor_rate_comparison_delete_permission.sql','2026-10-29 18:31:16');
+('20261027_vendor_rate_comparison_delete_permission.sql','2026-10-29 18:31:16'),
+('20261110_remove_quotations_shortlists.sql','2026-11-10 13:13:31');
 /*!40000 ALTER TABLE `_local_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -126,7 +127,7 @@ CREATE TABLE `activity_logs` (
   `user_id` char(36) DEFAULT NULL,
   `user_email` varchar(255) NOT NULL,
   `user_role` varchar(50) NOT NULL,
-  `action` enum('login','logout','login_failed','password_changed','password_reset_requested','password_reset_completed','token_refreshed','user_created','user_updated','user_profile_updated','user_avatar_updated','user_deactivated','user_reactivated','user_deleted','user_role_changed','user_permission_updated','project_created','project_updated','project_archived','project_restored','project_deleted','project_member_added','project_member_removed','project_status_changed','client_created','client_updated','client_deleted','client_restored','brief_created','brief_updated','brief_deleted','calendar_event_created','calendar_event_updated','calendar_event_deleted','task_created','task_updated','task_status_changed','task_completed','task_deleted','lead_created','lead_updated','lead_stage_changed','lead_note_added','lead_proposal_sent','lead_deleted','quotation_created','quotation_updated','quotation_submitted','quotation_approved','quotation_returned','quotation_declined','quotation_cancelled','quotation_deleted','quotation_revision_created','quotation_sent_to_client','quotation_restored','vendor_created','vendor_updated','vendor_deleted','vendor_approved','vendor_rejected','vendor_status_changed','drawing_uploaded','drawing_superseded','site_recce_created','site_recce_updated','site_recce_status_changed','site_recce_deleted','settings_updated','system_config_changed','billing_settings_updated','file_uploaded','file_deleted','file_downloaded','document_generated','invoice_created','invoice_updated','invoice_paid','payment_received','data_exported','data_imported','permission_denied','unauthorized_access_attempt') NOT NULL,
+  `action` enum('login','logout','login_failed','password_changed','password_reset_requested','password_reset_completed','token_refreshed','user_created','user_updated','user_profile_updated','user_avatar_updated','user_deactivated','user_reactivated','user_deleted','user_role_changed','user_permission_updated','project_created','project_updated','project_archived','project_restored','project_deleted','project_member_added','project_member_removed','project_status_changed','client_created','client_updated','client_deleted','client_restored','brief_created','brief_updated','brief_deleted','calendar_event_created','calendar_event_updated','calendar_event_deleted','task_created','task_updated','task_status_changed','task_completed','task_deleted','lead_created','lead_updated','lead_stage_changed','lead_note_added','lead_proposal_sent','lead_deleted','vendor_created','vendor_updated','vendor_deleted','vendor_approved','vendor_rejected','vendor_status_changed','drawing_uploaded','drawing_superseded','site_recce_created','site_recce_updated','site_recce_status_changed','site_recce_deleted','settings_updated','system_config_changed','billing_settings_updated','file_uploaded','file_deleted','file_downloaded','document_generated','invoice_created','invoice_updated','invoice_paid','payment_received','data_exported','data_imported','permission_denied','unauthorized_access_attempt') NOT NULL,
   `entity_type` varchar(50) DEFAULT NULL,
   `entity_id` char(36) DEFAULT NULL,
   `entity_label` varchar(255) DEFAULT NULL,
@@ -321,7 +322,6 @@ INSERT INTO `apps` VALUES
 ('inventory','Inventory',1),
 ('leads','Leads',1),
 ('projects','Projects',1),
-('quotations','Quotations',1),
 ('settings','Settings',1),
 ('tasks','Tasks',1),
 ('vendors','Vendors',1);
@@ -1257,7 +1257,7 @@ DROP TABLE IF EXISTS `calendar_events`;
 CREATE TABLE `calendar_events` (
   `id` char(36) NOT NULL,
   `title` varchar(255) NOT NULL,
-  `type` enum('task','client_meeting','internal_meeting','vendor_call','presentation','note','timeline','milestone_due','quotation_deadline','site_visit','handover','personal') NOT NULL DEFAULT 'internal_meeting',
+  `type` enum('task','client_meeting','internal_meeting','vendor_call','presentation','note','timeline','milestone_due','site_visit','handover','personal') NOT NULL DEFAULT 'internal_meeting',
   `starts_at` datetime NOT NULL,
   `ends_at` datetime DEFAULT NULL,
   `all_day` tinyint(1) NOT NULL DEFAULT 0,
@@ -1359,7 +1359,7 @@ CREATE TABLE `client_link_responses` (
   `id` char(36) NOT NULL,
   `link_id` char(36) NOT NULL,
   `project_id` char(36) NOT NULL,
-  `kind` enum('boq_approved','boq_changes_requested','quotation_selected','handover_accepted','snag_reported') NOT NULL,
+  `kind` enum('boq_approved','boq_changes_requested','handover_accepted','snag_reported') NOT NULL,
   `target_id` char(36) DEFAULT NULL,
   `signatory_name` varchar(255) DEFAULT NULL,
   `signatory_email` varchar(255) DEFAULT NULL,
@@ -1396,7 +1396,7 @@ CREATE TABLE `client_links` (
   `token_hint` varchar(12) DEFAULT NULL,
   `token_enc` varchar(255) DEFAULT NULL,
   `project_id` char(36) NOT NULL,
-  `purpose` enum('project_view','boq_approval','quotation_selection','handover_acceptance') NOT NULL DEFAULT 'project_view',
+  `purpose` enum('project_view','boq_approval','handover_acceptance') NOT NULL DEFAULT 'project_view',
   `target_id` char(36) DEFAULT NULL,
   `client_name` varchar(255) DEFAULT NULL,
   `client_email` varchar(255) DEFAULT NULL,
@@ -1838,18 +1838,15 @@ INSERT INTO `document_types` VALUES
 ('2241c730-a1fd-11f1-99c8-52540021303b','DES_CONCEPT_DESIGN_02','Concept Design 02 — 3D with Material + Furniture Layout','05_DESIGN','cb595cbe-ba42-5fc3-af81-39e798fce957','DESIGN','5.1','DESIGN',1,'DOCUMENT','REQUIRED',1,1,1,'Concept 02 incorporating materials and furniture layout.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241c842-a1fd-11f1-99c8-52540021303b','DES_DESIGN_DEVELOPMENT_01','Design Development 01','05_DESIGN','cb595cbe-ba42-5fc3-af81-39e798fce957','DESIGN','5.3','DESIGN',2,'DOCUMENT','REQUIRED',1,1,1,'Concept resolved into a workable design.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241c959-a1fd-11f1-99c8-52540021303b','DES_DESIGN_DEVELOPMENT_02','Design Development 02 — With Material','05_DESIGN','cb595cbe-ba42-5fc3-af81-39e798fce957','DESIGN','5.4','DESIGN',3,'DOCUMENT','REQUIRED',1,1,1,'Final materials pinned against the developed design.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241cb36-a1fd-11f1-99c8-52540021303b','VENDOR_SHORTLIST','Vendor Shortlist','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.1','VENDOR & TRADES',1,'DOCUMENT','REQUIRED',1,0,0,'Shortlist covering the contractor teams and trades.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241cc5d-a1fd-11f1-99c8-52540021303b','VENDOR_SITE_VISIT_SCHEDULE','Site Visit Schedule','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.2','VENDOR & TRADES',2,'DOCUMENT','REQUIRED',1,0,0,'Vendor and contractor site visit schedule assigned and aligned by Admin.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241cd95-a1fd-11f1-99c8-52540021303b','VENDOR_SITE_MEASUREMENT_SHEET','Vendor Site Measurement Sheet','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.2','VENDOR & TRADES',3,'DOCUMENT','REQUIRED',1,0,0,'Site measurements collected from shortlisted vendors.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241ced3-a1fd-11f1-99c8-52540021303b','VENDOR_ESTIMATE','Estimate','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.5','VENDOR & TRADES',4,'DOCUMENT','REQUIRED',1,1,1,'RIPPOTAI estimate; rates and quotes remain estimates until approved.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241d002-a1fd-11f1-99c8-52540021303b','VENDOR_QUOTATION','Quotation','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.6','VENDOR & TRADES',5,'DOCUMENT','REQUIRED',1,1,1,'Approved, priced, contractual document per trade.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241d138-a1fd-11f1-99c8-52540021303b','VENDOR_BOQ','BOQ','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.7','VENDOR & TRADES',6,'DOCUMENT','REQUIRED',1,1,1,'BOQ created once tender drawings are final and quotations are approved.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
+('2241cd95-a1fd-11f1-99c8-52540021303b','VENDOR_SITE_MEASUREMENT_SHEET','Vendor Site Measurement Sheet','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.2','VENDOR & TRADES',3,'DOCUMENT','REQUIRED',1,0,0,'Site measurements collected from vendors.',1,'2026-08-27 15:23:19','2026-11-10 13:13:31'),
+('2241ced3-a1fd-11f1-99c8-52540021303b','VENDOR_ESTIMATE','Estimate','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.5','VENDOR & TRADES',4,'DOCUMENT','REQUIRED',1,1,1,'RIPPOTAI estimate; rates remain estimates until approved.',1,'2026-08-27 15:23:19','2026-11-10 13:13:31'),
+('2241d138-a1fd-11f1-99c8-52540021303b','VENDOR_BOQ','BOQ','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.7','VENDOR & TRADES',6,'DOCUMENT','REQUIRED',1,1,1,'BOQ created once tender drawings are final.',1,'2026-08-27 15:23:19','2026-11-10 13:13:31'),
 ('2241d26a-a1fd-11f1-99c8-52540021303b','VENDOR_CONTRACTOR_LINEUP','Contractor Lineup','A_VENDOR_TRADES','f5886765-a1ea-56b4-a176-0f187c0f7205','VENDOR & TRADES','A.8','VENDOR & TRADES',7,'DOCUMENT','REQUIRED',1,0,1,'Confirmed contractor teams against the trades they own on site.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241d3a0-a1fd-11f1-99c8-52540021303b','MAT_MATERIAL_REQUIREMENT','Material Requirement','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.1','MATERIAL & PROCUREMENT',1,'DOCUMENT','REQUIRED',1,0,0,'Material selections, budget, style and requirements from the design team.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241d4bc-a1fd-11f1-99c8-52540021303b','MAT_MATERIAL_RATES_SHEET','Material Rates Sheet','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.2','MATERIAL & PROCUREMENT',2,'DOCUMENT','REQUIRED',1,1,0,'Samples, rates and availability feeding material selection.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241d5ee-a1fd-11f1-99c8-52540021303b','MAT_MATERIAL_LAYOUT_SPECIFICATION','Material Layouts and Specification','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.3','MATERIAL & PROCUREMENT',3,'DRAWING','REQUIRED',1,1,1,'Selected materials pinned to drawings for quantification and quotation.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241d72e-a1fd-11f1-99c8-52540021303b','MAT_MATERIAL_ESTIMATE','Material Estimate','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.4','MATERIAL & PROCUREMENT',4,'DOCUMENT','REQUIRED',1,1,1,'Material estimate before quotation approval.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('2241d86f-a1fd-11f1-99c8-52540021303b','MAT_MATERIAL_QUOTATION','Material Quotation','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.4','MATERIAL & PROCUREMENT',5,'DOCUMENT','REQUIRED',1,1,1,'Approved material quotation.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
+('2241d5ee-a1fd-11f1-99c8-52540021303b','MAT_MATERIAL_LAYOUT_SPECIFICATION','Material Layouts and Specification','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.3','MATERIAL & PROCUREMENT',3,'DRAWING','REQUIRED',1,1,1,'Selected materials pinned to drawings for quantification.',1,'2026-08-27 15:23:19','2026-11-10 13:13:31'),
+('2241d72e-a1fd-11f1-99c8-52540021303b','MAT_MATERIAL_ESTIMATE','Material Estimate','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.4','MATERIAL & PROCUREMENT',4,'DOCUMENT','REQUIRED',1,1,1,'Material estimate approved before purchase orders are raised.',1,'2026-08-27 15:23:19','2026-11-10 13:13:31'),
 ('2241d9bb-a1fd-11f1-99c8-52540021303b','MAT_PURCHASE_ORDERS','Purchase Orders','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.5','MATERIAL & PROCUREMENT',6,'DOCUMENT','REQUIRED',1,1,1,'Approved materials purchased and scheduled against site stages.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241daeb-a1fd-11f1-99c8-52540021303b','MAT_DELIVERY_CHALLANS','Delivery Challans','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.6','MATERIAL & PROCUREMENT',7,'DOCUMENT','REQUIRED',1,0,0,'Stage-wise material delivery records.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241dc1b-a1fd-11f1-99c8-52540021303b','MAT_SITE_INVENTORY_REGISTER','Site Inventory Register','B_MATERIAL','35ccb713-885f-59f6-9a8f-5aad10fe48ed','MATERIAL & PROCUREMENT','B.7','MATERIAL & PROCUREMENT',8,'DOCUMENT','REQUIRED',1,0,0,'Site material inventory register reconciled against purchase orders.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
@@ -1879,7 +1876,7 @@ INSERT INTO `document_types` VALUES
 ('2241fc52-a1fd-11f1-99c8-52540021303b','MOD_BED_BACK_DETAILS','Bed Back Details','07_WORKING','3a44a34e-db2f-5793-9bbd-dde8d2365828','WORKING DRAWINGS','7.10','MODULAR',15,'DRAWING','CONDITIONAL',1,1,1,'Bed back details where included in scope.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241fd85-a1fd-11f1-99c8-52540021303b','MOD_WALL_PANELING_DETAILS','Wall Panelling Details','07_WORKING','3a44a34e-db2f-5793-9bbd-dde8d2365828','WORKING DRAWINGS','7.11','MODULAR',16,'DRAWING','CONDITIONAL',1,1,1,'Additional wall panelling details where included in scope.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('2241fec7-a1fd-11f1-99c8-52540021303b','WORK_LANDSCAPE_DETAILS','Landscape Details','07_WORKING','3a44a34e-db2f-5793-9bbd-dde8d2365828','WORKING DRAWINGS','7.12','WORKING DRAWINGS',17,'DRAWING','CONDITIONAL',1,1,1,'Detailed landscaping where the project carries external scope.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
-('22420012-a1fd-11f1-99c8-52540021303b','EXEC_FINAL_BOQ','Final BOQ','08_EXECUTION','5cec1504-2f7a-5667-832f-4a96b85e8d44','EXECUTION','8.0','EXECUTION',1,'DOCUMENT','REQUIRED',1,1,1,'Final BOQ owned by Accounts & Finance and created with the quotations.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
+('22420012-a1fd-11f1-99c8-52540021303b','EXEC_FINAL_BOQ','Final BOQ','08_EXECUTION','5cec1504-2f7a-5667-832f-4a96b85e8d44','EXECUTION','8.0','EXECUTION',1,'DOCUMENT','REQUIRED',1,1,1,'Final BOQ owned by Accounts & Finance.',1,'2026-08-27 15:23:19','2026-11-10 13:13:31'),
 ('22420854-a1fd-11f1-99c8-52540021303b','EXEC_QC_CHECKLIST_TEMPLATE','QC Checklist Template','08_EXECUTION','5cec1504-2f7a-5667-832f-4a96b85e8d44','EXECUTION','QC','QUALITY CHECK',2,'DOCUMENT','REQUIRED',1,1,0,'Standard checklist template used throughout execution.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('224209eb-a1fd-11f1-99c8-52540021303b','EXEC_PHASE_QC_SIGNOFF','Phase QC Sign-off','08_EXECUTION','5cec1504-2f7a-5667-832f-4a96b85e8d44','EXECUTION','QC','QUALITY CHECK',3,'DOCUMENT','REQUIRED',1,0,1,'Phase-level quality sign-off before the next trade starts.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
 ('22420b64-a1fd-11f1-99c8-52540021303b','EXEC_WATERPROOFING_WARRANTY','Waterproofing Warranty','08_EXECUTION','5cec1504-2f7a-5667-832f-4a96b85e8d44','EXECUTION','5.7','CIVIL WORK',4,'DOCUMENT','CONDITIONAL',1,0,1,'Waterproofing warranty and sign-off.',1,'2026-08-27 15:23:19','2026-09-14 16:34:49'),
@@ -2125,7 +2122,6 @@ INSERT INTO `gate_conditions` VALUES
 ('1b08506d-1c13-5807-b032-9919742bc98f','08a47294-c9f0-5dd7-ad84-ab8e66c20eec','DOCUMENT_APPROVED','Approved: VENDOR_ESTIMATE','{\"documentTypeCode\": \"VENDOR_ESTIMATE\"}',0,13,'2026-09-12 10:14:54','2026-09-12 10:14:54'),
 ('1be7431b-330e-54d9-86c0-1eaee109a98c','50c9cb7c-ea87-5ee9-abcd-c3d01730429d','DOCUMENT_TYPE_ALL_APPROVED','Required evidence: 07_WORKING','{\"phaseCode\": \"07_WORKING\"}',0,18,'2026-09-12 10:14:55','2026-09-12 10:14:55'),
 ('1e73a648-898b-52e9-b019-a5e9db820117','7be85e9f-1869-5cd4-b672-d5ddb4d8e80a','DOCUMENT_APPROVED','Approved: PLAN_SIGNED_AGREEMENT','{\"documentTypeCode\": \"PLAN_SIGNED_AGREEMENT\"}',1,6,'2026-09-12 10:14:54','2026-09-12 10:14:54'),
-('31d7941b-8b5e-5c60-b0b7-5b8de2e138ef','08a47294-c9f0-5dd7-ad84-ab8e66c20eec','DOCUMENT_APPROVED','Approved: VENDOR_QUOTATION','{\"documentTypeCode\": \"VENDOR_QUOTATION\"}',0,14,'2026-09-12 10:14:54','2026-09-12 10:14:54'),
 ('36682058-bbad-5621-9813-b293a71d896f','f53ef67d-685f-539f-94b2-d6db327247d0','DOCUMENT_TYPE_ALL_APPROVED','Required evidence: 06_TENDER','{\"phaseCode\": \"06_TENDER\"}',0,12,'2026-09-12 10:14:54','2026-09-12 10:14:54'),
 ('530aa162-4730-5298-8968-6f7386fee492','7be85e9f-1869-5cd4-b672-d5ddb4d8e80a','DOCUMENT_APPROVED','Approved: PLAN_SIGNED_CONTRACT','{\"documentTypeCode\": \"PLAN_SIGNED_CONTRACT\"}',1,7,'2026-09-12 10:14:54','2026-09-12 10:14:54'),
 ('73e53e3d-b670-5b49-9bc5-2a6902da37df','b85b6507-d68c-5336-bfdf-cb085ec1ce87','MANUAL_APPROVAL','Client final walkthrough and sign-off','{}',0,22,'2026-09-12 10:14:55','2026-09-12 10:14:55'),
@@ -2800,7 +2796,6 @@ CREATE TABLE `material_estimates` (
   `approval_status` enum('pending','approved','rejected','revision_requested') DEFAULT 'pending',
   `approved_by` varchar(255) DEFAULT NULL,
   `approved_at` datetime DEFAULT NULL,
-  `converted_to_quotation` tinyint(1) DEFAULT 0,
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `material_requirement_id` (`material_requirement_id`)
@@ -2933,38 +2928,6 @@ CREATE TABLE `material_procurements` (
 LOCK TABLES `material_procurements` WRITE;
 /*!40000 ALTER TABLE `material_procurements` DISABLE KEYS */;
 /*!40000 ALTER TABLE `material_procurements` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `material_quotations`
---
-
-DROP TABLE IF EXISTS `material_quotations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `material_quotations` (
-  `id` char(36) NOT NULL,
-  `estimate_id` char(36) DEFAULT NULL,
-  `quotation_number` varchar(255) DEFAULT NULL,
-  `quotation_date` date DEFAULT NULL,
-  `total_amount` decimal(14,2) DEFAULT NULL,
-  `terms` text DEFAULT NULL,
-  `status` enum('draft','sent','accepted','rejected') DEFAULT 'draft',
-  `accepted_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `estimate_id` (`estimate_id`),
-  UNIQUE KEY `quotation_number` (`quotation_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `material_quotations`
---
-
-LOCK TABLES `material_quotations` WRITE;
-/*!40000 ALTER TABLE `material_quotations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `material_quotations` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -3249,7 +3212,7 @@ DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE `notifications` (
   `id` char(36) NOT NULL,
   `user_id` char(36) NOT NULL,
-  `type` enum('project_created','project_updated','project_archived','project_restored','project_deleted','brief_created','brief_updated','brief_deleted','calendar_event_created','calendar_event_updated','calendar_event_deleted','client_created','client_updated','client_deleted','client_restored','drawing_uploaded','drawing_superseded','lead_created','lead_updated','lead_stage_changed','lead_note_added','lead_proposal_sent','lead_deleted','quotation_created','quotation_updated','quotation_submitted','quotation_approved','quotation_returned_for_editing','quotation_declined','quotation_cancelled','quotation_deleted','quotation_restored','vendor_created','vendor_updated','vendor_status_changed','vendor_deleted','user_created','user_updated','user_profile_updated','user_avatar_updated','user_deactivated','user_deleted','task_created','task_updated','task_status_changed','task_completed','task_deleted','site_recce_created','site_recce_updated','site_recce_status_changed','site_recce_deleted','purchase_order_created','purchase_order_updated','purchase_order_approved','purchase_order_rejected','purchase_order_cancelled','system','reminder','announcement') NOT NULL,
+  `type` enum('project_created','project_updated','project_archived','project_restored','project_deleted','brief_created','brief_updated','brief_deleted','calendar_event_created','calendar_event_updated','calendar_event_deleted','client_created','client_updated','client_deleted','client_restored','drawing_uploaded','drawing_superseded','lead_created','lead_updated','lead_stage_changed','lead_note_added','lead_proposal_sent','lead_deleted','vendor_created','vendor_updated','vendor_status_changed','vendor_deleted','user_created','user_updated','user_profile_updated','user_avatar_updated','user_deactivated','user_deleted','task_created','task_updated','task_status_changed','task_completed','task_deleted','site_recce_created','site_recce_updated','site_recce_status_changed','site_recce_deleted','purchase_order_created','purchase_order_updated','purchase_order_approved','purchase_order_rejected','purchase_order_cancelled','system','reminder','announcement') NOT NULL,
   `title` varchar(255) NOT NULL,
   `message` text NOT NULL,
   `entity_type` varchar(50) DEFAULT NULL,
@@ -3585,11 +3548,6 @@ INSERT INTO `permissions` VALUES
 ('581eff93-c49b-11f1-a0d7-52540021303b','procurement-estimates:create','procurement-estimates','create','Staff API capability: procurement-estimates:create','2026-10-10 16:41:30'),
 ('582d7c54-c49b-11f1-a0d7-52540021303b','procurement-estimates:read','procurement-estimates','read','Staff API capability: procurement-estimates:read','2026-10-10 16:41:30'),
 ('583c0cc1-c49b-11f1-a0d7-52540021303b','procurement-estimates:reject','procurement-estimates','reject','Staff API capability: procurement-estimates:reject','2026-10-10 16:41:30'),
-('584b6596-c49b-11f1-a0d7-52540021303b','procurement-quotations:accept','procurement-quotations','accept','Staff API capability: procurement-quotations:accept','2026-10-10 16:41:30'),
-('5859e46c-c49b-11f1-a0d7-52540021303b','procurement-quotations:create','procurement-quotations','create','Staff API capability: procurement-quotations:create','2026-10-10 16:41:30'),
-('586863e4-c49b-11f1-a0d7-52540021303b','procurement-quotations:read','procurement-quotations','read','Staff API capability: procurement-quotations:read','2026-10-10 16:41:30'),
-('5876d227-c49b-11f1-a0d7-52540021303b','procurement-quotations:reject','procurement-quotations','reject','Staff API capability: procurement-quotations:reject','2026-10-10 16:41:30'),
-('588538af-c49b-11f1-a0d7-52540021303b','procurement-quotations:send','procurement-quotations','send','Staff API capability: procurement-quotations:send','2026-10-10 16:41:30'),
 ('58938cd5-c49b-11f1-a0d7-52540021303b','procurement-rate-sheets:approve','procurement-rate-sheets','approve','Staff API capability: procurement-rate-sheets:approve','2026-10-10 16:41:31'),
 ('58a1e92f-c49b-11f1-a0d7-52540021303b','procurement-rate-sheets:create','procurement-rate-sheets','create','Staff API capability: procurement-rate-sheets:create','2026-10-10 16:41:31'),
 ('58b08e74-c49b-11f1-a0d7-52540021303b','procurement-rate-sheets:delete','procurement-rate-sheets','delete','Staff API capability: procurement-rate-sheets:delete','2026-10-10 16:41:31'),
@@ -3615,11 +3573,6 @@ INSERT INTO `permissions` VALUES
 ('59d21256-c49b-11f1-a0d7-52540021303b','project-planners:generate','project-planners','generate','Staff API capability: project-planners:generate','2026-10-10 16:41:33'),
 ('59e0b334-c49b-11f1-a0d7-52540021303b','project-planners:read','project-planners','read','Staff API capability: project-planners:read','2026-10-10 16:41:33'),
 ('59ef5616-c49b-11f1-a0d7-52540021303b','project-planners:update','project-planners','update','Staff API capability: project-planners:update','2026-10-10 16:41:33'),
-('59fdd97d-c49b-11f1-a0d7-52540021303b','project-shortlists:create','project-shortlists','create','Staff API capability: project-shortlists:create','2026-10-10 16:41:33'),
-('5a0c5b79-c49b-11f1-a0d7-52540021303b','project-shortlists:delete','project-shortlists','delete','Staff API capability: project-shortlists:delete','2026-10-10 16:41:33'),
-('5a1ab464-c49b-11f1-a0d7-52540021303b','project-shortlists:export','project-shortlists','export','Staff API capability: project-shortlists:export','2026-10-10 16:41:33'),
-('5a29a360-c49b-11f1-a0d7-52540021303b','project-shortlists:read','project-shortlists','read','Staff API capability: project-shortlists:read','2026-10-10 16:41:33'),
-('5a385bab-c49b-11f1-a0d7-52540021303b','project-shortlists:update','project-shortlists','update','Staff API capability: project-shortlists:update','2026-10-10 16:41:33'),
 ('5a471219-c49b-11f1-a0d7-52540021303b','project-types:create','project-types','create','Staff API capability: project-types:create','2026-10-10 16:41:33'),
 ('5a55beab-c49b-11f1-a0d7-52540021303b','project-types:delete','project-types','delete','Staff API capability: project-types:delete','2026-10-10 16:41:33'),
 ('5a6489c0-c49b-11f1-a0d7-52540021303b','project-types:read','project-types','read','Staff API capability: project-types:read','2026-10-10 16:41:34'),
@@ -3644,24 +3597,10 @@ INSERT INTO `permissions` VALUES
 ('5b7a4148-c49b-11f1-a0d7-52540021303b','quality-checklists:export','quality-checklists','export','Staff API capability: quality-checklists:export','2026-10-10 16:41:35'),
 ('5b88bc3b-c49b-11f1-a0d7-52540021303b','quality-checklists:read','quality-checklists','read','Staff API capability: quality-checklists:read','2026-10-10 16:41:35'),
 ('5b97184b-c49b-11f1-a0d7-52540021303b','quality-checklists:update','quality-checklists','update','Staff API capability: quality-checklists:update','2026-10-10 16:41:36'),
-('5ba5a989-c49b-11f1-a0d7-52540021303b','quotation-items:create','quotation-items','create','Staff API capability: quotation-items:create','2026-10-10 16:41:36'),
-('5bb426fb-c49b-11f1-a0d7-52540021303b','quotation-items:delete','quotation-items','delete','Staff API capability: quotation-items:delete','2026-10-10 16:41:36'),
-('5bc2b77a-c49b-11f1-a0d7-52540021303b','quotation-items:read','quotation-items','read','Staff API capability: quotation-items:read','2026-10-10 16:41:36'),
-('5bd12466-c49b-11f1-a0d7-52540021303b','quotation-items:update','quotation-items','update','Staff API capability: quotation-items:update','2026-10-10 16:41:36'),
-('5bdfa8ea-c49b-11f1-a0d7-52540021303b','quotations:approve','quotations','approve','Staff API capability: quotations:approve','2026-10-10 16:41:36'),
-('5bee4a75-c49b-11f1-a0d7-52540021303b','quotations:create','quotations','create','Staff API capability: quotations:create','2026-10-10 16:41:36'),
-('5bfcca39-c49b-11f1-a0d7-52540021303b','quotations:delete','quotations','delete','Staff API capability: quotations:delete','2026-10-10 16:41:36'),
-('5c0b47c4-c49b-11f1-a0d7-52540021303b','quotations:export','quotations','export','Staff API capability: quotations:export','2026-10-10 16:41:36'),
-('5c19f0c4-c49b-11f1-a0d7-52540021303b','quotations:read','quotations','read','Staff API capability: quotations:read','2026-10-10 16:41:36'),
-('5c2871ff-c49b-11f1-a0d7-52540021303b','quotations:restore','quotations','restore','Staff API capability: quotations:restore','2026-10-10 16:41:37'),
-('5c3726ea-c49b-11f1-a0d7-52540021303b','quotations:select','quotations','select','Staff API capability: quotations:select','2026-10-10 16:41:37'),
-('5c45b806-c49b-11f1-a0d7-52540021303b','quotations:submit','quotations','submit','Staff API capability: quotations:submit','2026-10-10 16:41:37'),
-('5c542675-c49b-11f1-a0d7-52540021303b','quotations:update','quotations','update','Staff API capability: quotations:update','2026-10-10 16:41:37'),
 ('5c627ea1-c49b-11f1-a0d7-52540021303b','rbac:create','rbac','create','Staff API capability: rbac:create','2026-10-10 16:41:37'),
 ('5c710828-c49b-11f1-a0d7-52540021303b','rbac:delete','rbac','delete','Staff API capability: rbac:delete','2026-10-10 16:41:37'),
 ('5c7f98e0-c49b-11f1-a0d7-52540021303b','rbac:read','rbac','read','Staff API capability: rbac:read','2026-10-10 16:41:37'),
 ('5c8e17a6-c49b-11f1-a0d7-52540021303b','rbac:update','rbac','update','Staff API capability: rbac:update','2026-10-10 16:41:37'),
-('5c9cbc63-c49b-11f1-a0d7-52540021303b','reports:read','reports','read','Staff API capability: reports:read','2026-10-10 16:41:37'),
 ('5cab4fa8-c49b-11f1-a0d7-52540021303b','role-apps:assign','role-apps','assign','Staff API capability: role-apps:assign','2026-10-10 16:41:37'),
 ('5cb9f2a8-c49b-11f1-a0d7-52540021303b','role-apps:grant','role-apps','grant','Staff API capability: role-apps:grant','2026-10-10 16:41:37'),
 ('5cc89f0d-c49b-11f1-a0d7-52540021303b','role-apps:read','role-apps','read','Staff API capability: role-apps:read','2026-10-10 16:41:38'),
@@ -3683,15 +3622,6 @@ INSERT INTO `permissions` VALUES
 ('5db1146d-c49b-11f1-a0d7-52540021303b','settings:delete','settings','delete','Staff API capability: settings:delete','2026-10-10 16:41:39'),
 ('5dbff710-c49b-11f1-a0d7-52540021303b','settings:read','settings','read','Staff API capability: settings:read','2026-10-10 16:41:39'),
 ('5dce4c4b-c49b-11f1-a0d7-52540021303b','settings:update','settings','update','Staff API capability: settings:update','2026-10-10 16:41:39'),
-('5ddccb4e-c49b-11f1-a0d7-52540021303b','shortlist-entries:create','shortlist-entries','create','Staff API capability: shortlist-entries:create','2026-10-10 16:41:39'),
-('5deb217f-c49b-11f1-a0d7-52540021303b','shortlist-entries:delete','shortlist-entries','delete','Staff API capability: shortlist-entries:delete','2026-10-10 16:41:39'),
-('5df9846c-c49b-11f1-a0d7-52540021303b','shortlist-entries:read','shortlist-entries','read','Staff API capability: shortlist-entries:read','2026-10-10 16:41:40'),
-('5e082afa-c49b-11f1-a0d7-52540021303b','shortlist-entries:select','shortlist-entries','select','Staff API capability: shortlist-entries:select','2026-10-10 16:41:40'),
-('5e16ba11-c49b-11f1-a0d7-52540021303b','shortlist-entries:update','shortlist-entries','update','Staff API capability: shortlist-entries:update','2026-10-10 16:41:40'),
-('5e252683-c49b-11f1-a0d7-52540021303b','shortlist-packages:apply','shortlist-packages','apply','Staff API capability: shortlist-packages:apply','2026-10-10 16:41:40'),
-('5e33a709-c49b-11f1-a0d7-52540021303b','shortlist-packages:create','shortlist-packages','create','Staff API capability: shortlist-packages:create','2026-10-10 16:41:40'),
-('5e42fd1a-c49b-11f1-a0d7-52540021303b','shortlist-packages:delete','shortlist-packages','delete','Staff API capability: shortlist-packages:delete','2026-10-10 16:41:40'),
-('5e516817-c49b-11f1-a0d7-52540021303b','shortlist-packages:read','shortlist-packages','read','Staff API capability: shortlist-packages:read','2026-10-10 16:41:40'),
 ('5e604a46-c49b-11f1-a0d7-52540021303b','site-ops-checklists:create','site-ops-checklists','create','Staff API capability: site-ops-checklists:create','2026-10-10 16:41:40'),
 ('5e6ea27b-c49b-11f1-a0d7-52540021303b','site-ops-checklists:read','site-ops-checklists','read','Staff API capability: site-ops-checklists:read','2026-10-10 16:41:40'),
 ('5e7d32ef-c49b-11f1-a0d7-52540021303b','site-ops-daily-reports:create','site-ops-daily-reports','create','Staff API capability: site-ops-daily-reports:create','2026-10-10 16:41:40'),
@@ -3869,12 +3799,6 @@ INSERT INTO `permissions` VALUES
 ('65de976b-84d2-11f1-b721-52540021303b','UPDATE_VENDOR','VENDOR','UPDATE','Update vendors','2026-07-21 12:34:21'),
 ('65de9845-84d2-11f1-b721-52540021303b','DELETE_VENDOR','VENDOR','DELETE','Delete vendors','2026-07-21 12:34:21'),
 ('65de9910-84d2-11f1-b721-52540021303b','APPROVE_VENDOR','VENDOR','APPROVE','Approve vendors','2026-07-21 12:34:21'),
-('65de99c9-84d2-11f1-b721-52540021303b','CREATE_QUOTATION','QUOTATION','CREATE','Create quotation','2026-07-21 12:34:21'),
-('65de9a95-84d2-11f1-b721-52540021303b','VIEW_QUOTATION','QUOTATION','VIEW','View quotations','2026-07-21 12:34:21'),
-('65de9b5b-84d2-11f1-b721-52540021303b','UPDATE_QUOTATION','QUOTATION','UPDATE','Update quotations','2026-07-21 12:34:21'),
-('65de9c36-84d2-11f1-b721-52540021303b','DELETE_QUOTATION','QUOTATION','DELETE','Delete quotations','2026-07-21 12:34:21'),
-('65de9cfd-84d2-11f1-b721-52540021303b','APPROVE_QUOTATION','QUOTATION','APPROVE','Approve quotations','2026-07-21 12:34:21'),
-('65de9dbb-84d2-11f1-b721-52540021303b','COMPARE_QUOTATION','QUOTATION','COMPARE','Compare quotations','2026-07-21 12:34:21'),
 ('65de9e7f-84d2-11f1-b721-52540021303b','CREATE_TASK','TASK','CREATE','Create task','2026-07-21 12:34:21'),
 ('65de9f5e-84d2-11f1-b721-52540021303b','VIEW_TASK','TASK','VIEW','View task','2026-07-21 12:34:21'),
 ('65dea046-84d2-11f1-b721-52540021303b','UPDATE_TASK','TASK','UPDATE','Update task','2026-07-21 12:34:21'),
@@ -4827,7 +4751,6 @@ CREATE TABLE `project_procurement_items` (
   `vendor_id` char(36) DEFAULT NULL,
   `vendor_name` varchar(255) DEFAULT NULL,
   `estimate_finalised_at` date DEFAULT NULL,
-  `quotation_finalised_at` date DEFAULT NULL,
   `planned_start_date` date DEFAULT NULL,
   `planned_end_date` date DEFAULT NULL,
   `purchase_date` date DEFAULT NULL,
@@ -4928,44 +4851,6 @@ CREATE TABLE `project_scope_categories` (
 LOCK TABLES `project_scope_categories` WRITE;
 /*!40000 ALTER TABLE `project_scope_categories` DISABLE KEYS */;
 /*!40000 ALTER TABLE `project_scope_categories` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `project_shortlists`
---
-
-DROP TABLE IF EXISTS `project_shortlists`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `project_shortlists` (
-  `id` char(36) NOT NULL,
-  `project_id` char(36) NOT NULL,
-  `shortlist_type` enum('VENDOR','MATERIAL') NOT NULL,
-  `title` varchar(255) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `is_locked` tinyint(1) NOT NULL DEFAULT 0,
-  `created_by` char(36) DEFAULT NULL,
-  `updated_by` char(36) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_project_shortlists_project_id` (`project_id`) USING BTREE,
-  KEY `idx_project_shortlists_type` (`shortlist_type`) USING BTREE,
-  KEY `idx_project_shortlists_created_by` (`created_by`) USING BTREE,
-  KEY `idx_project_shortlists_updated_by` (`updated_by`) USING BTREE,
-  CONSTRAINT `fk_project_shortlists_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_project_shortlists_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_project_shortlists_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `project_shortlists`
---
-
-LOCK TABLES `project_shortlists` WRITE;
-/*!40000 ALTER TABLE `project_shortlists` DISABLE KEYS */;
-/*!40000 ALTER TABLE `project_shortlists` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -5098,7 +4983,6 @@ CREATE TABLE `project_vendor_procurements` (
   `s_no` int(11) NOT NULL DEFAULT 0,
   `vendor_name` varchar(255) DEFAULT NULL,
   `estimate_finalised_date` date DEFAULT NULL,
-  `quotation_finalised_date` date DEFAULT NULL,
   `labour_start_date` date DEFAULT NULL,
   `labour_end_date` date DEFAULT NULL,
   `material_purchase_date` date DEFAULT NULL,
@@ -5148,7 +5032,6 @@ CREATE TABLE `projects` (
   `priority` enum('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL DEFAULT 'MEDIUM',
   `status` enum('active','completed','on_hold','inactive') NOT NULL DEFAULT 'active',
   `expected_completion_date` date DEFAULT NULL,
-  `quotation_count` int(11) NOT NULL DEFAULT 0,
   `approved_value` decimal(15,2) NOT NULL DEFAULT 0.00,
   `created_by` char(36) DEFAULT NULL,
   `updated_by` char(36) DEFAULT NULL,
@@ -5271,14 +5154,13 @@ CREATE TABLE `purchase_orders` (
   `cartage` decimal(15,2) NOT NULL DEFAULT 0.00,
   `total_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
   `status` enum('DRAFT','PENDING_APPROVAL','APPROVED','SENT','PARTIALLY_RECEIVED','RECEIVED','CANCELLED','CLOSED') NOT NULL DEFAULT 'DRAFT',
-  `source_type` enum('ESTIMATE','BOQ','QUOTATION','MANUAL') NOT NULL DEFAULT 'MANUAL',
+  `source_type` enum('ESTIMATE','BOQ','MANUAL') NOT NULL DEFAULT 'MANUAL',
   `source_reference_id` char(36) DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `terms_and_conditions` text DEFAULT NULL,
   `created_by` char(36) DEFAULT NULL,
   `approved_by` char(36) DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
-  `quotation_id` char(36) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`) USING BTREE,
@@ -5289,7 +5171,6 @@ CREATE TABLE `purchase_orders` (
   KEY `idx_purchase_orders_status` (`status`) USING BTREE,
   KEY `idx_purchase_orders_source_type` (`source_type`) USING BTREE,
   KEY `idx_purchase_orders_source_reference_id` (`source_reference_id`) USING BTREE,
-  KEY `idx_purchase_orders_quotation_id` (`quotation_id`) USING BTREE,
   KEY `idx_purchase_orders_created_by` (`created_by`) USING BTREE,
   KEY `idx_purchase_orders_approved_by` (`approved_by`) USING BTREE,
   CONSTRAINT `fk_purchase_orders_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
@@ -5566,185 +5447,6 @@ LOCK TABLES `quality_checklists` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `quotation_comparisons`
---
-
-DROP TABLE IF EXISTS `quotation_comparisons`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `quotation_comparisons` (
-  `id` char(36) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `projectId` char(36) NOT NULL,
-  `workCategory` varchar(255) DEFAULT NULL,
-  `quotationIds` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`quotationIds`)),
-  `comparedAt` datetime DEFAULT NULL,
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `idx_quotation_comparisons_project` (`projectId`),
-  CONSTRAINT `fk_quotation_comparisons_project` FOREIGN KEY (`projectId`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `quotation_comparisons`
---
-
-LOCK TABLES `quotation_comparisons` WRITE;
-/*!40000 ALTER TABLE `quotation_comparisons` DISABLE KEYS */;
-/*!40000 ALTER TABLE `quotation_comparisons` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `quotation_items`
---
-
-DROP TABLE IF EXISTS `quotation_items`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `quotation_items` (
-  `id` char(36) NOT NULL,
-  `quotation_id` char(36) NOT NULL,
-  `sno` smallint(6) NOT NULL,
-  `particular` text NOT NULL,
-  `unit_id` char(36) DEFAULT NULL,
-  `rate` decimal(12,2) NOT NULL DEFAULT 0.00,
-  `quantity` decimal(10,3) NOT NULL DEFAULT 0.000,
-  `amount` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `remarks` text DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_quotation_sno` (`quotation_id`,`sno`),
-  KEY `idx_quotation_items_qid` (`quotation_id`),
-  KEY `idx_quotation_items_unit_id` (`unit_id`),
-  CONSTRAINT `fk_quotation_items_unit` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `quotation_items_ibfk_1` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `quotation_items`
---
-
-LOCK TABLES `quotation_items` WRITE;
-/*!40000 ALTER TABLE `quotation_items` DISABLE KEYS */;
-/*!40000 ALTER TABLE `quotation_items` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `quotation_versions`
---
-
-DROP TABLE IF EXISTS `quotation_versions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `quotation_versions` (
-  `id` char(36) NOT NULL,
-  `quotation_id` char(36) NOT NULL,
-  `version` int(11) NOT NULL,
-  `snapshot` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`snapshot`)),
-  `remarks` text DEFAULT NULL,
-  `created_by` char(36) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_quotation_version` (`quotation_id`,`version`),
-  KEY `fk_qv_created_by` (`created_by`),
-  KEY `idx_qv_quotation` (`quotation_id`),
-  KEY `idx_qv_created_at` (`created_at`),
-  CONSTRAINT `fk_qv_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_qv_quotation` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `quotation_versions`
---
-
-LOCK TABLES `quotation_versions` WRITE;
-/*!40000 ALTER TABLE `quotation_versions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `quotation_versions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `quotations`
---
-
-DROP TABLE IF EXISTS `quotations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `quotations` (
-  `id` char(36) NOT NULL,
-  `quotation_number` varchar(50) NOT NULL,
-  `current_version` int(11) NOT NULL DEFAULT 1,
-  `quotation_date` date NOT NULL,
-  `expiry_date` date DEFAULT NULL,
-  `validity_days` int(11) DEFAULT 30,
-  `comparison_notes` text DEFAULT NULL,
-  `selected_at` timestamp NULL DEFAULT NULL,
-  `selected_by` char(36) DEFAULT NULL,
-  `is_selected` tinyint(1) NOT NULL DEFAULT 0,
-  `boq_reference` varchar(255) DEFAULT NULL,
-  `status` enum('draft','submitted','approved','returned_for_editing','declined','cancelled') NOT NULL DEFAULT 'draft',
-  `project_id` char(36) NOT NULL,
-  `vendor_id` char(36) NOT NULL,
-  `material_requirement_id` char(36) DEFAULT NULL,
-  `project_snapshot` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`project_snapshot`)),
-  `vendor_snapshot` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`vendor_snapshot`)),
-  `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `additional_charges` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `global_discount_type` enum('fixed','percentage') NOT NULL DEFAULT 'fixed',
-  `global_discount_value` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `discount` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `tax_percent` decimal(5,2) NOT NULL DEFAULT 0.00,
-  `tax_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `total_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `terms_conditions` text DEFAULT NULL,
-  `submitted_at` timestamp NULL DEFAULT NULL,
-  `submitted_by` char(36) DEFAULT NULL,
-  `reviewed_at` timestamp NULL DEFAULT NULL,
-  `reviewed_by` char(36) DEFAULT NULL,
-  `review_remarks` text DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `deleted_by` char(36) DEFAULT NULL,
-  `created_by` char(36) DEFAULT NULL,
-  `updated_by` char(36) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `quotation_number` (`quotation_number`),
-  KEY `submitted_by` (`submitted_by`),
-  KEY `reviewed_by` (`reviewed_by`),
-  KEY `deleted_by` (`deleted_by`),
-  KEY `created_by` (`created_by`),
-  KEY `updated_by` (`updated_by`),
-  KEY `idx_quotations_project` (`project_id`),
-  KEY `idx_quotations_vendor` (`vendor_id`),
-  KEY `idx_quotations_status` (`status`),
-  KEY `idx_quotations_date` (`quotation_date`),
-  KEY `idx_quotations_expiry` (`expiry_date`),
-  KEY `idx_quotations_selected_by` (`selected_by`),
-  KEY `idx_quotations_material_requirement` (`material_requirement_id`),
-  CONSTRAINT `quotations_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
-  CONSTRAINT `quotations_ibfk_2` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`),
-  CONSTRAINT `quotations_ibfk_3` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `quotations_ibfk_4` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `quotations_ibfk_5` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `quotations_ibfk_6` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `quotations_ibfk_7` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `quotations_ibfk_8` FOREIGN KEY (`selected_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `quotations`
---
-
-LOCK TABLES `quotations` WRITE;
-/*!40000 ALTER TABLE `quotations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `quotations` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `reminder_sync_records`
 --
 
@@ -5914,7 +5616,6 @@ INSERT INTO `role_apps` VALUES
 ('07114f34-84d2-11f1-b721-52540021303b','inventory','2026-08-17 10:16:41',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','leads','2026-08-17 10:16:41',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','projects','2026-08-17 10:16:41',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','quotations','2026-08-17 10:16:41',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','settings','2026-08-17 10:16:41',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','tasks','2026-08-17 10:16:41',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','vendors','2026-08-17 10:16:41',NULL),
@@ -5938,7 +5639,6 @@ INSERT INTO `role_apps` VALUES
 ('07115348-84d2-11f1-b721-52540021303b','inventory','2026-10-13 05:24:33',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','leads','2026-10-13 05:24:33',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','projects','2026-10-13 05:24:33',NULL),
-('07115348-84d2-11f1-b721-52540021303b','quotations','2026-10-13 05:24:33',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','settings','2026-10-13 05:24:33',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','tasks','2026-10-13 05:24:33',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','vendors','2026-10-13 05:24:33',NULL),
@@ -5959,7 +5659,6 @@ INSERT INTO `role_apps` VALUES
 ('071154b6-84d2-11f1-b721-52540021303b','inventory','2026-08-17 10:16:11',NULL),
 ('071154b6-84d2-11f1-b721-52540021303b','leads','2026-08-17 10:16:11',NULL),
 ('071154b6-84d2-11f1-b721-52540021303b','projects','2026-08-17 10:16:11',NULL),
-('071154b6-84d2-11f1-b721-52540021303b','quotations','2026-08-17 10:16:11',NULL),
 ('071154b6-84d2-11f1-b721-52540021303b','settings','2026-08-17 10:16:11',NULL),
 ('071154b6-84d2-11f1-b721-52540021303b','tasks','2026-08-17 10:16:11',NULL),
 ('071154b6-84d2-11f1-b721-52540021303b','vendors','2026-08-17 10:16:11',NULL),
@@ -5977,7 +5676,6 @@ INSERT INTO `role_apps` VALUES
 ('89fd2332-97b2-11f1-9d65-52540021303b','inventory','2026-10-13 05:11:54',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','leads','2026-10-13 05:11:54',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','projects','2026-10-13 05:11:54',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','quotations','2026-10-13 05:11:54',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','settings','2026-10-13 05:11:54',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','tasks','2026-10-13 05:11:54',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','vendors','2026-10-13 05:11:54',NULL),
@@ -5999,7 +5697,6 @@ INSERT INTO `role_apps` VALUES
 ('90de7f01-7123-11f1-8bb6-52540021303b','documents','2026-08-17 10:16:21',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','inventory','2026-08-17 10:16:21',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','leads','2026-08-17 10:16:21',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','quotations','2026-08-17 10:16:21',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','settings','2026-08-17 10:16:21',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','tasks','2026-08-17 10:16:21',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','vendors','2026-08-17 10:16:21',NULL),
@@ -6017,7 +5714,6 @@ INSERT INTO `role_apps` VALUES
 ('90e34b7b-7123-11f1-8bb6-52540021303b','inventory','2026-07-28 05:29:14',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','leads','2026-07-28 05:29:14',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','projects','2026-07-28 05:29:14',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','quotations','2026-07-28 05:29:14',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','settings','2026-07-28 05:29:14',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','tasks','2026-07-28 05:29:14',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','vendors','2026-07-28 05:29:14',NULL),
@@ -6035,7 +5731,6 @@ INSERT INTO `role_apps` VALUES
 ('90e34f44-7123-11f1-8bb6-52540021303b','inventory','2026-10-28 11:39:53',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','leads','2026-10-28 11:39:53',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','projects','2026-10-28 11:39:53',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','quotations','2026-10-28 11:39:53',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','settings','2026-10-28 11:39:53',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','tasks','2026-10-28 11:39:53',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','vendors','2026-10-28 11:39:53',NULL),
@@ -6197,7 +5892,6 @@ INSERT INTO `role_permissions` VALUES
 ('070dd7b5-84d2-11f1-b721-52540021303b','57f2817e-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','58010369-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','58bf2127-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','58f8e16b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','594146f4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
@@ -6210,28 +5904,16 @@ INSERT INTO `role_permissions` VALUES
 ('070dd7b5-84d2-11f1-b721-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5adaa343-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5b4095a8-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5d59f16a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('070dd7b5-84d2-11f1-b721-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5e99e19c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('070dd7b5-84d2-11f1-b721-52540021303b','5ee2f707-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
@@ -6416,7 +6098,6 @@ INSERT INTO `role_permissions` VALUES
 ('07114f34-84d2-11f1-b721-52540021303b','57f2817e-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','58010369-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','58bf2127-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','58f8e16b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','594146f4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
@@ -6429,24 +6110,16 @@ INSERT INTO `role_permissions` VALUES
 ('07114f34-84d2-11f1-b721-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5adaa343-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5b4095a8-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5d59f16a-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('07114f34-84d2-11f1-b721-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5e99e19c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07114f34-84d2-11f1-b721-52540021303b','5ee2f707-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
@@ -6617,7 +6290,6 @@ INSERT INTO `role_permissions` VALUES
 ('071151f6-84d2-11f1-b721-52540021303b','57f2817e-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','58010369-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','58bf2127-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','58f8e16b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','594146f4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
@@ -6630,28 +6302,16 @@ INSERT INTO `role_permissions` VALUES
 ('071151f6-84d2-11f1-b721-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5adaa343-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5b4095a8-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5d59f16a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('071151f6-84d2-11f1-b721-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5e99e19c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('071151f6-84d2-11f1-b721-52540021303b','5ee2f707-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
@@ -6833,7 +6493,6 @@ INSERT INTO `role_permissions` VALUES
 ('07115348-84d2-11f1-b721-52540021303b','57f2817e-c49b-11f1-a0d7-52540021303b','2026-10-13 10:55:53',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','58010369-c49b-11f1-a0d7-52540021303b','2026-10-13 10:55:57',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07115348-84d2-11f1-b721-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','58bf2127-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','58f8e16b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','594146f4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
@@ -6846,8 +6505,6 @@ INSERT INTO `role_permissions` VALUES
 ('07115348-84d2-11f1-b721-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-13 10:56:11',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-13 10:56:15',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-13 10:56:12',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5a731f49-c49b-11f1-a0d7-52540021303b','2026-10-13 10:56:21',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
@@ -6856,17 +6513,11 @@ INSERT INTO `role_permissions` VALUES
 ('07115348-84d2-11f1-b721-52540021303b','5b4095a8-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-27 12:59:22','d739bccb-7123-11f1-8bb6-52540021303b'),
 ('07115348-84d2-11f1-b721-52540021303b','5d3ccd94-c49b-11f1-a0d7-52540021303b','2026-10-27 12:59:23','d739bccb-7123-11f1-8bb6-52540021303b'),
 ('07115348-84d2-11f1-b721-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5d59f16a-c49b-11f1-a0d7-52540021303b','2026-10-27 12:59:24','d739bccb-7123-11f1-8bb6-52540021303b'),
 ('07115348-84d2-11f1-b721-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
-('07115348-84d2-11f1-b721-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5e99e19c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
 ('07115348-84d2-11f1-b721-52540021303b','5ee2f707-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:13',NULL),
@@ -7022,7 +6673,6 @@ INSERT INTO `role_permissions` VALUES
 ('071153fc-84d2-11f1-b721-52540021303b','597b650b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','59a6a5a3-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('071153fc-84d2-11f1-b721-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5adaa343-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -7033,7 +6683,6 @@ INSERT INTO `role_permissions` VALUES
 ('071153fc-84d2-11f1-b721-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('071153fc-84d2-11f1-b721-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('071153fc-84d2-11f1-b721-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -7270,11 +6919,6 @@ INSERT INTO `role_permissions` VALUES
 ('89fd2332-97b2-11f1-9d65-52540021303b','581eff93-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','583c0cc1-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','584b6596-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5859e46c-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5876d227-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','588538af-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','58938cd5-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','58a1e92f-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','58b08e74-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
@@ -7300,11 +6944,6 @@ INSERT INTO `role_permissions` VALUES
 ('89fd2332-97b2-11f1-9d65-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5a0c5b79-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5a471219-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5a731f49-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
@@ -7328,21 +6967,7 @@ INSERT INTO `role_permissions` VALUES
 ('89fd2332-97b2-11f1-9d65-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5ba5a989-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5bb426fb-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5bd12466-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5bdfa8ea-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5bee4a75-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5bfcca39-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5c2871ff-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5c3726ea-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5c45b806-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5c542675-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5c7f98e0-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5cc89f0d-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5d113ea1-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -7352,15 +6977,6 @@ INSERT INTO `role_permissions` VALUES
 ('89fd2332-97b2-11f1-9d65-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5d8598bd-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5dbff710-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5deb217f-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5e082afa-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5e252683-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5e33a709-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5e42fd1a-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd2332-97b2-11f1-9d65-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd2332-97b2-11f1-9d65-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -7615,10 +7231,6 @@ INSERT INTO `role_permissions` VALUES
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','58010369-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','581eff93-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','584b6596-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5859e46c-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','588538af-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','58a1e92f-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','58bf2127-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','58dbe38a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -7635,10 +7247,6 @@ INSERT INTO `role_permissions` VALUES
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5a81f550-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -7653,28 +7261,11 @@ INSERT INTO `role_permissions` VALUES
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5ba5a989-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5bd12466-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5bee4a75-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5c3726ea-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5c45b806-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5c542675-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5d59f16a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5d8598bd-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5e082afa-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5e252683-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5e33a709-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('89fd7ac2-97b2-11f1-9d65-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('89fd7ac2-97b2-11f1-9d65-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -7941,11 +7532,6 @@ INSERT INTO `role_permissions` VALUES
 ('90de7f01-7123-11f1-8bb6-52540021303b','581eff93-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','583c0cc1-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','584b6596-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5859e46c-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5876d227-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','588538af-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','58938cd5-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','58a1e92f-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','58b08e74-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
@@ -7971,11 +7557,6 @@ INSERT INTO `role_permissions` VALUES
 ('90de7f01-7123-11f1-8bb6-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5a0c5b79-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5a471219-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5a55beab-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
@@ -8000,24 +7581,10 @@ INSERT INTO `role_permissions` VALUES
 ('90de7f01-7123-11f1-8bb6-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5ba5a989-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5bb426fb-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5bd12466-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5bdfa8ea-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5bee4a75-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5bfcca39-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5c2871ff-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5c3726ea-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5c45b806-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5c542675-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5c627ea1-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5c710828-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5c7f98e0-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5c8e17a6-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5cab4fa8-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5cb9f2a8-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5cc89f0d-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
@@ -8039,15 +7606,6 @@ INSERT INTO `role_permissions` VALUES
 ('90de7f01-7123-11f1-8bb6-52540021303b','5db1146d-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5dbff710-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5dce4c4b-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5deb217f-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5e082afa-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5e252683-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5e33a709-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5e42fd1a-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 17:03:17',NULL),
@@ -8225,12 +7783,6 @@ INSERT INTO `role_permissions` VALUES
 ('90de7f01-7123-11f1-8bb6-52540021303b','65de976b-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','65de9845-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','65de9910-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','65de99c9-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','65de9a95-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','65de9b5b-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','65de9c36-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','65de9cfd-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
-('90de7f01-7123-11f1-8bb6-52540021303b','65de9dbb-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','65de9e7f-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','65de9f5e-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
 ('90de7f01-7123-11f1-8bb6-52540021303b','65dea046-84d2-11f1-b721-52540021303b','2026-10-10 17:03:17',NULL),
@@ -8433,11 +7985,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34b7b-7123-11f1-8bb6-52540021303b','581eff93-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','583c0cc1-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','584b6596-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5859e46c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5876d227-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','588538af-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','58938cd5-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','58a1e92f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','58b08e74-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -8463,11 +8010,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34b7b-7123-11f1-8bb6-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5a0c5b79-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5a471219-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5a55beab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -8492,24 +8034,10 @@ INSERT INTO `role_permissions` VALUES
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5ba5a989-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5bb426fb-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5bd12466-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5bdfa8ea-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5bee4a75-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5bfcca39-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5c2871ff-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5c3726ea-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5c45b806-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5c542675-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5c627ea1-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5c710828-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5c7f98e0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5c8e17a6-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5cab4fa8-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5cb9f2a8-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5cc89f0d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -8531,15 +8059,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5db1146d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5dbff710-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5dce4c4b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5deb217f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5e082afa-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5e252683-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5e33a709-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5e42fd1a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -8717,12 +8236,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34b7b-7123-11f1-8bb6-52540021303b','65de976b-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','65de9845-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','65de9910-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','65de99c9-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','65de9a95-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','65de9b5b-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','65de9c36-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','65de9cfd-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
-('90e34b7b-7123-11f1-8bb6-52540021303b','65de9dbb-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','65de9e7f-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','65de9f5e-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
 ('90e34b7b-7123-11f1-8bb6-52540021303b','65dea046-84d2-11f1-b721-52540021303b','2026-07-21 12:37:23',NULL),
@@ -8930,11 +8443,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34f44-7123-11f1-8bb6-52540021303b','581eff93-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','583c0cc1-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','584b6596-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5859e46c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5876d227-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','588538af-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','58938cd5-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','58a1e92f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','58b08e74-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -8960,11 +8468,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34f44-7123-11f1-8bb6-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5a0c5b79-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5a471219-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5a55beab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -8989,24 +8492,10 @@ INSERT INTO `role_permissions` VALUES
 ('90e34f44-7123-11f1-8bb6-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5ba5a989-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5bb426fb-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5bd12466-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5bdfa8ea-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5bee4a75-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5bfcca39-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5c2871ff-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5c3726ea-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5c45b806-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5c542675-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5c627ea1-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5c710828-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5c7f98e0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5c8e17a6-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5cab4fa8-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5cb9f2a8-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5cc89f0d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -9028,15 +8517,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34f44-7123-11f1-8bb6-52540021303b','5db1146d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5dbff710-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5dce4c4b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5deb217f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5e082afa-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5e252683-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5e33a709-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5e42fd1a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 16:41:52',NULL),
@@ -9214,12 +8694,6 @@ INSERT INTO `role_permissions` VALUES
 ('90e34f44-7123-11f1-8bb6-52540021303b','65de976b-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','65de9845-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','65de9910-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','65de99c9-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','65de9a95-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','65de9b5b-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','65de9c36-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','65de9cfd-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
-('90e34f44-7123-11f1-8bb6-52540021303b','65de9dbb-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','65de9e7f-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','65de9f5e-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
 ('90e34f44-7123-11f1-8bb6-52540021303b','65dea046-84d2-11f1-b721-52540021303b','2026-07-21 12:37:18',NULL),
@@ -9318,7 +8792,6 @@ INSERT INTO `role_permissions` VALUES
 ('f2571d79-a047-11f1-99c8-52540021303b','597b650b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','59a6a5a3-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f2571d79-a047-11f1-99c8-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5adaa343-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -9329,7 +8802,6 @@ INSERT INTO `role_permissions` VALUES
 ('f2571d79-a047-11f1-99c8-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f2571d79-a047-11f1-99c8-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f2571d79-a047-11f1-99c8-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -9501,10 +8973,6 @@ INSERT INTO `role_permissions` VALUES
 ('f9703e5b-b411-11f1-b327-52540021303b','58010369-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','581eff93-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','584b6596-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5859e46c-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','588538af-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','58a1e92f-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','58bf2127-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','58dbe38a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -9521,10 +8989,6 @@ INSERT INTO `role_permissions` VALUES
 ('f9703e5b-b411-11f1-b327-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','59fdd97d-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5a385bab-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5a81f550-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -9539,28 +9003,11 @@ INSERT INTO `role_permissions` VALUES
 ('f9703e5b-b411-11f1-b327-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5b97184b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5ba5a989-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5bd12466-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5bee4a75-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5c3726ea-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5c45b806-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5c542675-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5d59f16a-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5d8598bd-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5ddccb4e-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5e082afa-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5e16ba11-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5e252683-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5e33a709-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9703e5b-b411-11f1-b327-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5e604a46-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9703e5b-b411-11f1-b327-52540021303b','5e7d32ef-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -9742,7 +9189,6 @@ INSERT INTO `role_permissions` VALUES
 ('f9704219-b411-11f1-b327-52540021303b','57f2817e-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','58010369-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','582d7c54-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9704219-b411-11f1-b327-52540021303b','586863e4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','58bf2127-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','58f8e16b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','594146f4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
@@ -9755,24 +9201,16 @@ INSERT INTO `role_permissions` VALUES
 ('f9704219-b411-11f1-b327-52540021303b','59d21256-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','59e0b334-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','59ef5616-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5a1ab464-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5a29a360-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5a6489c0-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5aa0a6cd-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5adaa343-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5b4095a8-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5b7a4148-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5b88bc3b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5bc2b77a-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5c0b47c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5c19f0c4-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5c9cbc63-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5d2e5a5f-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5d4b608c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5d59f16a-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5d688a94-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5df9846c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
-('f9704219-b411-11f1-b327-52540021303b','5e516817-c49b-11f1-a0d7-52540021303b','2026-10-30 18:32:57',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5e6ea27b-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5e99e19c-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
 ('f9704219-b411-11f1-b327-52540021303b','5ee2f707-c49b-11f1-a0d7-52540021303b','2026-10-10 16:53:14',NULL),
@@ -10117,136 +9555,6 @@ INSERT INTO `settings` VALUES
 ('4689e689-8ce3-4326-bd73-2d8176ae1b03','proposal_next_steps.6725b123-5893-454d-9e7a-7d14fbaf1fc1','{\"steps\": [{\"id\": \"review-proposal\", \"done\": false, \"title\": \"Review this proposal\", \"detail\": \"Take a week. Mark anything unclear. We will walk it through with you.\"}, {\"id\": \"confirm-scope\", \"done\": false, \"title\": \"Confirm the scope\", \"detail\": \"Tick the engagement and optional items. We revise the BOQ against your ticks.\"}, {\"id\": \"freeze-cost\", \"done\": false, \"title\": \"Freeze cost at Gate 02\", \"detail\": \"BOQ priced line by line and signed. The estimate becomes a firm number.\"}, {\"id\": \"sign-agreement\", \"done\": false, \"title\": \"Sign the Agreement\", \"detail\": \"Scope of Work, Payment Schedule, Plan of Action issued together for signature.\"}, {\"id\": \"release-m1\", \"done\": false, \"title\": \"Release M1 and mobilise\", \"detail\": \"15% booking and mobilisation. Site team on the ground within five days.\"}], \"checklist\": [{\"id\": \"signed-agreement\", \"done\": false, \"label\": \"Signed Scope of Work and Agreement\"}, {\"id\": \"booking-payment\", \"done\": false, \"label\": \"Booking and mobilisation payment\"}, {\"id\": \"society-permission\", \"done\": false, \"label\": \"Society permission for work and material lift\"}, {\"id\": \"site-access\", \"done\": false, \"label\": \"Access, keys and a point of contact at site\"}, {\"id\": \"water-power\", \"done\": false, \"label\": \"Water and power connection at the unit\"}, {\"id\": \"client-material\", \"done\": false, \"label\": \"Any client-supplied material schedule\"}]}',NULL,'2026-10-09 09:50:37'),
 ('51d7db8d-148e-460a-9fc0-25ebeffee437','terms','{\"default_terms\": \"\"}',NULL,'2026-06-30 15:00:51');
 /*!40000 ALTER TABLE `settings` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `shortlist_entries`
---
-
-DROP TABLE IF EXISTS `shortlist_entries`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `shortlist_entries` (
-  `id` char(36) NOT NULL,
-  `project_shortlist_id` char(36) NOT NULL,
-  `trade` varchar(32) NOT NULL,
-  `working_type` varchar(32) NOT NULL,
-  `sort_order` int(11) NOT NULL DEFAULT 0,
-  `vendor_id` char(36) DEFAULT NULL,
-  `material_id` char(36) DEFAULT NULL,
-  `name_of_vendor` varchar(255) DEFAULT NULL,
-  `estimate_value` decimal(15,2) DEFAULT NULL,
-  `quotation_value` decimal(15,2) DEFAULT NULL,
-  `currency` varchar(10) NOT NULL DEFAULT 'INR',
-  `quotation_id` char(36) DEFAULT NULL,
-  `status` varchar(32) NOT NULL DEFAULT 'DRAFT',
-  `notes` text DEFAULT NULL,
-  `is_selected` tinyint(1) NOT NULL DEFAULT 0,
-  `created_by` char(36) DEFAULT NULL,
-  `updated_by` char(36) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `workspace_trade` varchar(32) GENERATED ALWAYS AS (case when `trade` in ('Plumber','Electrician','AC','POP','Flooring','Carpentar','MS','Solar','Glass','Paint','Civil','Facade') and `working_type` in ('Contractor','Individual','Freelancer') then `trade` else NULL end) STORED,
-  `workspace_working_type` varchar(32) GENERATED ALWAYS AS (case when `working_type` in ('Contractor','Individual','Freelancer') then `working_type` else NULL end) STORED,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `uq_shortlist_workspace_row` (`project_shortlist_id`,`workspace_trade`,`workspace_working_type`),
-  KEY `idx_shortlist_entries_project_shortlist_id` (`project_shortlist_id`) USING BTREE,
-  KEY `idx_shortlist_entries_trade` (`trade`) USING BTREE,
-  KEY `idx_shortlist_entries_working_type` (`working_type`) USING BTREE,
-  KEY `idx_shortlist_entries_vendor_id` (`vendor_id`) USING BTREE,
-  KEY `idx_shortlist_entries_material_id` (`material_id`) USING BTREE,
-  KEY `idx_shortlist_entries_created_by` (`created_by`) USING BTREE,
-  KEY `idx_shortlist_entries_updated_by` (`updated_by`) USING BTREE,
-  CONSTRAINT `fk_shortlist_entries_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_shortlist_entries_material` FOREIGN KEY (`material_id`) REFERENCES `material_masters` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_shortlist_entries_project_shortlist` FOREIGN KEY (`project_shortlist_id`) REFERENCES `project_shortlists` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_shortlist_entries_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_shortlist_entries_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `shortlist_entries`
---
-
-LOCK TABLES `shortlist_entries` WRITE;
-/*!40000 ALTER TABLE `shortlist_entries` DISABLE KEYS */;
-/*!40000 ALTER TABLE `shortlist_entries` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `shortlist_entries_workspace_backup`
---
-
-DROP TABLE IF EXISTS `shortlist_entries_workspace_backup`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `shortlist_entries_workspace_backup` (
-  `id` char(36) NOT NULL,
-  `project_shortlist_id` char(36) NOT NULL,
-  `trade` varchar(32) NOT NULL,
-  `working_type` varchar(32) NOT NULL,
-  `sort_order` int(11) NOT NULL DEFAULT 0,
-  `vendor_id` char(36) DEFAULT NULL,
-  `material_id` char(36) DEFAULT NULL,
-  `name_of_vendor` varchar(255) DEFAULT NULL,
-  `estimate_value` decimal(15,2) DEFAULT NULL,
-  `quotation_value` decimal(15,2) DEFAULT NULL,
-  `currency` varchar(10) NOT NULL DEFAULT 'INR',
-  `quotation_id` char(36) DEFAULT NULL,
-  `status` varchar(32) NOT NULL DEFAULT 'DRAFT',
-  `notes` text DEFAULT NULL,
-  `is_selected` tinyint(1) NOT NULL DEFAULT 0,
-  `created_by` char(36) DEFAULT NULL,
-  `updated_by` char(36) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_shortlist_entries_project_shortlist_id` (`project_shortlist_id`) USING BTREE,
-  KEY `idx_shortlist_entries_trade` (`trade`) USING BTREE,
-  KEY `idx_shortlist_entries_working_type` (`working_type`) USING BTREE,
-  KEY `idx_shortlist_entries_vendor_id` (`vendor_id`) USING BTREE,
-  KEY `idx_shortlist_entries_material_id` (`material_id`) USING BTREE,
-  KEY `idx_shortlist_entries_created_by` (`created_by`) USING BTREE,
-  KEY `idx_shortlist_entries_updated_by` (`updated_by`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `shortlist_entries_workspace_backup`
---
-
-LOCK TABLES `shortlist_entries_workspace_backup` WRITE;
-/*!40000 ALTER TABLE `shortlist_entries_workspace_backup` DISABLE KEYS */;
-/*!40000 ALTER TABLE `shortlist_entries_workspace_backup` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `shortlist_packages`
---
-
-DROP TABLE IF EXISTS `shortlist_packages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `shortlist_packages` (
-  `id` char(36) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `shortlist_type` enum('VENDOR','MATERIAL') NOT NULL,
-  `entries` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`entries`)),
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `idx_shortlist_packages_type` (`shortlist_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `shortlist_packages`
---
-
-LOCK TABLES `shortlist_packages` WRITE;
-/*!40000 ALTER TABLE `shortlist_packages` DISABLE KEYS */;
-/*!40000 ALTER TABLE `shortlist_packages` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -10871,7 +10179,7 @@ DROP TABLE IF EXISTS `team_members`;
 CREATE TABLE `team_members` (
   `id` char(36) NOT NULL,
   `team_id` char(36) DEFAULT NULL,
-  `owner_type` enum('PROJECT','PLAN_OF_ACTION','QUOTATION','BOQ') DEFAULT NULL,
+  `owner_type` enum('PROJECT','PLAN_OF_ACTION','BOQ') DEFAULT NULL,
   `owner_id` char(36) DEFAULT NULL,
   `user_id` char(36) NOT NULL,
   `role_label` varchar(100) DEFAULT NULL,
@@ -11006,7 +10314,6 @@ INSERT INTO `team_sections` VALUES
 ('9ab07c2b-b0c6-11f1-b327-52540021303b','MATERIAL_REQUIREMENTS','Material Requirements','PROCUREMENT','Material requirements and planning.','ACTIVE',10,'2026-09-15 11:00:47','2026-09-15 11:00:47'),
 ('9ab07d50-b0c6-11f1-b327-52540021303b','SAMPLE_BOARDS','Sample Boards','PROCUREMENT','Material sample boards.','ACTIVE',20,'2026-09-15 11:00:47','2026-09-15 11:00:47'),
 ('9ab07e77-b0c6-11f1-b327-52540021303b','RATE_SHEETS','Rate Sheets','PROCUREMENT','Material and vendor rate sheets.','ACTIVE',30,'2026-09-15 11:00:47','2026-09-15 11:00:47'),
-('9ab0806c-b0c6-11f1-b327-52540021303b','QUOTATIONS','Quotations','PROCUREMENT','Supplier quotations.','ACTIVE',40,'2026-09-15 11:00:47','2026-09-15 11:00:47'),
 ('9ab081af-b0c6-11f1-b327-52540021303b','PURCHASE_ORDERS','Purchase Orders','PROCUREMENT','Purchase orders.','ACTIVE',50,'2026-09-15 11:00:47','2026-09-15 11:00:47'),
 ('9ab082ec-b0c6-11f1-b327-52540021303b','DELIVERY_CHALLANS','Delivery Challans','PROCUREMENT','Material delivery challans.','ACTIVE',60,'2026-09-15 11:00:47','2026-09-15 11:00:47'),
 ('9ab083eb-b0c6-11f1-b327-52540021303b','SITE_INVENTORY','Site Inventory','PROCUREMENT','Material inventory at project sites.','ACTIVE',70,'2026-09-15 11:00:47','2026-09-15 11:00:47'),
@@ -11059,7 +10366,7 @@ INSERT INTO `teams` VALUES
 ('958a9d30-b0c6-11f1-b327-52540021303b','Management','Management, administration and overall project oversight.','ACTIVE',0,'d739bccb-7123-11f1-8bb6-52540021303b','2026-09-15 11:00:38','2026-09-15 11:00:38'),
 ('958aa45c-b0c6-11f1-b327-52540021303b','Design & Consultancy','Architecture, interior design, consultancy and client documentation.','ACTIVE',0,'d739bccb-7123-11f1-8bb6-52540021303b','2026-09-15 11:00:38','2026-09-15 11:00:38'),
 ('958aa737-b0c6-11f1-b327-52540021303b','Site Operations','Site execution, site visits, daily reports, QC and handover operations.','ACTIVE',0,'d739bccb-7123-11f1-8bb6-52540021303b','2026-09-15 11:00:38','2026-09-15 11:00:38'),
-('958aa892-b0c6-11f1-b327-52540021303b','Procurement & Materials','Material planning, vendor management, quotations, purchase orders and deliveries.','ACTIVE',0,'d739bccb-7123-11f1-8bb6-52540021303b','2026-09-15 11:00:38','2026-09-15 11:00:38'),
+('958aa892-b0c6-11f1-b327-52540021303b','Procurement & Materials','Material planning, vendor management, purchase orders and deliveries.','ACTIVE',0,'d739bccb-7123-11f1-8bb6-52540021303b','2026-09-15 11:00:38','2026-09-15 11:00:38'),
 ('958aa9c5-b0c6-11f1-b327-52540021303b','Finance & Accounts','Budgets, estimates, payment schedules, ledger and financial operations.','ACTIVE',0,'d739bccb-7123-11f1-8bb6-52540021303b','2026-09-15 11:00:38','2026-09-15 11:00:38'),
 ('e8411729-b0c5-11f1-b327-52540021303b','Project Team','Default team for migrated project-level team members','ACTIVE',0,'d739bccb-7123-11f1-8bb6-52540021303b','2026-09-15 10:55:47','2026-09-15 10:55:47');
 /*!40000 ALTER TABLE `teams` ENABLE KEYS */;
@@ -11099,7 +10406,7 @@ INSERT INTO `terms_template_versions` VALUES
 ('73cb4cfc-8520-40ef-b124-1ab296d68523','83e538b3-9a0b-11f1-99c8-52540021303b',2,'<h2>Terms &amp; Conditions</h2>\n\n<h3>1. Basis of this schedule</h3>\n<p>This Payment Schedule is to be read together with the Plan of Action and the signed Agreement for the project.<br />Where a percentage is stated, it is of the total contract value recorded above and is exclusive of GST, variations and client-supplied items.</p>\n\n\n<h3>2. Release before mobilisation</h3>\n<p>Each milestone falls due before the corresponding phase is mobilised at site. In line with the Plan of Action,<br />mobilisation of the next phase is subject to the corresponding milestone payment being cleared.</p>\n\n\n<h3>3. Invoicing and due date</h3>\n<p>Every milestone will be intimated in writing with a stage note and an invoice. Payment is due within three working<br />days of the invoice date. Work already in progress continues uninterrupted only against timely release.</p>\n\n\n<h3>4. Mode of payment</h3>\n<p>All payments are to be made by NEFT, RTGS or cheque in favour of the Rippotai account printed on the invoice.<br />Cash payments, and payments made directly to any worker, supervisor or vendor at site, will not be recognised<br />against this contract.</p>\n\n\n<h3>5. Taxes</h3>\n<p>All figures are exclusive of GST. GST and any other statutory levy will be charged additionally at the rate prevailing<br />on the date of invoice.</p>\n\n\n<h3>6. Mobilisation advance</h3>\n<p>The booking and mobilisation amount is non-refundable and is adjusted against the final milestone.<br />Site mobilisation begins only after it is received in full.</p>\n\n\n<h3>7. Delay in release</h3>\n<p>If a payment is delayed beyond seven days from its due date, work at site may be paused.<br />The timeline will stand extended day for day, together with three days for remobilisation,<br />and the revised handover date will be intimated in writing.</p>\n\n\n<h3>8. Interest on overdue amounts</h3>\n<p>Any amount outstanding beyond fifteen days from its due date will attract interest at 1.5% per month<br />on the overdue amount until cleared.</p>\n\n\n<h3>9. Variations in scope</h3>\n<p>Any change in layout, specification or scope after a phase has commenced is a variation.<br />Its cost and time implication will be shared in writing and, once approved, is billed at 100% in advance<br />of procurement. Variations do not form part of the percentages set out above.</p>\n\n\n<h3>10. Client-supplied items</h3>\n<p>Items procured directly by the Client are to reach site as per the agreed schedule.<br />Delay, shortfall or damage in such items is not attributable to Rippotai and does not affect<br />a milestone that has already been achieved.</p>\n\n\n<h3>11. Retention and snag closure</h3>\n<p>The final 5% is retained until the snag list has been jointly signed off, the premises deep cleaned,<br />and keys, warranty cards, appliance manuals and as-built service drawings handed over.</p>\n\n\n<h3>12. Title of materials</h3>\n<p>Ownership of material delivered at site passes to the Client only on full payment of the corresponding milestone.</p>\n\n\n<h3>13. Suspension by the Client</h3>\n<p>If works are suspended by the Client for more than thirty days, all milestones achieved till that date become<br />immediately payable, along with the cost of material already procured, fabricated or stored for the project.</p>\n\n\n<h3>14. Post-handover defects</h3>\n<p>Issues reported after handover fall under the defect liability terms of the signed Agreement<br />and not under the snagging milestone of this schedule.</p>\n\n\n<h3>15. Circumstances beyond control</h3>\n<p>Statutory construction restrictions, labour strikes, extreme weather, transport disruption and unavailability<br />of specified material are beyond our control. Timelines extend proportionately, with prior intimation;<br />milestones already achieved remain payable.</p>\n\n\n<h3>16. Jurisdiction</h3>\n<p>Any dispute will first be attempted to be settled amicably between the parties, failing which it will be<br />subject to the exclusive jurisdiction of the courts at Delhi.</p>\n<p>The Client confirms having read and accepted the milestones, percentages and terms set out in this schedule,<br />which forms an integral part of the Plan of Action and the signed Agreement for this project.</p>\n',NULL,NULL,'2026-09-29 15:19:40'),
 ('90d3ea2c-bbbe-11f1-a7ce-52540021303b','4367e34a-b337-11f1-b327-52540021303b',1,'<h3>1. Scope of Work</h3>\r\n<p>The contractor shall execute the work described in this Work Order strictly in accordance with the approved drawings, specifications, BOQ, scope of work and instructions issued by Rippotai Architecture.</p>\r\n\r\n<h3>2. Workmanship & Quality</h3>\r\n<p>All work shall be carried out using good quality materials and workmanship in accordance with approved specifications and applicable standards. Any defective or unacceptable work shall be rectified by the contractor at their own cost.</p>\r\n\r\n<h3>3. Site Coordination</h3>\r\n<p>The contractor shall coordinate with the project team, site supervisor, consultants and other agencies working at the project site and shall ensure that their activities do not unnecessarily interfere with other works.</p>\r\n\r\n<h3>4. Programme & Completion</h3>\r\n<p>The contractor shall complete the work within the agreed completion period. Any anticipated delay shall be immediately communicated to the project team along with the reason and proposed recovery plan.</p>\r\n\r\n<h3>5. Safety</h3>\r\n<p>The contractor shall be responsible for maintaining safe working practices at site and shall provide appropriate safety equipment to their workers. The contractor shall comply with all applicable site safety requirements.</p>\r\n\r\n<h3>6. Labour</h3>\r\n<p>The contractor shall be responsible for the deployment, supervision and conduct of their labour and workforce. All statutory requirements relating to their workers shall be complied with by the contractor.</p>\r\n\r\n<h3>7. Materials</h3>\r\n<p>Materials supplied by the contractor shall conform to the approved specifications. No substitution of specified materials shall be made without prior written approval from the authorised project representative.</p>\r\n\r\n<h3>8. Measurement</h3>\r\n<p>Measurements shall be recorded and verified jointly wherever applicable. Payment shall be based on approved quantities, agreed rates and the applicable terms of this Work Order.</p>\r\n\r\n<h3>9. Payment</h3>\r\n<p>Payments shall be released according to the approved payment stages and subject to satisfactory completion of the relevant work, measurement verification and submission of required documents.</p>\r\n\r\n<h3>10. Defects & Rectification</h3>\r\n<p>The contractor shall rectify defects, damages or incomplete work attributable to their execution within the period specified by the project team without additional cost.</p>\r\n\r\n<h3>11. Housekeeping</h3>\r\n<p>The contractor shall maintain proper housekeeping in their work area and shall remove construction debris, waste and surplus materials as directed by the project team.</p>\r\n\r\n<h3>12. Damage to Property</h3>\r\n<p>Any damage caused to the project property, finished work, fixtures, equipment or third-party property due to the contractor or their workforce shall be repaired or compensated by the contractor.</p>\r\n\r\n<h3>13. Drawings & Instructions</h3>\r\n<p>The contractor shall execute the work based on the latest approved drawings and written instructions. The contractor shall immediately report any discrepancy or ambiguity before proceeding with the affected work.</p>\r\n\r\n<h3>14. Variations</h3>\r\n<p>No additional work or variation shall be undertaken without prior approval from the authorised representative of Rippotai Architecture. Approved variations shall be documented and valued separately where applicable.</p>\r\n\r\n<h3>15. Subcontracting</h3>\r\n<p>The contractor shall not subcontract the whole or substantial part of the assigned work without prior written approval.</p>\r\n\r\n<h3>16. Compliance</h3>\r\n<p>The contractor shall comply with applicable laws, regulations, labour requirements, safety requirements and project-specific rules.</p>\r\n\r\n<h3>17. Cancellation</h3>\r\n<p>Rippotai Architecture may suspend or cancel the Work Order in case of material breach, persistent delay, poor workmanship, non-compliance or other circumstances permitted under the agreed commercial terms.</p>\r\n\r\n<h3>18. Final Handover</h3>\r\n<p>The contractor shall complete all pending works, rectifications, cleaning and documentation required for final handover before the work is considered complete.</p>\r\n\r\n<h3>19. Acceptance</h3>\r\n<p>Commencement of work against this Work Order shall constitute acceptance of the scope, rates, programme and applicable terms unless objections are raised in writing before commencement.</p>',NULL,NULL,'2026-09-29 10:00:57'),
 ('90d4fdb3-bbbe-11f1-a7ce-52540021303b','83e538b3-9a0b-11f1-99c8-52540021303b',1,'<h2>Terms &amp; Conditions</h2>\r\n\r\n<h3>01 Basis of this schedule</h3>\r\n<p>\r\nThis Payment Schedule is to be read together with the Plan of Action and the signed Agreement for the project.\r\nWhere a percentage is stated, it is of the total contract value recorded above and is exclusive of GST, variations and client-supplied items.\r\n</p>\r\n\r\n<h3>02 Release before mobilisation</h3>\r\n<p>\r\nEach milestone falls due before the corresponding phase is mobilised at site. In line with the Plan of Action,\r\nmobilisation of the next phase is subject to the corresponding milestone payment being cleared.\r\n</p>\r\n\r\n<h3>03 Invoicing and due date</h3>\r\n<p>\r\nEvery milestone will be intimated in writing with a stage note and an invoice. Payment is due within three working\r\ndays of the invoice date. Work already in progress continues uninterrupted only against timely release.\r\n</p>\r\n\r\n<h3>04 Mode of payment</h3>\r\n<p>\r\nAll payments are to be made by NEFT, RTGS or cheque in favour of the Rippotai account printed on the invoice.\r\nCash payments, and payments made directly to any worker, supervisor or vendor at site, will not be recognised\r\nagainst this contract.\r\n</p>\r\n\r\n<h3>05 Taxes</h3>\r\n<p>\r\nAll figures are exclusive of GST. GST and any other statutory levy will be charged additionally at the rate prevailing\r\non the date of invoice.\r\n</p>\r\n\r\n<h3>06 Mobilisation advance</h3>\r\n<p>\r\nThe booking and mobilisation amount is non-refundable and is adjusted against the final milestone.\r\nSite mobilisation begins only after it is received in full.\r\n</p>\r\n\r\n<h3>07 Delay in release</h3>\r\n<p>\r\nIf a payment is delayed beyond seven days from its due date, work at site may be paused.\r\nThe timeline will stand extended day for day, together with three days for remobilisation,\r\nand the revised handover date will be intimated in writing.\r\n</p>\r\n\r\n<h3>08 Interest on overdue amounts</h3>\r\n<p>\r\nAny amount outstanding beyond fifteen days from its due date will attract interest at 1.5% per month\r\non the overdue amount until cleared.\r\n</p>\r\n\r\n<h3>09 Variations in scope</h3>\r\n<p>\r\nAny change in layout, specification or scope after a phase has commenced is a variation.\r\nIts cost and time implication will be shared in writing and, once approved, is billed at 100% in advance\r\nof procurement. Variations do not form part of the percentages set out above.\r\n</p>\r\n\r\n<h3>10 Client-supplied items</h3>\r\n<p>\r\nItems procured directly by the Client are to reach site as per the agreed schedule.\r\nDelay, shortfall or damage in such items is not attributable to Rippotai and does not affect\r\na milestone that has already been achieved.\r\n</p>\r\n\r\n<h3>11 Retention and snag closure</h3>\r\n<p>\r\nThe final 5% is retained until the snag list has been jointly signed off, the premises deep cleaned,\r\nand keys, warranty cards, appliance manuals and as-built service drawings handed over.\r\n</p>\r\n\r\n<h3>12 Title of materials</h3>\r\n<p>\r\nOwnership of material delivered at site passes to the Client only on full payment of the corresponding milestone.\r\n</p>\r\n\r\n<h3>13 Suspension by the Client</h3>\r\n<p>\r\nIf works are suspended by the Client for more than thirty days, all milestones achieved till that date become\r\nimmediately payable, along with the cost of material already procured, fabricated or stored for the project.\r\n</p>\r\n\r\n<h3>14 Post-handover defects</h3>\r\n<p>\r\nIssues reported after handover fall under the defect liability terms of the signed Agreement\r\nand not under the snagging milestone of this schedule.\r\n</p>\r\n\r\n<h3>15 Circumstances beyond control</h3>\r\n<p>\r\nStatutory construction restrictions, labour strikes, extreme weather, transport disruption and unavailability\r\nof specified material are beyond our control. Timelines extend proportionately, with prior intimation;\r\nmilestones already achieved remain payable.\r\n</p>\r\n\r\n<h3>16 Jurisdiction</h3>\r\n<p>\r\nAny dispute will first be attempted to be settled amicably between the parties, failing which it will be\r\nsubject to the exclusive jurisdiction of the courts at Delhi.\r\n</p>\r\n\r\n<p>\r\nThe Client confirms having read and accepted the milestones, percentages and terms set out in this schedule,\r\nwhich forms an integral part of the Plan of Action and the signed Agreement for this project.\r\n</p>',NULL,NULL,'2026-09-29 10:00:57'),
-('90d5039e-bbbe-11f1-a7ce-52540021303b','9f8c2a10-4b3e-4c7a-9d21-6a1f0c3e5b71',1,'<h2>Terms & Conditions</h2>\r\n<p>This Plan of Action is prepared based on the agreed project scope, execution sequence, estimated durations, and project requirements.</p>\r\n\r\n<h3>1. Execution Schedule</h3>\r\n<p>The execution schedule and phase durations mentioned in this Plan of Action are indicative and may be adjusted based on site conditions, material availability, approvals, dependencies, and other project requirements.</p>\r\n\r\n<h3>2. Phase Dependencies</h3>\r\n<p>Individual phases may run sequentially or in parallel depending on site conditions, availability of resources, material selections, approvals, and execution requirements.</p>\r\n\r\n<h3>3. Material Selection & Approvals</h3>\r\n<p>Timely selection and approval of materials, finishes, drawings, samples, and other project requirements are necessary to maintain the proposed execution schedule.</p>\r\n\r\n<h3>4. Site Conditions</h3>\r\n<p>Actual execution timelines may vary due to existing site conditions, unforeseen circumstances, access restrictions, statutory requirements, weather conditions, or other factors beyond the reasonable control of the project team.</p>\r\n\r\n<h3>5. Client Responsibilities</h3>\r\n<p>The client shall provide timely approvals, decisions, access, information, and other requirements necessary for the execution of the works.</p>\r\n\r\n<h3>6. Changes & Variations</h3>\r\n<p>Any changes to the approved scope, design, materials, specifications, or execution requirements may affect the project schedule and shall be evaluated accordingly.</p>\r\n\r\n<h3>7. Schedule Validity</h3>\r\n<p>The durations shown in the Plan of Action represent the current planned execution schedule and may be revised as the project progresses.</p>\r\n\r\n<h3>8. General</h3>\r\n<p>This Plan of Action should be read together with the applicable project documents, approved drawings, specifications, quotations, estimates, and other agreed project documentation.</p>',NULL,NULL,'2026-09-29 10:00:57'),
+('90d5039e-bbbe-11f1-a7ce-52540021303b','9f8c2a10-4b3e-4c7a-9d21-6a1f0c3e5b71',1,'<h2>Terms & Conditions</h2>\r\n<p>This Plan of Action is prepared based on the agreed project scope, execution sequence, estimated durations, and project requirements.</p>\r\n\r\n<h3>1. Execution Schedule</h3>\r\n<p>The execution schedule and phase durations mentioned in this Plan of Action are indicative and may be adjusted based on site conditions, material availability, approvals, dependencies, and other project requirements.</p>\r\n\r\n<h3>2. Phase Dependencies</h3>\r\n<p>Individual phases may run sequentially or in parallel depending on site conditions, availability of resources, material selections, approvals, and execution requirements.</p>\r\n\r\n<h3>3. Material Selection & Approvals</h3>\r\n<p>Timely selection and approval of materials, finishes, drawings, samples, and other project requirements are necessary to maintain the proposed execution schedule.</p>\r\n\r\n<h3>4. Site Conditions</h3>\r\n<p>Actual execution timelines may vary due to existing site conditions, unforeseen circumstances, access restrictions, statutory requirements, weather conditions, or other factors beyond the reasonable control of the project team.</p>\r\n\r\n<h3>5. Client Responsibilities</h3>\r\n<p>The client shall provide timely approvals, decisions, access, information, and other requirements necessary for the execution of the works.</p>\r\n\r\n<h3>6. Changes & Variations</h3>\r\n<p>Any changes to the approved scope, design, materials, specifications, or execution requirements may affect the project schedule and shall be evaluated accordingly.</p>\r\n\r\n<h3>7. Schedule Validity</h3>\r\n<p>The durations shown in the Plan of Action represent the current planned execution schedule and may be revised as the project progresses.</p>\r\n\r\n<h3>8. General</h3>\r\n<p>This Plan of Action should be read together with the applicable project documents, approved drawings, specifications, estimates, and other agreed project documentation.</p>',NULL,NULL,'2026-09-29 10:00:57'),
 ('e018d499-8716-11f1-b721-52540021303b','7e21b4d0-1a9c-4f6b-8e3d-2c5f9a0b6d84',1,'<ol>\r\n        <li>All quantities are approximate and subject to site verification.</li>\r\n        <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>\r\n        <li>Any variation in scope shall be treated as extra work and charged separately.</li>\r\n        <li>Taxes, duties, and statutory charges shall be applicable as per prevailing regulations.</li>\r\n        <li>Payment shall be made as per mutually agreed payment schedule.</li>\r\n        <li>The contractor shall comply with all applicable safety standards.</li>\r\n        <li>Project completion timeline is subject to timely approvals and site availability.</li>\r\n        <li>Any discrepancy in the BOQ must be reported before execution.</li>\r\n    </ol>','Initial version',NULL,'2026-07-24 09:49:34'),
 ('e018dd7c-8716-11f1-b721-52540021303b','c3a58f92-6d1e-4b7a-9f0c-3e8d1a2b4c96',1,'<ol>\r\n        <li>This estimate is based on the information available at the time of preparation.</li>\r\n        <li>Prices are valid for 30 days from the date of issue.</li>\r\n        <li>Final pricing may vary based on actual site conditions and approved drawings.</li>\r\n        <li>Materials are subject to market availability.</li>\r\n        <li>Transportation, taxes, and statutory charges shall be extra unless specified.</li>\r\n        <li>Additional work requested after approval will be charged separately.</li>\r\n        <li>The estimate does not constitute a binding contract until accepted by both parties.</li>\r\n        <li>All disputes shall be subject to the jurisdiction of the project location.</li>\r\n    </ol>','Initial version',NULL,'2026-07-24 09:49:34');
 /*!40000 ALTER TABLE `terms_template_versions` ENABLE KEYS */;
@@ -11146,7 +10453,7 @@ INSERT INTO `terms_templates` VALUES
 ('4367e34a-b337-11f1-b327-52540021303b','Standard Work Order Terms & Conditions','GLOBAL','<h3>1. Scope of Work</h3>\r\n<p>The contractor shall execute the work described in this Work Order strictly in accordance with the approved drawings, specifications, BOQ, scope of work and instructions issued by Rippotai Architecture.</p>\r\n\r\n<h3>2. Workmanship & Quality</h3>\r\n<p>All work shall be carried out using good quality materials and workmanship in accordance with approved specifications and applicable standards. Any defective or unacceptable work shall be rectified by the contractor at their own cost.</p>\r\n\r\n<h3>3. Site Coordination</h3>\r\n<p>The contractor shall coordinate with the project team, site supervisor, consultants and other agencies working at the project site and shall ensure that their activities do not unnecessarily interfere with other works.</p>\r\n\r\n<h3>4. Programme & Completion</h3>\r\n<p>The contractor shall complete the work within the agreed completion period. Any anticipated delay shall be immediately communicated to the project team along with the reason and proposed recovery plan.</p>\r\n\r\n<h3>5. Safety</h3>\r\n<p>The contractor shall be responsible for maintaining safe working practices at site and shall provide appropriate safety equipment to their workers. The contractor shall comply with all applicable site safety requirements.</p>\r\n\r\n<h3>6. Labour</h3>\r\n<p>The contractor shall be responsible for the deployment, supervision and conduct of their labour and workforce. All statutory requirements relating to their workers shall be complied with by the contractor.</p>\r\n\r\n<h3>7. Materials</h3>\r\n<p>Materials supplied by the contractor shall conform to the approved specifications. No substitution of specified materials shall be made without prior written approval from the authorised project representative.</p>\r\n\r\n<h3>8. Measurement</h3>\r\n<p>Measurements shall be recorded and verified jointly wherever applicable. Payment shall be based on approved quantities, agreed rates and the applicable terms of this Work Order.</p>\r\n\r\n<h3>9. Payment</h3>\r\n<p>Payments shall be released according to the approved payment stages and subject to satisfactory completion of the relevant work, measurement verification and submission of required documents.</p>\r\n\r\n<h3>10. Defects & Rectification</h3>\r\n<p>The contractor shall rectify defects, damages or incomplete work attributable to their execution within the period specified by the project team without additional cost.</p>\r\n\r\n<h3>11. Housekeeping</h3>\r\n<p>The contractor shall maintain proper housekeeping in their work area and shall remove construction debris, waste and surplus materials as directed by the project team.</p>\r\n\r\n<h3>12. Damage to Property</h3>\r\n<p>Any damage caused to the project property, finished work, fixtures, equipment or third-party property due to the contractor or their workforce shall be repaired or compensated by the contractor.</p>\r\n\r\n<h3>13. Drawings & Instructions</h3>\r\n<p>The contractor shall execute the work based on the latest approved drawings and written instructions. The contractor shall immediately report any discrepancy or ambiguity before proceeding with the affected work.</p>\r\n\r\n<h3>14. Variations</h3>\r\n<p>No additional work or variation shall be undertaken without prior approval from the authorised representative of Rippotai Architecture. Approved variations shall be documented and valued separately where applicable.</p>\r\n\r\n<h3>15. Subcontracting</h3>\r\n<p>The contractor shall not subcontract the whole or substantial part of the assigned work without prior written approval.</p>\r\n\r\n<h3>16. Compliance</h3>\r\n<p>The contractor shall comply with applicable laws, regulations, labour requirements, safety requirements and project-specific rules.</p>\r\n\r\n<h3>17. Cancellation</h3>\r\n<p>Rippotai Architecture may suspend or cancel the Work Order in case of material breach, persistent delay, poor workmanship, non-compliance or other circumstances permitted under the agreed commercial terms.</p>\r\n\r\n<h3>18. Final Handover</h3>\r\n<p>The contractor shall complete all pending works, rectifications, cleaning and documentation required for final handover before the work is considered complete.</p>\r\n\r\n<h3>19. Acceptance</h3>\r\n<p>Commencement of work against this Work Order shall constitute acceptance of the scope, rates, programme and applicable terms unless objections are raised in writing before commencement.</p>',1,1,1,NULL,NULL,'2026-09-18 13:32:16','2026-09-18 13:32:16',NULL),
 ('7e21b4d0-1a9c-4f6b-8e3d-2c5f9a0b6d84','Default BOQ Terms & Conditions','BOQ','<ol>\r\n        <li>All quantities are approximate and subject to site verification.</li>\r\n        <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>\r\n        <li>Any variation in scope shall be treated as extra work and charged separately.</li>\r\n        <li>Taxes, duties, and statutory charges shall be applicable as per prevailing regulations.</li>\r\n        <li>Payment shall be made as per mutually agreed payment schedule.</li>\r\n        <li>The contractor shall comply with all applicable safety standards.</li>\r\n        <li>Project completion timeline is subject to timely approvals and site availability.</li>\r\n        <li>Any discrepancy in the BOQ must be reported before execution.</li>\r\n    </ol>',1,1,1,NULL,NULL,'2026-07-24 09:49:26','2026-08-31 17:46:40','2026-08-31 17:46:40'),
 ('83e538b3-9a0b-11f1-99c8-52540021303b','Payment Schedule Terms','PLAN_OF_ACTION','<h3>1. Basis of this schedule</h3>\\n<p>This Payment Schedule is to be read together with the Plan of Action and the signed Agreement for the project.<br />Where a percentage is stated, it is of the total contract value recorded above and is exclusive of GST, variations and client-supplied items.</p>\\n\\n<h3>2. Release before mobilisation</h3>\\n<p>Each milestone falls due before the corresponding phase is mobilised at site. In line with the Plan of Action,<br />mobilisation of the next phase is subject to the corresponding milestone payment being cleared.</p>\\n\\n<h3>3. Invoicing and due date</h3>\\n<p>Every milestone will be intimated in writing with a stage note and an invoice. Payment is due within three working<br />days of the invoice date. Work already in progress continues uninterrupted only against timely release.</p>\\n\\n<h3>4. Mode of payment</h3>\\n<p>All payments are to be made by NEFT, RTGS or cheque in favour of the Rippotai account printed on the invoice.<br />Cash payments, and payments made directly to any worker, supervisor or vendor at site, will not be recognised<br />against this contract.</p>\\n\\n<h3>5. Taxes</h3>\\n<p>All figures are exclusive of GST. GST and any other statutory levy will be charged additionally at the rate prevailing<br />on the date of invoice.</p>\\n\\n<h3>6. Mobilisation advance</h3>\\n<p>The booking and mobilisation amount is non-refundable and is adjusted against the final milestone.<br />Site mobilisation begins only after it is received in full.</p>\\n\\n<h3>7. Delay in release</h3>\\n<p>If a payment is delayed beyond seven days from its due date, work at site may be paused.<br />The timeline will stand extended day for day, together with three days for remobilisation,<br />and the revised handover date will be intimated in writing.</p>\\n\\n<h3>8. Interest on overdue amounts</h3>\\n<p>Any amount outstanding beyond fifteen days from its due date will attract interest at 1.5% per month<br />on the overdue amount until cleared.</p>\\n\\n<h3>9. Variations in scope</h3>\\n<p>Any change in layout, specification or scope after a phase has commenced is a variation.<br />Its cost and time implication will be shared in writing and, once approved, is billed at 100% in advance<br />of procurement. Variations do not form part of the percentages set out above.</p>\\n\\n<h3>10. Client-supplied items</h3>\\n<p>Items procured directly by the Client are to reach site as per the agreed schedule.<br />Delay, shortfall or damage in such items is not attributable to Rippotai and does not affect<br />a milestone that has already been achieved.</p>\\n\\n<h3>11. Retention and snag closure</h3>\\n<p>The final 5% is retained until the snag list has been jointly signed off, the premises deep cleaned,<br />and keys, warranty cards, appliance manuals and as-built service drawings handed over.</p>\\n\\n<h3>12. Title of materials</h3>\\n<p>Ownership of material delivered at site passes to the Client only on full payment of the corresponding milestone.</p>\\n\\n<h3>13. Suspension by the Client</h3>\\n<p>If works are suspended by the Client for more than thirty days, all milestones achieved till that date become<br />immediately payable, along with the cost of material already procured, fabricated or stored for the project.</p>\\n\\n<h3>14. Post-handover defects</h3>\\n<p>Issues reported after handover fall under the defect liability terms of the signed Agreement<br />and not under the snagging milestone of this schedule.</p>\\n\\n<h3>15. Circumstances beyond control</h3>\\n<p>Statutory construction restrictions, labour strikes, extreme weather, transport disruption and unavailability<br />of specified material are beyond our control. Timelines extend proportionately, with prior intimation;<br />milestones already achieved remain payable.</p>\\n\\n<h3>16. Jurisdiction</h3>\\n<p>Any dispute will first be attempted to be settled amicably between the parties, failing which it will be<br />subject to the exclusive jurisdiction of the courts at Delhi.</p>\\n\\n<p>The Client confirms having read and accepted the milestones, percentages and terms set out in this schedule,<br />which forms an integral part of the Plan of Action and the signed Agreement for this project.</p>',2,1,1,NULL,NULL,'2026-08-17 12:46:07','2026-09-29 15:24:05',NULL),
-('9f8c2a10-4b3e-4c7a-9d21-6a1f0c3e5b71','Standard Plan of Action Terms & Conditions','PLAN_OF_ACTION','<h2>Terms & Conditions</h2>\r\n<p>This Plan of Action is prepared based on the agreed project scope, execution sequence, estimated durations, and project requirements.</p>\r\n\r\n<h3>1. Execution Schedule</h3>\r\n<p>The execution schedule and phase durations mentioned in this Plan of Action are indicative and may be adjusted based on site conditions, material availability, approvals, dependencies, and other project requirements.</p>\r\n\r\n<h3>2. Phase Dependencies</h3>\r\n<p>Individual phases may run sequentially or in parallel depending on site conditions, availability of resources, material selections, approvals, and execution requirements.</p>\r\n\r\n<h3>3. Material Selection & Approvals</h3>\r\n<p>Timely selection and approval of materials, finishes, drawings, samples, and other project requirements are necessary to maintain the proposed execution schedule.</p>\r\n\r\n<h3>4. Site Conditions</h3>\r\n<p>Actual execution timelines may vary due to existing site conditions, unforeseen circumstances, access restrictions, statutory requirements, weather conditions, or other factors beyond the reasonable control of the project team.</p>\r\n\r\n<h3>5. Client Responsibilities</h3>\r\n<p>The client shall provide timely approvals, decisions, access, information, and other requirements necessary for the execution of the works.</p>\r\n\r\n<h3>6. Changes & Variations</h3>\r\n<p>Any changes to the approved scope, design, materials, specifications, or execution requirements may affect the project schedule and shall be evaluated accordingly.</p>\r\n\r\n<h3>7. Schedule Validity</h3>\r\n<p>The durations shown in the Plan of Action represent the current planned execution schedule and may be revised as the project progresses.</p>\r\n\r\n<h3>8. General</h3>\r\n<p>This Plan of Action should be read together with the applicable project documents, approved drawings, specifications, quotations, estimates, and other agreed project documentation.</p>',1,1,1,NULL,NULL,'2026-08-14 13:08:22','2026-08-14 13:36:58',NULL),
+('9f8c2a10-4b3e-4c7a-9d21-6a1f0c3e5b71','Standard Plan of Action Terms & Conditions','PLAN_OF_ACTION','<h2>Terms & Conditions</h2>\r\n<p>This Plan of Action is prepared based on the agreed project scope, execution sequence, estimated durations, and project requirements.</p>\r\n\r\n<h3>1. Execution Schedule</h3>\r\n<p>The execution schedule and phase durations mentioned in this Plan of Action are indicative and may be adjusted based on site conditions, material availability, approvals, dependencies, and other project requirements.</p>\r\n\r\n<h3>2. Phase Dependencies</h3>\r\n<p>Individual phases may run sequentially or in parallel depending on site conditions, availability of resources, material selections, approvals, and execution requirements.</p>\r\n\r\n<h3>3. Material Selection & Approvals</h3>\r\n<p>Timely selection and approval of materials, finishes, drawings, samples, and other project requirements are necessary to maintain the proposed execution schedule.</p>\r\n\r\n<h3>4. Site Conditions</h3>\r\n<p>Actual execution timelines may vary due to existing site conditions, unforeseen circumstances, access restrictions, statutory requirements, weather conditions, or other factors beyond the reasonable control of the project team.</p>\r\n\r\n<h3>5. Client Responsibilities</h3>\r\n<p>The client shall provide timely approvals, decisions, access, information, and other requirements necessary for the execution of the works.</p>\r\n\r\n<h3>6. Changes & Variations</h3>\r\n<p>Any changes to the approved scope, design, materials, specifications, or execution requirements may affect the project schedule and shall be evaluated accordingly.</p>\r\n\r\n<h3>7. Schedule Validity</h3>\r\n<p>The durations shown in the Plan of Action represent the current planned execution schedule and may be revised as the project progresses.</p>\r\n\r\n<h3>8. General</h3>\r\n<p>This Plan of Action should be read together with the applicable project documents, approved drawings, specifications, estimates, and other agreed project documentation.</p>',1,1,1,NULL,NULL,'2026-08-14 13:08:22','2026-11-10 13:13:31',NULL),
 ('c3a58f92-6d1e-4b7a-9f0c-3e8d1a2b4c96','Default Estimate Terms & Conditions','ESTIMATE','<ol>\r\n        <li>This estimate is based on the information available at the time of preparation.</li>\r\n        <li>Prices are valid for 30 days from the date of issue.</li>\r\n        <li>Final pricing may vary based on actual site conditions and approved drawings.</li>\r\n        <li>Materials are subject to market availability.</li>\r\n        <li>Transportation, taxes, and statutory charges shall be extra unless specified.</li>\r\n        <li>Additional work requested after approval will be charged separately.</li>\r\n        <li>The estimate does not constitute a binding contract until accepted by both parties.</li>\r\n        <li>All disputes shall be subject to the jurisdiction of the project location.</li>\r\n    </ol>',1,1,1,NULL,NULL,'2026-07-24 09:49:26','2026-08-31 17:46:44','2026-08-31 17:46:44');
 /*!40000 ALTER TABLE `terms_templates` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -11802,4 +11109,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-30 18:33:23
+-- Dump completed on 2026-11-10 13:13:31

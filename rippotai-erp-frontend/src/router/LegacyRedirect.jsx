@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 
 /**
- * Pre-app-shell URLs (/boq/…, /vendors/…, /quotations/…, /documents/…) are still
+ * Pre-app-shell URLs (/boq/…, /vendors/…, /documents/…) are still
  * used by many navigate() calls and by backend-generated links. Instead of
  * bouncing them to /dashboard via the catch-all, map each onto its current
  * app route, keeping the rest of the path and the query string.
@@ -27,9 +27,6 @@ export function legacyTarget(pathname) {
       return tail ? `/ledger/boq/${tail}` : "/ledger/boq/all";
     case "vendors":
       return tail ? `/procurement/vendors/${tail}` : "/procurement/vendors/directory";
-    case "quotations":
-    case "estimates":
-      return tail ? `/procurement/estimates/${tail}` : "/procurement/estimates/all";
     case "materials":
       return tail ? `/procurement/${tail}` : "/procurement";
     case "documents": {

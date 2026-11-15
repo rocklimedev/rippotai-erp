@@ -6,6 +6,7 @@ import {
   PrimaryKey,
   Default,
 } from 'sequelize-typescript';
+import { jsonColumn } from '@/common/types/json-column';
 
 /** Immutable archive of a generated DPR and the exact Excel delivered to the user. */
 @Table({
@@ -24,9 +25,9 @@ export class AdminDprDocument extends Model<AdminDprDocument> {
   @Column({ type: DataType.CHAR(36), allowNull: true }) declare project_id:
     | string
     | null;
-  @Column({ type: DataType.JSON, allowNull: false })
+  @Column(jsonColumn('project_names'))
   declare project_names: string[];
-  @Column({ type: DataType.JSON, allowNull: false })
+  @Column(jsonColumn('project_ids'))
   declare project_ids: string[];
   @Column({ type: DataType.DATEONLY, allowNull: true }) declare from_date:
     | string
@@ -34,18 +35,9 @@ export class AdminDprDocument extends Model<AdminDprDocument> {
   @Column({ type: DataType.DATEONLY, allowNull: true }) declare to_date:
     | string
     | null;
-  @Column({ type: DataType.JSON, allowNull: false }) declare filters: Record<
-    string,
-    any
-  >;
-  @Column({ type: DataType.JSON, allowNull: false }) declare reports: Record<
-    string,
-    any
-  >[];
-  @Column({ type: DataType.JSON, allowNull: false }) declare logs: Record<
-    string,
-    any
-  >[];
+  @Column(jsonColumn('filters')) declare filters: Record<string, any>;
+  @Column(jsonColumn('reports')) declare reports: Record<string, any>[];
+  @Column(jsonColumn('logs')) declare logs: Record<string, any>[];
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare report_count: number;
   @Column({ type: DataType.INTEGER, allowNull: false })

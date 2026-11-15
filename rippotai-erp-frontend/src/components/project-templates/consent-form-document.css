@@ -1,0 +1,181 @@
+/* CONSENT FORM TEMPLATE (.docx): margins 21.2 / 19.4 / 19.4 mm, Lato 7.5 pt, green #0D3D2F. */
+
+.wd-cf .wd-inner,
+.wd-cf .wd-cover {
+  padding-top: 21.2mm;
+}
+.pd-doc.wd-cf .wd-foot {
+  font-size: 6pt;
+  letter-spacing: 1.6pt;
+  bottom: 9.6mm;
+  color: #6e8c83;
+}
+.pd-doc .wd-cf-brand__name {
+  margin-top: 2.6mm;
+  font-size: 15pt;
+  letter-spacing: 3pt;
+  color: var(--wd-green);
+  line-height: 1.2;
+}
+.pd-doc .wd-cf-brand__line {
+  margin-top: 1mm;
+  font-size: 5.5pt;
+  letter-spacing: 1.2pt;
+  color: #3f5c52;
+  padding-bottom: 7.4mm;
+  border-bottom: 1.75pt solid var(--wd-gold);
+  width: 171.2mm;
+}
+.pd-doc.wd-cf .wd-cf-cover .wd-cover__title {
+  margin-top: 7.6mm;
+  font-size: 16pt;
+  font-weight: 400;
+  letter-spacing: 1pt;
+}
+.pd-doc.wd-cf .wd-cf-cover .wd-cover__subtitle {
+  margin-top: 1.6mm;
+  font-size: 6pt;
+  letter-spacing: 0.8pt;
+  color: #3f5c52;
+}
+.wd-cf-cover__foot {
+  position: absolute;
+  left: 19.4mm;
+  width: 171.2mm;
+  top: 195mm;
+}
+.pd-doc .wd-cf-intro {
+  background: #f3f5f4;
+  padding: 4mm 3.4mm;
+  font-size: 7pt;
+  line-height: 1.5;
+  color: #333;
+  margin-bottom: 9mm;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.pd-doc .wd-cf-details {
+  font-size: 6.5pt;
+  letter-spacing: 0.8pt;
+  color: #3f5c52;
+  padding-bottom: 3.6mm;
+  border-bottom: 1pt solid var(--wd-gold);
+  margin-bottom: 7mm;
+}
+.wd-cf-cover__foot .wd-fields {
+  row-gap: 7mm;
+  margin: 0;
+}
+.wd-cf-cover__foot .wd-fields > .wd-field:nth-child(odd) {
+  padding-right: 4mm;
+}
+.pd-doc .wd-cf-cover__foot .wd-field__label {
+  font-size: 6pt;
+  letter-spacing: 1pt;
+  color: #3f5c52;
+  text-transform: uppercase;
+}
+.pd-doc .wd-cf-cover__foot .wd-field__value {
+  min-height: 7.6mm;
+  padding-top: 1.8mm;
+  font-size: 8.5pt;
+  border-bottom: 0.75pt solid #c0c0c0;
+}
+
+/* headings & clauses */
+.wd-cf .wd-sec.wd-cf-head {
+  padding-top: 0;
+  padding-bottom: 6.8mm;
+  border-bottom-width: 1.25pt;
+  margin-bottom: 6.4mm;
+}
+.pd-doc.wd-cf .wd-cf-head .wd-sec__no {
+  font-size: 11pt;
+  margin-right: 2.6mm;
+}
+.pd-doc.wd-cf .wd-cf-head .wd-sec__title {
+  font-size: 13pt;
+  letter-spacing: 0.5pt;
+  color: var(--wd-green);
+}
+.wd-cf .pd-block--end + .pd-block .wd-cf-head,
+.wd-cf .pd-block .wd-cf-head {
+  margin-top: 0;
+}
+.pd-doc .wd-cf-lead {
+  margin: 0 0 5.4mm;
+  font-size: 7.5pt;
+  color: var(--wd-green);
+}
+.pd-doc .wd-cf-clause {
+  margin: 0 0 4mm;
+  font-size: 7.5pt;
+  line-height: 1.5;
+  color: #3a3a3a;
+}
+.pd-doc .wd-cf-clause span {
+  color: var(--wd-gold);
+  margin-right: 2.4mm;
+}
+.wd-cf .pd-block--end {
+  padding-bottom: 12mm;
+}
+.wd-cf-decl {
+  background: var(--wd-green);
+  padding: 4.4mm 4.6mm 5mm;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.pd-doc .wd-cf-decl__k {
+  font-size: 5.5pt;
+  letter-spacing: 1.6pt;
+  color: var(--wd-gold);
+  margin-bottom: 2.4mm;
+}
+.pd-doc .wd-cf-decl p {
+  margin: 0;
+  font-size: 7.5pt;
+  line-height: 1.5;
+  color: #e9eeec;
+}
+.wd-cf-end {
+  margin-top: 125mm;
+}
+.wd-cf-sign {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 6mm;
+}
+.pd-doc.wd-cf .wd-sign__label {
+  font-size: 6pt;
+  letter-spacing: 1.6pt;
+  color: #3f5c52;
+  margin-bottom: 13mm;
+}
+.pd-doc.wd-cf .wd-sign__line {
+  font-size: 6pt;
+  color: #6b6b6b;
+  line-height: 2.2;
+}
+.pd-doc .wd-cf-note {
+  margin: 18mm 0 0;
+  padding-top: 5mm;
+  border-top: 0.75pt solid #c0c0c0;
+  font-size: 6pt;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.pd-doc.wd-cf .wd-inner,
+.pd-doc.wd-cf .pd-measure,
+.pd-doc.wd-cf .wd-cover {
+  font-weight: 300;
+}
+.pd-doc.wd-cf .wd-cf-cover .wd-cover__title,
+.pd-doc.wd-cf .wd-cf-head .wd-sec__title {
+  font-weight: 300;
+}
+.pd-doc .wd-cf-intro b {
+  font-weight: 300;
+  color: #5f8a7c;
+}

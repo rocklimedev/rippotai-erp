@@ -1,0 +1,213 @@
+/* SPECIFICATION & BUDGET GUIDE TEMPLATE (.docx): margins 22.9 / 25.4 / 20.3 mm, hairline header
+   (#C4CFC8), Lato Light, gold #C09442 spaced labels, green #14402F headings, sage table fills. */
+
+.wd-sbg {
+  --sbg-gold: #c09442;
+  --sbg-green: #14402f;
+  --sbg-rule: #c4cfc8;
+  --sbg-fill: #f1f5f2;
+}
+.wd-sbg .wd-inner,
+.wd-sbg .wd-cover {
+  padding-left: 25.4mm;
+  padding-right: 25.4mm;
+}
+.pd-doc.wd-sbg .pd-measure {
+  width: 159.2mm;
+}
+.wd-sbg .pd-page::before {
+  content: "";
+  position: absolute;
+  left: 25.4mm;
+  right: 25.4mm;
+  top: 18.6mm;
+  border-top: 0.75pt solid var(--sbg-rule);
+}
+.wd-sbg .wd-cover::before {
+  left: 20.6mm;
+  right: 20.6mm;
+}
+.pd-doc.wd-sbg .wd-foot {
+  display: none;
+}
+.pd-doc.wd-sbg .wd-sbg-cover .wd-cover__title {
+  margin-top: 4.4mm;
+  font-size: 18pt;
+  font-weight: 300;
+  letter-spacing: 0;
+  color: var(--sbg-green);
+}
+.pd-doc.wd-sbg .wd-inner,
+.pd-doc.wd-sbg .pd-measure {
+  font-weight: 300;
+}
+
+.pd-doc .wd-sbg-eyebrow {
+  font-size: 7.5pt;
+  letter-spacing: 2pt;
+  color: var(--sbg-gold);
+  font-weight: 400;
+}
+.wd-sbg-head {
+  border-bottom: 0.75pt solid var(--sbg-rule);
+  padding-bottom: 3.6mm;
+  margin: 3.4mm 0 4mm;
+}
+.pd-doc .wd-sbg-head__title {
+  margin: 1.4mm 0 0;
+  font-size: 18pt;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--sbg-green);
+}
+.pd-doc .wd-sbg-head__sub {
+  margin: 0;
+  position: relative;
+  top: 7.4mm;
+  font-size: 9pt;
+  color: #1a1a1a;
+}
+.wd-sbg-head:has(.wd-sbg-head__sub) {
+  margin-bottom: 10mm;
+}
+.pd-doc .wd-sbg-title {
+  margin: 0 0 4mm;
+  font-size: 22pt;
+  font-weight: 300;
+  color: var(--sbg-green);
+}
+.pd-doc .wd-sbg-guide {
+  margin: 0 0 11mm;
+  font-size: 9pt;
+  color: var(--sbg-green);
+}
+.pd-doc .wd-sbg-p {
+  margin: 0 0 3.6mm;
+  font-size: 9pt;
+  line-height: 1.55;
+  color: #2b2b2b;
+  white-space: pre-line;
+}
+.pd-doc .wd-sbg-p--valid {
+  font-weight: 400;
+  color: var(--sbg-green);
+}
+.pd-doc .wd-sbg-small {
+  font-size: 7pt;
+  line-height: 1.45;
+  color: #2b2b2b;
+}
+.wd-sbg-facts {
+  margin-top: 10mm;
+}
+.pd-doc .wd-sbg-facts > div {
+  font-size: 8.5pt;
+  line-height: 1.9;
+  color: #2b2b2b;
+}
+.pd-doc .wd-sbg-facts span {
+  color: #000;
+  font-weight: 400;
+}
+
+/* target budget band */
+.wd-sbg-target {
+  display: flex;
+  align-items: baseline;
+  gap: 3.4mm;
+  background: var(--sbg-fill);
+  border-left: 2.25pt solid var(--sbg-gold);
+  padding: 2.6mm 3mm 2.4mm;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.pd-doc .wd-sbg-target__k {
+  font-size: 6.5pt;
+  letter-spacing: 1.5pt;
+  color: var(--sbg-gold);
+  font-weight: 400;
+}
+.pd-doc .wd-sbg-target__v {
+  font-size: 10pt;
+  color: #1a1a1a;
+}
+.pd-doc .wd-sbg-target__n {
+  font-size: 5.5pt;
+  color: #1a1a1a;
+}
+
+/* tables */
+.pd-doc .wd-sbg-t.wd-thead {
+  background: var(--sbg-fill);
+  border-bottom: 0.75pt solid var(--sbg-rule);
+  font-size: 7pt;
+  letter-spacing: 1.5pt;
+  text-transform: none;
+  color: var(--sbg-gold);
+  font-weight: 400;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.wd-sbg-t.wd-thead > span {
+  padding: 2mm 2mm 1.6mm;
+}
+.pd-doc .wd-sbg-t.wd-row {
+  min-height: 0;
+  border-bottom: 0.75pt solid var(--sbg-rule);
+  font-size: 8.5pt;
+  font-weight: 300;
+  color: #1a1a1a;
+  line-height: 1.45;
+}
+.wd-sbg-t.wd-row > span {
+  padding: 1.8mm 2mm 1.7mm;
+}
+.wd-sbg-t.wd-thead > span:first-child,
+.wd-sbg-t.wd-row > span:first-child {
+  padding-left: 2mm;
+}
+.wd-sbg-t.wd-row > span:first-child {
+  background: #fafcfb;
+}
+.pd-doc .wd-sbg-t.wd-row--total {
+  border-top: 1pt solid var(--sbg-gold);
+  margin-top: -0.75pt;
+  background: transparent;
+}
+.pd-doc .wd-sbg-t.wd-row--total > span {
+  font-weight: 300;
+  color: #1a1a1a;
+}
+.pd-doc .wd-sbg-strong {
+  font-weight: 700;
+}
+.pd-doc .wd-sbg-green {
+  color: var(--sbg-green);
+}
+.pd-doc .wd-sbg-step {
+  font-size: 8.5pt;
+}
+.pd-doc .wd-sbg-stepno {
+  display: inline-block;
+  width: 6mm;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.pd-doc .wd-sbg-closing {
+  margin: 30mm 0 0;
+  text-align: center;
+  font-size: 8.5pt;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--sbg-green);
+}
+.pd-doc .wd-sbg-t.pd-row--total {
+  background: transparent;
+  border-top: 1pt solid var(--sbg-gold);
+  margin-top: -0.75pt;
+}
+.pd-doc .wd-sbg-t.pd-row--total > span {
+  font-weight: 300;
+  color: #1a1a1a;
+  background: transparent;
+}

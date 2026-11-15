@@ -1,4 +1,7 @@
-const configuredBackend = import.meta.env.VITE_BACKEND_URL?.trim();
+const rawBackend = import.meta.env.VITE_BACKEND_URL?.trim();
+// "/" = same origin (local server proxies /api to the backend; used for shared links).
+const configuredBackend =
+  rawBackend === '/' && typeof window !== 'undefined' ? window.location.origin : rawBackend;
 const backendOrigin = (
   configuredBackend ||
   (import.meta.env.PROD ? 'https://erp-api.rippotaiarchitecture.com' : 'http://localhost:5000')

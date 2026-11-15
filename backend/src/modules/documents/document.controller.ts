@@ -60,28 +60,6 @@ export class DocumentsController {
   }
 
   @RequirePermission('documents:read')
-  @Get('dashboard/expiring-quotations')
-  getExpiringQuotations(@Query('withinDays') withinDays?: string) {
-    const parsedDays = withinDays ? Number(withinDays) : 7;
-
-    return this.documentsDashboardService.getExpiringQuotations(
-      Number.isFinite(parsedDays) ? parsedDays : 7,
-    );
-  }
-
-  @RequirePermission('documents:read')
-  @Get('dashboard/boq-variance')
-  getBoqVariance() {
-    return this.documentsDashboardService.getBoqVariance();
-  }
-
-  @RequirePermission('documents:read')
-  @Get('dashboard/draft-estimates')
-  getDraftEstimates() {
-    return this.documentsDashboardService.getDraftEstimates();
-  }
-
-  @RequirePermission('documents:read')
   @Get('dashboard/project-wise')
   getProjectWiseDocuments(@Query('limit') limit?: string) {
     const parsedLimit = limit ? Number(limit) : 5;
@@ -272,6 +250,39 @@ export class DocumentsController {
   @Get(':id/versions')
   listVersions(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.listVersions(id);
+  }
+
+  /** GET /documents/:id/versions/:versionId/download — one earlier revision's file. */
+  @RequirePermission('documents:read')
+  @Get(':id/versions/:versionId/download')
+  async downloadVersion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('versionId', ParseUUIDPipe) versionId: string,
+    @Res() res: Response,
+  ) {
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+    const version = (await this.documentsService.listVersions(id)).find(
+      (v) => v.id === versionId,
+    );
+    if (!version?.storageFilename) {
+      return res.status(404).send({ message: 'No file on this revision' });
+    }
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${(version.filename ?? version.storageFilename).replace(/["\r\n\\]/g, '_')}"`,
+    );
+    res.setHeader('Content-Type', version.mime ?? 'application/octet-stream');
+    try {
+      await this.documentsService.streamFile(version.storageFilename, res);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        return res.status(404).send({
+          statusCode: 404,
+          message: 'The file for this revision is not in storage',
+        });
+      }
+      throw e;
+    }
   }
 
   @RequirePermission('documents:delete')

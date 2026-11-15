@@ -269,8 +269,8 @@ export default function SiteVisitsPage({ projectId }) {
                 <p className="mt-1 text-2xl font-semibold">{stats.scheduled}</p>
               </div>
 
-              <div className="rounded-xl bg-blue-50 p-3">
-                <Clock3 className="h-5 w-5 text-blue-600" />
+              <div className="rounded-xl bg-[#E7EEEB] p-3">
+                <Clock3 className="h-5 w-5 text-[#0D3D2F]" />
               </div>
             </CardContent>
           </Card>

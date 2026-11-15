@@ -1,9 +1,12 @@
 import React, { useRef, useState } from 'react';
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Download, Edit3, FileText } from 'lucide-react';
 
 import { useGetBoqByIdQuery } from '@/api/boq/boq.api';
-import { Page, PageHeader, Button, EmptyState, Segmented, StatusPill } from '@/components/inos';
+import { Page, PageHeader, Button, EmptyState, Segmented } from '@/components/inos';
 import { DocumentPreview, usePdfDownload } from '@/components/print-document';
 import BoqDocument, {
   BOQ_VARIANTS,
@@ -13,6 +16,7 @@ import BoqDocument, {
 // BOQ preview: exactly the A4 pages that are downloaded, for each copy type.
 export default function BoqPreview() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("boq", id);
   const nav = useNavigate();
   const { pathname } = useLocation();
   const base = pathname.startsWith('/ledger') ? '/ledger/boq' : '/boq';
@@ -54,14 +58,9 @@ export default function BoqPreview() {
   return (
     <Page>
       <PageHeader
+        info={recordInfo}
         crumbs={crumbs}
         title={boq.project?.name || boq.title}
-        subtitle={
-          <span style={{ display: 'inline-flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            Bill of quantities · {boq.boq_number || `version ${boq.version || 1}`}
-            {boq.status && <StatusPill status={boq.status} size="sm" />}
-          </span>
-        }
         actions={
           <>
             <Button variant="secondary" icon={Edit3} onClick={() => nav(`${base}/${id}`)}>
@@ -83,6 +82,7 @@ export default function BoqPreview() {
           </>
         }
       />
+      <RecordContext type="boq" id={id} />
 
       <div style={{ marginBottom: 12 }}>
         <Segmented
@@ -95,6 +95,7 @@ export default function BoqPreview() {
       <DocumentPreview>
         <BoqDocument key={variant} ref={docRef} boq={boq} variant={variant} />
       </DocumentPreview>
+      <VersionHistory type="boq" id={id} />
     </Page>
   );
 }

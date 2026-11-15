@@ -6,6 +6,7 @@ import { SearchService } from './search.service';
 import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
 import { BulkIndexerService } from './indexing/bulk-indexer.service';
+import { SearchSyncService } from './search-sync.service';
 
 import { ProjectSearchService } from './services/project-search.service';
 import { ClientSearchService } from './services/client-search.service';
@@ -14,7 +15,6 @@ import { LeadSearchService } from './services/lead-search.service';
 import { VendorSearchService } from './services/vendor-search.service';
 import { BoqSearchService } from './services/boq-search.service';
 import { BriefSearchService } from './services/brief-search.service';
-import { QuotationSearchService } from './services/quotation-search.service';
 import { SiteRecceSearchService } from './services/site-recce-search.service';
 import { TaskSearchService } from './services/task-search.service';
 import { CalendarSearchService } from './services/calendar-search.service';
@@ -32,7 +32,6 @@ import { Lead } from '../leads/models/lead.model';
 import { Vendor } from '../vendors/models/vendors.model';
 import { Boq } from '../boqs/models/boq.model';
 import { ProjectBrief } from '../brief/models/project-brief.model';
-import { Quotation } from '../quotations/models/quotations.model';
 import { SiteRecce } from '../reki/models/site-recce.model';
 import { Task } from '../tasks/models/task.model';
 import { CalendarEvent } from '../calendar/models/calender-event.model';
@@ -52,7 +51,6 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
       Vendor,
       Boq,
       ProjectBrief,
-      Quotation,
       SiteRecce,
       Task,
       CalendarEvent,
@@ -71,6 +69,7 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
     GlobalSearchService,
     AutocompleteService,
     BulkIndexerService,
+    SearchSyncService,
 
     ProjectSearchService,
     ClientSearchService,
@@ -79,7 +78,6 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
     VendorSearchService,
     BoqSearchService,
     BriefSearchService,
-    QuotationSearchService,
     SiteRecceSearchService,
     TaskSearchService,
     CalendarSearchService,
@@ -101,7 +99,6 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
     VendorSearchService,
     BoqSearchService,
     BriefSearchService,
-    QuotationSearchService,
     SiteRecceSearchService,
     TaskSearchService,
     CalendarSearchService,

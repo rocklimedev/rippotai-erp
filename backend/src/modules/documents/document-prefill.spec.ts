@@ -25,7 +25,7 @@ describe('document predecessor sequence', () => {
           },
         ],
       },
-      'estimates-quotations': {
+      'business-proposal': {
         items: [{ particular: 'Older', quantity: 1, rate: 1 }],
       },
     });

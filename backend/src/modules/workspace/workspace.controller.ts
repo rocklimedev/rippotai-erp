@@ -9,7 +9,7 @@ import { WorkspaceService } from './workspace.service';
 export class WorkspaceController {
   constructor(private readonly svc: WorkspaceService) {}
 
-  /** GET /clients/:id/overview — client + projects, documents, payment schedules, quotations, notes */
+  /** GET /clients/:id/overview — client + projects, documents, payment schedules, notes */
   @RequirePermission('workspace:read')
   @Get('clients/:id/overview')
   clientOverview(@Param('id') id: string) {

@@ -1,0 +1,167 @@
+/* SCOPE OF WORK TEMPLATE (.docx) — Lato Light 9 pt base; values from its document.xml. */
+
+.pd-doc.wd-sow .wd-cover__title {
+  font-size: 17pt;
+  font-weight: 400;
+  letter-spacing: 2pt;
+  margin-top: 5mm;
+}
+.wd-sow .wd-sec {
+  padding-top: 1mm;
+  padding-bottom: 17.6mm;
+  margin-bottom: 10.6mm;
+}
+.wd-sow .wd-sec.wd-sec--plain {
+  padding-bottom: 0;
+  margin-bottom: 7mm;
+}
+.pd-doc.wd-sow .wd-sec__no {
+  font-size: 13pt;
+  margin-right: 5.4mm;
+}
+.pd-doc.wd-sow .wd-sec__title {
+  font-size: 22pt;
+}
+.pd-doc.wd-sow .wd-field__label {
+  font-size: 7.5pt;
+  letter-spacing: 1.2pt;
+}
+.pd-doc.wd-sow .wd-field__value {
+  min-height: 4.3mm;
+  padding-top: 0.8mm;
+  font-size: 8.5pt;
+}
+.wd-sow .wd-fields {
+  row-gap: 7.2mm;
+}
+.wd-sow .wd-fields > .wd-field:nth-child(odd) {
+  padding-right: 7.9mm;
+}
+.pd-doc.wd-sow .wd-sub {
+  font-size: 11pt;
+  letter-spacing: 2pt;
+  padding-bottom: 5.4mm;
+  border-bottom-width: 1pt;
+  margin-bottom: 9mm;
+}
+.pd-doc.wd-sow .wd-sub__tail {
+  font-size: 6.5pt;
+  letter-spacing: 0.7pt;
+}
+.pd-doc.wd-sow .wd-sow-sub--grey {
+  font-size: 10pt;
+  border-bottom: 0.75pt solid #d9d9d9;
+  padding-bottom: 4.2mm;
+  margin-bottom: 5mm;
+}
+.pd-doc.wd-sow .wd-foot {
+  font-size: 6pt;
+  letter-spacing: 2pt;
+  color: #a3b5af;
+}
+.pd-doc.wd-sow .wd-check {
+  font-size: 7.5pt;
+}
+.wd-sow-sage .wd-box {
+  border-color: var(--wd-sage);
+}
+.wd-sow-sage .wd-box__tick {
+  border-color: var(--wd-green);
+}
+.pd-doc .wd-sow-sage .wd-check {
+  font-size: 8.5pt;
+}
+
+/* material procurement */
+.wd-sow-proc__cols {
+  display: grid;
+  grid-template-columns: 92.5mm 1fr;
+  border-top: 1pt solid var(--wd-gold);
+  margin-top: -1pt;
+}
+.pd-doc .wd-sow-proc__head {
+  font-size: 9pt;
+  text-align: center;
+  margin: 1.2mm 8mm 8.6mm 0;
+}
+.wd-sow-proc .wd-sub {
+  border-bottom: 0 !important;
+  padding-bottom: 3mm !important;
+}
+.wd-sow-proc .wd-check {
+  min-height: 5.4mm;
+}
+.wd-sow-proc .wd-check--indent {
+  margin-left: 6.6mm;
+}
+
+/* tables */
+.pd-doc .wd-sow-sum.wd-thead {
+  font-size: 7pt;
+  letter-spacing: 1.6pt;
+  border-bottom-width: 1pt;
+}
+.wd-sow-sum.wd-thead > span,
+.wd-sow-mx.wd-thead > span {
+  padding: 0 0 1.2mm;
+}
+.pd-doc .wd-sow-sum.wd-row {
+  min-height: 7.9mm;
+  font-size: 8pt;
+}
+.pd-doc .wd-sow-mx__cat {
+  font-size: 13pt;
+  color: var(--wd-green);
+  line-height: 1.2;
+  margin-bottom: 2.4mm;
+}
+.pd-doc .wd-sow-mx.wd-thead {
+  font-size: 6.5pt;
+  letter-spacing: 1.6pt;
+  color: var(--wd-sage);
+  border-bottom-width: 1pt;
+}
+.pd-doc .wd-sow-mx.wd-row {
+  min-height: 7.9mm;
+  font-size: 8pt;
+}
+.wd-sow-mx.wd-row > span,
+.wd-sow-sum.wd-row > span {
+  padding: 1.8mm 0.8mm 1.6mm 0;
+}
+.pd-doc .wd-sow-mx__space {
+  color: var(--wd-green);
+}
+
+/* acceptance */
+.wd-sow-acc {
+  min-height: 218mm;
+  display: flex;
+  flex-direction: column;
+}
+.pd-doc .wd-sow-notes {
+  font-size: 8pt;
+  letter-spacing: 2pt;
+}
+.wd-sow-acc__sign {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 7.5mm;
+}
+.pd-doc.wd-sow .wd-sign__label {
+  font-size: 7pt;
+  letter-spacing: 2pt;
+  color: var(--wd-green);
+  margin-bottom: 14.5mm;
+}
+.pd-doc.wd-sow .wd-sign__line {
+  font-size: 6.5pt;
+  line-height: 1.95;
+}
+.pd-doc.wd-sow .wd-sow-sage .wd-check {
+  font-size: 8.5pt;
+}
+.pd-doc.wd-sow .wd-sow-proc .wd-check {
+  min-height: 6.15mm;
+}

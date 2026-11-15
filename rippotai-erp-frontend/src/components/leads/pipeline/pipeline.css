@@ -139,13 +139,17 @@
   overflow-y: hidden;
   padding-bottom: 12px;
   margin-inline: -4px;
+  /* set by KanbanBoard: viewport height below the board's top edge */
+  height: var(--crm-board-h, calc(100vh - 290px));
+  min-height: 320px;
 }
 .crm-board {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 12px;
   padding: 2px 4px;
   min-width: max-content;
+  height: 100%;
 }
 .crm-col {
   width: 280px;
@@ -155,8 +159,8 @@
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  max-height: calc(100vh - 290px);
-  min-height: 220px;
+  height: 100%;
+  min-height: 0;
   transition:
     background 0.12s ease,
     border-color 0.12s ease,
@@ -245,8 +249,12 @@
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   flex: 1;
-  min-height: 80px;
+  min-height: 0;
+}
+.crm-col__body > * {
+  flex-shrink: 0;
 }
 .crm-col__empty {
   display: grid;
@@ -1046,4 +1054,227 @@
 .crm-hint-inline {
   font-size: 12px;
   color: var(--text-3);
+}
+
+/* ---------------------------------------------------------------- Rippotai brand palette
+   The pipeline uses only brand colours: green #0D3D2F, gold #D9B061, grey #8C8C8C
+   (+ their tints). The shared blue / red / purple / peach tones are remapped here,
+   so stage dots, pills, stage selects, timeline icons and card rails stay on brand. */
+.crm-page,
+.crm-modal,
+.crm-drawer,
+.crm-popover,
+.crm-dropbar {
+  --rp-green: #0d3d2f;
+  --rp-green-tint: #e4ece8;
+  --rp-gold: #d9b061;
+  --rp-gold-tint: #f7eedb;
+  --rp-gold-ink: #7a5a1c;
+  --rp-grey: #8c8c8c;
+  --rp-grey-tint: #efefef;
+  --rp-grey-ink: #4d4d4d;
+
+  --info-bg: var(--rp-green-tint);
+  --info-fg: var(--rp-green);
+  --info-dot: #5f8577;
+  --lilac-bg: #f1ead9;
+  --lilac-fg: var(--rp-gold-ink);
+  --lilac-dot: #c4a25a;
+  --peach-bg: var(--rp-gold-tint);
+  --peach-fg: var(--rp-gold-ink);
+  --peach-dot: var(--rp-gold);
+  --warn-bg: var(--rp-gold-tint);
+  --warn-fg: var(--rp-gold-ink);
+  --warn-dot: var(--rp-gold);
+  --ok-bg: var(--rp-green-tint);
+  --ok-fg: var(--rp-green);
+  --ok-dot: var(--rp-green);
+  --bad-bg: var(--rp-grey-tint);
+  --bad-fg: var(--rp-grey-ink);
+  --bad-dot: var(--rp-grey);
+  --mute-dot: #b5b5b5;
+}
+
+/* Temperature badges: Hot = brand green, Warm = gold, Cold = grey. */
+.crm-temp {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  white-space: nowrap;
+}
+.crm-temp--lg {
+  height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.crm-temp--hot {
+  background: #0d3d2f;
+  color: #fff;
+}
+.crm-temp--warm {
+  background: #d9b061;
+  color: #1f1a10;
+}
+.crm-temp--cold {
+  background: #8c8c8c;
+  color: #fff;
+}
+
+/* DESIGN / BUILD label */
+.crm-service {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  border: 1px solid currentColor;
+  background: #fff;
+  white-space: nowrap;
+}
+.crm-service--design {
+  color: #0d3d2f;
+}
+.crm-service--build {
+  color: #7a5a1c;
+  border-color: #d9b061;
+  background: #fbf6ea;
+}
+
+/* One-click temperature marker */
+.crm-tempmark {
+  display: inline-flex;
+  border: 1px solid var(--line, #dfe3e1);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+}
+.crm-tempmark__btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-3, #6b6b6b);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 3px 10px;
+  cursor: pointer;
+  line-height: 1.3;
+}
+.crm-tempmark--compact .crm-tempmark__btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  min-width: 24px;
+}
+.crm-tempmark__btn + .crm-tempmark__btn {
+  border-left: 1px solid var(--line, #dfe3e1);
+}
+.crm-tempmark__btn:hover {
+  background: #f4f4f2;
+}
+.crm-tempmark__btn:focus-visible {
+  outline: 2px solid #0d3d2f;
+  outline-offset: -2px;
+}
+.crm-tempmark__btn--hot[aria-checked='true'] {
+  background: #0d3d2f;
+  color: #fff;
+}
+.crm-tempmark__btn--warm[aria-checked='true'] {
+  background: #d9b061;
+  color: #1f1a10;
+}
+.crm-tempmark__btn--cold[aria-checked='true'] {
+  background: #8c8c8c;
+  color: #fff;
+}
+
+/* Card head (title + pencil) and marks row */
+.crm-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.crm-card__head .crm-card__title {
+  flex: 1;
+  min-width: 0;
+}
+.crm-card__edit {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: -3px -4px 0 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3, #6b6b6b);
+  cursor: pointer;
+}
+.crm-card__edit svg {
+  width: 14px;
+  height: 14px;
+}
+.crm-card__edit:hover,
+.crm-card__edit:focus-visible {
+  background: #e4ece8;
+  border-color: #c9d6d0;
+  color: #0d3d2f;
+  outline: none;
+}
+.crm-card__marks {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 8px;
+}
+.crm-card--hot {
+  box-shadow: inset 0 2px 0 #0d3d2f;
+}
+
+/* Quick filters (service, temperature) */
+.crm-quickfilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: -6px;
+}
+.crm-quickfilters__label {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-3, #6b6b6b);
+}
+.crm-quickfilters__label + div + .crm-quickfilters__label {
+  margin-left: 8px;
+}
+.crm-cell-deal {
+  min-width: 240px;
+}
+.crm-cell-deal__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+.crm-modal .inos-choice[aria-checked='true'] {
+  border-color: #0d3d2f;
+}
+
+/* Kanban fills the viewport: drop the page/shell bottom padding while the
+   board is on screen so the columns run to the bottom edge. */
+.crm-page:has(.crm-board-scroll) {
+  padding-bottom: 0;
+}
+.inos-shell__content:has(.crm-board-scroll) {
+  padding-bottom: 12px;
 }

@@ -12,7 +12,6 @@ import {
   Grid2x2,
   Rows3,
   X,
-  Bookmark,
   Phone,
   Trash2,
   Edit,
@@ -78,14 +77,10 @@ import {
   useCreateSavedSearchMutation,
   useDeleteSavedSearchMutation,
   useLazyExportVendorsQuery,
-  useGetVendorShortlistsQuery,
-  useCreateVendorShortlistMutation,
-  useAddVendorToShortlistMutation,
   useDeleteVendorMutation,
 } from "../../api/vendors/vendor.api";
 
 import { useSearchVendorsQuery } from "../../api/meta/search.api";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 const STATUS_OPTIONS = [
   {
@@ -143,173 +138,6 @@ function StatusChip({ status }) {
   );
 }
 
-const SHORTLIST_TRADES = [
-  "Civil", "Plumber", "Electrician", "AC", "POP", "Flooring", "Carpentar",
-  "MS", "Solar", "Glass", "Paint", "Facade",
-];
-const SHORTLIST_WORKING_TYPES = ["Contractor", "Individual", "Freelancer"];
-
-export function AddToShortlistModal({ open, onClose, vendorId }) {
-  const { data: lists = [], isFetching } = useGetVendorShortlistsQuery(
-    undefined,
-    { skip: !open },
-  );
-  const { data: projectsData } = useGetProjectsQuery(undefined, {
-    skip: !open,
-  });
-  const projects = Array.isArray(projectsData)
-    ? projectsData
-    : projectsData?.data || projectsData?.rows || [];
-
-  const [addToShortlist, { isLoading: isAdding }] =
-    useAddVendorToShortlistMutation();
-  const [createShortlist, { isLoading: isCreating }] =
-    useCreateVendorShortlistMutation();
-
-  const [trade, setTrade] = useState("Civil");
-  const [workingType, setWorkingType] = useState("Contractor");
-  const [newProjectId, setNewProjectId] = useState("");
-
-  const projectsWithList = new Set(lists.map((l) => l.project_id));
-  const availableProjects = projects.filter((p) => !projectsWithList.has(p.id));
-
-  const add = async (shortlistId) => {
-    try {
-      await addToShortlist({
-        shortlistId,
-        vendor_id: vendorId,
-        trade,
-        working_type: workingType,
-      }).unwrap();
-      toast.success("Added to shortlist");
-      onClose();
-    } catch (error) {
-      toast.error(
-        error?.data?.message || error?.message || "Couldn't add to shortlist",
-      );
-    }
-  };
-
-  const create = async () => {
-    if (!newProjectId) {
-      toast.error("Choose a project");
-      return;
-    }
-    try {
-      const list = await createShortlist({ project_id: newProjectId }).unwrap();
-      await add(list.id);
-      setNewProjectId("");
-    } catch (error) {
-      toast.error(
-        error?.data?.message || error?.message || "Couldn't create shortlist",
-      );
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
-          <DialogTitle>Add to Shortlist</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <Select value={trade} onValueChange={setTrade}>
-              <SelectTrigger data-testid="shortlist-trade">
-                <SelectValue placeholder="Trade" />
-              </SelectTrigger>
-              <SelectContent>
-                {SHORTLIST_TRADES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t === "Carpentar" ? "Carpenter" : t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={workingType} onValueChange={setWorkingType}>
-              <SelectTrigger data-testid="shortlist-working-type">
-                <SelectValue placeholder="Working type" />
-              </SelectTrigger>
-              <SelectContent>
-                {SHORTLIST_WORKING_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="max-h-[300px] space-y-2 overflow-y-auto">
-            {isFetching && (
-              <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading shortlists...
-              </div>
-            )}
-
-            {!isFetching &&
-              lists.map((list) => (
-                <button
-                  key={list.id}
-                  type="button"
-                  onClick={() => add(list.id)}
-                  disabled={isAdding || isCreating}
-                  className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
-                  data-testid={`shortlist-pick-${list.id}`}
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-[13px] font-semibold text-slate-900">
-                      {list.name}
-                    </div>
-                    <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                      {list.project_name || "—"} · {list.vendor_count || 0}{" "}
-                      vendors
-                    </div>
-                  </div>
-                  <Plus className="h-4 w-4 shrink-0 text-slate-500" />
-                </button>
-              ))}
-
-            {!isFetching && lists.length === 0 && (
-              <div className="rounded-lg border border-dashed border-slate-200 py-6 text-center text-[12.5px] text-muted-foreground">
-                No vendor shortlists yet. Start one for a project below.
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-2 border-t pt-4">
-            <Select value={newProjectId} onValueChange={setNewProjectId}>
-              <SelectTrigger data-testid="new-shortlist-project">
-                <SelectValue placeholder="New shortlist for project…" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableProjects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button
-              type="button"
-              onClick={create}
-              disabled={isCreating || isAdding || !newProjectId}
-              className="shrink-0 bg-[#1F453B] hover:bg-[#17382f]"
-              data-testid="new-shortlist-create"
-            >
-              {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function VendorsDashboard() {
   const nav = useNavigate();
 
@@ -323,7 +151,6 @@ export default function VendorsDashboard() {
     status: "",
   });
 
-  const [shortlistFor, setShortlistFor] = useState(null);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
   const [newSearchName, setNewSearchName] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -395,7 +222,7 @@ export default function VendorsDashboard() {
       const anchor = document.createElement("a");
 
       anchor.href = url;
-      anchor.download = "vendors.csv";
+      anchor.download = `Vendor-Directory_${new Date().toISOString().slice(0, 10)}.csv`;
       anchor.click();
 
       URL.revokeObjectURL(url);
@@ -485,16 +312,6 @@ export default function VendorsDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => nav("/procurement/vendors/shortlists")}
-            data-testid="shortlists-link"
-          >
-            <Bookmark className="mr-2 h-4 w-4" />
-            Shortlists
-          </Button>
-
           <Button
             type="button"
             onClick={() => nav("/procurement/vendors/new")}
@@ -879,22 +696,6 @@ export default function VendorsDashboard() {
                               Edit Vendor
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                              onSelect={() => setShortlistFor(vendor.id)}
-                              data-testid={`row-shortlist-${vendor.id}`}
-                            >
-                              <Bookmark className="mr-2 h-4 w-4" />
-                              Add to Shortlist
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                nav(`/quotations/new?vendor=${vendor.id}`)
-                              }
-                            >
-                              Open in Quotations
-                            </DropdownMenuItem>
-
                             <DropdownMenuSeparator />
 
                             <DropdownMenuItem
@@ -980,13 +781,6 @@ export default function VendorsDashboard() {
           )}
         </CardContent>
       </Card>
-
-      {/* Add to shortlist */}
-      <AddToShortlistModal
-        open={Boolean(shortlistFor)}
-        onClose={() => setShortlistFor(null)}
-        vendorId={shortlistFor}
-      />
 
       {/* Delete Confirmation */}
       <AlertDialog

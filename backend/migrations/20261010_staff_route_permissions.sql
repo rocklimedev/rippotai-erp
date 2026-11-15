@@ -190,11 +190,10 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-estimates:create', 'procurement-estimates', 'create', 'Staff API capability: procurement-estimates:create', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-estimates:read', 'procurement-estimates', 'read', 'Staff API capability: procurement-estimates:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-estimates:reject', 'procurement-estimates', 'reject', 'Staff API capability: procurement-estimates:reject', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-quotations:accept', 'procurement-quotations', 'accept', 'Staff API capability: procurement-quotations:accept', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-quotations:create', 'procurement-quotations', 'create', 'Staff API capability: procurement-quotations:create', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-quotations:delete', 'procurement-quotations', 'delete', 'Staff API capability: procurement-quotations:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-quotations:read', 'procurement-quotations', 'read', 'Staff API capability: procurement-quotations:read', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-quotations:reject', 'procurement-quotations', 'reject', 'Staff API capability: procurement-quotations:reject', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-quotations:send', 'procurement-quotations', 'send', 'Staff API capability: procurement-quotations:send', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-quotations:update', 'procurement-quotations', 'update', 'Staff API capability: procurement-quotations:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-rate-sheets:approve', 'procurement-rate-sheets', 'approve', 'Staff API capability: procurement-rate-sheets:approve', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-rate-sheets:create', 'procurement-rate-sheets', 'create', 'Staff API capability: procurement-rate-sheets:create', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'procurement-rate-sheets:delete', 'procurement-rate-sheets', 'delete', 'Staff API capability: procurement-rate-sheets:delete', NOW());
@@ -220,11 +219,6 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-planners:generate', 'project-planners', 'generate', 'Staff API capability: project-planners:generate', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-planners:read', 'project-planners', 'read', 'Staff API capability: project-planners:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-planners:update', 'project-planners', 'update', 'Staff API capability: project-planners:update', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-shortlists:create', 'project-shortlists', 'create', 'Staff API capability: project-shortlists:create', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-shortlists:delete', 'project-shortlists', 'delete', 'Staff API capability: project-shortlists:delete', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-shortlists:export', 'project-shortlists', 'export', 'Staff API capability: project-shortlists:export', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-shortlists:read', 'project-shortlists', 'read', 'Staff API capability: project-shortlists:read', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-shortlists:update', 'project-shortlists', 'update', 'Staff API capability: project-shortlists:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-types:create', 'project-types', 'create', 'Staff API capability: project-types:create', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-types:delete', 'project-types', 'delete', 'Staff API capability: project-types:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'project-types:read', 'project-types', 'read', 'Staff API capability: project-types:read', NOW());
@@ -249,24 +243,10 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quality-checklists:export', 'quality-checklists', 'export', 'Staff API capability: quality-checklists:export', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quality-checklists:read', 'quality-checklists', 'read', 'Staff API capability: quality-checklists:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quality-checklists:update', 'quality-checklists', 'update', 'Staff API capability: quality-checklists:update', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotation-items:create', 'quotation-items', 'create', 'Staff API capability: quotation-items:create', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotation-items:delete', 'quotation-items', 'delete', 'Staff API capability: quotation-items:delete', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotation-items:read', 'quotation-items', 'read', 'Staff API capability: quotation-items:read', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotation-items:update', 'quotation-items', 'update', 'Staff API capability: quotation-items:update', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:approve', 'quotations', 'approve', 'Staff API capability: quotations:approve', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:create', 'quotations', 'create', 'Staff API capability: quotations:create', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:delete', 'quotations', 'delete', 'Staff API capability: quotations:delete', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:export', 'quotations', 'export', 'Staff API capability: quotations:export', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:read', 'quotations', 'read', 'Staff API capability: quotations:read', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:restore', 'quotations', 'restore', 'Staff API capability: quotations:restore', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:select', 'quotations', 'select', 'Staff API capability: quotations:select', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:submit', 'quotations', 'submit', 'Staff API capability: quotations:submit', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'quotations:update', 'quotations', 'update', 'Staff API capability: quotations:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'rbac:create', 'rbac', 'create', 'Staff API capability: rbac:create', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'rbac:delete', 'rbac', 'delete', 'Staff API capability: rbac:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'rbac:read', 'rbac', 'read', 'Staff API capability: rbac:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'rbac:update', 'rbac', 'update', 'Staff API capability: rbac:update', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'reports:read', 'reports', 'read', 'Staff API capability: reports:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'role-apps:assign', 'role-apps', 'assign', 'Staff API capability: role-apps:assign', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'role-apps:grant', 'role-apps', 'grant', 'Staff API capability: role-apps:grant', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'role-apps:read', 'role-apps', 'read', 'Staff API capability: role-apps:read', NOW());
@@ -288,15 +268,6 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'settings:delete', 'settings', 'delete', 'Staff API capability: settings:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'settings:read', 'settings', 'read', 'Staff API capability: settings:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'settings:update', 'settings', 'update', 'Staff API capability: settings:update', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-entries:create', 'shortlist-entries', 'create', 'Staff API capability: shortlist-entries:create', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-entries:delete', 'shortlist-entries', 'delete', 'Staff API capability: shortlist-entries:delete', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-entries:read', 'shortlist-entries', 'read', 'Staff API capability: shortlist-entries:read', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-entries:select', 'shortlist-entries', 'select', 'Staff API capability: shortlist-entries:select', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-entries:update', 'shortlist-entries', 'update', 'Staff API capability: shortlist-entries:update', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-packages:apply', 'shortlist-packages', 'apply', 'Staff API capability: shortlist-packages:apply', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-packages:create', 'shortlist-packages', 'create', 'Staff API capability: shortlist-packages:create', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-packages:delete', 'shortlist-packages', 'delete', 'Staff API capability: shortlist-packages:delete', NOW());
-INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'shortlist-packages:read', 'shortlist-packages', 'read', 'Staff API capability: shortlist-packages:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-checklists:create', 'site-ops-checklists', 'create', 'Staff API capability: site-ops-checklists:create', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-checklists:read', 'site-ops-checklists', 'read', 'Staff API capability: site-ops-checklists:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-daily-reports:create', 'site-ops-daily-reports', 'create', 'Staff API capability: site-ops-daily-reports:create', NOW());
@@ -603,11 +574,10 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'procurement-estimates:create',
   'procurement-estimates:read',
   'procurement-estimates:reject',
-  'procurement-quotations:accept',
   'procurement-quotations:create',
+  'procurement-quotations:delete',
   'procurement-quotations:read',
-  'procurement-quotations:reject',
-  'procurement-quotations:send',
+  'procurement-quotations:update',
   'procurement-rate-sheets:approve',
   'procurement-rate-sheets:create',
   'procurement-rate-sheets:delete',
@@ -633,11 +603,6 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'project-planners:generate',
   'project-planners:read',
   'project-planners:update',
-  'project-shortlists:create',
-  'project-shortlists:delete',
-  'project-shortlists:export',
-  'project-shortlists:read',
-  'project-shortlists:update',
   'project-types:create',
   'project-types:delete',
   'project-types:read',
@@ -662,24 +627,10 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'quality-checklists:export',
   'quality-checklists:read',
   'quality-checklists:update',
-  'quotation-items:create',
-  'quotation-items:delete',
-  'quotation-items:read',
-  'quotation-items:update',
-  'quotations:approve',
-  'quotations:create',
-  'quotations:delete',
-  'quotations:export',
-  'quotations:read',
-  'quotations:restore',
-  'quotations:select',
-  'quotations:submit',
-  'quotations:update',
   'rbac:create',
   'rbac:delete',
   'rbac:read',
   'rbac:update',
-  'reports:read',
   'role-apps:assign',
   'role-apps:grant',
   'role-apps:read',
@@ -701,15 +652,6 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'settings:delete',
   'settings:read',
   'settings:update',
-  'shortlist-entries:create',
-  'shortlist-entries:delete',
-  'shortlist-entries:read',
-  'shortlist-entries:select',
-  'shortlist-entries:update',
-  'shortlist-packages:apply',
-  'shortlist-packages:create',
-  'shortlist-packages:delete',
-  'shortlist-packages:read',
   'site-ops-checklists:create',
   'site-ops-checklists:read',
   'site-ops-daily-reports:create',

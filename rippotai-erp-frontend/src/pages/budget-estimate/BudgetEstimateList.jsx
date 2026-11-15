@@ -45,7 +45,7 @@ const STATUS_LABELS = {
 
 const STATUS_CLASSES = {
   draft: "bg-gray-100 text-gray-700",
-  in_progress: "bg-blue-100 text-blue-700",
+  in_progress: "bg-[#E7EEEB] text-[#0D3D2F]",
   submitted: "bg-yellow-100 text-yellow-700",
   approved: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
@@ -564,7 +564,7 @@ const BudgetEstimateList = ({ projectId }) => {
                             type="button"
                             title="Edit"
                             onClick={() => handleEdit(estimate)}
-                            className="rounded-lg p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
+                            className="rounded-lg p-2 text-gray-500 transition hover:bg-[#E7EEEB] hover:text-[#0D3D2F]"
                           >
                             <Edit className="h-4 w-4" />
                           </button>

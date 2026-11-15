@@ -37,10 +37,6 @@ export class CreateProcurementItemDto {
 
   @IsOptional()
   @IsDateString()
-  quotation_finalised_at?: string;
-
-  @IsOptional()
-  @IsDateString()
   planned_start_date?: string;
 
   @IsOptional()

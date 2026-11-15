@@ -24,7 +24,6 @@ export const APP_ENTITY_TYPES: Record<string, string[]> = {
   ],
   ledger: ['boq', 'budget_estimate', 'payment_schedule', 'invoice', 'payment'],
   procurement: [
-    'quotation',
     'vendor',
     'work_order',
     'delivery_challan',
@@ -95,7 +94,6 @@ export class WorkspaceService {
         documents: [],
         payment_schedules: [],
         milestones: [],
-        quotations: [],
         notes: await this.notesFor(id, ids),
       };
     }
@@ -124,20 +122,12 @@ export class WorkspaceService {
        ORDER BY m.due_date IS NULL, m.due_date ASC, m.sort_order ASC`,
       { ids },
     );
-    const quotations = await this.q(
-      `SELECT q.id, q.quotation_number, q.status, q.total_amount, q.quotation_date, q.expiry_date,
-              q.project_id, p.name AS project_name
-       FROM quotations q JOIN projects p ON p.id = q.project_id
-       WHERE q.project_id IN (:ids) AND q.deleted_at IS NULL ORDER BY q.created_at DESC LIMIT 50`,
-      { ids },
-    );
     return {
       client,
       projects,
       documents,
       payment_schedules,
       milestones,
-      quotations,
       notes: await this.notesFor(id, ids),
     };
   }
@@ -179,7 +169,7 @@ export class WorkspaceService {
 
     const events = await this.q(
       `SELECT e.id, e.title, e.type, e.starts_at, e.ends_at, e.all_day, e.location, e.description,
-              e.project_id, e.attendees, e.created_by, e.visit_assignment_id, p.name AS project_name
+              e.project_id, e.attendees, e.created_by, p.name AS project_name
        FROM calendar_events e LEFT JOIN projects p ON p.id = e.project_id
        WHERE e.starts_at BETWEEN :start AND :end
        ${mine ? `AND (e.created_by = :uid OR JSON_CONTAINS(e.attendees, JSON_QUOTE(:email)) OR JSON_CONTAINS(e.attendees, JSON_QUOTE(:uid)))` : ''}
@@ -190,11 +180,11 @@ export class WorkspaceService {
       items.push({
         ...e,
         key: `event:${e.id}`,
-        source: e.visit_assignment_id != null ? 'site_visit' : 'event',
+        source: 'event',
         kind: e.type,
         date: e.starts_at,
         end: e.ends_at,
-        editable: e.visit_assignment_id == null,
+        editable: true,
         attendees:
           typeof e.attendees === 'string' ? safeJson(e.attendees) : e.attendees,
       });
@@ -266,33 +256,11 @@ export class WorkspaceService {
           project_name: m.project_name,
         });
 
-      const qts = await this.q(
-        `SELECT q.id, q.quotation_number, q.expiry_date, q.status, q.project_id, p.name AS project_name
-         FROM quotations q LEFT JOIN projects p ON p.id = q.project_id
-         WHERE q.deleted_at IS NULL AND q.expiry_date BETWEEN :start AND :end`,
-        r,
-      );
-      for (const x of qts)
-        items.push({
-          key: `quotation:${x.id}`,
-          id: x.id,
-          source: 'quotation',
-          kind: 'quotation_deadline',
-          title: `Quotation ${x.quotation_number} expires`,
-          date: x.expiry_date,
-          all_day: true,
-          status: x.status,
-          project_id: x.project_id,
-          project_name: x.project_name,
-        });
-
       try {
         const visits = await this.q(
           `SELECT l.id, l.visitor_name, l.visitor_type, l.scheduled_date, l.status, l.purpose, l.project_id, p.name AS project_name
            FROM site_visit_logs l LEFT JOIN projects p ON p.id = l.project_id
-           WHERE l.scheduled_date BETWEEN DATE(:start) AND DATE(:end)
-             AND NOT EXISTS (SELECT 1 FROM calendar_events ce WHERE ce.visit_assignment_id = l.visit_assignment_id)
-             AND NOT EXISTS (SELECT 1 FROM visit_assignments va WHERE va.id = l.visit_assignment_id AND va.is_active = 0)`,
+           WHERE l.scheduled_date BETWEEN DATE(:start) AND DATE(:end)`,
           r,
         );
         for (const v of visits)

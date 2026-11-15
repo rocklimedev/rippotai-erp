@@ -1,5 +1,5 @@
 // Commerce add-on for the print kit (docs-commerce): company profile, Indian amount-in-words,
-// party blocks, bank details and helpers shared by quotations, POs, work orders, challans, BOQs.
+// party blocks, bank details and helpers shared by POs, work orders, challans, BOQs.
 // Additive only — nothing here changes the behaviour of the kit's own exports.
 import React, { useMemo } from 'react';
 import { useGetSettingsQuery } from '@/api/meta/settings.api';

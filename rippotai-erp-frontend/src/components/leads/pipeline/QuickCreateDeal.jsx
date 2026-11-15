@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button, Field, TextInput, SelectInput, ChoiceGroup } from '@/components/inos';
 import { useGetClientsQuery } from '@/api/projects/client.api';
-import { useCreateLeadMutation } from '@/api/connectors/leads.api';
+import { useCreateLeadMutation, useUpdateLeadMutation } from '@/api/connectors/leads.api';
 import { STAGES, formatINR } from '@/hooks/stages';
 import { Modal } from './Modal';
 import { errorText, parseRupees } from './utils';
+import { SERVICES, TEMPERATURES } from './dealMeta';
 
 const TYPES = ['Residential', 'Commercial', 'Institutional'];
 const DEFAULT_SOURCES = ['Referral', 'Website', 'Social Media', 'Walk-in', 'Other'];
@@ -41,6 +42,7 @@ const empty = (stage) => ({
   newClientName: '',
   phone: '',
   email: '',
+  whatsapp: '',
   contact: '',
   dealName: '',
   amount: '',
@@ -50,28 +52,69 @@ const empty = (stage) => ({
   expectedClose: '',
   type: 'Residential',
   location: '',
+  size: '',
+  service: 'DESIGN',
+  tag: '',
+  description: '',
+});
+
+// 6500000 -> "65 L", 12000000 -> "1.2 Cr" (what the value field accepts).
+const rupeesText = (n) => {
+  const v = Number(n);
+  if (!v) return '';
+  const trim = (x) => String(Math.round(x * 100) / 100);
+  if (v >= 1e7) return `${trim(v / 1e7)} Cr`;
+  if (v >= 1e5) return `${trim(v / 1e5)} L`;
+  return String(v);
+};
+
+// Edit mode: the form starts from the deal (client / project facts already merged by the API).
+const fromDeal = (d) => ({
+  ...empty(d.stage),
+  clientId: d.clientId || '',
+  phone: toTenDigits(d.phone || ''),
+  email: d.email || '',
+  whatsapp: d.whatsapp && d.whatsapp !== d.phone ? d.whatsapp : '',
+  contact: d.contact && d.contact !== d.title ? d.contact : '',
+  dealName: d.dealName || d.title || '',
+  amount: rupeesText(d.amount),
+  ownerId: d.ownerId || d.owner || '',
+  source: d.source || '',
+  expectedClose: d.expectedClose ? String(d.expectedClose).slice(0, 10) : '',
+  type: d.type || 'Residential',
+  location: d.location || '',
+  size: d.size || '',
+  service: d.service === 'BUILD' ? 'BUILD' : 'DESIGN',
+  tag: d.tag || '',
+  description: d.description || '',
 });
 
 /**
- * Quick create: client (pick existing by default, or new), project name,
- * value, stage, owner, source, expected close. Everything else is edited
- * later in the deal drawer.
+ * Quick create / edit: client (pick existing by default, or new), project name,
+ * value, stage, owner, source, expected close, location, size, type, service
+ * (Design / Build) and lead temperature. Pass `deal` to edit an existing deal.
+ * The deal's project and client are created / filled on the server so every
+ * document for that project autofills.
  */
-export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta, onCreated }) {
-  const [form, setForm] = useState(() => empty(defaultStage));
+export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta, onCreated, deal }) {
+  const editing = !!deal;
+  const [form, setForm] = useState(() => (deal ? fromDeal(deal) : empty(defaultStage)));
   const [errors, setErrors] = useState({});
   const { data: clients = [], isSuccess: clientsLoaded } = useGetClientsQuery(undefined, {
     skip: !open,
   });
-  const [createLead, { isLoading }] = useCreateLeadMutation();
+  const [createLead, { isLoading: creating }] = useCreateLeadMutation();
+  const [updateLead, { isLoading: updating }] = useUpdateLeadMutation();
+  const isLoading = creating || updating;
 
-  // Reset to "existing client" every time the modal opens.
+  // Reset every time the modal opens (create: "existing client"; edit: the deal).
   useEffect(() => {
     if (open) {
-      setForm(empty(defaultStage));
+      setForm(deal ? fromDeal(deal) : empty(defaultStage));
       setErrors({});
     }
-  }, [open, defaultStage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultStage, deal?.id]);
 
   const sortedClients = useMemo(
     () =>
@@ -83,13 +126,13 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
 
   // No clients to pick from? Fall back to "new client" so the user isn't stuck.
   useEffect(() => {
-    if (open && clientsLoaded && sortedClients.length === 0) {
+    if (open && !editing && clientsLoaded && sortedClients.length === 0) {
       setForm((f) => (f.clientMode === 'existing' ? { ...f, clientMode: 'new' } : f));
     }
-  }, [open, clientsLoaded, sortedClients.length]);
+  }, [open, editing, clientsLoaded, sortedClients.length]);
 
   const set = (k, v) => {
-    setForm((f) => ({ ...f, [k]: k === 'phone' ? toTenDigits(v) : v }));
+    setForm((f) => ({ ...f, [k]: k === 'phone' || k === 'whatsapp' ? toTenDigits(v) : v }));
     if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
   };
 
@@ -117,7 +160,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
     const c = sortedClients.find((x) => x.id === id);
     setForm((f) => {
       const next = { ...f, clientId: id };
-      if (c && !f.dealName.trim()) {
+      if (c && !editing && !f.dealName.trim()) {
         const surname = (c.name || '').split(/\s+/).slice(-1)[0];
         next.dealName = `${surname} ${f.type === 'Residential' ? 'Residence' : 'Project'}`;
       }
@@ -139,13 +182,16 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
 
   const validate = () => {
     const e = {};
-    if (form.clientMode === 'existing' && !form.clientId)
+    if (form.clientMode === 'existing' && !form.clientId && !editing)
       e.clientId = 'Pick a client, or add a new one.';
     if (form.clientMode === 'new') {
       if (!form.newClientName.trim()) e.newClientName = "Enter the client's name.";
       if (!form.phone && !form.email.trim()) e.phone = 'Add a phone number or email.';
-      else if (form.phone && form.phone.length !== 10) e.phone = 'Enter a 10-digit phone number.';
     }
+    if (form.phone && form.phone.length !== 10) e.phone = 'Enter a 10-digit phone number.';
+    if (form.whatsapp && form.whatsapp.length !== 10)
+      e.whatsapp = 'Enter a 10-digit WhatsApp number.';
+    if (!form.service) e.service = 'Pick Design or Build.';
     if (!form.dealName.trim()) e.dealName = 'Name the deal, e.g. “Malhotra Residence”.';
     if (form.amount && Number.isNaN(amountValue)) e.amount = 'Use a number, e.g. 45 L or 1.2 Cr.';
     setErrors(e);
@@ -155,6 +201,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
   const submit = async () => {
     if (isLoading || !validate()) return;
     const owner = meta?.owners?.find((o) => (o.id || o.name) === form.ownerId);
+    if (editing) return submitEdit(owner);
     const body = {
       dealName: form.dealName.trim(),
       contact: form.contact.trim() || undefined,
@@ -164,6 +211,11 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
       expectedClose: form.expectedClose || undefined,
       type: form.type,
       location: form.location.trim() || undefined,
+      size: form.size.trim() || undefined,
+      service: form.service,
+      tag: form.tag || undefined,
+      description: form.description.trim() || undefined,
+      whatsapp: form.whatsapp || undefined,
       ...(owner ? (owner.id ? { ownerId: owner.id } : { owner: owner.name }) : {}),
       ...(form.clientMode === 'existing'
         ? { clientId: form.clientId }
@@ -188,16 +240,66 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
     }
   };
 
+  // Edit: send every field; the server only records (and writes through) real changes.
+  const submitEdit = async (owner) => {
+    const body = {
+      id: deal.id,
+      dealName: form.dealName.trim(),
+      contact: form.contact.trim() || deal.contact || undefined,
+      phone: form.phone || null,
+      email: form.email.trim() || null,
+      whatsapp: form.whatsapp || null,
+      amount: amountValue ?? null,
+      source: form.source || null,
+      expectedClose: form.expectedClose || null,
+      type: form.type,
+      location: form.location.trim() || null,
+      size: form.size.trim() || null,
+      service: form.service,
+      tag: form.tag || null,
+      description: form.description.trim() || null,
+      ...(form.stage !== deal.stage && form.stage !== 'lost' ? { stage: form.stage } : {}),
+      ...(owner
+        ? owner.id
+          ? { ownerId: owner.id }
+          : { owner: owner.name, ownerId: null }
+        : {}),
+      ...(form.clientMode === 'existing'
+        ? form.clientId && form.clientId !== deal.clientId
+          ? { clientId: form.clientId }
+          : {}
+        : {
+            newClient: {
+              name: form.newClientName.trim(),
+              phone: form.phone || undefined,
+              email: form.email.trim() || undefined,
+              contactPerson: form.contact.trim() || undefined,
+            },
+          }),
+    };
+    try {
+      const saved = await updateLead(body).unwrap();
+      toast.success(`Saved — ${saved?.title || form.dealName}`);
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(errorText(err, "Couldn't save the deal."));
+    }
+  };
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title="New deal"
-      description="The essentials now — add notes, tasks and documents from the deal page."
-      testId="quick-create-deal"
+      title={editing ? 'Edit deal' : 'New deal'}
+      description={
+        editing
+          ? 'Changes to location, size, budget and contact also update the linked project and client.'
+          : 'A project is created for this client so briefs, recce and scope autofill from these details.'
+      }
+      testId={editing ? 'edit-deal' : 'quick-create-deal'}
       footer={
         <>
-          <span className="note">Owner defaults to you.</span>
+          <span className="note">{editing ? '' : 'Owner defaults to you.'}</span>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -205,9 +307,9 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
             variant="primary"
             onClick={submit}
             loading={isLoading}
-            data-testid="create-deal-submit"
+            data-testid={editing ? 'edit-deal-submit' : 'create-deal-submit'}
           >
-            Create deal
+            {editing ? 'Save changes' : 'Create deal'}
           </Button>
         </>
       }
@@ -236,7 +338,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
               id="qc-client"
               value={form.clientId}
               onChange={(e) => onClientPick(e.target.value)}
-              placeholder="Select an existing client…"
+              placeholder={editing ? 'No client linked' : 'Select an existing client…'}
               invalid={!!errors.clientId}
             >
               {sortedClients.map((c) => (
@@ -291,7 +393,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
           />
         </Field>
 
-        {form.clientMode === 'new' && (
+        {(form.clientMode === 'new' || editing) && (
           <>
             <Field label="Phone" htmlFor="qc-phone" error={errors.phone}>
               <TextInput
@@ -314,6 +416,17 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
                 placeholder="name@example.com"
+              />
+            </Field>
+            <Field label="WhatsApp" optional htmlFor="qc-whatsapp" error={errors.whatsapp}>
+              <TextInput
+                id="qc-whatsapp"
+                value={form.whatsapp}
+                onChange={(e) => set('whatsapp', e.target.value)}
+                onKeyDown={blockNonDigits}
+                placeholder="If different from phone"
+                inputMode="numeric"
+                invalid={!!errors.whatsapp}
               />
             </Field>
           </>
@@ -414,12 +527,52 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
           />
         </Field>
 
+        <Field label="Size" optional htmlFor="qc-size" hint="e.g. 2500 sq ft or 200 gaj">
+          <TextInput
+            id="qc-size"
+            value={form.size}
+            onChange={(e) => set('size', e.target.value)}
+            placeholder="2500 sq ft"
+          />
+        </Field>
+
+        <Field label="Service" required error={errors.service}>
+          <div data-testid="qc-service">
+            <ChoiceGroup
+              value={form.service}
+              onChange={(v) => set('service', v)}
+              options={SERVICES}
+              name="Service"
+            />
+          </div>
+        </Field>
+
         <Field label="Project type" full>
           <ChoiceGroup
             value={form.type}
             onChange={(v) => set('type', v)}
             options={TYPES.map((t) => ({ value: t, label: t }))}
             name="Project type"
+          />
+        </Field>
+
+        <Field label="Lead temperature" optional full>
+          <div data-testid="qc-temp">
+            <ChoiceGroup
+              value={form.tag}
+              onChange={(v) => set('tag', form.tag === v ? '' : v)}
+              options={TEMPERATURES}
+              name="Lead temperature"
+            />
+          </div>
+        </Field>
+
+        <Field label="Notes / brief" optional full htmlFor="qc-desc">
+          <TextInput
+            id="qc-desc"
+            value={form.description}
+            onChange={(e) => set('description', e.target.value)}
+            placeholder="e.g. G+2 farmhouse, full interiors"
           />
         </Field>
         <button type="submit" hidden />

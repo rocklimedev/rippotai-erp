@@ -50,11 +50,11 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 const statusStyles = {
   OPEN: "border-amber-200 bg-amber-50 text-amber-700",
   APPROVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  PROPOSED: "border-blue-200 bg-blue-50 text-blue-700",
+  PROPOSED: "border-[#C5D6CF] bg-[#E7EEEB] text-[#0D3D2F]",
   REWORK: "border-orange-200 bg-orange-50 text-orange-700",
   PASS: "border-emerald-200 bg-emerald-50 text-emerald-700",
   FAIL: "border-red-200 bg-red-50 text-red-700",
-  SCHEDULED: "border-blue-200 bg-blue-50 text-blue-700",
+  SCHEDULED: "border-[#C5D6CF] bg-[#E7EEEB] text-[#0D3D2F]",
   COMPLETED: "border-emerald-200 bg-emerald-50 text-emerald-700",
   CLOSED: "border-slate-200 bg-slate-50 text-slate-600",
 };
@@ -563,7 +563,7 @@ export default function SiteOperationsDashboard({
             value={metrics.todayVisits}
             description="Scheduled / logged visits"
             icon={MapPin}
-            iconClassName="bg-blue-50"
+            iconClassName="bg-[#E7EEEB]"
             onClick={() => navigate("visits")}
           />
         </div>

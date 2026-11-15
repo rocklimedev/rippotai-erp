@@ -1,4 +1,7 @@
 // Daily site report — read view + A4 PDF (print kit). Tabs: Report | PDF preview.
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import React, { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,7 +18,7 @@ import {
   CalendarDays,
   User,
 } from "lucide-react";
-import { Page, PageHeader, Card, Button, Pill, StatusPill, EmptyState, Tabs, Progress, Stats, StatTile } from "@/components/inos";
+import { Page, PageHeader, Card, Button, Pill, EmptyState, Tabs, Progress, Stats, StatTile } from "@/components/inos";
 import { DocumentPreview, usePdfDownload, pdfFileName } from "@/components/print-document";
 import { waitForPages } from "@/components/print-document/commerce";
 import {
@@ -59,8 +62,10 @@ function ListRows({ rows, empty }) {
 
 export default function DailyReportDetail() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("daily-site-report", id);
   const nav = useNavigate();
   const [tab, setTab] = useState("report");
+  const [exportingExcel, setExportingExcel] = useState(false);
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
 
@@ -112,6 +117,19 @@ export default function DailyReportDetail() {
     });
   };
 
+  // SITE ENGINEER DAILY PROGRESS REPORT TEMPLATE.xlsx filled with this report.
+  const downloadExcel = async () => {
+    setExportingExcel(true);
+    try {
+      const { downloadDailyReportWorkbook } = await import("./dailyReportExcel");
+      await downloadDailyReportWorkbook(r, `Daily-Site-Report_${project.name || "project"}_${r.reportDate}`);
+    } catch {
+      toast.error("Could not create the Excel file");
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   const doShare = async () => {
     try {
       await share(r.id).unwrap();
@@ -124,16 +142,9 @@ export default function DailyReportDetail() {
   return (
     <Page className="dsr-page">
       <PageHeader
+        info={recordInfo}
         crumbs={crumbs}
         title={`${fmtWeekday(r.reportDate)}, ${fmtDate(r.reportDate)}`}
-        subtitle={
-          <span style={{ display: "inline-flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            {project.name}
-            <StatusPill status={r.status} size="sm" />
-            {r.isShared ? <Pill tone="ok" size="sm">Shared with client</Pill> : null}
-            {flagged ? <Pill tone="bad" size="sm">{flagged} need attention</Pill> : null}
-          </span>
-        }
         actions={
           <>
             <DeleteDailyReport report={r} onDeleted={() => nav(BASE)} />
@@ -141,10 +152,12 @@ export default function DailyReportDetail() {
               <Button variant="secondary" icon={Share2} onClick={doShare} loading={sharing}>Share with client</Button>
             )}
             <Button variant="secondary" icon={Pencil} onClick={() => nav(`${BASE}/${r.id}/edit`)}>Edit</Button>
+            <Button variant="secondary" icon={Download} onClick={downloadExcel} loading={exportingExcel}>Download Excel</Button>
             <Button variant="primary" icon={Download} onClick={downloadPdf} loading={downloading}>Download PDF</Button>
           </>
         }
       />
+      <RecordContext type="daily-site-report" id={id} />
 
       <Tabs
         value={tab}
@@ -274,6 +287,7 @@ export default function DailyReportDetail() {
           </div>
         </>
       )}
+      <VersionHistory type="daily-site-report" id={id} />
     </Page>
   );
 }

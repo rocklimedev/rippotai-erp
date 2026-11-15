@@ -30,7 +30,6 @@ import { GateLog } from '../process-workflow/models/gate-log.model';
 // Dashboard dependencies
 import { SiteRecce } from '../reki/models/site-recce.model';
 import { ProjectBrief } from '../brief/models/project-brief.model';
-import { Quotation } from '../quotations/models/quotations.model';
 import { Boq } from '../boqs/models/boq.model';
 import { Vendor } from '../vendors/models/vendors.model';
 
@@ -93,7 +92,6 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
       // ============================================
       SiteRecce,
       ProjectBrief,
-      Quotation,
       Boq,
       Vendor,
     ]),

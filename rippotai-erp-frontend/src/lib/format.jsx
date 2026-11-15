@@ -122,6 +122,7 @@ export const STATUS_META = {
   in_progress: { l: "In Progress", icon: "loader", variant: "outline-red" },
   locked: { l: "Locked", icon: "lock", variant: "solid-ink" },
   on_hold: { l: "On Hold", icon: "pause", variant: "muted" },
+  lead: { l: "Lead", icon: "pause", variant: "muted" },
 };
 
 const VARIANT_CLS = {

@@ -29,6 +29,9 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import RecordContext from "@/components/record-context/RecordContext";
+import VersionHistory from "@/components/record-context/VersionHistory";
+import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 
 import {
   useGetDeliveryChallanQuery,
@@ -76,6 +79,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function DeliveryChallanView() {
   const { id } = useParams();
+  const recordInfo = useRecordInfo("delivery-challan", id);
   const nav = useNavigate();
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -445,8 +449,8 @@ export default function DeliveryChallanView() {
                   </Badge>
                 </div>
 
-                <p className="text-xs text-muted-foreground">
-                  Delivery Challan · {formatDate(challan.challan_date)}
+                <p className="text-[13px] text-muted-foreground">
+                  {recordInfo || `Delivery Challan · ${formatDate(challan.challan_date)}`}
                 </p>
               </div>
             </div>
@@ -525,6 +529,7 @@ export default function DeliveryChallanView() {
               LEFT DOCUMENT AREA
           ======================================================= */}
           <div className="space-y-5">
+            <RecordContext type="delivery-challan" id={id} />
             {/* Status alert */}
             {challan.status === "PARTIALLY_ACCEPTED" && (
               <Card className="border-amber-200 bg-amber-50/60">
@@ -715,6 +720,7 @@ export default function DeliveryChallanView() {
                 </div>
               </CardContent>
             </Card>
+            <VersionHistory type="delivery-challan" id={id} />
           </div>
 
           {/* ======================================================

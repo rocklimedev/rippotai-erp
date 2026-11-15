@@ -56,6 +56,11 @@ export enum LeadTag {
   COLD = 'Cold',
 }
 
+export enum LeadService {
+  DESIGN = 'DESIGN',
+  BUILD = 'BUILD',
+}
+
 export enum LeadColor {
   GREEN = 'Green',
   RED = 'Red',

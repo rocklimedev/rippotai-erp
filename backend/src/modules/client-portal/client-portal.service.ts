@@ -18,7 +18,6 @@ import { NotificationType } from '@/common/enums';
 export const PURPOSES = [
   'project_view',
   'boq_approval',
-  'quotation_selection',
   'handover_acceptance',
 ] as const;
 type Purpose = (typeof PURPOSES)[number];
@@ -130,18 +129,6 @@ export class ClientPortalService {
         );
       targetId = b.id;
     }
-    if (!targetId && purpose === 'quotation_selection') {
-      const [c] = await this.select(
-        'SELECT id FROM quotation_comparisons WHERE projectId = ? ORDER BY updatedAt DESC LIMIT 1',
-        [projectId],
-      );
-      if (!c)
-        throw new BadRequestException(
-          'Save a quotation comparison for this project first.',
-        );
-      targetId = c.id;
-    }
-
     const days = Math.min(Math.max(Number(dto.expires_days) || 30, 1), 180);
     const token = randomBytes(24).toString('base64url');
     const id = randomUUID();
@@ -470,79 +457,6 @@ export class ClientPortalService {
       boqId,
     );
     return { id, approved };
-  }
-
-  async publicCompare(token: string, cid: string) {
-    const l = await this.resolve(token);
-    const [c] = await this.select(
-      'SELECT * FROM quotation_comparisons WHERE id = ? AND projectId = ?',
-      [cid, l.project_id],
-    );
-    if (!c) throw fail(404, 'Comparison not found.');
-    const ids: string[] = j(c.quotationIds, []);
-    const quotes = ids.length
-      ? await this.select(
-          `SELECT q.id, q.total_amount AS totalAmount, q.is_selected AS isSelected, q.validity_days AS validityDays, v.name vendor_name, v.company_name
-             FROM quotations q LEFT JOIN vendors v ON v.id = q.vendor_id
-            WHERE q.id IN (${ids.map(() => '?').join(',')}) AND q.deleted_at IS NULL`,
-          ids,
-        )
-      : [];
-    const showNames = l.options?.show_vendor_names !== false;
-    const [p] = await this.select('SELECT name FROM projects WHERE id = ?', [
-      l.project_id,
-    ]);
-    return {
-      link: this.linkPublic(l),
-      comparison: {
-        id: c.id,
-        name: c.name,
-        work_category: c.workCategory,
-        project_name: p?.name,
-      },
-      quotations: quotes.map((q, i) => ({
-        id: q.id,
-        vendor_name: showNames
-          ? q.company_name || q.vendor_name
-          : `Vendor ${String.fromCharCode(65 + i)}`,
-        final_total: Number(q.totalAmount || 0),
-        selected: !!q.isSelected,
-        validity_days: q.validityDays,
-      })),
-    };
-  }
-
-  async publicSelectQuote(token: string, body: any) {
-    const l = await this.resolve(token);
-    if (l.purpose !== 'quotation_selection')
-      throw fail(403, 'This link cannot be used to select a vendor.');
-    const data = await this.publicCompare(token, l.target_id);
-    if (!data.quotations.some((q) => q.id === body.quotation_id))
-      throw fail(400, 'Choose one of the quotations shown.');
-    if (!String(body.signatory_name || '').trim())
-      throw fail(400, 'Signatory name is required.');
-    const id = await this.respond(
-      l,
-      'quotation_selected',
-      body.quotation_id,
-      body,
-    );
-    await this.exec('UPDATE quotations SET is_selected = 0 WHERE id IN (?)', [
-      data.quotations.map((q) => q.id),
-    ]);
-    await this.exec(
-      'UPDATE quotations SET is_selected = 1, selected_at = NOW() WHERE id = ?',
-      [body.quotation_id],
-    );
-    const q = data.quotations.find((x) => x.id === body.quotation_id);
-    await this.notifyStaff(
-      l.project_id,
-      'Client selected a vendor',
-      `${l.project_name}: ${q?.vendor_name} chosen by ${body.signatory_name}`,
-      'quotation',
-      body.quotation_id,
-    );
-    return { id };
   }
 
   async publicHandover(token: string) {

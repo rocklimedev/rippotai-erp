@@ -6,7 +6,6 @@ import {
   SampleBoard,
   MaterialRateSheet,
   MaterialEstimate,
-  MaterialQuotation,
   PurchaseOrder,
   PurchaseOrderItem,
   DeliveryChallan,
@@ -20,7 +19,6 @@ import { MaterialRequirementService } from './services/material-requirement.serv
 import { SampleBoardService } from './services/sample-board.service';
 import { MaterialRateSheetService } from './services/material-rate-sheet.service';
 import { MaterialEstimateService } from './services/material-estimate.service';
-import { MaterialQuotationService } from './services/material-quotation.service';
 import { PurchaseOrderService } from './services/purchase-order.service';
 import { DeliveryChallanService } from './services/delivery-challan.service';
 import { InventoryService } from './services/inventory.service';
@@ -31,7 +29,6 @@ import { MaterialRequirementController } from './controllers/material-requiremen
 import { SampleBoardController } from './controllers/sample-board.controller';
 import { MaterialRateSheetController } from './controllers/material-rate-sheet.controller';
 import { MaterialEstimateController } from './controllers/material-estimate.controller';
-import { MaterialQuotationController } from './controllers/material-quotation.controller';
 import { PurchaseOrderController } from './controllers/purchase-order.controller';
 import { DeliveryChallanController } from './controllers/delivery-challan.controller';
 import { MaterialMasterController } from './controllers/material-master.controller';
@@ -47,7 +44,6 @@ import { WorkOrderPaymentStage } from './models/work-order-payment-stage.model';
 import { WorkOrderTerm } from './models/work-order-term.model';
 import { Project } from '../projects/models/projects.model';
 import { TermsTemplate } from '../metas/models/terms-templates.model';
-import { Quotation } from '../quotations/models/quotations.model';
 import { MaterialProcurementService } from './services/material-procurement.service';
 import { MaterialProcurementController } from './controllers/material-procurement.controller';
 import { Boq } from '../boqs/models/boq.model';
@@ -61,8 +57,9 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
  * Covers the full lifecycle described by the spec:
  *  1. Material requirements captured from the design team.
  *  2. Sourcing & sample boards / rate sheets, each with approval status.
- *  3. Material estimate → approval → quotation.
- *  4. Purchase orders issued against approved quotations, with
+ *  3. Material estimate → approval.
+ *  4. Purchase orders raised directly from approved estimates, rate
+ *     comparisons, requirements or manually, with
  *     line-item ordered-vs-delivered tracking.
  *  5. Staged deliveries: delivery challans logged against a PO and
  *     tagged to the site stage that needs them.
@@ -80,7 +77,6 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
       SampleBoard,
       MaterialRateSheet,
       MaterialEstimate,
-      MaterialQuotation,
       PurchaseOrder,
       PurchaseOrderItem,
       DeliveryChallan,
@@ -103,7 +99,6 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
       WorkOrderItem,
       WorkOrderPaymentStage,
       WorkOrderTerm,
-      Quotation,
       TermsTemplate,
     ]),
   ],
@@ -114,7 +109,6 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
     SampleBoardController,
     MaterialRateSheetController,
     MaterialEstimateController,
-    MaterialQuotationController,
     PurchaseOrderController,
     DeliveryChallanController,
     WorkOrdersController,
@@ -132,7 +126,6 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
     MaterialRateSheetService,
     MaterialEstimateService,
     WorkOrdersService,
-    MaterialQuotationService,
     DeliveryChallanService,
     PurchaseOrderService,
     InventoryService,
@@ -148,7 +141,6 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
     MaterialRateSheetService,
     MaterialEstimateService,
     DeliveryChallanService,
-    MaterialQuotationService,
     WorkOrdersService,
     InventoryService,
     PurchaseOrderService,
