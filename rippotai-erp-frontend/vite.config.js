@@ -19,6 +19,7 @@ export default defineConfig({
       injectRegister: "script",
 
       includeAssets: [
+        "rippotai-favicon-nobg.png",
         "favicon.svg",
         "rippotai_logo.png",
         "apple-touch-icon.png",

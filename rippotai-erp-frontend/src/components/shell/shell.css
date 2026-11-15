@@ -34,9 +34,9 @@
   align-items: center; justify-content: center;
   color: var(--text); border: 1px solid var(--line); background: #fff;
 }
-.inos-topbar__brand { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.inos-topbar__brand { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .inos-topbar__brand img { width: 30px; height: 30px; object-fit: contain; }
-.inos-topbar__brand span { font-weight: 800; letter-spacing: 0.16em; font-size: 15px; color: var(--brand); }
+.inos-topbar__brand .inos-topbar__wordmark { width: 82px; height: auto; }
 .inos-topbar__sep { width: 1px; height: 24px; background: var(--line); flex: 0 0 auto; }
 .inos-topbar__apps {
   display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
@@ -178,7 +178,9 @@
 @media (max-width: 767px) {
   :root { --topbar-h: 56px; }
   .inos-topbar { gap: 6px; padding: 0 10px; }
-  .inos-topbar__brand span, .inos-topbar__sep { display: none; }
+  .inos-topbar__sep { display: none; }
+  .inos-topbar__brand { gap: 5px; }
+  .inos-topbar__brand .inos-topbar__wordmark { width: 62px; }
   .inos-topbar__apps { width: 36px; padding: 0; justify-content: center; }
   .inos-topbar__apps span { display: none; }
   .inos-topbar__search { flex: 0 0 auto; }

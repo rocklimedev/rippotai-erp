@@ -3,6 +3,7 @@ import VersionHistory from "@/components/record-context/VersionHistory";
 import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { Fragment, useState, useEffect, useMemo } from "react";
 import DeleteChecklist from "./DeleteChecklist";
+import { checklistWithDrafts } from "./checklist-export-data";
 import {
   PrintBlankChecklist,
   PrintChecklistButton,
@@ -43,7 +44,7 @@ const STATUSES = {
 const OVERVIEW_STATUSES = ["Pending", "Passed", "Failed", "N/A"];
 
 const message = (error) =>
-  String(error?.data?.message || error?.error || "Request failed");
+  String(error?.data?.message || error?.error || error?.message || "Request failed");
 const array = (response) =>
   Array.isArray(response)
     ? response
@@ -742,7 +743,7 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-start">
-          <PrintChecklistButton checklist={checklist} projectName={projectName} />
+          <PrintChecklistButton checklist={checklistWithDrafts(checklist, drafts)} projectName={projectName} />
           <button
             className="bc-btn-secondary"
             onClick={() => setShowAdd(!showAdd)}
@@ -757,7 +758,10 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                 const data = await exportJson(id, false).unwrap();
                 const { downloadQualityWorkbook } =
                   await import("./qualityChecklistExcel");
-                await downloadQualityWorkbook(data, checklist.checklist_name);
+                await downloadQualityWorkbook({
+                  ...data,
+                  items: checklistWithDrafts(checklist, drafts).checklist_items,
+                }, checklist.checklist_name);
               } catch (error) {
                 toast.error(message(error));
               }

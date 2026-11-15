@@ -1,4 +1,4 @@
-// Global top bar across every app page and Home: monogram + INOS, All Apps,
+// Global top bar across every app page and Home: Rippotai wordmark, All Apps,
 // a wide search field, then approvals, chat, notifications and the user menu.
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,6 +14,7 @@ import NotificationsBell from "../dashboard/NotificationsBell";
 import CliqIcon from "../icons/ChatIcon";
 import { useCliqChat } from "../cliq/context";
 import UserMenu from "../users/UserMenu";
+import wordmark from "@/assets/brand/rippotai-wordmark.png";
 import monogram from "@/assets/brand/rippotai-monogram.png";
 import "./shell.css";
 
@@ -94,12 +95,16 @@ export default function GlobalTopBar({ app = "dashboard", onOpenMenu }) {
           <Menu size={20} />
         </button>
       )}
-      <Link to="/dashboard" className="inos-topbar__brand" title="INOS home" data-testid="rippotai-logo">
-        <img src={monogram} alt="Rippotai" />
-        <span>INOS</span>
+      <Link to="/dashboard" className="inos-topbar__brand" title="RIPPOTAI ARCHITECTURE home" aria-label="RIPPOTAI ARCHITECTURE home" data-testid="rippotai-logo">
+        <img src={monogram} alt="" />
+        <img className="inos-topbar__wordmark" src={wordmark} alt="RIPPOTAI" />
       </Link>
-      <span className="inos-topbar__sep" aria-hidden />
-      <AppSwitcher app={app} />
+      {app !== "dashboard" && (
+        <>
+          <span className="inos-topbar__sep" aria-hidden />
+          <AppSwitcher app={app} />
+        </>
+      )}
       <div className="inos-topbar__search">
         <CommandShellSearch currentApp={app} />
       </div>

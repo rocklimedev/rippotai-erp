@@ -102,9 +102,14 @@ export default function DocumentListPage({
 
   const projects = useMemo(() => {
     const m = new Map();
+    // Inventory registers only exist after the first stock movement, but the
+    // project filter must also offer projects whose inventory is still empty.
+    if (type === "site-inventory") {
+      for (const [id, project] of projectNames) m.set(id, project.name || "Untitled project");
+    }
     for (const r of mapped) if (r.projectId) m.set(r.projectId, r.projectName || "Untitled project");
     return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }, [mapped]);
+  }, [mapped, projectNames, type]);
 
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();
