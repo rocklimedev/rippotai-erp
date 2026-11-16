@@ -5,7 +5,9 @@ import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 // Site Recce — a filled copy of the user's SITE RECCE TEMPLATE.docx ("SITE RECCE FORMAT"): Word
 // family of the print kit, same cover, 01 Project & Site Details, 02 Room-Wise Measurements,
 // 03 / 03.1 guidance pages and 04 Layout & Photo Sheets with each shot's layout + photo pair.
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import PrivateImage from "@/components/PrivateImage";
 import { roomFeetInchesDraft } from "@/hooks/site-recce-form-helpers";
 import { useParams, useNavigate } from "react-router-dom";
@@ -361,6 +363,7 @@ export function buildRecceSections(recce) {
 
 export function SiteRekiView() {
   const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("preview");
   const recordInfo = useRecordInfo("site-recce", id);
   const nav = useNavigate();
   const docRef = useRef(null);
@@ -420,9 +423,10 @@ export function SiteRekiView() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() =>
-                download(pdfFileName("Site-Recce", projectName, version), { title: `Site Recce Report — ${projectName}`, label: "site recce report" })
-              }
+              onClick={() => {
+                flushSync(() => setActiveTab("preview"));
+                download(pdfFileName("Site-Recce", projectName, version), { title: `Site Recce Report — ${projectName}`, label: "site recce report" });
+              }}
             >
               Download PDF
             </Button>
@@ -430,6 +434,12 @@ export function SiteRekiView() {
         }
       />
       <RecordContext type="site-recce" id={id} />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList aria-label="Site recce views">
+          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
       <DocumentPreview>
         <PrintDocument
           ref={docRef}
@@ -461,7 +471,11 @@ export function SiteRekiView() {
           sections={sections}
         />
       </DocumentPreview>
-      <VersionHistory type="site-recce" id={id} />
+        </TabsContent>
+        <TabsContent value="history">
+          <VersionHistory type="site-recce" id={id} />
+        </TabsContent>
+      </Tabs>
     </Page>
   );
 }

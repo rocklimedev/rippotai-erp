@@ -1,4 +1,6 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import RecordContext from "@/components/record-context/RecordContext";
 import VersionHistory from "@/components/record-context/VersionHistory";
 import { useRecordInfo } from "@/components/record-context/useRecordInfo";
@@ -16,6 +18,7 @@ import BoqDocument, {
 // BOQ preview: exactly the A4 pages that are downloaded, for each copy type.
 export default function BoqPreview() {
   const { id } = useParams();
+  const [activeTab, setActiveTab] = useState('preview');
   const recordInfo = useRecordInfo("boq", id);
   const nav = useNavigate();
   const { pathname } = useLocation();
@@ -70,12 +73,13 @@ export default function BoqPreview() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() =>
+              onClick={() => {
+                flushSync(() => setActiveTab('preview'));
                 download(boqFileName(boq, variant), {
                   title: `BOQ — ${boq.project?.name || boq.title} (${BOQ_VARIANTS[variant]})`,
                   label: 'BOQ',
-                })
-              }
+                });
+              }}
             >
               Download PDF
             </Button>
@@ -83,7 +87,12 @@ export default function BoqPreview() {
         }
       />
       <RecordContext type="boq" id={id} />
-
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList aria-label="BOQ views">
+          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preview" forceMount hidden={activeTab !== 'preview'}>
       <div style={{ marginBottom: 12 }}>
         <Segmented
           value={variant}
@@ -95,7 +104,11 @@ export default function BoqPreview() {
       <DocumentPreview>
         <BoqDocument key={variant} ref={docRef} boq={boq} variant={variant} />
       </DocumentPreview>
-      <VersionHistory type="boq" id={id} />
+        </TabsContent>
+        <TabsContent value="history">
+          <VersionHistory type="boq" id={id} />
+        </TabsContent>
+      </Tabs>
     </Page>
   );
 }

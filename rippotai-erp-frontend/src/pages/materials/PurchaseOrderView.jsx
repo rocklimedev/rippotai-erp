@@ -1,4 +1,6 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import RecordContext from "@/components/record-context/RecordContext";
 import VersionHistory from "@/components/record-context/VersionHistory";
 import { useRecordInfo } from "@/components/record-context/useRecordInfo";
@@ -49,6 +51,7 @@ const errMsg = (e, fallback) => e?.data?.message || e?.message || fallback;
 // Purchase order viewer: the A4 pages the vendor receives, plus the approval actions.
 export default function PurchaseOrderView() {
   const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("preview");
   const recordInfo = useRecordInfo("purchase-order", id);
   const nav = useNavigate();
   const docRef = useRef(null);
@@ -189,7 +192,10 @@ export default function PurchaseOrderView() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() => download(purchaseOrderFileName(po), { title: `Purchase Order ${po.po_number || ""}`, label: "purchase order" })}
+              onClick={() => {
+                flushSync(() => setActiveTab("preview"));
+                download(purchaseOrderFileName(po), { title: `Purchase Order ${po.po_number || ""}`, label: "purchase order" });
+              }}
             >
               Download PDF
             </Button>
@@ -198,9 +204,20 @@ export default function PurchaseOrderView() {
       />
       <RecordContext type="purchase-order" id={id} />
 
-      <DocumentPreview>
-        <PurchaseOrderDocument ref={docRef} po={po} project={project} />
-      </DocumentPreview>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList aria-label="Purchase order views">
+          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
+          <DocumentPreview>
+            <PurchaseOrderDocument ref={docRef} po={po} project={project} />
+          </DocumentPreview>
+        </TabsContent>
+        <TabsContent value="history">
+          <VersionHistory type="purchase-order" id={id} />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={!!dialog} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent className="sm:max-w-[440px]">
@@ -228,7 +245,6 @@ export default function PurchaseOrderView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <VersionHistory type="purchase-order" id={id} />
     </Page>
   );
 }

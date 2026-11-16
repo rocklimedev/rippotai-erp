@@ -1,4 +1,6 @@
-import React, { useRef } from "react";
+import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import RecordContext from "@/components/record-context/RecordContext";
 import VersionHistory from "@/components/record-context/VersionHistory";
 import { useRecordInfo } from "@/components/record-context/useRecordInfo";
@@ -12,6 +14,7 @@ import { useGetPaymentScheduleQuery } from "../../api/documents/payment-schedule
 // Payment schedule viewer: shows exactly what the client receives (A4 pages) and downloads it as a PDF.
 function PaymentSchedulePage() {
   const { scheduleId } = useParams();
+  const [activeTab, setActiveTab] = useState("preview");
   const recordInfo = useRecordInfo("payment-schedule", scheduleId);
   const nav = useNavigate();
   const docRef = useRef(null);
@@ -52,7 +55,10 @@ function PaymentSchedulePage() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() => download(pdfFileName("Payment-Schedule", projectName, 1), { title: `Payment Schedule — ${projectName}`, label: "payment schedule" })}
+              onClick={() => {
+                flushSync(() => setActiveTab("preview"));
+                download(pdfFileName("Payment-Schedule", projectName, 1), { title: `Payment Schedule — ${projectName}`, label: "payment schedule" });
+              }}
             >
               Download PDF
             </Button>
@@ -60,10 +66,20 @@ function PaymentSchedulePage() {
         }
       />
       <RecordContext type="payment-schedule" id={scheduleId} />
-      <DocumentPreview>
-        <PaymentScheduleView ref={docRef} schedule={schedule} />
-      </DocumentPreview>
-      <VersionHistory type="payment-schedule" id={scheduleId} />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList aria-label="Payment schedule views">
+          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
+          <DocumentPreview>
+            <PaymentScheduleView ref={docRef} schedule={schedule} />
+          </DocumentPreview>
+        </TabsContent>
+        <TabsContent value="history">
+          <VersionHistory type="payment-schedule" id={scheduleId} />
+        </TabsContent>
+      </Tabs>
     </Page>
   );
 }

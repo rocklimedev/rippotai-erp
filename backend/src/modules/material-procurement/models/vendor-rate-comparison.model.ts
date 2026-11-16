@@ -28,8 +28,8 @@ export class VendorRateComparison extends Model {
   declare project_id: string;
   @BelongsTo(() => Project) declare project: Project;
   @ForeignKey(() => Boq)
-  @Column({ type: DataType.CHAR(36), allowNull: false })
-  declare boq_id: string;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  declare boq_id: string | null;
   @BelongsTo(() => Boq) declare boq: Boq;
   @Column({ type: DataType.TEXT, allowNull: true }) declare notes:
     | string

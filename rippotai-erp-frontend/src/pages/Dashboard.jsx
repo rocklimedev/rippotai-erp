@@ -16,18 +16,6 @@ const BADGE_MAP = {
   calendar: "calendar",
 };
 
-// One line under each tile so new team members know where things live.
-const APP_BLURB = {
-  projects: "Workspaces & planner",
-  design: "CRM, setup & design studio",
-  build: "Procurement, ledger & site",
-  tasks: "Your to-dos",
-  calendar: "Visits & meetings",
-  commandCenter: "Live portfolio view",
-  adminConsole: "Users, roles, setup",
-  automation: "Rules & escalations",
-};
-
 function greeting(d = new Date()) {
   const h = d.getHours();
   if (h < 12) return "Good morning";
@@ -136,7 +124,6 @@ export default function Dashboard() {
                 <span data-testid={`app-label-${key}`} className="inos-app__name">
                   {meta.name}
                 </span>
-                {APP_BLURB[key] && <span className="inos-app__desc">{APP_BLURB[key]}</span>}
               </button>
             );
           })}

@@ -4,7 +4,9 @@ import RecordContext from "@/components/record-context/RecordContext";
 import VersionHistory from "@/components/record-context/VersionHistory";
 import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import { BRIEF_STATUS_LABELS, briefTransitions } from "./brief-status";
-import React, { useRef } from "react";
+import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Edit3, Trash2, Download, FileText } from "lucide-react";
@@ -31,6 +33,7 @@ import {
 // downloads the same pages as a PDF.
 export function ProjectBriefView() {
   const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("preview");
   const recordInfo = useRecordInfo("client-brief", id);
   const nav = useNavigate();
   const { user } = useAuth();
@@ -84,7 +87,8 @@ export function ProjectBriefView() {
     }
   };
 
-  const downloadPdf = () =>
+  const downloadPdf = () => {
+    flushSync(() => setActiveTab("preview"));
     download(
       pdfFileName(
         "Client-Brief",
@@ -96,6 +100,7 @@ export function ProjectBriefView() {
         label: "client brief",
       },
     );
+  };
 
   const crumbs = [
     { label: "CRM", to: "/crm" },
@@ -189,10 +194,20 @@ export function ProjectBriefView() {
       />
       <RecordContext type="client-brief" id={id} />
 
-      <DocumentPreview>
-        <ClientBriefDocument ref={docRef} brief={brief} />
-      </DocumentPreview>
-      <VersionHistory type="client-brief" id={id} />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList aria-label="Client brief views">
+          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
+          <DocumentPreview>
+            <ClientBriefDocument ref={docRef} brief={brief} />
+          </DocumentPreview>
+        </TabsContent>
+        <TabsContent value="history">
+          <VersionHistory type="client-brief" id={id} />
+        </TabsContent>
+      </Tabs>
     </Page>
   );
 }

@@ -12,7 +12,7 @@ echo "2/5 Stopping old backend on :5050"; lsof -ti tcp:5050 | xargs kill 2>/dev/
 echo "3/5 Backing up database"; mkdir -p db/backups
 mysqldump $DB > db/backups/before-v7-$(date +%Y%m%d-%H%M).sql 2>/dev/null || sudo mysqldump $DB > db/backups/before-v7-$(date +%Y%m%d-%H%M).sql
 echo "4/5 Applying new migrations (safe to re-run)"
-for m in backend/migrations/20261030_*.sql backend/migrations/20261105_*.sql backend/migrations/20261110_*.sql backend/migrations/20261114_*.sql backend/migrations/20261115_*.sql; do echo "   - $m"; $SQL --default-character-set=utf8mb4 $DB < "$m"; done
+for m in backend/migrations/20261030_*.sql backend/migrations/20261105_*.sql backend/migrations/20261110_*.sql backend/migrations/20261114_*.sql backend/migrations/20261115_*.sql backend/migrations/20261116_*.sql; do echo "   - $m"; $SQL --default-character-set=utf8mb4 $DB < "$m"; done
 echo "5/5 Installing packages + building (reuses INOS-v6 packages to save disk)"
 for p in backend frontend; do
   [ -d "$OLD/$p/node_modules" ] && [ ! -d "$p/node_modules" ] && mv "$OLD/$p/node_modules" "$p/"

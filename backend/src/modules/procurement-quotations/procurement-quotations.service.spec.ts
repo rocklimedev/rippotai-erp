@@ -74,3 +74,54 @@ describe('procurement quotation lines', () => {
     expect(t).toMatchObject({ subtotal: 2150, tax: 225, total: 2375 });
   });
 });
+
+// The new trade snapshot is consumed directly when creating a quotation.
+describe('vendor-only comparison quotation lines', () => {
+  it('preserves independent scope, lump sums, discounts and zero amounts', () => {
+    const lines = linesFromComparison(
+      {
+        schema_version: 2,
+        trades: [
+          {
+            name: 'Civil',
+            finalised_vendor_id: 'v1',
+            vendors: [
+              {
+                id: 'v1',
+                items: [
+                  {
+                    id: 'i1',
+                    description: 'Work',
+                    quantity: null,
+                    rate: 130000,
+                  },
+                  {
+                    id: 'i2',
+                    description: 'Discount',
+                    quantity: null,
+                    rate: -1000,
+                  },
+                  {
+                    id: 'i3',
+                    description: 'Unused option',
+                    quantity: 0,
+                    rate: 100,
+                  },
+                ],
+              },
+            ],
+          },
+          { name: 'Other', finalised_vendor_id: 'v2', vendors: [] },
+        ],
+      },
+      'v1',
+    );
+    expect(lines.map((l) => l.item_name)).toEqual([
+      'Work',
+      'Discount',
+      'Unused option',
+    ]);
+    expect(quotationTotals(lines).total).toBe(129000);
+    expect(lines[0].category_name).toBe('Civil');
+  });
+});
