@@ -165,7 +165,7 @@ function Workspace({
       : trades[0]?.id || '',
   );
   const [workspaceTab, setWorkspaceTab] = useState(() =>
-    trades.some((t) => t.id === searchParams.get('trade')) ? 'comparison' : 'overview');
+    searchParams.get('tab') === 'history' ? 'history' : trades.some((t) => t.id === searchParams.get('trade')) ? 'comparison' : 'overview');
   const openTrade = (id) => { setActiveId(id); setWorkspaceTab('comparison'); };
   const [revision, setRevision] = useState(initialSheet?.revision || 1);
   const [saved, setSaved] = useState(() =>
@@ -411,6 +411,7 @@ function Workspace({
     });
   };
   const overview = workspaceTab === "overview";
+  const comparison = workspaceTab === 'comparison';
   const directory = list(vendors.data);
   const availableTrades = catalogue.filter(
     (record) =>
@@ -618,8 +619,9 @@ function Workspace({
       <Tabs value={workspaceTab} onChange={setWorkspaceTab} options={[
         { value: 'overview', label: 'Overview' },
         { value: 'comparison', label: 'Trade Comparison Sheet' },
+        { value: 'history', label: 'Version History' },
       ]} />
-      {!overview && <div className="flex flex-wrap items-center gap-3">
+      {comparison && <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1 basis-64">
           <ScrollableTradeTabs
             value={activeId}
@@ -735,8 +737,8 @@ function Workspace({
           )}
         </>
       )}
-      {!overview && !active && <Card title="No trades in this sheet"><p className="inos-hint">Add an existing trade or create a new trade to start comparing vendors.</p></Card>}
-      {!overview && active && (
+      {comparison && !active && <Card title="No trades in this sheet"><p className="inos-hint">Add an existing trade or create a new trade to start comparing vendors.</p></Card>}
+      {comparison && active && (
         <>
           <Card>
             <div className="flex items-end flex-wrap gap-4">
@@ -1156,9 +1158,9 @@ function Workspace({
           </Card>{" "}
         </>
       )}
-      {initialSheet && (
-        <VersionHistory type="vendor-comparison" id={initialSheet.id} />
-      )}
+      {workspaceTab === 'history' && <div role="tabpanel" aria-label="Version History">
+        {initialSheet ? <VersionHistory type="vendor-comparison" id={initialSheet.id} title="Version & approval history" /> : <Card title="Version & approval history"><p className="inos-hint">Save this vendor comparison to start its version and approval history.</p></Card>}
+      </div>}
     </Page>
   );
 }

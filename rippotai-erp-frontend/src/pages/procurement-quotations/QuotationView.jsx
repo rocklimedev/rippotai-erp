@@ -4,8 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { CheckCircle2, Download, FileSpreadsheet, FileText, Pencil, Send, ShoppingCart, Trash2, Wrench, XCircle } from "lucide-react";
-import { Button, Card, EmptyState, Page, PageHeader, Pill } from "@/components/inos";
+import { Button, Card, EmptyState, Page, PageHeader, Pill, Tabs } from "@/components/inos";
 import { DocumentPreview, usePdfDownload } from "@/components/print-document";
+import { OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import QuotationDocument from "@/components/commerce-documents/QuotationDocument";
 import { quotationFileName, quotationSheetModel } from "@/components/quotation-documents/quotationModel";
 import { appConfirm } from "@/lib/app-dialog";
@@ -30,6 +31,13 @@ export default function QuotationView() {
   const recordInfo = useRecordInfo("quotation", id);
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();
+  const activeTab = params.get('tab') === 'history' ? 'history' : 'preview';
+  const changeTab = (tab) => {
+    const next = new URLSearchParams(params);
+    if (tab === 'preview') next.delete('tab');
+    else next.set('tab', tab);
+    setParams(next, { replace: true });
+  };
   const shownVersion = Number(params.get("version")) || null;
   const { data: q, isLoading, isError } = useGetProcurementQuotationQuery(id, { refetchOnMountOrArgChange: true });
   const older = shownVersion && q && shownVersion !== q.version;
@@ -230,6 +238,11 @@ export default function QuotationView() {
         </div>
       </Card>
 
+      <Tabs value={activeTab} onChange={changeTab} options={[
+        { value: 'preview', label: 'Preview' },
+        { value: 'history', label: 'Version History' },
+      ]} />
+      <div role="tabpanel" aria-label="Preview" aria-hidden={activeTab !== 'preview'} style={activeTab === 'preview' ? undefined : OFFSCREEN_STYLE}>
       {model ? (
         <DocumentPreview>
           <QuotationDocument ref={docRef} model={model} />
@@ -237,6 +250,8 @@ export default function QuotationView() {
       ) : (
         <Card>Loading version…</Card>
       )}
+      </div>
+      {activeTab === 'history' && <div role="tabpanel" aria-label="Version History">
       <VersionHistory
         type="quotation"
         id={id}
@@ -248,6 +263,7 @@ export default function QuotationView() {
           href: `${LIST}/${id}?version=${h.version}`,
         }))}
       />
+      </div>}
     </Page>
   );
 }
