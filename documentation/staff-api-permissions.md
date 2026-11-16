@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 951 routes, 922 staff routes and 381 assignable staff capabilities.
+There are 953 routes, 924 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -418,6 +418,8 @@ There are 951 routes, 922 staff routes and 381 assignable staff capabilities.
 | material-procurement | `GET /vendor-rate-comparisons` | VendorRateComparisonController.list | `vendor-rate-comparisons:read` | staff |
 | material-procurement | `DELETE /vendor-rate-comparisons/:id` | VendorRateComparisonController.remove | `vendor-rate-comparisons:delete` | staff |
 | material-procurement | `PUT /vendor-rate-comparisons/:id` | VendorRateComparisonController.update | `vendor-rate-comparisons:update` | staff |
+| material-procurement | `POST /vendor-trades` | VendorTradeController.create | `vendor-rate-comparisons:create` | staff |
+| material-procurement | `GET /vendor-trades` | VendorTradeController.list | `vendor-rate-comparisons:read` | staff |
 | material-procurement | `PATCH /work-orders/:id/approve` | WorkOrdersController.approve | `work-orders:approve` | staff |
 | material-procurement | `POST /work-orders` | WorkOrdersController.create | `work-orders:create` | staff |
 | material-procurement | `GET /work-orders` | WorkOrdersController.findAll | `work-orders:read` | staff |
