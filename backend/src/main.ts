@@ -20,7 +20,7 @@ async function bootstrap() {
   configureHttpSecurity(app);
   // Saved comparison snapshots include BOQ lines and vendor rates.
   app.useBodyParser('json', { limit: '3mb' });
-
+  /** */
   const isDev = process.env.NODE_ENV !== 'production';
 
   // Only use Redis Socket.IO adapter outside development
