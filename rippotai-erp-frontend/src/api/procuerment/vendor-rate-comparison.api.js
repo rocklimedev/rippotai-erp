@@ -1,12 +1,26 @@
 import { baseApi } from "../../store/baseApi";
 
 export const vendorRateComparisonApi = baseApi
-  .enhanceEndpoints({ addTagTypes: ["RateComparison"] })
+  .enhanceEndpoints({ addTagTypes: ["RateComparison", "VendorTrade"] })
   .injectEndpoints({
     endpoints: (builder) => ({
+      getVendorTrades: builder.query({
+        query: () => "/vendor-trades",
+        providesTags: ["VendorTrade"],
+      }),
+      createVendorTrade: builder.mutation({
+        query: (body) => ({ url: "/vendor-trades", method: "POST", body }),
+        invalidatesTags: (result, error) => (error ? [] : ["VendorTrade"]),
+      }),
       deleteRateComparison: builder.mutation({
-        query: (id) => ({ url: `/vendor-rate-comparisons/${id}`, method: "DELETE" }),
-        invalidatesTags: (r, e, id) => ["RateComparison", { type: "RateComparison", id }],
+        query: (id) => ({
+          url: `/vendor-rate-comparisons/${id}`,
+          method: "DELETE",
+        }),
+        invalidatesTags: (r, e, id) => [
+          "RateComparison",
+          { type: "RateComparison", id },
+        ],
       }),
       getRateComparisons: builder.query({
         query: (project_id) => ({
@@ -41,7 +55,10 @@ export const vendorRateComparisonApi = baseApi
     }),
   });
 export const {
+  useGetVendorTradesQuery,
+  useCreateVendorTradeMutation,
   useGetRateComparisonsQuery,
+  useLazyGetRateComparisonsQuery,
   useGetRateComparisonQuery,
   useCreateRateComparisonMutation,
   useUpdateRateComparisonMutation,

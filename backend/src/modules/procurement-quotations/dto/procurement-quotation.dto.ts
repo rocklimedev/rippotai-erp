@@ -26,7 +26,8 @@ export class QuotationItemDto {
   @IsOptional() @IsString() @MaxLength(5000) description?: string;
   @IsOptional() @IsString() @MaxLength(30) unit?: string;
   @IsNumber() @Min(0) quantity: number;
-  @IsNumber() @Min(0) rate: number;
+  // Comparison quotes may contain negative discount lines.
+  @IsNumber() rate: number;
   @IsOptional() @IsNumber() @Min(0) @Max(100) tax_percent?: number;
   @IsOptional() @IsString() @MaxLength(2000) remarks?: string;
   @IsOptional() @IsString() @MaxLength(100) source_item_id?: string;

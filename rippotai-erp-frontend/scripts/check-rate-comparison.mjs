@@ -22,6 +22,9 @@ try {
   const { default: List } = await server.ssrLoadModule(
     "/src/pages/boq/VendorRateComparisonList.jsx",
   );
+  const { AuthProvider } = await server.ssrLoadModule(
+    "/src/context/AuthContext.jsx",
+  );
   const { baseApi } = await server.ssrLoadModule("/src/store/baseApi.js");
   const store = configureStore({
     reducer: { [baseApi.reducerPath]: baseApi.reducer },
@@ -68,15 +71,20 @@ try {
   };
   store.dispatch(
     baseApi.util.upsertQueryEntries([
+      {
+        endpointName: "getVendorTrades",
+        arg: undefined,
+        value: [
+          { id: "catalogue-1", name: "Site Preparation" },
+          { id: "catalogue-2", name: "SANITARY" },
+          { id: "catalogue-3", name: "Lighting" },
+          { id: "catalogue-4", name: "Live database trade" },
+        ],
+      },
       { endpointName: "getRateComparison", arg: "sheet-1", value: sheet },
       { endpointName: "getRateComparisons", arg: undefined, value: [sheet] },
       { endpointName: "getProjects", arg: undefined, value: [sheet.project] },
       { endpointName: "getVendors", arg: { status: "ACTIVE" }, value: [] },
-      {
-        endpointName: "getBoqById",
-        arg: "boq-1",
-        value: { id: "boq-1", title: "Changed source", categories: [] },
-      },
     ]),
   );
   const render = (url, component, route) =>
@@ -92,37 +100,49 @@ try {
             null,
             React.createElement(Route, {
               path: route,
-              element: React.createElement(component),
+              element: React.createElement(
+                AuthProvider,
+                null,
+                React.createElement(component),
+              ),
             }),
           ),
         ),
       ),
     );
   const html = render(
-    "/procurement/vendors/rate-comparison/sheet-1/edit",
+    "/procurement/vendors/rate-comparison/sheet-1/edit?trade=category-1",
     Workspace,
     "/procurement/vendors/rate-comparison/:id/edit",
   );
   assert.ok(
     html.includes("Frozen tile item"),
-    "Saved BOQ lines must survive source changes",
+    "Historical vendor quotes must survive source changes",
+  );
+  assert.ok(
+    html.includes("trade-comparison-table") &&
+      html.includes("Vendor 3") &&
+      html.includes("Vendor notes"),
+    "Trade opens one comparison table with grouped vendor columns and notes",
   );
   assert.ok(
     html.includes("Saved quote label"),
     "Saved vendors must survive an empty live vendor list",
   );
+  assert.match(html, /id="comparison-title"[^>]*readOnly=""/i, 'Saved comparison name is read-only');
   assert.ok(
     html.includes('value="125.5"'),
     "Entered vendor rates must be restored",
   );
   assert.ok(
     html.includes("251.00"),
-    "L1 totals must be recalculated from restored rates and quantities",
+    "Vendor totals must be recalculated from restored quotes",
   );
   assert.ok(
-    html.includes("Original BOQ") && !html.includes("Changed source"),
-    "Reopening must use the frozen BOQ",
+    !html.includes("Original BOQ") && !html.includes("Changed source"),
+    "Workspace must not show a BOQ reference",
   );
+  assert.equal((html.match(/aria-label="Item description 1"/g) || []).length, 1, "Item description is entered once for all vendors");
   const list = render(
     "/procurement/vendors/rate-comparison",
     List,
@@ -132,21 +152,77 @@ try {
     list.includes("Saved finishes comparison") && list.includes("Test project"),
     "List must show saved sheets and their projects",
   );
+
   assert.ok(
-    list.includes("/sheet-1/edit"),
-    "Saved sheet must link to its edit workspace",
+    !baseApi.endpoints.getBoqById,
+    "Workspace must not load BOQ API endpoints",
   );
+  const newSnapshot = {
+    schema_version: 2,
+    trades: [
+      {
+        id: "trade-2",
+        name: "Independent trade",
+        finalised_vendor_id: "vendor-2",
+        vendors: [
+          {
+            id: "vendor-2",
+            name: "Independent vendor",
+            items: [
+              {
+                id: "line-2",
+                description: "Independent scope",
+                quantity: null,
+                rate: 1200,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  store.dispatch(
+    baseApi.util.upsertQueryEntries([
+      {
+        endpointName: "getRateComparison",
+        arg: "sheet-1",
+        value: { ...sheet, snapshot: newSnapshot },
+      },
+    ]),
+  );
+  const independent = render(
+    "/procurement/vendors/rate-comparison/sheet-1/edit",
+    Workspace,
+    "/procurement/vendors/rate-comparison/:id/edit",
+  );
+  assert.ok(
+    independent.includes("Overview") &&
+      independent.includes("Independent vendor") &&
+      independent.includes("1,200.00"),
+    "New trade quotes and finalised totals must render",
+  );
+  const fourSnapshot = structuredClone(newSnapshot); fourSnapshot.trades[0].vendor_column_count = 4;
+  store.dispatch(baseApi.util.upsertQueryEntries([{ endpointName: 'getRateComparison', arg: 'sheet-1', value: { ...sheet, snapshot: fourSnapshot } }]));
+  const four = render('/procurement/vendors/rate-comparison/sheet-1/edit?trade=trade-2', Workspace, '/procurement/vendors/rate-comparison/:id/edit');
+  assert.ok(four.includes('Vendor 4') && four.includes('Item Description') && four.includes('Number of vendors'), 'Trade comparison supports four grouped vendor columns');
+  assert.equal((four.match(/aria-label="Item description 1"/g) || []).length, 1);
   const fresh = render(
     "/procurement/vendors/rate-comparison/new",
     Workspace,
     "/procurement/vendors/rate-comparison/new",
   );
+  assert.ok(fresh.includes('Trade Comparison Sheet') && !fresh.includes('trade-comparison-table'), 'Overview is a top-level tab and hides the trade editor');
   assert.ok(
-    fresh.includes("Select project") && fresh.includes("Select BOQ"),
-    "New workspace must require project and BOQ selection",
+    fresh.includes("Select project") &&
+      !fresh.includes("Select BOQ") &&
+      fresh.includes("Site Preparation") &&
+      fresh.includes("SANITARY") &&
+      fresh.includes("Lighting") &&
+      fresh.includes("Live database trade"),
+    "New workspace must use project and independent trades",
   );
   console.log(
-    "Rate comparison page checks passed: restore snapshot, rates, vendors, totals, list links, new workspace.",
+    "Rate comparison page checks passed: legacy quotes, rates, vendors, totals, project list, BOQ-free workspace.",
   );
   store.dispatch(baseApi.util.resetApiState());
 } finally {

@@ -1,4 +1,6 @@
-import React, { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DocumentPreview, usePdfDownload } from "@/components/print-document";
 import DeliveryChallanDocument, { deliveryChallanFileName } from "@/components/commerce-documents/DeliveryChallanDocument";
 import { useGetProjectByIdQuery } from "../../api/projects/project.api";
@@ -79,6 +81,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function DeliveryChallanView() {
   const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("preview");
   const recordInfo = useRecordInfo("delivery-challan", id);
   const nav = useNavigate();
 
@@ -352,11 +355,13 @@ export default function DeliveryChallanView() {
    * Captures the A4 pages rendered below (shared Rippotai print kit).
    */
 
-  const downloadPdf = () =>
+  const downloadPdf = () => {
+    flushSync(() => setActiveTab("preview"));
     downloadDoc(deliveryChallanFileName(challan), {
       title: `Delivery Challan ${challan?.challan_number || ""}`,
       label: "delivery challan",
     });
+  };
 
   /**
    * -------------------------------------------------------------
@@ -508,7 +513,7 @@ export default function DeliveryChallanView() {
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem
-                    onClick={() => toast.info("History is available below.")}
+                    onClick={() => setActiveTab("history")}
                   >
                     <History size={15} />
                     View History
@@ -524,42 +529,19 @@ export default function DeliveryChallanView() {
           BODY
       =========================================================== */}
       <div className="max-w-[1500px] mx-auto px-5 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
+        <div className="space-y-5">
           {/* ======================================================
               LEFT DOCUMENT AREA
           ======================================================= */}
           <div className="space-y-5">
             <RecordContext type="delivery-challan" id={id} />
-            {/* Status alert */}
-            {challan.status === "PARTIALLY_ACCEPTED" && (
-              <Card className="border-amber-200 bg-amber-50/60">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle size={20} className="text-amber-600 mt-0.5" />
-
-                    <div className="flex-1">
-                      <p className="font-semibold text-amber-900">
-                        Delivery partially accepted
-                      </p>
-
-                      <p className="text-sm text-amber-800 mt-1">
-                        Some quantities are still short, damaged, rejected, or
-                        otherwise not fully accepted.
-                      </p>
-                    </div>
-
-                    <Button
-                      size="sm"
-                      onClick={() => setCompleteDialogOpen(true)}
-                      className="bg-[#1F453B] hover:bg-[#16372F]"
-                    >
-                      Complete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList aria-label="Delivery challan views">
+                <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+                <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
+                <TabsTrigger value="summary">SUMMARY</TabsTrigger>
+              </TabsList>
+              <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
             {/* ====================================================
                 A4 DOCUMENT PREVIEW
             ===================================================== */}
@@ -589,6 +571,59 @@ export default function DeliveryChallanView() {
                 </DocumentPreview>
               </CardContent>
             </Card>
+
+              </TabsContent>
+              <TabsContent value="history" className="space-y-5">
+                <VersionHistory type="delivery-challan" id={id} />
+            {/* HISTORY */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">History</CardTitle>
+
+                    <CardDescription>Challan activity</CardDescription>
+                  </div>
+
+                  <History size={18} className="text-muted-foreground" />
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <HistoryTimeline challan={challan} />
+              </CardContent>
+            </Card>
+              </TabsContent>
+              <TabsContent value="summary" className="space-y-5">
+            {/* Status alert */}
+            {challan.status === "PARTIALLY_ACCEPTED" && (
+              <Card className="border-amber-200 bg-amber-50/60">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={20} className="text-amber-600 mt-0.5" />
+
+                    <div className="flex-1">
+                      <p className="font-semibold text-amber-900">
+                        Delivery partially accepted
+                      </p>
+
+                      <p className="text-sm text-amber-800 mt-1">
+                        Some quantities are still short, damaged, rejected, or
+                        otherwise not fully accepted.
+                      </p>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      onClick={() => setCompleteDialogOpen(true)}
+                      className="bg-[#1F453B] hover:bg-[#16372F]"
+                    >
+                      Complete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* ====================================================
                 ITEM DETAILS
@@ -720,13 +755,7 @@ export default function DeliveryChallanView() {
                 </div>
               </CardContent>
             </Card>
-            <VersionHistory type="delivery-challan" id={id} />
-          </div>
-
-          {/* ======================================================
-              RIGHT SIDEBAR
-          ======================================================= */}
-          <div className="space-y-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
             {/* SUMMARY */}
             <Card>
               <CardHeader>
@@ -877,25 +906,9 @@ export default function DeliveryChallanView() {
                 />
               </CardContent>
             </Card>
-
-            {/* HISTORY */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">History</CardTitle>
-
-                    <CardDescription>Challan activity</CardDescription>
-                  </div>
-
-                  <History size={18} className="text-muted-foreground" />
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <HistoryTimeline challan={challan} />
-              </CardContent>
-            </Card>
+          </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

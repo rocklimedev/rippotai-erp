@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import RecordContext from "@/components/record-context/RecordContext";
 import VersionHistory from "@/components/record-context/VersionHistory";
 import { useRecordInfo } from "@/components/record-context/useRecordInfo";
@@ -154,6 +156,7 @@ const CANCELLABLE_STATUSES = [
 export default function WorkOrderView() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("preview");
   const recordInfo = useRecordInfo("work-order", id);
 
   const documentRef = useRef(null);
@@ -188,6 +191,7 @@ export default function WorkOrderView() {
 
   const handleDownloadPdf = async () => {
     if (!documentRef.current || isGeneratingPdf) return;
+    flushSync(() => setActiveTab("preview"));
 
     try {
       setIsGeneratingPdf(true);
@@ -366,12 +370,22 @@ export default function WorkOrderView() {
         />
         <RecordContext type="work-order" id={id} />
 
-        <DocumentPreview>
-          <div ref={documentRef}>
-            <WorkOrderPrintDocument workOrder={workOrder} />
-          </div>
-        </DocumentPreview>
-        <VersionHistory type="work-order" id={id} />
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList aria-label="Work order views">
+            <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+            <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
+          </TabsList>
+          <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
+            <DocumentPreview>
+              <div ref={documentRef}>
+                <WorkOrderPrintDocument workOrder={workOrder} />
+              </div>
+            </DocumentPreview>
+          </TabsContent>
+          <TabsContent value="history">
+            <VersionHistory type="work-order" id={id} />
+          </TabsContent>
+        </Tabs>
       </Page>
 
       {/* Status Confirmation */}

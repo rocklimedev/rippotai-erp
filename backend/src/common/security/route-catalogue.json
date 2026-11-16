@@ -3571,6 +3571,26 @@
   },
   {
     "module": "material-procurement",
+    "controller": "VendorTradeController",
+    "handler": "create",
+    "method": "POST",
+    "path": "/vendor-trades",
+    "permission": "vendor-rate-comparisons:create",
+    "public": false,
+    "file": "src/modules/material-procurement/controllers/vendor-trade.controller.ts"
+  },
+  {
+    "module": "material-procurement",
+    "controller": "VendorTradeController",
+    "handler": "list",
+    "method": "GET",
+    "path": "/vendor-trades",
+    "permission": "vendor-rate-comparisons:read",
+    "public": false,
+    "file": "src/modules/material-procurement/controllers/vendor-trade.controller.ts"
+  },
+  {
+    "module": "material-procurement",
     "controller": "WorkOrdersController",
     "handler": "approve",
     "method": "PATCH",

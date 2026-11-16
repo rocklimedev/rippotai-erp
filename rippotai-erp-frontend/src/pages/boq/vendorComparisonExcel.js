@@ -1,219 +1,280 @@
-// BOQ vendor rate comparison → the user's VENDOR COMPARISON TEMPLATE.xlsx:
-// "Comparison" summary (trade · finalised vendor · amount, total) + one trade sheet
-// per BOQ category in the template's layout (BOQ block + vendor blocks of
-// S.No / Description / Qty / Rate / Amount, totals, finalised-vendor dropdown,
-// "★ LOWEST" flags). Formulas are the template's; cached results are written too.
-import { COL, cloneSheet, copyRowStyle, deleteRows, insertRows, loadXlsxTemplate, wrappedHeight, writeXlsx } from "../../lib/xlsxTemplate.js";
-
-const PROTOTYPE = "01 Site Prep & Demolition";
-const FIRST_ITEM = 7;
-const TEMPLATE_ITEMS = 15; // rows 7–21
-const COMPARISON_FIRST = 6;
-const COMPARISON_ROWS = 31; // rows 6–36
+// Fill the supplied workbook, removing only the BOQ table from trade sheets.
+import {
+  COL,
+  cloneSheet,
+  copyRowStyle,
+  deleteRows,
+  insertRows,
+  loadXlsxTemplate,
+  wrappedHeight,
+  writeXlsx,
+} from "../../lib/xlsxTemplate.js";
+import {
+  completeQuote,
+  quoteAmount,
+  quoteTotal,
+} from "./vendorComparisonData.js";
 const clone = (v) => JSON.parse(JSON.stringify(v ?? {}));
-
-const spaced = (text) =>
-  String(text || "")
-    .trim()
+const quote = (v) => `'${v.replace(/'/g, "''")}'`;
+const spaced = (v) =>
+  String(v)
     .toUpperCase()
     .split(/\s+/)
     .map((word) => [...word].join(" "))
     .join("   ");
-
-const safeSheetName = (name, used) => {
-  const base = String(name).replace(/[\\/*?:[\]]/g, " ").replace(/\s+/g, " ").trim().slice(0, 31);
-  let candidate = base;
-  for (let i = 2; used.has(candidate.toLowerCase()); i++) candidate = `${base.slice(0, 26)} (${i})`;
-  used.add(candidate.toLowerCase());
-  return candidate;
+const safeName = (name, used) => {
+  const base =
+    String(name)
+      .replace(/[\\/*?:[\]]/g, " ")
+      .trim()
+      .slice(0, 31) || "Trade";
+  let next = base;
+  for (let i = 2; used.has(next.toLowerCase()); i++)
+    next = `${base.slice(0, 25)} (${i})`;
+  used.add(next.toLowerCase());
+  return next;
 };
-const quote = (name) => `'${name.replace(/'/g, "''")}'`;
 
-/** Column number of block `b` (0 = BOQ, 1.. = vendors): B, H, N, T, Z … */
-const blockCol = (b) => 2 + b * 6;
-
-/** Add a 4th (or later) vendor block by copying the last template block's look. */
-function addBlock(ws, block, lastRow) {
-  const src = blockCol(3) - 1; // spacer + block of vendor 3 (S..X)
-  const dst = blockCol(block) - 1;
-  for (let k = 0; k < 6; k++) {
-    ws.getColumn(dst + k).width = ws.getColumn(src + k).width;
-    ws.getColumn(dst + k).hidden = false;
-    for (let r = 1; r <= lastRow; r++) {
-      const cell = ws.getCell(r, dst + k);
-      if (r > 1) cell.value = null;
-      cell.style = clone(ws.getCell(r, src + k).style);
+function tradeSheet(ws, source, trade) {
+  const originalLast = source.rowCount - 4;
+  const last = Math.max(
+    originalLast,
+    6 + Math.max(0, ...trade.vendors.map((v) => v.items.length)),
+  );
+  const blocks = Math.max(3, trade.vendors.length);
+  const endCol = 6 * blocks; // B:F, H:L, N:R (no BOQ block)
+  const helper = endCol + 2;
+  const total = last + 1,
+    label = last + 2,
+    sum = last + 3,
+    flag = last + 4;
+  // Keep the original header, rebuild the table with the original vendor styles.
+  for (const merge of [...ws.model.merges]) {
+    const row = Number(/\d+/.exec(merge)[0]);
+    if (row >= 5 || merge === "B1:X1" || merge === "T3:X3")
+      ws.unMergeCells(merge);
+  }
+  ws.mergeCells(1, 2, 1, endCol);
+  ws.getCell("B1").value = spaced(trade.name);
+  ws.getCell("D3").value =
+    trade.vendors.find((v) => v.id === trade.finalised_vendor_id)?.name || null;
+  ws.getCell("T3").value = null;
+  ws.mergeCells("N4:R4");
+  ws.getCell("N4").style = clone(source.getCell("T3").style);
+  ws.getCell("N4").value = {
+    text: "← Back to Comparison",
+    hyperlink: "#'Comparison'!A1",
+  };
+  ws.dataValidations.model = {};
+  ws.conditionalFormattings = [];
+  for (let r = 5; r <= Math.max(ws.rowCount, flag + 4); r++) {
+    for (let c = 2; c <= Math.max(28, helper + blocks); c++) {
+      ws.getCell(r, c).value = null;
+      ws.getCell(r, c).style = {};
     }
   }
-}
-
-function writeTradeSheet(ws, { title, items, vendors, finalised = "" }) {
-  const blocks = Math.max(3, vendors.length);
-  const extra = Math.max(0, items.length - TEMPLATE_ITEMS);
-  if (extra) {
-    const at = FIRST_ITEM + TEMPLATE_ITEMS - 1;
-    insertRows(ws, at, extra);
-    for (let r = at; r < at + extra; r++) copyRowStyle(ws, FIRST_ITEM, r, 24);
-  }
-  const lastItem = FIRST_ITEM + Math.max(items.length, TEMPLATE_ITEMS) - 1;
-  const [totalRow, labelRow, sumRow, flagRow] = [1, 2, 3, 4].map((k) => lastItem + k);
-
-  // Hidden helper cells (vendor names / totals) sit two columns after the last block.
-  const helper = blockCol(blocks) + 6; // Z for three vendors
-  if (blocks > 3) {
-    ["Z1", "Z5", "AA5", "AB5", "Z6", "AA6", "AB6"].forEach((a) => (ws.getCell(a).value = null));
-    for (let b = 4; b <= blocks; b++) addBlock(ws, b, flagRow);
-    ws.unMergeCells("B1:X1");
-    ws.mergeCells(1, 2, 1, blockCol(blocks) + 4);
-    for (let b = 4; b <= blocks; b++) {
-      const c = blockCol(b);
-      for (const r of [5, totalRow, labelRow, sumRow, flagRow]) ws.mergeCells(r, c, r, c + 4);
-      for (const ref of [`${COL(c)}5:${COL(c + 4)}5`, `${COL(c)}${totalRow}:${COL(c + 4)}${sumRow}`])
+  const totals = trade.vendors.filter(completeQuote).map(quoteTotal);
+  const lowest = totals.length ? Math.min(...totals) : null;
+  for (let b = 0; b < blocks; b++) {
+    const c = 2 + b * 6;
+    const src = 8 + Math.min(b, 2) * 6;
+    const vendor = trade.vendors.find((v, index) => (v.slot ?? index) === b);
+    for (let offset = 0; offset < 6; offset++) {
+      ws.getColumn(c + offset).width = source.getColumn(src + offset).width;
+      ws.getColumn(c + offset).hidden = false;
+    }
+    for (let r = 5; r <= flag; r++) {
+      const sr =
+        r <= 6
+          ? r
+          : r <= last
+            ? Math.min(r, originalLast)
+            : originalLast + r - last;
+      ws.getRow(r).height = source.getRow(sr).height;
+      for (let offset = 0; offset < 5; offset++)
+        ws.getCell(r, c + offset).style = clone(
+          source.getCell(sr, src + offset).style,
+        );
+    }
+    for (const row of [5, total, label, sum, flag])
+      ws.mergeCells(row, c, row, c + 4);
+    ws.getCell(5, c).value = vendor?.name || `Vendor ${b + 1}`;
+    ["S.No", "Description", "Qty", "Rate", "Amount"].forEach((v, j) => {
+      ws.getCell(6, c + j).value = v;
+    });
+    for (let r = 7; r <= last; r++) {
+      const item = vendor?.items[r - 7];
+      ws.getCell(r, c).value = {
+        formula: `IF(${COL(c + 1)}${r}="","",ROW()-6)`,
+        result: item ? r - 6 : "",
+      };
+      ws.getCell(r, c + 1).value = item?.description || null;
+      ws.getCell(r, c + 2).value = item?.quantity ?? null;
+      ws.getCell(r, c + 3).value = item?.rate ?? null;
+      ws.getCell(r, c + 4).value = {
+        formula: `IF(${COL(c + 3)}${r}="","",IF(${COL(c + 2)}${r}="",${COL(c + 3)}${r},${COL(c + 2)}${r}*${COL(c + 3)}${r}))`,
+        result: item ? (quoteAmount(item) ?? "") : "",
+      };
+    }
+    ws.getCell(total, c).value = source.getCell(originalLast + 1, src).value;
+    ws.getCell(label, c).value = {
+      formula: `"("&${COL(c)}5&")"`,
+      result: `(${vendor?.name || `Vendor ${b + 1}`})`,
+    };
+    ws.getCell(sum, c).value = {
+      formula: `SUM(${COL(c + 4)}7:${COL(c + 4)}${last})`,
+      result: vendor ? quoteTotal(vendor) : 0,
+    };
+    const eligible = `AND(COUNTA(${COL(c + 1)}7:${COL(c + 1)}${last})>0,COUNT(${COL(c + 3)}7:${COL(c + 3)}${last})=COUNTA(${COL(c + 1)}7:${COL(c + 1)}${last}))`;
+    ws.getCell(5, helper + b).value = {
+      formula: `${COL(c)}5`,
+      result: vendor?.name || `Vendor ${b + 1}`,
+    };
+    ws.getCell(6, helper + b).value = {
+      formula: `IF(${eligible},${COL(c)}${sum},"")`,
+      result: vendor && completeQuote(vendor) ? quoteTotal(vendor) : "",
+    };
+    ws.getColumn(helper + b).hidden = true;
+    const helperRange = `$${COL(helper)}$6:$${COL(helper + blocks - 1)}$6`;
+    ws.getCell(flag, c).value = {
+      formula: `TRIM(IF(AND($D$3<>"",$D$3=${COL(c)}5),"✓ FINALISED     ","")&IF(AND(${eligible},${COL(c)}${sum}=MIN(${helperRange})),"★ LOWEST",""))`,
+      result: `${vendor?.id === trade.finalised_vendor_id ? "✓ FINALISED " : ""}${vendor && completeQuote(vendor) && quoteTotal(vendor) === lowest ? "★ LOWEST" : ""}`,
+    };
+    for (const range of [
+      `${COL(c)}5:${COL(c + 4)}5`,
+      `${COL(c)}${total}:${COL(c + 4)}${sum}`,
+    ]) {
+      const originalRule = source.conditionalFormattings[0]?.rules?.[0];
+      if (originalRule)
         ws.conditionalFormattings.push({
-          ref,
+          ref: range,
           rules: [
             {
-              ...clone(ws.conditionalFormattings[0].rules[0]),
+              ...clone(originalRule),
               formulae: [`AND($D$3<>"",$D$3=$${COL(c)}$5)`],
             },
           ],
         });
     }
-    // Move the "back" link over the last block.
-    ws.unMergeCells("T3:X3");
-    ws.getCell("T3").value = null;
-    ws.mergeCells(3, blockCol(blocks), 3, blockCol(blocks) + 4);
-    ws.getCell(3, blockCol(blocks)).style = clone(ws.getCell("T3").style);
-  }
-  for (let b = 0; b < blocks; b++) {
-    const c = helper + b;
-    ws.getColumn(c).hidden = true;
-    ws.getColumn(c).width = 13;
-  }
-  const helperRange = (row) => `$${COL(helper)}$${row}:$${COL(helper + blocks - 1)}$${row}`;
-
-  ws.getCell("B1").value = spaced(title);
-  ws.getCell("D3").dataValidation = { type: "list", allowBlank: true, formulae: [helperRange(5)] };
-  const back = blocks > 3 ? ws.getCell(3, blockCol(blocks)) : ws.getCell("T3");
-  back.value = { text: "← Back to Comparison", hyperlink: "#'Comparison'!A1" };
-
-  const totals = [];
-  for (let b = 0; b <= blocks; b++) {
-    const c = blockCol(b);
-    const [sno, desc, qty, rate, amount] = [0, 1, 2, 3, 4].map((k) => COL(c + k));
-    let sum = 0;
-    for (let r = FIRST_ITEM; r <= lastItem; r++) {
-      const item = items[r - FIRST_ITEM];
-      const value = item ? (b === 0 ? item.boqRate : item.rates[b - 1]) : null;
-      const hasRate = value !== null && value !== undefined && value !== "" && Number(value) > 0;
-      const amt = item && hasRate ? (item.qty ? item.qty * Number(value) : Number(value)) : null;
-      if (amt) sum += amt;
-      ws.getCell(`${sno}${r}`).value = { formula: `IF(${desc}${r}="","",ROW()-6)`, result: item ? r - 6 : "" };
-      ws.getCell(`${desc}${r}`).value = item ? item.description : null;
-      ws.getCell(`${qty}${r}`).value = item && item.qty ? item.qty : null;
-      ws.getCell(`${rate}${r}`).value = hasRate ? Number(value) : null;
-      ws.getCell(`${amount}${r}`).value = {
-        formula: `IF(${rate}${r}="","",IF(${qty}${r}="",${rate}${r},${qty}${r}*${rate}${r}))`,
-        result: amt ?? "",
+    if (vendor?.notes) {
+      ws.mergeCells(flag + 2, c, flag + 2, c + 4);
+      ws.getCell(flag + 2, c).value = `Notes: ${vendor.notes}`;
+      ws.getCell(flag + 2, c).style = clone(source.getCell("N3").style);
+      ws.getCell(flag + 2, c).alignment = {
+        wrapText: true,
+        vertical: "top",
+        horizontal: "left",
       };
     }
-    totals.push(sum);
-    ws.getCell(`${sno}${sumRow}`).value = { formula: `SUM(${amount}${FIRST_ITEM}:${amount}${lastItem})`, result: sum };
-    if (b === 0) continue;
-    const name = vendors[b - 1] || `Vendor ${b}`;
-    ws.getCell(`${sno}5`).value = name;
-    ws.getCell(`${sno}${labelRow}`).value = { formula: `"("&${sno}5&")"`, result: `(${name})` };
-    ws.getCell(`${COL(helper + b - 1)}5`).value = { formula: `${sno}5`, result: name };
-    ws.getCell(`${COL(helper + b - 1)}6`).value = { formula: `${sno}${sumRow}`, result: sum };
   }
-  const vendorTotals = totals.slice(1);
-  const lowest = Math.min(...vendorTotals.filter((t) => t > 0));
-  for (let b = 1; b <= blocks; b++) {
-    const sno = COL(blockCol(b));
-    ws.getCell(`${sno}${flagRow}`).value = {
-      formula: `TRIM(IF(AND($D$3<>"",$D$3=${sno}5),"✓ FINALISED     ","")&IF(AND(${sno}${sumRow}>0,${sno}${sumRow}=_xlfn.MINIFS(${helperRange(6)},${helperRange(6)},">0")),"★ LOWEST",""))`,
-      result: vendorTotals[b - 1] > 0 && vendorTotals[b - 1] === lowest ? "★ LOWEST" : "",
-    };
-  }
-  const chain = Array.from({ length: blocks }, (_, k) => COL(blockCol(k + 1))).reduceRight(
-    (rest, c) => `IF(D3=${c}5,${c}${sumRow},${rest})`,
-    `"Name mismatch"`,
+  for (let r = 7; r <= last; r++)
+    ws.getRow(r).height = Math.max(
+      source.getRow(Math.min(r, originalLast)).height || 25,
+      ...trade.vendors.map((v) =>
+        wrappedHeight([[v.items[r - 7]?.description || "", 26]], {
+          min: 25,
+          line: 12.5,
+          pad: 6,
+        }),
+      ),
+    );
+  ws.getRow(flag + 2).height = Math.max(
+    20,
+    ...trade.vendors.map((v) =>
+      wrappedHeight([[v.notes || "", 55]], { min: 20, line: 12.5 }),
+    ),
   );
-  // Finalised vendor (stored in INOS) fills the template's dropdown cell.
-  const finalIndex = finalised ? vendors.indexOf(finalised) : -1;
-  if (finalIndex >= 0) ws.getCell("D3").value = finalised;
-  ws.getCell("J3").value = { formula: `IF(D3="","",${chain})`, result: finalIndex >= 0 ? vendorTotals[finalIndex] : "" };
-  for (let b = 1; b <= blocks && finalIndex >= 0; b++) {
-    const flag = ws.getCell(`${COL(blockCol(b))}${flagRow}`);
-    if (b - 1 === finalIndex) flag.value = { ...flag.value, result: `✓ FINALISED ${flag.value.result || ""}`.trim() };
-  }
-  items.forEach((item, i) => {
-    ws.getRow(FIRST_ITEM + i).height = wrappedHeight([[item.description, 26]], { min: 30, line: 12.5, pad: 6 });
-  });
-  return finalIndex >= 0 ? { vendor: finalised, total: vendorTotals[finalIndex] } : null;
+  const final = trade.vendors.find((v) => v.id === trade.finalised_vendor_id);
+  const chain = Array.from({ length: blocks }, (_, b) =>
+    COL(2 + b * 6),
+  ).reduceRight(
+    (rest, c) => `IF(D3=${c}5,${c}${sum},${rest})`,
+    '"Name mismatch"',
+  );
+  ws.getCell("J3").value = {
+    formula: `IF(D3="","",${chain})`,
+    result: final ? quoteTotal(final) : "",
+  };
+  ws.getCell("D3").dataValidation = {
+    type: "list",
+    allowBlank: true,
+    formulae: [`$${COL(helper)}$5:$${COL(helper + blocks - 1)}$5`],
+  };
+  for (let c = endCol + 1; c <= Math.max(28, helper + blocks); c++)
+    ws.getColumn(c).hidden = true;
+  ws.pageSetup.printArea = `B1:${COL(endCol)}${flag + (trade.vendors.some((v) => v.notes) ? 2 : 0)}`;
+  return final ? { name: final.name, total: quoteTotal(final) } : null;
 }
 
-/**
- * @param data {{ projectName, clientName, title, notes, vendors: string[],
- *   categories: Array<{ name, items: Array<{ description, qty, boqRate, rates: number[] }> }> }}
- */
 export async function buildVendorComparisonWorkbook(template, data) {
   const workbook = await loadXlsxTemplate(template);
-  workbook.creator = "Rippotai Architecture";
-  workbook.title = data.title || "Vendor Comparison";
-  workbook.calcProperties = { fullCalcOnLoad: true };
+  const originals = [...workbook.worksheets];
   const summary = workbook.getWorksheet("Comparison");
-  const proto = workbook.getWorksheet(PROTOTYPE);
-  for (const ws of [...workbook.worksheets])
-    if (ws.id !== summary.id && ws.id !== proto.id) workbook.removeWorksheet(ws.id);
-
-  const categories = data.categories.length ? data.categories : [{ name: "General", items: [] }];
+  const sources = originals.filter((s) => s !== summary);
   const used = new Set(["comparison"]);
-  const names = categories.map((c, i) => safeSheetName(`${String(i + 1).padStart(2, "0")} ${c.name}`, used));
-  const sheets = names.map((name, i) => (i === 0 ? proto : cloneSheet(workbook, proto, `trade-${i}`)));
-  sheets.forEach((ws, i) => {
-    ws.name = names[i];
-    categories[i].result = writeTradeSheet(ws, {
-      title: categories[i].name,
-      items: categories[i].items,
-      vendors: data.vendors,
-      finalised: categories[i].finalised,
-    });
+  const sheets = data.trades.map((trade, index) => {
+    const source =
+      sources.find((s) => s.name.toLowerCase() === trade.name.toLowerCase()) ||
+      sources[0];
+    const sheet = cloneSheet(workbook, source, `export-${index}`);
+    const picked = tradeSheet(sheet, source, trade);
+    return { sheet, name: safeName(trade.name, used), picked };
   });
-
-  // Summary sheet rows grow / shrink to the number of trades.
-  const n = categories.length;
-  if (n > COMPARISON_ROWS) insertRows(summary, COMPARISON_FIRST + COMPARISON_ROWS - 1, n - COMPARISON_ROWS);
-  if (n < COMPARISON_ROWS) deleteRows(summary, COMPARISON_FIRST + n, COMPARISON_ROWS - n);
-  const last = COMPARISON_FIRST + n - 1;
-  summary.getCell("C2").value = data.projectName || null;
-  summary.getCell("E2").value = data.clientName || null;
-  categories.forEach((category, i) => {
-    const r = COMPARISON_FIRST + i;
-    const ref = quote(names[i]);
-    summary.getCell(`B${r}`).value = i + 1;
-    summary.getCell(`C${r}`).value = { text: category.name, hyperlink: `#${ref}!A1` };
-    const picked = category.result;
-    summary.getCell(`D${r}`).value = { formula: `IF(${ref}!D3="","Pending",${ref}!D3)`, result: picked ? picked.vendor : "Pending" };
-    summary.getCell(`E${r}`).value = { formula: `IF(ISNUMBER(${ref}!J3),${ref}!J3,0)`, result: picked ? picked.total : 0 };
+  sources.forEach((s) => workbook.removeWorksheet(s.id));
+  sheets.forEach(({ sheet, name }) => {
+    sheet.name = name;
   });
-  const picked = categories.filter((c) => c.result);
-  summary.getCell(`B${last + 3}`).value = {
-    formula: `SUM(E${COMPARISON_FIRST}:E${last})`,
-    result: picked.reduce((sum, c) => sum + c.result.total, 0),
+  // Preserve the original summary's typography, spacing and merged total block.
+  const count = Math.max(1, data.trades.length);
+  if (count < 30) deleteRows(summary, 6 + count, 30 - count);
+  if (count > 30) {
+    insertRows(summary, 35, count - 30);
+    for (let r = 35; r < 35 + count - 30; r++) copyRowStyle(summary, 6, r, 5);
+  }
+  summary.getCell("B2").value = [data.projectName, data.clientName]
+    .filter(Boolean)
+    .join("   •   ");
+  sheets.forEach(({ name, picked }, index) => {
+    const r = index + 6,
+      ref = quote(name);
+    summary.getCell(r, 2).value = index + 1;
+    summary.getCell(r, 3).value = {
+      text: data.trades[index].name,
+      hyperlink: `#${ref}!A1`,
+    };
+    summary.getCell(r, 4).value = {
+      formula: `IF(${ref}!D3="","Pending",${ref}!D3)`,
+      result: picked?.name || "Pending",
+    };
+    summary.getCell(r, 5).value = {
+      formula: `IF(ISNUMBER(${ref}!J3),${ref}!J3,0)`,
+      result: picked?.total || 0,
+    };
+  });
+  const last = count + 5;
+  summary.getCell(last + 3, 2).value = {
+    formula: `SUM(E6:E${last})`,
+    result: sheets.reduce((sum, s) => sum + (s.picked?.total || 0), 0),
   };
-  summary.getCell(`B${last + 4}`).value = {
-    formula: `COUNTIF(D${COMPARISON_FIRST}:D${last},"Pending")&" trade(s) pending selection"`,
-    result: `${n - picked.length} trade(s) pending selection`,
+  summary.getCell(last + 4, 2).value = {
+    formula: `COUNTIF(D6:D${last},"Pending")&" trade(s) pending selection"`,
+    result: `${sheets.filter((s) => !s.picked).length} trade(s) pending selection`,
   };
   if (data.notes) {
-    // INOS comparison notes (not in the template) under the footnote, same style.
-    const r = last + 6;
-    summary.mergeCells(r, 2, r, 5);
-    const cell = summary.getCell(r, 2);
-    cell.value = `Notes: ${data.notes}`;
-    cell.style = { ...clone(summary.getCell(last + 4, 2).style), alignment: { horizontal: "left", vertical: "top", wrapText: true } };
-    summary.getRow(r).height = wrappedHeight([[cell.value, 70]], { line: 12 });
+    summary.mergeCells(last + 6, 2, last + 6, 5);
+    summary.getCell(last + 6, 2).value = `Notes: ${data.notes}`;
+    summary.getCell(last + 6, 2).style = clone(
+      summary.getCell(last + 4, 2).style,
+    );
+    summary.getCell(last + 6, 2).alignment = {
+      wrapText: true,
+      vertical: "top",
+    };
+    summary.getRow(last + 6).height = wrappedHeight([[data.notes, 80]], {
+      min: 22,
+    });
   }
+  summary.pageSetup.printArea = `B1:E${last + (data.notes ? 6 : 4)}`;
+  workbook.calcProperties = { fullCalcOnLoad: true };
   return writeXlsx(workbook);
 }

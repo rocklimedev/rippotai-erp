@@ -50,6 +50,9 @@ import { Boq } from '../boqs/models/boq.model';
 import { VendorRateComparison } from './models/vendor-rate-comparison.model';
 import { VendorRateComparisonController } from './controllers/vendor-rate-comparison.controller';
 import { VendorRateComparisonService } from './services/vendor-rate-comparison.service';
+import { VendorTrade } from './models/vendor-trade.model';
+import { VendorTradeService } from './services/vendor-trade.service';
+import { VendorTradeController } from './controllers/vendor-trade.controller';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -73,6 +76,7 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
     SequelizeModule.forFeature([
       Boq,
       VendorRateComparison,
+      VendorTrade,
       MaterialRequirement,
       SampleBoard,
       MaterialRateSheet,
@@ -105,6 +109,7 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
 
   controllers: [
     VendorRateComparisonController,
+    VendorTradeController,
     MaterialRequirementController,
     SampleBoardController,
     MaterialRateSheetController,
@@ -121,6 +126,7 @@ import { VendorRateComparisonService } from './services/vendor-rate-comparison.s
 
   providers: [
     VendorRateComparisonService,
+    VendorTradeService,
     MaterialRequirementService,
     SampleBoardService,
     MaterialRateSheetService,

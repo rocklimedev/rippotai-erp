@@ -57,6 +57,29 @@ export function linesFromComparison(
   vendorId: string,
   taxPercent = 0,
 ): QuotationLine[] {
+  if (snapshot?.schema_version === 2) {
+    return (snapshot.trades ?? []).flatMap((trade) => {
+      if (trade.finalised_vendor_id !== vendorId) return [];
+      const vendor = trade.vendors.find((v) => v.id === vendorId);
+      if (!vendor) return [];
+      return vendor.items.map((item) => {
+        if (item.rate === null || !Number.isFinite(item.rate))
+          throw new BadRequestException(
+            'Complete the finalised vendor quote first',
+          );
+        return {
+          category_name: trade.name,
+          item_name: item.description,
+          // Downstream quotations use zero for lump sums. Preserve an explicit
+          // zero quantity by carrying its zero amount as a zero lump-sum rate.
+          quantity: item.quantity ?? 0,
+          rate: item.quantity === 0 ? 0 : item.rate,
+          tax_percent: taxPercent,
+          source_item_id: item.id,
+        };
+      });
+    });
+  }
   const finalised: Record<string, string> = snapshot?.finalised_vendors ?? {};
   const rates: Record<string, unknown> = snapshot?.vendor_rates ?? {};
   const rows: any[] = Array.isArray(snapshot?.rows) ? snapshot.rows : [];
@@ -433,7 +456,10 @@ export class ProcurementQuotationsService {
     const sheet = await this.comparisons.findByPk(dto.comparison_id);
     if (!sheet) throw new NotFoundException('Vendor comparison not found');
     const snapshot = sheet.snapshot ?? {};
-    const finalised = Object.values(snapshot.finalised_vendors ?? {});
+    const finalised =
+      snapshot.schema_version === 2
+        ? (snapshot.trades ?? []).map((trade) => trade.finalised_vendor_id)
+        : Object.values(snapshot.finalised_vendors ?? {});
     if (!finalised.includes(dto.vendor_id))
       throw new BadRequestException(
         'Finalise this vendor for at least one category of the comparison first.',

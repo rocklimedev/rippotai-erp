@@ -188,7 +188,7 @@ export default function QuotationEdit() {
                       <TextInput type="number" min="0" step="any" value={l.quantity} onChange={(e) => setLine(i, "quantity", e.target.value)} aria-label={`Quantity ${i + 1}`} />
                     </td>
                     <td style={cell}>
-                      <TextInput type="number" min="0" step="any" value={l.rate} onChange={(e) => setLine(i, "rate", e.target.value)} aria-label={`Rate ${i + 1}`} />
+                      <TextInput type="number" step="any" value={l.rate} onChange={(e) => setLine(i, "rate", e.target.value)} aria-label={`Rate ${i + 1}`} />
                     </td>
                     <td style={cell}>
                       <TextInput type="number" min="0" max="100" step="any" value={l.tax_percent} onChange={(e) => setLine(i, "tax_percent", e.target.value)} aria-label={`GST ${i + 1}`} />
