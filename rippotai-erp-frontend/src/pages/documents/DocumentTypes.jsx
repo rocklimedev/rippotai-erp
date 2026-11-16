@@ -12,6 +12,7 @@ import {
   ToolbarSpacer,
   SearchInput,
   Segmented,
+  Tabs,
   Pill,
   Field,
   TextInput,
@@ -62,6 +63,7 @@ const toCode = (s) =>
 const DocumentTypes = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [kindFilter, setKindFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -97,6 +99,7 @@ const DocumentTypes = () => {
     const value = search.trim().toLowerCase();
 
     return list.filter((item) => {
+      if (kindFilter !== "all" && (item.targetType || "DOCUMENT") !== kindFilter) return false;
       const active = item.isActive !== false;
       if (statusFilter === "active" && !active) return false;
       if (statusFilter === "inactive" && active) return false;
@@ -105,11 +108,11 @@ const DocumentTypes = () => {
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(value));
     });
-  }, [documentTypes, search, statusFilter]);
+  }, [documentTypes, search, statusFilter, kindFilter]);
 
   const openCreate = () => {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, targetType: kindFilter === "DRAWING" ? "DRAWING" : "DOCUMENT" });
     setCodeTouched(false);
     setErrors({});
     setShowModal(true);
@@ -238,6 +241,16 @@ const DocumentTypes = () => {
             Add document type
           </Button>
         }
+      />
+
+      <Tabs
+        value={kindFilter}
+        onChange={setKindFilter}
+        options={[
+          { value: "all", label: "All", count: allTypes.length },
+          { value: "DOCUMENT", label: "Documents", count: allTypes.filter((item) => (item.targetType || "DOCUMENT") === "DOCUMENT").length },
+          { value: "DRAWING", label: "Drawings", count: allTypes.filter((item) => item.targetType === "DRAWING").length },
+        ]}
       />
 
       <Toolbar>
