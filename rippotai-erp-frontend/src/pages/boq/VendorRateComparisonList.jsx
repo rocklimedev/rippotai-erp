@@ -1,9 +1,12 @@
-import { FileSpreadsheet } from "lucide-react";
-import DocumentListPage from "@/components/doc-list/DocumentListPage";
-import { asRows, rowProjectId, rowProjectName, rowUpdated } from "@/components/doc-list/doc-utils";
-import { useGetRateComparisonsQuery, useDeleteRateComparisonMutation } from "../../api/procuerment/vendor-rate-comparison.api";
+import { FileSpreadsheet } from 'lucide-react';
+import DocumentListPage from '@/components/doc-list/DocumentListPage';
+import { asRows, rowProjectId, rowProjectName, rowUpdated } from '@/components/doc-list/doc-utils';
+import {
+  useGetRateComparisonsQuery,
+  useDeleteRateComparisonMutation,
+} from '../../api/procuerment/vendor-rate-comparison.api';
 
-const basePath = "/procurement/vendors/rate-comparison";
+const basePath = '/procurement/vendors/rate-comparison';
 
 export default function VendorRateComparisonList() {
   const { data, isLoading, error } = useGetRateComparisonsQuery();
@@ -18,7 +21,7 @@ export default function VendorRateComparisonList() {
       error={error}
       getRow={(r) => ({
         id: r.id,
-        name: r.title || "Vendor Comparison",
+        name: r.title || 'Vendor Comparison',
         projectId: rowProjectId(r),
         projectName: rowProjectName(r),
         version: r.revision,

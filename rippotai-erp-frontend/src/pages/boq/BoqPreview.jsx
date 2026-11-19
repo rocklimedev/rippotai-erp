@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Download, Edit3, FileText } from 'lucide-react';
 
@@ -19,7 +19,7 @@ import BoqDocument, {
 export default function BoqPreview() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('preview');
-  const recordInfo = useRecordInfo("boq", id);
+  const recordInfo = useRecordInfo('boq', id);
   const nav = useNavigate();
   const { pathname } = useLocation();
   const base = pathname.startsWith('/ledger') ? '/ledger/boq' : '/boq';
@@ -93,17 +93,17 @@ export default function BoqPreview() {
           <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
         </TabsList>
         <TabsContent value="preview" forceMount hidden={activeTab !== 'preview'}>
-      <div style={{ marginBottom: 12 }}>
-        <Segmented
-          value={variant}
-          onChange={setVariant}
-          options={Object.entries(BOQ_VARIANTS).map(([value, label]) => ({ value, label }))}
-        />
-      </div>
+          <div style={{ marginBottom: 12 }}>
+            <Segmented
+              value={variant}
+              onChange={setVariant}
+              options={Object.entries(BOQ_VARIANTS).map(([value, label]) => ({ value, label }))}
+            />
+          </div>
 
-      <DocumentPreview>
-        <BoqDocument key={variant} ref={docRef} boq={boq} variant={variant} />
-      </DocumentPreview>
+          <DocumentPreview>
+            <BoqDocument key={variant} ref={docRef} boq={boq} variant={variant} />
+          </DocumentPreview>
         </TabsContent>
         <TabsContent value="history">
           <VersionHistory type="boq" id={id} />

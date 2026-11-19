@@ -19,7 +19,7 @@
 /* ---------- summary row ---------- */
 .vc-summary {
   display: grid;
-  grid-template-columns: minmax(280px, 1.6fr) repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(280px, 1.6fr) repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -418,32 +418,6 @@ p.vc-hint[role="alert"] {
   background: var(--surface);
 }
 
-.vendor-comparison-workspace .vc-table tbody tr:hover td.vc-add-col {
-  background: var(--add-stripe);
-}
-
-/* hatched "+ Add vendor" column */
-.vendor-comparison-workspace .vc-table {
-  --add-stripe: repeating-linear-gradient(
-    135deg,
-    var(--surface-2) 0 8px,
-    var(--surface) 8px 16px
-  );
-}
-
-.vendor-comparison-workspace .vc-table .vc-add-th,
-.vendor-comparison-workspace .vc-table .vc-add-col {
-  width: 128px;
-  background: var(--add-stripe);
-  border-inline-start: 1px solid var(--line);
-}
-
-.vendor-comparison-workspace .vc-table .vc-add-th {
-  padding: 12px;
-  text-align: center;
-  vertical-align: middle;
-}
-
 .vendor-comparison-workspace .vc-table .vc-act {
   width: 40px;
   padding: 0 4px;
@@ -510,14 +484,6 @@ p.vc-hint[role="alert"] {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.vc-vh-total {
-  color: var(--text);
-  font-size: 19px;
-  font-weight: 750;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
 }
 
 .vc-vh-delta {
@@ -668,7 +634,7 @@ p.vc-hint[role="alert"] {
 }
 
 .vendor-comparison-workspace .vc-table .vc-unit {
-  width: 82px;
+  width: 100px;
 }
 
 .vendor-comparison-workspace .vc-table .vc-unit-select {
@@ -721,7 +687,7 @@ p.vc-hint[role="alert"] {
   color: var(--bad-fg);
 }
 
-/* subtotal / GST / grand total */
+/* quote totals and notes */
 .vendor-comparison-workspace .vc-table tfoot td {
   padding: 10px 12px;
   font-size: 13.5px;
@@ -731,19 +697,8 @@ p.vc-hint[role="alert"] {
   text-align: right;
 }
 
-.vendor-comparison-workspace .vc-table tfoot td.vc-tot {
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 .vendor-comparison-workspace .vc-table tfoot td:first-child {
   color: var(--text-2);
-}
-
-.vendor-comparison-workspace .vc-table tfoot tr.vc-gst td:first-child,
-.vendor-comparison-workspace .vc-table tfoot tr.vc-gst td.vc-tot {
-  color: var(--text-2);
-  font-weight: 500;
 }
 
 .vendor-comparison-workspace .vc-table tfoot tr.vc-grand td {
@@ -756,6 +711,7 @@ p.vc-hint[role="alert"] {
 
 .vendor-comparison-workspace .vc-table tfoot tr.vc-grand td:not(:first-child) {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .vendor-comparison-workspace .vc-table tfoot tr.vc-notes-row td {
@@ -805,9 +761,9 @@ p.vc-hint[role="alert"] {
 }
 
 /* ---------- responsive ---------- */
-@media (max-width: 1250px) {
+@media (max-width: 850px) {
   .vc-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .vc-summary > :first-child {
     grid-column: 1 / -1;
@@ -817,9 +773,6 @@ p.vc-hint[role="alert"] {
 @media (max-width: 520px) {
   .vc-trades .inos-card__body {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .vc-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .vc-sheet-fields {
     grid-template-columns: minmax(0, 1fr);
