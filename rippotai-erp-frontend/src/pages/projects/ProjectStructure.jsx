@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   Plus,
   RefreshCw,
@@ -19,8 +19,8 @@ import {
   FolderPlus,
   SearchX,
   PenTool,
-} from "lucide-react";
-import { toast } from "sonner";
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 import {
   Page,
@@ -37,21 +37,21 @@ import {
   TextArea,
   SelectInput,
   ChoiceGroup,
-} from "@/components/inos";
+} from '@/components/inos';
 
 import {
   useGetProjectPhasesQuery,
   useCreateProjectPhaseMutation,
   useUpdateProjectPhaseMutation,
   useDeleteProjectPhaseMutation,
-} from "../../api/projects/project.api";
+} from '../../api/projects/project.api';
 
 import {
   useGetDocumentTypesQuery,
   useCreateDocumentTypeMutation,
   useUpdateDocumentTypeMutation,
   useDeleteDocumentTypeMutation,
-} from "../../api/documents/document.api";
+} from '../../api/documents/document.api';
 
 import {
   AdminModal,
@@ -61,7 +61,7 @@ import {
   adminCrumbs,
   humanize,
   plural,
-} from "../settings/_admin-ui";
+} from '../settings/_admin-ui';
 
 /* =========================================================
    Helpers
@@ -78,34 +78,31 @@ const normalizeArray = (value) => {
 
 const getId = (item) => item?.id ?? item?._id ?? null;
 
-const getName = (item) =>
-  item?.name || item?.title || item?.label || item?.code || "Untitled";
+const getName = (item) => item?.name || item?.title || item?.label || item?.code || 'Untitled';
 
 const getCode = (item) =>
-  item?.code || item?.phase_code || item?.phaseCode || item?.documentCode || "";
+  item?.code || item?.phase_code || item?.phaseCode || item?.documentCode || '';
 
 /** "01 BRIEF" -> "Brief" (the number is shown separately) */
 const phaseLabel = (phase) => {
-  const raw = getName(phase).replace(/^\d+[\s._-]+/, "");
+  const raw = getName(phase).replace(/^\d+[\s._-]+/, '');
   return humanize(raw) || getName(phase);
 };
 
 const toCode = (s) =>
-  String(s || "")
+  String(s || '')
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 
-const getDescription = (item) => item?.description || "";
+const getDescription = (item) => item?.description || '';
 
 const getActive = (item) => {
-  if (typeof item?.isActive === "boolean") return item.isActive;
-  if (typeof item?.active === "boolean") return item.active;
-  if (typeof item?.status === "string") {
-    return !["INACTIVE", "DISABLED", "ARCHIVED"].includes(
-      item.status.toUpperCase(),
-    );
+  if (typeof item?.isActive === 'boolean') return item.isActive;
+  if (typeof item?.active === 'boolean') return item.active;
+  if (typeof item?.status === 'string') {
+    return !['INACTIVE', 'DISABLED', 'ARCHIVED'].includes(item.status.toUpperCase());
   }
   return true;
 };
@@ -136,48 +133,39 @@ export default function ProjectStructure() {
     refetch: refetchDocumentTypes,
   } = useGetDocumentTypesQuery({});
 
-  const [createProjectPhase, { isLoading: creatingPhase }] =
-    useCreateProjectPhaseMutation();
-  const [updateProjectPhase, { isLoading: updatingPhase }] =
-    useUpdateProjectPhaseMutation();
-  const [deleteProjectPhase, { isLoading: deletingPhase }] =
-    useDeleteProjectPhaseMutation();
+  const [createProjectPhase, { isLoading: creatingPhase }] = useCreateProjectPhaseMutation();
+  const [updateProjectPhase, { isLoading: updatingPhase }] = useUpdateProjectPhaseMutation();
+  const [deleteProjectPhase, { isLoading: deletingPhase }] = useDeleteProjectPhaseMutation();
 
-  const [createDocumentType, { isLoading: creatingDocumentType }] =
-    useCreateDocumentTypeMutation();
-  const [updateDocumentType, { isLoading: updatingDocumentType }] =
-    useUpdateDocumentTypeMutation();
-  const [deleteDocumentType, { isLoading: deletingDocumentType }] =
-    useDeleteDocumentTypeMutation();
+  const [createDocumentType, { isLoading: creatingDocumentType }] = useCreateDocumentTypeMutation();
+  const [updateDocumentType, { isLoading: updatingDocumentType }] = useUpdateDocumentTypeMutation();
+  const [deleteDocumentType, { isLoading: deletingDocumentType }] = useDeleteDocumentTypeMutation();
 
-  const phases = useMemo(
-    () => normalizeArray(phasesResponse),
-    [phasesResponse],
-  );
+  const phases = useMemo(() => normalizeArray(phasesResponse), [phasesResponse]);
   const documentTypes = useMemo(
     () => normalizeArray(documentTypesResponse),
     [documentTypesResponse],
   );
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [expandedPhases, setExpandedPhases] = useState({});
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
   const [selectedDocumentId, setSelectedDocumentId] = useState(null);
   const [modal, setModal] = useState(null);
 
   const [phaseForm, setPhaseForm] = useState({
-    name: "",
-    code: "",
-    description: "",
+    name: '',
+    code: '',
+    description: '',
   });
 
   const [documentForm, setDocumentForm] = useState({
-    name: "",
-    code: "",
-    description: "",
-    projectPhaseId: "",
-    phaseCode: "",
-    targetType: "",
+    name: '',
+    code: '',
+    description: '',
+    projectPhaseId: '',
+    phaseCode: '',
+    targetType: '',
     isActive: true,
   });
 
@@ -190,11 +178,7 @@ export default function ProjectStructure() {
   }, [phases, selectedPhaseId]);
 
   const selectedDocument = useMemo(() => {
-    return (
-      documentTypes.find(
-        (documentType) => getId(documentType) === selectedDocumentId,
-      ) || null
-    );
+    return documentTypes.find((documentType) => getId(documentType) === selectedDocumentId) || null;
   }, [documentTypes, selectedDocumentId]);
 
   const documentsByPhase = useMemo(() => {
@@ -236,7 +220,7 @@ export default function ProjectStructure() {
 
   const handleRefresh = async () => {
     await Promise.all([refetchPhases(), refetchDocumentTypes()]);
-    toast.success("Project structure refreshed");
+    toast.success('Project structure refreshed');
   };
 
   const togglePhase = (phaseId) => {
@@ -265,27 +249,27 @@ export default function ProjectStructure() {
   ======================================================= */
 
   const openCreatePhase = () => {
-    setPhaseForm({ name: "", code: "", description: "" });
+    setPhaseForm({ name: '', code: '', description: '' });
     setPhaseErrors({});
-    setModal("create-phase");
+    setModal('create-phase');
   };
 
   const openEditPhase = (phase) => {
     setPhaseForm({
-      name: getName(phase) === "Untitled" ? "" : getName(phase),
+      name: getName(phase) === 'Untitled' ? '' : getName(phase),
       code: getCode(phase),
-      description: phase?.description || "",
+      description: phase?.description || '',
     });
     setPhaseErrors({});
     setSelectedPhaseId(getId(phase));
-    setModal("edit-phase");
+    setModal('edit-phase');
   };
 
   const submitPhase = async (event) => {
     event.preventDefault();
     const errs = {};
-    if (!phaseForm.name.trim()) errs.name = "Phase name is required.";
-    if (!toCode(phaseForm.code || phaseForm.name)) errs.code = "A short code is required.";
+    if (!phaseForm.name.trim()) errs.name = 'Phase name is required.';
+    if (!toCode(phaseForm.code || phaseForm.name)) errs.code = 'A short code is required.';
     setPhaseErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -301,16 +285,14 @@ export default function ProjectStructure() {
     };
 
     try {
-      if (modal === "create-phase") {
-        const nextNumber =
-          phases.reduce((m, p) => Math.max(m, Number(p.phase_number) || 0), 0) + 1;
+      if (modal === 'create-phase') {
+        const nextNumber = phases.reduce((m, p) => Math.max(m, Number(p.phase_number) || 0), 0) + 1;
         const response = await createProjectPhase({
           ...phasePayload,
           phase_number: nextNumber,
         }).unwrap();
 
-        const createdPhase =
-          response?.data || response?.item || response?.result || response;
+        const createdPhase = response?.data || response?.item || response?.result || response;
         const createdId = getId(createdPhase);
 
         if (createdId) {
@@ -320,27 +302,23 @@ export default function ProjectStructure() {
             [createdId]: true,
           }));
         }
-        toast.success("Project phase created");
-      } else if (modal === "edit-phase") {
+        toast.success('Project phase created');
+      } else if (modal === 'edit-phase') {
         if (!selectedPhaseId) {
-          toast.error("Phase not selected");
+          toast.error('Phase not selected');
           return;
         }
         await updateProjectPhase({
           id: selectedPhaseId,
           ...phasePayload,
         }).unwrap();
-        toast.success("Project phase updated");
+        toast.success('Project phase updated');
       }
 
       setModal(null);
       await refetchPhases();
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to save project phase",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to save project phase');
     }
   };
 
@@ -350,44 +328,43 @@ export default function ProjectStructure() {
 
   const openCreateDocument = (phase = null) => {
     const phaseId = phase ? getId(phase) : selectedPhaseId;
-    const selectedPhaseForDocument =
-      phases.find((item) => getId(item) === phaseId) || null;
+    const selectedPhaseForDocument = phases.find((item) => getId(item) === phaseId) || null;
 
     setDocumentForm({
-      name: "",
-      code: "",
-      description: "",
-      projectPhaseId: phaseId || "",
+      name: '',
+      code: '',
+      description: '',
+      projectPhaseId: phaseId || '',
       phaseCode: getCode(selectedPhaseForDocument),
-      targetType: "DOCUMENT",
+      targetType: 'DOCUMENT',
       isActive: true,
     });
     setDocumentErrors({});
-    setModal("create-document");
+    setModal('create-document');
   };
 
   const openEditDocument = (documentType) => {
     setDocumentForm({
-      name: documentType?.name || "",
-      code: documentType?.code || "",
-      description: documentType?.description || "",
-      projectPhaseId: getPhaseIdFromDocument(documentType) || "",
-      phaseCode: documentType?.phaseCode || documentType?.phase?.code || "",
-      targetType: documentType?.targetType || "",
+      name: documentType?.name || '',
+      code: documentType?.code || '',
+      description: documentType?.description || '',
+      projectPhaseId: getPhaseIdFromDocument(documentType) || '',
+      phaseCode: documentType?.phaseCode || documentType?.phase?.code || '',
+      targetType: documentType?.targetType || '',
       isActive: getActive(documentType),
     });
     setDocumentErrors({});
     setSelectedDocumentId(getId(documentType));
     setSelectedPhaseId(getPhaseIdFromDocument(documentType));
-    setModal("edit-document");
+    setModal('edit-document');
   };
 
   const submitDocument = async (event) => {
     event.preventDefault();
     const errs = {};
-    if (!documentForm.name.trim()) errs.name = "Document type name is required.";
-    if (!toCode(documentForm.code || documentForm.name)) errs.code = "A short code is required.";
-    if (!documentForm.projectPhaseId) errs.projectPhaseId = "Choose a project phase.";
+    if (!documentForm.name.trim()) errs.name = 'Document type name is required.';
+    if (!toCode(documentForm.code || documentForm.name)) errs.code = 'A short code is required.';
+    if (!documentForm.projectPhaseId) errs.projectPhaseId = 'Choose a project phase.';
     setDocumentErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -405,10 +382,9 @@ export default function ProjectStructure() {
         isActive: documentForm.isActive,
       };
 
-      if (modal === "create-document") {
+      if (modal === 'create-document') {
         const response = await createDocumentType(payload).unwrap();
-        const createdDocument =
-          response?.data || response?.item || response?.result || response;
+        const createdDocument = response?.data || response?.item || response?.result || response;
         const createdId = getId(createdDocument);
         if (createdId) setSelectedDocumentId(createdId);
         setSelectedPhaseId(documentForm.projectPhaseId);
@@ -416,10 +392,10 @@ export default function ProjectStructure() {
           ...previous,
           [documentForm.projectPhaseId]: true,
         }));
-        toast.success("Document type created");
-      } else if (modal === "edit-document") {
+        toast.success('Document type created');
+      } else if (modal === 'edit-document') {
         if (!selectedDocumentId) {
-          toast.error("Document type not selected");
+          toast.error('Document type not selected');
           return;
         }
         await updateDocumentType({
@@ -431,17 +407,13 @@ export default function ProjectStructure() {
           ...previous,
           [documentForm.projectPhaseId]: true,
         }));
-        toast.success("Document type updated");
+        toast.success('Document type updated');
       }
 
       setModal(null);
       await refetchDocumentTypes();
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to save document type",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to save document type');
     }
   };
 
@@ -453,26 +425,24 @@ export default function ProjectStructure() {
     setSelectedDocumentId(getId(documentType));
     setDocumentForm((prev) => ({
       ...prev,
-      projectPhaseId: getPhaseIdFromDocument(documentType) || "",
+      projectPhaseId: getPhaseIdFromDocument(documentType) || '',
     }));
-    setModal("move-document");
+    setModal('move-document');
   };
 
   const submitMoveDocument = async (event) => {
     event.preventDefault();
     if (!selectedDocumentId) {
-      toast.error("Document type not selected");
+      toast.error('Document type not selected');
       return;
     }
     if (!documentForm.projectPhaseId) {
-      toast.error("Please select a destination phase");
+      toast.error('Please select a destination phase');
       return;
     }
 
     try {
-      const destinationPhase = phases.find(
-        (phase) => getId(phase) === documentForm.projectPhaseId,
-      );
+      const destinationPhase = phases.find((phase) => getId(phase) === documentForm.projectPhaseId);
       await updateDocumentType({
         id: selectedDocumentId,
         data: {
@@ -487,15 +457,11 @@ export default function ProjectStructure() {
         ...previous,
         [documentForm.projectPhaseId]: true,
       }));
-      toast.success("Document type moved");
+      toast.success('Document type moved');
       setModal(null);
       await refetchDocumentTypes();
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to move document type",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to move document type');
     }
   };
 
@@ -504,24 +470,17 @@ export default function ProjectStructure() {
       const phaseId = getPhaseIdFromDocument(documentType);
       await createDocumentType({
         name: `${getName(documentType)} Copy`,
-        code: getCode(documentType)
-          ? `${getCode(documentType)}_COPY`
-          : undefined,
+        code: getCode(documentType) ? `${getCode(documentType)}_COPY` : undefined,
         description: getDescription(documentType) || undefined,
         projectPhaseId: phaseId || undefined,
-        phaseCode:
-          documentType?.phaseCode || documentType?.phase?.code || undefined,
+        phaseCode: documentType?.phaseCode || documentType?.phase?.code || undefined,
         targetType: documentType?.targetType || undefined,
         isActive: getActive(documentType),
       }).unwrap();
-      toast.success("Document type duplicated");
+      toast.success('Document type duplicated');
       await refetchDocumentTypes();
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to duplicate document type",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to duplicate document type');
     }
   };
 
@@ -534,67 +493,54 @@ export default function ProjectStructure() {
         data: { isActive: !getActive(documentType) },
       }).unwrap();
       toast.success(
-        getActive(documentType)
-          ? "Document type deactivated"
-          : "Document type activated",
+        getActive(documentType) ? 'Document type deactivated' : 'Document type activated',
       );
       await refetchDocumentTypes();
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to update document type",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to update document type');
     }
   };
 
   const requestDeletePhase = (phase) => {
-    setDeleteTarget({ type: "phase", item: phase });
+    setDeleteTarget({ type: 'phase', item: phase });
   };
 
   const requestDeleteDocument = (documentType) => {
-    setDeleteTarget({ type: "document", item: documentType });
+    setDeleteTarget({ type: 'document', item: documentType });
   };
 
   const confirmDelete = async () => {
     if (!deleteTarget?.item) return;
     try {
-      if (deleteTarget.type === "phase") {
+      if (deleteTarget.type === 'phase') {
         const id = getId(deleteTarget.item);
         await deleteProjectPhase(id).unwrap();
         if (selectedPhaseId === id) {
           setSelectedPhaseId(null);
           setSelectedDocumentId(null);
         }
-        toast.success("Project phase deleted");
+        toast.success('Project phase deleted');
         await Promise.all([refetchPhases(), refetchDocumentTypes()]);
       }
-      if (deleteTarget.type === "document") {
+      if (deleteTarget.type === 'document') {
         const id = getId(deleteTarget.item);
         await deleteDocumentType(id).unwrap();
         if (selectedDocumentId === id) setSelectedDocumentId(null);
-        toast.success("Document type deleted");
+        toast.success('Document type deleted');
         await refetchDocumentTypes();
       }
       setDeleteTarget(null);
     } catch (error) {
-      toast.error(
-        error?.data?.message || error?.message || "Unable to delete item",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to delete item');
     }
   };
 
   const isLoading = phasesLoading || documentTypesLoading;
   const isRefreshing = phasesFetching || documentTypesFetching;
-  const isSaving =
-    creatingPhase ||
-    updatingPhase ||
-    creatingDocumentType ||
-    updatingDocumentType;
+  const isSaving = creatingPhase || updatingPhase || creatingDocumentType || updatingDocumentType;
 
   const activeDocuments = documentTypes.filter(getActive).length;
   const inactiveDocuments = documentTypes.length - activeDocuments;
-
 
   /* =======================================================
      Render
@@ -606,15 +552,25 @@ export default function ProjectStructure() {
   return (
     <Page>
       <PageHeader
-        crumbs={adminCrumbs("Project structure")}
+        crumbs={adminCrumbs('Project structure')}
         title="Project structure"
         subtitle="Phases and the document types inside them — the skeleton every new project is built on."
         actions={
           <>
-            <Button variant="ghost" icon={RefreshCw} onClick={handleRefresh} disabled={isRefreshing}>
-              {isRefreshing ? "Refreshing…" : "Refresh"}
+            <Button
+              variant="ghost"
+              icon={RefreshCw}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? 'Refreshing…' : 'Refresh'}
             </Button>
-            <Button variant="primary" icon={FolderPlus} onClick={openCreatePhase} data-testid="ps-add-phase-btn">
+            <Button
+              variant="primary"
+              icon={FolderPlus}
+              onClick={openCreatePhase}
+              data-testid="ps-add-phase-btn"
+            >
               Add phase
             </Button>
           </>
@@ -623,7 +579,12 @@ export default function ProjectStructure() {
 
       <Stats>
         <StatTile label="Phases" value={phases.length} icon={<FolderKanban />} />
-        <StatTile label="Document types" value={documentTypes.length} icon={<FileText />} tone="info" />
+        <StatTile
+          label="Document types"
+          value={documentTypes.length}
+          icon={<FileText />}
+          tone="info"
+        />
         <StatTile label="Active" value={activeDocuments} icon={<CheckCircle2 />} tone="ok" />
         <StatTile label="Inactive" value={inactiveDocuments} icon={<XCircle />} tone="peach" />
       </Stats>
@@ -631,17 +592,38 @@ export default function ProjectStructure() {
       <div className="adm-split adm-split--wide">
         {/* LEFT TREE */}
         <section className="inos-card adm-sticky">
-          <div className="inos-card__header" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div
+            className="inos-card__header"
+            style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+              }}
+            >
               <div>
                 <h2 className="inos-section-title">Structure</h2>
                 <p className="inos-section-sub">
-                  {plural(phases.length, "phase")} · {plural(documentTypes.length, "document type")}
+                  {plural(phases.length, 'phase')} · {plural(documentTypes.length, 'document type')}
                 </p>
               </div>
-              <Button variant="ghost" size="sm" icon={Plus} onClick={openCreatePhase} aria-label="Add phase" title="Add phase" />
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={Plus}
+                onClick={openCreatePhase}
+                aria-label="Add phase"
+                title="Add phase"
+              />
             </div>
-            <SearchInput value={search} onChange={setSearch} placeholder="Search phases or documents" />
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search phases or documents"
+            />
           </div>
 
           {isLoading ? (
@@ -655,8 +637,12 @@ export default function ProjectStructure() {
           ) : filteredPhases.length === 0 ? (
             <EmptyState
               icon={search ? SearchX : FolderKanban}
-              title={search ? "Nothing matches" : "No phases yet"}
-              text={search ? "Try another search term." : "Create your first phase to start building the tree."}
+              title={search ? 'Nothing matches' : 'No phases yet'}
+              text={
+                search
+                  ? 'Try another search term.'
+                  : 'Create your first phase to start building the tree.'
+              }
               action={
                 !search && (
                   <Button variant="soft" icon={Plus} onClick={openCreatePhase}>
@@ -680,22 +666,26 @@ export default function ProjectStructure() {
                         type="button"
                         className="adm-tree__caret"
                         aria-expanded={isExpanded}
-                        aria-label={isExpanded ? "Collapse" : "Expand"}
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
                         onClick={() => togglePhase(phaseId)}
                       >
                         <ChevronRight aria-hidden />
                       </button>
 
-                      <button type="button" onClick={() => handleSelectPhase(phase)} className="adm-tree__main">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPhase(phase)}
+                        className="adm-tree__main"
+                      >
                         <span className="adm-num" style={{ width: 28, height: 28, fontSize: 11.5 }}>
-                          {phase.phase_number ?? "•"}
+                          {phase.phase_number ?? '•'}
                         </span>
                         <span style={{ minWidth: 0 }}>
-                          <span className="adm-tree__name" style={{ display: "block" }}>
+                          <span className="adm-tree__name" style={{ display: 'block' }}>
                             {phaseLabel(phase)}
                           </span>
-                          <span className="adm-tree__meta" style={{ display: "block" }}>
-                            {plural(phaseDocuments.length, "document")}
+                          <span className="adm-tree__meta" style={{ display: 'block' }}>
+                            {plural(phaseDocuments.length, 'document')}
                           </span>
                         </span>
                       </button>
@@ -704,10 +694,23 @@ export default function ProjectStructure() {
                         <RowMenu
                           label={`Actions for ${getName(phase)}`}
                           items={[
-                            { label: "Add document type", icon: FilePlus2, onClick: () => openCreateDocument(phase) },
-                            { label: "Edit phase", icon: Pencil, onClick: () => openEditPhase(phase) },
-                            "sep",
-                            { label: "Delete phase", icon: Trash2, danger: true, onClick: () => requestDeletePhase(phase) },
+                            {
+                              label: 'Add document type',
+                              icon: FilePlus2,
+                              onClick: () => openCreateDocument(phase),
+                            },
+                            {
+                              label: 'Edit phase',
+                              icon: Pencil,
+                              onClick: () => openEditPhase(phase),
+                            },
+                            'sep',
+                            {
+                              label: 'Delete phase',
+                              icon: Trash2,
+                              danger: true,
+                              onClick: () => requestDeletePhase(phase),
+                            },
                           ]}
                         />
                       </span>
@@ -718,19 +721,34 @@ export default function ProjectStructure() {
                         {phaseDocuments.map((documentType) => {
                           const documentId = getId(documentType);
                           const documentSelected = selectedDocumentId === documentId;
-                          const DocIcon = documentType?.targetType === "DRAWING" ? PenTool : FileText;
+                          const DocIcon =
+                            documentType?.targetType === 'DRAWING' ? PenTool : FileText;
 
                           return (
-                            <div key={documentId} className="adm-tree__row" aria-current={documentSelected} role="treeitem">
-                              <button type="button" onClick={() => handleSelectDocument(documentType)} className="adm-tree__main" style={{ paddingLeft: 6 }}>
-                                <DocIcon size={15} style={{ color: "var(--text-3)", flexShrink: 0 }} aria-hidden />
+                            <div
+                              key={documentId}
+                              className="adm-tree__row"
+                              aria-current={documentSelected}
+                              role="treeitem"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleSelectDocument(documentType)}
+                                className="adm-tree__main"
+                                style={{ paddingLeft: 6 }}
+                              >
+                                <DocIcon
+                                  size={15}
+                                  style={{ color: 'var(--text-3)', flexShrink: 0 }}
+                                  aria-hidden
+                                />
                                 <span style={{ minWidth: 0 }}>
-                                  <span className="adm-tree__name" style={{ display: "block" }}>
+                                  <span className="adm-tree__name" style={{ display: 'block' }}>
                                     {getName(documentType)}
                                   </span>
-                                  <span className="adm-tree__meta" style={{ display: "block" }}>
-                                    {getCode(documentType) || "No code"}
-                                    {!getActive(documentType) && " · Inactive"}
+                                  <span className="adm-tree__meta" style={{ display: 'block' }}>
+                                    {getCode(documentType) || 'No code'}
+                                    {!getActive(documentType) && ' · Inactive'}
                                   </span>
                                 </span>
                               </button>
@@ -739,16 +757,33 @@ export default function ProjectStructure() {
                                 <RowMenu
                                   label={`Actions for ${getName(documentType)}`}
                                   items={[
-                                    { label: "Edit", icon: Pencil, onClick: () => openEditDocument(documentType) },
-                                    { label: "Move to phase", icon: Move, onClick: () => openMoveDocument(documentType) },
-                                    { label: "Duplicate", icon: Copy, onClick: () => duplicateDocument(documentType) },
                                     {
-                                      label: getActive(documentType) ? "Deactivate" : "Activate",
+                                      label: 'Edit',
+                                      icon: Pencil,
+                                      onClick: () => openEditDocument(documentType),
+                                    },
+                                    {
+                                      label: 'Move to phase',
+                                      icon: Move,
+                                      onClick: () => openMoveDocument(documentType),
+                                    },
+                                    {
+                                      label: 'Duplicate',
+                                      icon: Copy,
+                                      onClick: () => duplicateDocument(documentType),
+                                    },
+                                    {
+                                      label: getActive(documentType) ? 'Deactivate' : 'Activate',
                                       icon: getActive(documentType) ? XCircle : CheckCircle2,
                                       onClick: () => toggleDocumentStatus(documentType),
                                     },
-                                    "sep",
-                                    { label: "Delete", icon: Trash2, danger: true, onClick: () => requestDeleteDocument(documentType) },
+                                    'sep',
+                                    {
+                                      label: 'Delete',
+                                      icon: Trash2,
+                                      danger: true,
+                                      onClick: () => requestDeleteDocument(documentType),
+                                    },
                                   ]}
                                 />
                               </span>
@@ -756,7 +791,11 @@ export default function ProjectStructure() {
                           );
                         })}
 
-                        <button type="button" className="adm-tree__add" onClick={() => openCreateDocument(phase)}>
+                        <button
+                          type="button"
+                          className="adm-tree__add"
+                          onClick={() => openCreateDocument(phase)}
+                        >
                           <Plus aria-hidden />
                           Add document type
                         </button>
@@ -804,20 +843,24 @@ export default function ProjectStructure() {
 
       {/* MODALS */}
       <AdminModal
-        open={modal === "create-phase" || modal === "edit-phase"}
+        open={modal === 'create-phase' || modal === 'edit-phase'}
         as="form"
         onSubmit={submitPhase}
         onClose={() => setModal(null)}
         busy={isSaving}
         icon={FolderKanban}
-        title={modal === "create-phase" ? "Add phase" : "Edit phase"}
-        subtitle={modal === "create-phase" ? "It will be added at the end of the workflow." : "Update the selected project phase."}
+        title={modal === 'create-phase' ? 'Add phase' : 'Edit phase'}
+        subtitle={
+          modal === 'create-phase'
+            ? 'It will be added at the end of the workflow.'
+            : 'Update the selected project phase.'
+        }
         width={540}
         footer={
           <ModalActions
             onCancel={() => setModal(null)}
             submitting={isSaving}
-            submitLabel={modal === "create-phase" ? "Add phase" : "Save changes"}
+            submitLabel={modal === 'create-phase' ? 'Add phase' : 'Save changes'}
           />
         }
       >
@@ -825,36 +868,45 @@ export default function ProjectStructure() {
       </AdminModal>
 
       <AdminModal
-        open={modal === "create-document" || modal === "edit-document"}
+        open={modal === 'create-document' || modal === 'edit-document'}
         as="form"
         onSubmit={submitDocument}
         onClose={() => setModal(null)}
         busy={isSaving}
         icon={FileText}
         tone="info"
-        title={modal === "create-document" ? "Add document type" : "Edit document type"}
-        subtitle={modal === "create-document" ? "Add a document type under a project phase." : "Update document type configuration."}
+        title={modal === 'create-document' ? 'Add document type' : 'Edit document type'}
+        subtitle={
+          modal === 'create-document'
+            ? 'Add a document type under a project phase.'
+            : 'Update document type configuration.'
+        }
         width={620}
         footer={
           <ModalActions
             onCancel={() => setModal(null)}
             submitting={isSaving}
-            submitLabel={modal === "create-document" ? "Add document type" : "Save changes"}
+            submitLabel={modal === 'create-document' ? 'Add document type' : 'Save changes'}
           />
         }
       >
-        <DocumentForm form={documentForm} setForm={setDocumentForm} phases={phases} errors={documentErrors} />
+        <DocumentForm
+          form={documentForm}
+          setForm={setDocumentForm}
+          phases={phases}
+          errors={documentErrors}
+        />
       </AdminModal>
 
       <AdminModal
-        open={modal === "move-document"}
+        open={modal === 'move-document'}
         as="form"
         onSubmit={submitMoveDocument}
         onClose={() => setModal(null)}
         busy={updatingDocumentType}
         icon={Move}
         title="Move document type"
-        subtitle={`Move “${selectedDocument ? getName(selectedDocument) : "document"}” to another phase.`}
+        subtitle={`Move “${selectedDocument ? getName(selectedDocument) : 'document'}” to another phase.`}
         width={480}
         footer={
           <ModalActions
@@ -869,8 +921,10 @@ export default function ProjectStructure() {
         <Field label="Destination phase" required htmlFor="mv-phase">
           <SelectInput
             id="mv-phase"
-            value={documentForm.projectPhaseId || ""}
-            onChange={(e) => setDocumentForm((prev) => ({ ...prev, projectPhaseId: e.target.value }))}
+            value={documentForm.projectPhaseId || ''}
+            onChange={(e) =>
+              setDocumentForm((prev) => ({ ...prev, projectPhaseId: e.target.value }))
+            }
             placeholder="Choose a phase"
           >
             {phases.map((phase) => (
@@ -888,11 +942,11 @@ export default function ProjectStructure() {
         busy={deletingPhase || deletingDocumentType}
         icon={AlertTriangle}
         tone="bad"
-        title={`Delete ${deleteTarget?.type === "phase" ? "phase" : "document type"}?`}
+        title={`Delete ${deleteTarget?.type === 'phase' ? 'phase' : 'document type'}?`}
         subtitle={
           <>
-            <strong style={{ color: "var(--text)" }}>{getName(deleteTarget?.item)}</strong> will be removed. This may affect
-            existing project configuration and can't easily be undone.
+            <strong style={{ color: 'var(--text)' }}>{getName(deleteTarget?.item)}</strong> will be
+            removed. This may affect existing project configuration and can't easily be undone.
           </>
         }
         width={460}
@@ -908,7 +962,7 @@ export default function ProjectStructure() {
           />
         }
       >
-        {deleteTarget?.type === "phase" ? (
+        {deleteTarget?.type === 'phase' ? (
           <div className="adm-callout adm-callout--warn">
             <AlertTriangle aria-hidden />
             Make sure no active project uses this phase before deleting it.
@@ -929,13 +983,15 @@ export default function ProjectStructure() {
 
 function DetailHeader({ icon: Icon, tone, title, badges, meta, actions }) {
   return (
-    <div className="inos-card__header" style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
-        <span className={`inos-icon-tile inos-icon-tile--lg${tone ? ` inos-icon-tile--${tone}` : ""}`}>
+    <div className="inos-card__header" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, minWidth: 0 }}>
+        <span
+          className={`inos-icon-tile inos-icon-tile--lg${tone ? ` inos-icon-tile--${tone}` : ''}`}
+        >
           <Icon aria-hidden />
         </span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <h2 className="inos-section-title" style={{ fontSize: 18 }}>
               {title}
             </h2>
@@ -944,7 +1000,7 @@ function DetailHeader({ icon: Icon, tone, title, badges, meta, actions }) {
           {meta && <p className="inos-section-sub">{meta}</p>}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{actions}</div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{actions}</div>
     </div>
   );
 }
@@ -953,11 +1009,13 @@ function KV({ items }) {
   return (
     <div className="adm-kv">
       {items.map((item) => {
-        const empty = item.value == null || item.value === "";
+        const empty = item.value == null || item.value === '';
         return (
           <div key={item.label} className="adm-kv__item">
             <div className="adm-kv__label">{item.label}</div>
-            <div className={`adm-kv__value${empty ? " is-empty" : ""}`}>{empty ? "Not set" : item.value}</div>
+            <div className={`adm-kv__value${empty ? ' is-empty' : ''}`}>
+              {empty ? 'Not set' : item.value}
+            </div>
           </div>
         );
       })}
@@ -973,7 +1031,9 @@ function ComingSoon({ items }) {
       </span>
       <div>
         <div className="adm-soon__title">Workflow configuration — coming soon</div>
-        <div className="adm-soon__text">{items.join(", ")} will be configurable here as the project structure evolves.</div>
+        <div className="adm-soon__text">
+          {items.join(', ')} will be configurable here as the project structure evolves.
+        </div>
       </div>
     </div>
   );
@@ -986,20 +1046,29 @@ function PhaseDetails({ phase, documents, onEdit, onDelete, onAddDocument, onSel
         icon={FolderKanban}
         title={phaseLabel(phase)}
         badges={getCode(phase) && <span className="adm-code">{getCode(phase)}</span>}
-        meta={`Phase ${phase.phase_number ?? ""}${phase.module ? ` · ${humanize(phase.module)}` : ""}`}
+        meta={`Phase ${phase.phase_number ?? ''}${phase.module ? ` · ${humanize(phase.module)}` : ''}`}
         actions={
           <>
             <Button variant="secondary" size="sm" icon={Pencil} onClick={onEdit}>
               Edit
             </Button>
-            <Button variant="ghost" size="sm" icon={Trash2} onClick={onDelete} aria-label="Delete phase" title="Delete phase" />
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Trash2}
+              onClick={onDelete}
+              aria-label="Delete phase"
+              title="Delete phase"
+            />
           </>
         }
       />
 
       {getDescription(phase) && (
         <div className="adm-section">
-          <p style={{ margin: 0, fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>{getDescription(phase)}</p>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
+            {getDescription(phase)}
+          </p>
         </div>
       )}
 
@@ -1021,28 +1090,32 @@ function PhaseDetails({ phase, documents, onEdit, onDelete, onAddDocument, onSel
             text="Add the documents or drawings this phase should deliver, e.g. a site recce report."
           />
         ) : (
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: 'grid', gap: 8 }}>
             {documents.map((documentType) => (
               <button
                 key={getId(documentType)}
                 type="button"
                 onClick={() => onSelectDocument(documentType)}
                 className="adm-list__item"
-                style={{ border: "1px solid var(--line)" }}
+                style={{ border: '1px solid var(--line)' }}
               >
                 <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--info">
-                  {documentType?.targetType === "DRAWING" ? <PenTool aria-hidden /> : <FileText aria-hidden />}
+                  {documentType?.targetType === 'DRAWING' ? (
+                    <PenTool aria-hidden />
+                  ) : (
+                    <FileText aria-hidden />
+                  )}
                 </span>
                 <span style={{ minWidth: 0, flex: 1 }}>
-                  <span className="adm-list__name" style={{ display: "block" }}>
+                  <span className="adm-list__name" style={{ display: 'block' }}>
                     {getName(documentType)}
                   </span>
-                  <span className="adm-list__sub" style={{ display: "block" }}>
-                    {getCode(documentType) || "No code"}
+                  <span className="adm-list__sub" style={{ display: 'block' }}>
+                    {getCode(documentType) || 'No code'}
                   </span>
                 </span>
                 <StatusBadge active={getActive(documentType)} />
-                <ChevronRight size={16} style={{ color: "var(--text-3)" }} aria-hidden />
+                <ChevronRight size={16} style={{ color: 'var(--text-3)' }} aria-hidden />
               </button>
             ))}
           </div>
@@ -1052,34 +1125,57 @@ function PhaseDetails({ phase, documents, onEdit, onDelete, onAddDocument, onSel
       <div className="adm-section">
         <KV
           items={[
-            { label: "Code", value: getCode(phase) },
-            { label: "Order", value: phase.phase_number },
-            { label: "Documents", value: documents.length },
+            { label: 'Code', value: getCode(phase) },
+            { label: 'Order', value: phase.phase_number },
+            { label: 'Documents', value: documents.length },
           ]}
         />
-        <ComingSoon items={["Requirements", "deliverables", "approvals", "gates", "checklists", "automations"]} />
+        <ComingSoon
+          items={[
+            'Requirements',
+            'deliverables',
+            'approvals',
+            'gates',
+            'checklists',
+            'automations',
+          ]}
+        />
       </div>
     </section>
   );
 }
 
-function DocumentDetails({ documentType, phase, onEdit, onMove, onDuplicate, onToggle, onDelete, onBack }) {
+function DocumentDetails({
+  documentType,
+  phase,
+  onEdit,
+  onMove,
+  onDuplicate,
+  onToggle,
+  onDelete,
+  onBack,
+}) {
   const active = getActive(documentType);
   return (
     <section className="inos-card">
       <DetailHeader
-        icon={documentType?.targetType === "DRAWING" ? PenTool : FileText}
+        icon={documentType?.targetType === 'DRAWING' ? PenTool : FileText}
         tone="info"
         title={getName(documentType)}
         badges={<StatusBadge active={active} />}
         meta={
           <>
             {phase ? (
-              <button type="button" className="adm-link-btn" onClick={onBack} style={{ fontSize: 13 }}>
+              <button
+                type="button"
+                className="adm-link-btn"
+                onClick={onBack}
+                style={{ fontSize: 13 }}
+              >
                 {phaseLabel(phase)}
               </button>
             ) : (
-              "No phase"
+              'No phase'
             )}
             {getCode(documentType) && <> · {getCode(documentType)}</>}
           </>
@@ -1092,11 +1188,15 @@ function DocumentDetails({ documentType, phase, onEdit, onMove, onDuplicate, onT
             <RowMenu
               label="More actions"
               items={[
-                { label: "Move to phase", icon: Move, onClick: onMove },
-                { label: "Duplicate", icon: Copy, onClick: onDuplicate },
-                { label: active ? "Deactivate" : "Activate", icon: active ? XCircle : CheckCircle2, onClick: onToggle },
-                "sep",
-                { label: "Delete", icon: Trash2, danger: true, onClick: onDelete },
+                { label: 'Move to phase', icon: Move, onClick: onMove },
+                { label: 'Duplicate', icon: Copy, onClick: onDuplicate },
+                {
+                  label: active ? 'Deactivate' : 'Activate',
+                  icon: active ? XCircle : CheckCircle2,
+                  onClick: onToggle,
+                },
+                'sep',
+                { label: 'Delete', icon: Trash2, danger: true, onClick: onDelete },
               ]}
             />
           </>
@@ -1106,13 +1206,18 @@ function DocumentDetails({ documentType, phase, onEdit, onMove, onDuplicate, onT
       <div className="adm-section">
         <KV
           items={[
-            { label: "Kind", value: documentType?.targetType ? humanize(documentType.targetType) : "" },
-            { label: "Phase", value: phase ? phaseLabel(phase) : "" },
-            { label: "Phase code", value: documentType?.phaseCode || getCode(phase) },
-            { label: "Status", value: active ? "Active" : "Inactive" },
+            {
+              label: 'Kind',
+              value: documentType?.targetType ? humanize(documentType.targetType) : '',
+            },
+            { label: 'Phase', value: phase ? phaseLabel(phase) : '' },
+            { label: 'Phase code', value: documentType?.phaseCode || getCode(phase) },
+            { label: 'Status', value: active ? 'Active' : 'Inactive' },
           ]}
         />
-        <ComingSoon items={["Requirements", "approvals", "templates", "deliverables", "checklists"]} />
+        <ComingSoon
+          items={['Requirements', 'approvals', 'templates', 'deliverables', 'checklists']}
+        />
       </div>
     </section>
   );
@@ -1124,13 +1229,18 @@ function WelcomePanel({ phases, documents, onAddPhase, onAddDocument }) {
       <EmptyState
         icon={Layers3}
         title="Select a phase or document"
-        text={`Pick anything in the tree to see its details. You have ${plural(phases.length, "phase")} and ${plural(
+        text={`Pick anything in the tree to see its details. You have ${plural(phases.length, 'phase')} and ${plural(
           documents.length,
-          "document type",
+          'document type',
         )} so far.`}
         action={
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-            <Button variant="soft" icon={FilePlus2} onClick={onAddDocument} disabled={!phases.length}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Button
+              variant="soft"
+              icon={FilePlus2}
+              onClick={onAddDocument}
+              disabled={!phases.length}
+            >
               Add document type
             </Button>
             <Button variant="ghost" icon={FolderPlus} onClick={onAddPhase}>
@@ -1145,8 +1255,8 @@ function WelcomePanel({ phases, documents, onAddPhase, onAddDocument }) {
 
 function StatusBadge({ active }) {
   return (
-    <Pill tone={active ? "ok" : "mute"} size="sm">
-      {active ? "Active" : "Inactive"}
+    <Pill tone={active ? 'ok' : 'mute'} size="sm">
+      {active ? 'Active' : 'Inactive'}
     </Pill>
   );
 }
@@ -1164,13 +1274,20 @@ function PhaseForm({ form, setForm, errors = {} }) {
           placeholder="e.g. Design development"
         />
       </Field>
-      <Field label="Code" required={!form.name} full error={errors.code} htmlFor="psf-code" hint="Leave blank to generate from the name.">
+      <Field
+        label="Code"
+        required={!form.name}
+        full
+        error={errors.code}
+        htmlFor="psf-code"
+        hint="Leave blank to generate from the name."
+      >
         <TextInput
           id="psf-code"
           value={form.code}
           invalid={!!errors.code}
           onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
-          placeholder={toCode(form.name) || "e.g. 05_DESIGN"}
+          placeholder={toCode(form.name) || 'e.g. 05_DESIGN'}
           className="adm-upper"
         />
       </Field>
@@ -1204,7 +1321,7 @@ function DocumentForm({ form, setForm, phases, errors = {} }) {
       <Field label="Project phase" required error={errors.projectPhaseId} htmlFor="dsf-phase">
         <SelectInput
           id="dsf-phase"
-          value={form.projectPhaseId || ""}
+          value={form.projectPhaseId || ''}
           invalid={!!errors.projectPhaseId}
           onChange={(e) => {
             const value = e.target.value;
@@ -1221,13 +1338,18 @@ function DocumentForm({ form, setForm, phases, errors = {} }) {
         </SelectInput>
       </Field>
 
-      <Field label="Code" error={errors.code} htmlFor="dsf-code" hint="Leave blank to generate from the name.">
+      <Field
+        label="Code"
+        error={errors.code}
+        htmlFor="dsf-code"
+        hint="Leave blank to generate from the name."
+      >
         <TextInput
           id="dsf-code"
           value={form.code}
           invalid={!!errors.code}
           onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
-          placeholder={toCode(form.name) || "e.g. CONCEPT_DESIGN"}
+          placeholder={toCode(form.name) || 'e.g. CONCEPT_DESIGN'}
           className="adm-upper"
         />
       </Field>
@@ -1235,15 +1357,14 @@ function DocumentForm({ form, setForm, phases, errors = {} }) {
       <Field label="Kind" full>
         <ChoiceGroup
           name="Kind"
-          value={form.targetType || "DOCUMENT"}
+          value={form.targetType || 'DOCUMENT'}
           onChange={(v) => setForm((prev) => ({ ...prev, targetType: v }))}
           options={[
-            { value: "DOCUMENT", label: "Document", icon: FileText },
-            { value: "DRAWING", label: "Drawing", icon: PenTool },
+            { value: 'DOCUMENT', label: 'Document', icon: FileText },
+            { value: 'DRAWING', label: 'Drawing', icon: PenTool },
           ]}
         />
       </Field>
-
 
       <div className="span-full">
         <ToggleRow

@@ -1,7 +1,7 @@
-import { appConfirm } from "@/lib/app-dialog";
-import { termsToText, textToTermsHtml } from "@/lib/terms";
-import React, { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { appConfirm } from '@/lib/app-dialog';
+import { termsToText, textToTermsHtml } from '@/lib/terms';
+import React, { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import {
   FileText,
   ClipboardList,
@@ -15,7 +15,7 @@ import {
   Pencil,
   Eye,
   ScrollText,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   Page,
@@ -30,7 +30,7 @@ import {
   TextArea,
   ChoiceGroup,
   Segmented,
-} from "@/components/inos";
+} from '@/components/inos';
 
 import {
   useGetTermsTemplatesQuery,
@@ -39,59 +39,50 @@ import {
   useUpdateTermsTemplateMutation,
   useUpdateTermsTemplateContentMutation,
   useDeleteTermsTemplateMutation,
-} from "../../api/meta/terms.api";
+} from '../../api/meta/terms.api';
 
-import {
-  TermsPreview,
-  TermsFullDisplay,
-} from "../../components/settings/TermsDisplay";
-import {
-  AdminModal,
-  ModalActions,
-  Switch,
-  adminCrumbs,
-  plural,
-} from "./_admin-ui";
+import { TermsPreview, TermsFullDisplay } from '../../components/settings/TermsDisplay';
+import { AdminModal, ModalActions, Switch, adminCrumbs, plural } from './_admin-ui';
 
 const SCOPES = [
   {
-    value: "GLOBAL",
-    label: "Global",
+    value: 'GLOBAL',
+    label: 'Global',
     icon: FileText,
-    description: "Usable anywhere in the platform.",
+    description: 'Usable anywhere in the platform.',
   },
   {
-    value: "PROJECT",
-    label: "Projects",
+    value: 'PROJECT',
+    label: 'Projects',
     icon: Building2,
-    description: "Shown when applying terms to a project.",
+    description: 'Shown when applying terms to a project.',
   },
   {
-    value: "CLIENT",
-    label: "Clients",
+    value: 'CLIENT',
+    label: 'Clients',
     icon: Users,
-    description: "Shown when applying terms to a client.",
+    description: 'Shown when applying terms to a client.',
   },
   {
-    value: "BOQ",
-    label: "Bill of quantities",
+    value: 'BOQ',
+    label: 'Bill of quantities',
     icon: ClipboardList,
-    description: "Shown in the BOQ terms picker.",
+    description: 'Shown in the BOQ terms picker.',
   },
   {
-    value: "ESTIMATE",
-    label: "Estimates",
+    value: 'ESTIMATE',
+    label: 'Estimates',
     icon: Calculator,
-    description: "Shown when applying terms to an estimate.",
+    description: 'Shown when applying terms to an estimate.',
   },
 ];
 
 const SCOPE_TONE = {
-  GLOBAL: "brand",
-  PROJECT: "info",
-  CLIENT: "lilac",
-  BOQ: "peach",
-  ESTIMATE: "ok",
+  GLOBAL: 'brand',
+  PROJECT: 'info',
+  CLIENT: 'lilac',
+  BOQ: 'peach',
+  ESTIMATE: 'ok',
 };
 
 const CONTENT_PLACEHOLDER = `All quantities are approximate and subject to site verification.
@@ -99,11 +90,11 @@ Rates include labour, material, tools and equipment unless stated otherwise.
 Any variation in scope will be treated as extra work.`;
 
 function formatDate(d) {
-  if (!d) return "—";
+  if (!d) return '—';
   return new Date(d).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
   });
 }
 
@@ -113,45 +104,42 @@ export default function TermsSettings() {
     isLoading,
     isError,
   } = useGetTermsTemplatesQuery({ includeInactive: true });
-  const [createTemplate, { isLoading: creating }] =
-    useCreateTermsTemplateMutation();
+  const [createTemplate, { isLoading: creating }] = useCreateTermsTemplateMutation();
   const [updateTemplate] = useUpdateTermsTemplateMutation();
-  const [updateContent, { isLoading: savingContent }] =
-    useUpdateTermsTemplateContentMutation();
+  const [updateContent, { isLoading: savingContent }] = useUpdateTermsTemplateContentMutation();
   const [deleteTemplate] = useDeleteTermsTemplateMutation();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
-    name: "",
-    scope: "GLOBAL",
-    content_html: "",
+    name: '',
+    scope: 'GLOBAL',
+    content_html: '',
   });
 
   const [editingTemplate, setEditingTemplate] = useState(null);
-  const [editContent, setEditContent] = useState("");
-  const [changeNote, setChangeNote] = useState("");
+  const [editContent, setEditContent] = useState('');
+  const [changeNote, setChangeNote] = useState('');
   const [previewMode, setPreviewMode] = useState(true);
 
   const [historyTemplateId, setHistoryTemplateId] = useState(null);
   const [previewTemplateId, setPreviewTemplateId] = useState(null);
 
-  const [scopeFilter, setScopeFilter] = useState("ALL");
+  const [scopeFilter, setScopeFilter] = useState('ALL');
 
-  const resetCreateForm = () =>
-    setCreateForm({ name: "", scope: "GLOBAL", content_html: "" });
+  const resetCreateForm = () => setCreateForm({ name: '', scope: 'GLOBAL', content_html: '' });
 
   const openCreate = (scope) => {
     setCreateForm({
-      name: "",
-      scope: scope && scope !== "ALL" ? scope : "GLOBAL",
-      content_html: "",
+      name: '',
+      scope: scope && scope !== 'ALL' ? scope : 'GLOBAL',
+      content_html: '',
     });
     setCreateOpen(true);
   };
 
   const handleCreate = async () => {
     if (!createForm.name.trim() || !createForm.content_html.trim()) {
-      toast.error("Name and content are required");
+      toast.error('Name and content are required');
       return false;
     }
     try {
@@ -160,12 +148,12 @@ export default function TermsSettings() {
         name: createForm.name.trim(),
         content_html: textToTermsHtml(createForm.content_html),
       }).unwrap();
-      toast.success("Template created");
+      toast.success('Template created');
       setCreateOpen(false);
       resetCreateForm();
       return true;
     } catch {
-      toast.error("Failed to create template");
+      toast.error('Failed to create template');
       return false;
     }
   };
@@ -173,7 +161,7 @@ export default function TermsSettings() {
   const openEditContent = (template) => {
     setEditingTemplate(template);
     setEditContent(termsToText(template.content_html));
-    setChangeNote("");
+    setChangeNote('');
     setPreviewMode(false);
   };
 
@@ -192,7 +180,7 @@ export default function TermsSettings() {
       toast.success(`Saved as v${(editingTemplate.current_version || 1) + 1}`);
       setEditingTemplate(null);
     } catch {
-      toast.error("Failed to save changes");
+      toast.error('Failed to save changes');
     }
   };
 
@@ -203,7 +191,7 @@ export default function TermsSettings() {
         is_active: !template.is_active,
       }).unwrap();
     } catch {
-      toast.error("Update failed");
+      toast.error('Update failed');
     }
   };
 
@@ -214,7 +202,7 @@ export default function TermsSettings() {
         is_default: !template.is_default,
       }).unwrap();
     } catch {
-      toast.error("Update failed");
+      toast.error('Update failed');
     }
   };
 
@@ -222,21 +210,25 @@ export default function TermsSettings() {
     if (!(await appConfirm(`Delete "${template.name}"? This can't be undone.`))) return;
     try {
       await deleteTemplate(template.id).unwrap();
-      toast.success("Template deleted");
+      toast.success('Template deleted');
     } catch {
-      toast.error("Delete failed");
+      toast.error('Delete failed');
     }
   };
 
-  const all = useMemo(
-    () => (Array.isArray(templates) ? templates : []),
-    [templates],
-  );
+  const all = useMemo(() => (Array.isArray(templates) ? templates : []), [templates]);
   const templatesByScope = (scope) => all.filter((t) => t.scope === scope);
 
   const visibleScopes =
-    scopeFilter === "ALL"
-      ? [{ value: "ALL", label: "All terms & conditions", icon: ScrollText, description: "All saved templates, including inactive templates." }]
+    scopeFilter === 'ALL'
+      ? [
+          {
+            value: 'ALL',
+            label: 'All terms & conditions',
+            icon: ScrollText,
+            description: 'All saved templates, including inactive templates.',
+          },
+        ]
       : SCOPES.filter((s) => s.value === scopeFilter);
 
   const renderRow = (template) => (
@@ -246,25 +238,18 @@ export default function TermsSettings() {
         className="adm-star"
         aria-pressed={!!template.is_default}
         onClick={() => toggleDefault(template)}
-        title={
-          template.is_default
-            ? "Default template — click to unset"
-            : "Set as default"
-        }
+        title={template.is_default ? 'Default template — click to unset' : 'Set as default'}
       >
-        <Star
-          aria-hidden
-          fill={template.is_default ? "currentColor" : "none"}
-        />
+        <Star aria-hidden fill={template.is_default ? 'currentColor' : 'none'} />
       </button>
 
-      <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 8 }}>
+      <div style={{ minWidth: 0, flex: 1, display: 'grid', gap: 8 }}>
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 8,
-            flexWrap: "wrap",
+            flexWrap: 'wrap',
           }}
         >
           <span className="adm-cell-title" style={{ fontSize: 15 }}>
@@ -282,15 +267,12 @@ export default function TermsSettings() {
           )}
         </div>
         <div className="adm-cell-sub" style={{ marginTop: -4 }}>
-          v{template.current_version} · updated{" "}
-          {formatDate(template.updated_at)}
+          v{template.current_version} · updated {formatDate(template.updated_at)}
         </div>
         <TermsPreview htmlContent={template.content_html} />
       </div>
 
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}
-      >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
         <Button
           variant="ghost"
           size="sm"
@@ -327,17 +309,15 @@ export default function TermsSettings() {
           style={{
             width: 1,
             height: 20,
-            background: "var(--line)",
-            margin: "0 6px",
+            background: 'var(--line)',
+            margin: '0 6px',
           }}
           aria-hidden
         />
         <Switch
           checked={!!template.is_active}
           onChange={() => toggleActive(template)}
-          label={
-            template.is_active ? "Deactivate template" : "Activate template"
-          }
+          label={template.is_active ? 'Deactivate template' : 'Activate template'}
         />
       </div>
     </div>
@@ -346,7 +326,7 @@ export default function TermsSettings() {
   return (
     <Page>
       <PageHeader
-        crumbs={adminCrumbs("Terms & conditions")}
+        crumbs={adminCrumbs('Terms & conditions')}
         title="Terms & conditions"
         subtitle="Reusable terms for BOQs, estimates, projects and clients. Editing wording saves a new version — documents keep the text they were issued with."
         actions={
@@ -365,7 +345,7 @@ export default function TermsSettings() {
         value={scopeFilter}
         onChange={setScopeFilter}
         options={[
-          { value: "ALL", label: "All", count: all.length },
+          { value: 'ALL', label: 'All', count: all.length },
           ...SCOPES.map((s) => ({
             value: s.value,
             label: s.label,
@@ -377,35 +357,25 @@ export default function TermsSettings() {
 
       {isLoading ? (
         <Card>
-          <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: 'grid', gap: 12 }}>
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="adm-skel"
-                style={{ height: 16, width: `${80 - i * 12}%` }}
-              />
+              <div key={i} className="adm-skel" style={{ height: 16, width: `${80 - i * 12}%` }} />
             ))}
           </div>
         </Card>
-      ) : scopeFilter === "ALL" && all.length === 0 ? (
+      ) : scopeFilter === 'ALL' && all.length === 0 ? (
         <Card>
           <EmptyState
             icon={ScrollText}
-            title={
-              isError ? "Couldn't load templates" : "No terms templates yet"
-            }
+            title={isError ? "Couldn't load templates" : 'No terms templates yet'}
             text={
               isError
                 ? "The terms service didn't respond. Try again in a moment."
-                : "Write your standard terms once — payment, scope, validity — and apply them to BOQs and estimates in a click."
+                : 'Write your standard terms once — payment, scope, validity — and apply them to BOQs and estimates in a click.'
             }
             action={
               !isError && (
-                <Button
-                  variant="soft"
-                  icon={Plus}
-                  onClick={() => openCreate("GLOBAL")}
-                >
+                <Button variant="soft" icon={Plus} onClick={() => openCreate('GLOBAL')}>
                   Create first template
                 </Button>
               )
@@ -414,36 +384,31 @@ export default function TermsSettings() {
         </Card>
       ) : (
         visibleScopes.map(({ value, label, icon: Icon, description }) => {
-          const scoped = value === "ALL" ? all : templatesByScope(value);
+          const scoped = value === 'ALL' ? all : templatesByScope(value);
           return (
             <section key={value} className="inos-card">
               <div className="inos-card__header">
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 12,
                     minWidth: 0,
                   }}
                 >
                   <span
-                    className={`inos-icon-tile inos-icon-tile--${SCOPE_TONE[value] === "brand" ? "" : SCOPE_TONE[value]}`}
+                    className={`inos-icon-tile inos-icon-tile--${SCOPE_TONE[value] === 'brand' ? '' : SCOPE_TONE[value]}`}
                   >
                     <Icon aria-hidden />
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <h2 className="inos-section-title">{label}</h2>
                     <p className="inos-section-sub">
-                      {description} · {plural(scoped.length, "template")}
+                      {description} · {plural(scoped.length, 'template')}
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={Plus}
-                  onClick={() => openCreate(value)}
-                >
+                <Button variant="ghost" size="sm" icon={Plus} onClick={() => openCreate(value)}>
                   Add
                 </Button>
               </div>
@@ -513,14 +478,14 @@ function WriteOrPreview({
   full,
 }) {
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+    <div style={{ display: 'grid', gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Segmented
-          value={preview ? "preview" : "write"}
-          onChange={(v) => setPreview(v === "preview")}
+          value={preview ? 'preview' : 'write'}
+          onChange={(v) => setPreview(v === 'preview')}
           options={[
-            { value: "write", label: "Write", icon: Pencil },
-            { value: "preview", label: "Preview", icon: Eye },
+            { value: 'write', label: 'Write', icon: Pencil },
+            { value: 'preview', label: 'Preview', icon: Eye },
           ]}
         />
       </div>
@@ -530,13 +495,10 @@ function WriteOrPreview({
             full ? (
               <TermsFullDisplay htmlContent={textToTermsHtml(value)} />
             ) : (
-              <TermsPreview
-                htmlContent={textToTermsHtml(value)}
-                maxPreview={50}
-              />
+              <TermsPreview htmlContent={textToTermsHtml(value)} maxPreview={50} />
             )
           ) : (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--text-3)" }}>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-3)' }}>
               Write some terms to see the preview.
             </p>
           )}
@@ -576,8 +538,8 @@ function CreateTemplateDialog({
   const submit = async (e) => {
     e?.preventDefault?.();
     const next = {};
-    if (!form.name.trim()) next.name = "Give the template a name.";
-    if (!form.content_html.trim()) next.content = "Write at least one term.";
+    if (!form.name.trim()) next.name = 'Give the template a name.';
+    if (!form.content_html.trim()) next.content = 'Write at least one term.';
     setErrors(next);
     if (Object.keys(next).length) {
       if (next.content) setPreviewMode(false);
@@ -611,12 +573,7 @@ function CreateTemplateDialog({
         />
       }
     >
-      <Field
-        label="Template name"
-        required
-        htmlFor="tt-name"
-        error={errors.name}
-      >
+      <Field label="Template name" required htmlFor="tt-name" error={errors.name}>
         <TextInput
           id="tt-name"
           autoFocus
@@ -647,12 +604,7 @@ function CreateTemplateDialog({
         />
       </Field>
 
-      <Field
-        label="Terms"
-        required
-        error={errors.content}
-        hint="Write one term per line."
-      >
+      <Field label="Terms" required error={errors.content} hint="Write one term per line.">
         <WriteOrPreview
           value={form.content_html}
           onChange={(v) => {
@@ -697,11 +649,7 @@ function EditTemplateDialog({
       subtitle={`Saving creates v${(template.current_version || 1) + 1}. Documents that used an earlier version are unaffected.`}
       width={680}
       footer={
-        <ModalActions
-          onCancel={onClose}
-          submitting={isSaving}
-          submitLabel="Save as new version"
-        />
+        <ModalActions onCancel={onClose} submitting={isSaving} submitLabel="Save as new version" />
       }
     >
       <Field label="Terms" required>
@@ -733,10 +681,9 @@ function EditTemplateDialog({
 }
 
 function VersionHistoryDialog({ templateId, onClose }) {
-  const { data: versions, isLoading } = useGetTermsTemplateVersionsQuery(
-    templateId,
-    { skip: !templateId },
-  );
+  const { data: versions, isLoading } = useGetTermsTemplateVersionsQuery(templateId, {
+    skip: !templateId,
+  });
 
   if (!templateId) return null;
 
@@ -754,8 +701,8 @@ function VersionHistoryDialog({ templateId, onClose }) {
       }
     >
       {isLoading && (
-        <div style={{ display: "grid", gap: 10 }}>
-          <div className="adm-skel" style={{ width: "50%" }} />
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div className="adm-skel" style={{ width: '50%' }} />
           <div className="adm-skel" style={{ height: 60 }} />
         </div>
       )}
@@ -770,22 +717,22 @@ function VersionHistoryDialog({ templateId, onClose }) {
         <div
           key={v.id}
           style={{
-            border: "1px solid var(--line)",
+            border: '1px solid var(--line)',
             borderRadius: 12,
             padding: 16,
-            display: "grid",
+            display: 'grid',
             gap: 10,
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               gap: 8,
             }}
           >
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="adm-cell-title">v{v.version}</span>
               {idx === 0 && (
                 <Pill tone="ok" size="sm">
@@ -799,15 +746,12 @@ function VersionHistoryDialog({ templateId, onClose }) {
           </div>
 
           {v.change_note && (
-            <div
-              className="adm-callout adm-callout--info"
-              style={{ padding: "8px 12px" }}
-            >
+            <div className="adm-callout adm-callout--info" style={{ padding: '8px 12px' }}>
               {v.change_note}
             </div>
           )}
 
-          <div style={{ maxHeight: 140, overflowY: "auto" }}>
+          <div style={{ maxHeight: 140, overflowY: 'auto' }}>
             <TermsFullDisplay htmlContent={v.content_html} />
           </div>
         </div>

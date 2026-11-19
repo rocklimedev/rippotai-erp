@@ -3,7 +3,7 @@ import { useRefill } from "@/components/doc-list/useRefill";
 import { PrefillNotice } from "@/components/PrefillNotice";
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Save, Send, Calculator } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Send, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -17,11 +17,7 @@ import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
 
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Page, PageHeader, Button, Card, Field, TextInput, SelectInput, TextArea, Stats, StatTile } from "@/components/inos";
 
 // ============================================================
 // EMPTY ITEM
@@ -466,462 +462,50 @@ export default function CreateMaterialProcurementSheet() {
   // LOADING EDIT
   // ============================================================
 
-  if (isEdit && existingLoading) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Edit Material Procurement"
-          description="Loading procurement sheet..."
-        />
-
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Loading procurement sheet...
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // ============================================================
-  // RENDER
-  // ============================================================
-
-  return (
-    <div className="space-y-6 pb-10">
-      <PageHeader
-        title={
-          isEdit ? "Edit Material Procurement" : "Create Material Procurement"
-        }
-        description={<>{
-          isEdit
-            ? "Update the material procurement sheet."
-            : "Create a digital material procurement sheet for a project."}<PrefillNotice prefill={prefill} /></>}
-      />
-
-      {/* ========================================================
-          TOP ACTIONS
-      ======================================================== */}
-
-      <div className="flex items-center justify-between gap-3">
-        <Button
-          variant="outline"
-          onClick={() => navigate("/procurement/material-procurement/list")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={busy} onClick={handleSave}>
-            <Save className="mr-2 h-4 w-4" />
-            {creating || updating ? "Saving..." : "Save Draft"}
-          </Button>
-
-          <Button disabled={busy} onClick={handleSubmit}>
-            <Send className="mr-2 h-4 w-4" />
-            {submitting ? "Submitting..." : "Save & Submit"}
-          </Button>
-        </div>
-      </div>
-
-      {/* ========================================================
-          PROCUREMENT DETAILS
-      ======================================================== */}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Procurement Details</CardTitle>
-        </CardHeader>
-
-        <CardContent className="grid gap-5 md:grid-cols-2">
-          {/* PROJECT */}
-
-          <div className="space-y-2">
-            <Label htmlFor="project">Project *</Label>
-
-            <select
-              id="project"
-              value={projectId}
-              disabled={
-                Boolean(projectIdFromUrl) || isEdit || projectsLoading || busy
-              }
-              onChange={(event) => setProjectId(event.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Select project</option>
-
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name ||
-                    project.projectName ||
-                    project.title ||
-                    project.code ||
-                    project.id}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* REMARKS */}
-
-          <div className="space-y-2">
-            <Label htmlFor="remarks">Remarks</Label>
-
-            <Input
-              id="remarks"
-              value={remarks}
-              disabled={busy}
-              placeholder="Optional remarks"
-              onChange={(event) => setRemarks(event.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ========================================================
-          ITEMS
-      ======================================================== */}
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4">
-          <div>
-            <CardTitle>Material Procurement Items</CardTitle>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              Select materials from Material Master and enter the required
-              quantities and pricing.
-            </p>
-          </div>
-
-          <Button variant="outline" onClick={addItem} disabled={busy}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Material
-          </Button>
-        </CardHeader>
-
-        <CardContent>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full min-w-[1450px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="w-14 px-3 py-3 text-left font-medium">#</th>
-
-                  <th className="min-w-[150px] px-3 py-3 text-left font-medium">
-                    Area
-                  </th>
-
-                  <th className="min-w-[150px] px-3 py-3 text-left font-medium">
-                    Location
-                  </th>
-
-                  <th className="min-w-[260px] px-3 py-3 text-left font-medium">
-                    Material Master *
-                  </th>
-
-                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">
-                    Wall (Sq.ft)
-                  </th>
-
-                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">
-                    Floor (Sq.ft)
-                  </th>
-
-                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">
-                    Ceiling (Sq.ft)
-                  </th>
-
-                  <th className="min-w-[130px] px-3 py-3 text-left font-medium">
-                    Total Area
-                  </th>
-
-                  <th className="min-w-[110px] px-3 py-3 text-left font-medium">
-                    Quantity
-                  </th>
-
-                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">
-                    Price
-                  </th>
-
-                  <th className="min-w-[130px] px-3 py-3 text-left font-medium">
-                    Amount
-                  </th>
-
-                  <th className="w-16 px-3 py-3" />
-                </tr>
-              </thead>
-
-              <tbody>
-                {items.map((item, index) => {
-                  const selectedMaterial = materials.find(
-                    (material) => material.id === item.materialId,
-                  );
-
-                  return (
-                    <tr
-                      key={`material-${index}`}
-                      className="border-b last:border-b-0"
-                    >
-                      {/* SERIAL */}
-
-                      <td className="px-3 py-2 align-top font-medium">
-                        {index + 1}
-                      </td>
-
-                      {/* AREA */}
-
-                      <td className="px-2 py-2">
-                        <Input
-                          value={item.area}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "area", event.target.value)
-                          }
-                          placeholder="Area"
-                        />
-                      </td>
-
-                      {/* LOCATION */}
-
-                      <td className="px-2 py-2">
-                        <Input
-                          value={item.location}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "location", event.target.value)
-                          }
-                          placeholder="Location"
-                        />
-                      </td>
-
-                      {/* MATERIAL MASTER */}
-
-                      <td className="px-2 py-2">
-                        <select
-                          value={item.materialId}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "materialId", event.target.value)
-                          }
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        >
-                          <option value="">
-                            {materialsLoading
-                              ? "Loading materials..."
-                              : item.description || "Select material"}
-                          </option>
-
-                          {materials.map((material) => (
-                            <option key={material.id} value={material.id}>
-                              {material.material_code
-                                ? `${material.material_code} — `
-                                : ""}
-                              {material.name}
-
-                              {material.brand ? ` (${material.brand})` : ""}
-                            </option>
-                          ))}
-                        </select>
-
-                        {/* SELECTED MATERIAL INFO */}
-
-                        {selectedMaterial && (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {selectedMaterial.category
-                              ? `${selectedMaterial.category} • `
-                              : ""}
-
-                            {selectedMaterial.unit?.name
-                              ? selectedMaterial.unit.name
-                              : "Unit not specified"}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* WALL */}
-
-                      <td className="px-2 py-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.wallArea}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "wallArea", event.target.value)
-                          }
-                          placeholder="0"
-                        />
-                      </td>
-
-                      {/* FLOOR */}
-
-                      <td className="px-2 py-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.floorArea}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "floorArea", event.target.value)
-                          }
-                          placeholder="0"
-                        />
-                      </td>
-
-                      {/* CEILING */}
-
-                      <td className="px-2 py-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.ceilingArea}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "ceilingArea", event.target.value)
-                          }
-                          placeholder="0"
-                        />
-                      </td>
-
-                      {/* TOTAL AREA */}
-
-                      <td className="px-2 py-2">
-                        <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 font-medium">
-                          {item.totalArea || "—"}
-                        </div>
-                      </td>
-
-                      {/* QUANTITY */}
-
-                      <td className="px-2 py-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.quantity}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "quantity", event.target.value)
-                          }
-                          placeholder="0"
-                        />
-                      </td>
-
-                      {/* PRICE */}
-
-                      <td className="px-2 py-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.price}
-                          disabled={busy}
-                          onChange={(event) =>
-                            updateItem(index, "price", event.target.value)
-                          }
-                          placeholder="0.00"
-                        />
-                      </td>
-
-                      {/* AMOUNT */}
-
-                      <td className="px-2 py-2">
-                        <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 font-medium">
-                          {item.amount || "—"}
-                        </div>
-                      </td>
-
-                      {/* DELETE */}
-
-                      <td className="px-2 py-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          disabled={busy || items.length === 1}
-                          onClick={() => removeItem(index)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-
-              {/* ==================================================
-                  TOTALS
-              ================================================== */}
-
-              <tfoot>
-                <tr className="bg-muted/30 font-semibold">
-                  <td colSpan={7} className="px-3 py-4 text-right">
-                    <span className="inline-flex items-center gap-2">
-                      <Calculator className="h-4 w-4" />
-                      Totals
-                    </span>
-                  </td>
-
-                  <td className="px-3 py-4">{totals.totalArea.toFixed(2)}</td>
-
-                  <td className="px-3 py-4">{totals.quantity.toFixed(3)}</td>
-
-                  <td />
-
-                  <td className="px-3 py-4">
-                    ₹{" "}
-                    {totals.amount.toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </td>
-
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          {/* ADD */}
-
-          <div className="mt-4 flex justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              Total area and amount are calculated automatically. Material
-              details are pulled from Material Master.
-            </p>
-
-            <Button variant="outline" onClick={addItem} disabled={busy}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Material
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ========================================================
-          BOTTOM ACTIONS
-      ======================================================== */}
-
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          disabled={busy}
-          onClick={() => navigate("/procurement/material-procurement/list")}
-        >
-          Cancel
-        </Button>
-
-        <Button variant="outline" disabled={busy} onClick={handleSave}>
-          <Save className="mr-2 h-4 w-4" />
-
-          {creating || updating ? "Saving..." : "Save Draft"}
-        </Button>
-
-        <Button disabled={busy} onClick={handleSubmit}>
-          <Send className="mr-2 h-4 w-4" />
-
-          {submitting ? "Submitting..." : "Save & Submit"}
-        </Button>
-      </div>
-    </div>
-  );
+  if (isEdit && existingLoading) return <Page><PageHeader title="Edit Material Procurement" /><Card>Loading procurement sheet…</Card></Page>;
+  const amountLabel = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const renderNumberInput = (item, index, key, label) => <TextInput type="number" min="0" aria-label={`${label} for item ${index + 1}`} value={item[key]} disabled={busy} onChange={(e) => updateItem(index, key, e.target.value)} placeholder="0" />;
+  return <Page>
+    <PageHeader title={isEdit ? 'Edit Material Procurement' : 'Create Material Procurement'} info={existing?.procurementNo} actions={<>
+      <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/procurement/material-procurement/list')}>Back</Button>
+      <Button variant="secondary" icon={Save} disabled={busy} onClick={handleSave}>{creating || updating ? 'Saving…' : 'Save Draft'}</Button>
+      <Button variant="primary" icon={Send} disabled={busy} onClick={handleSubmit}>{submitting ? 'Submitting…' : 'Save & Submit'}</Button>
+    </>} />
+    <PrefillNotice prefill={prefill} />
+    <Stats>
+      <StatTile label="Material items" value={items.filter((item) => item.materialId).length} icon={<PackageSearch />} />
+      <StatTile label="Total area" value={totals.totalArea.toFixed(2)} meta="sq.ft" />
+      <StatTile label="Total quantity" value={totals.quantity.toFixed(3)} />
+      <StatTile label="Procurement value" value={`₹ ${amountLabel(totals.amount)}`} />
+    </Stats>
+    <Card title="Procurement details"><div className="inos-form-grid">
+      <Field label="Project" required htmlFor="project"><SelectInput id="project" value={projectId} disabled={Boolean(projectIdFromUrl) || isEdit || projectsLoading || busy} onChange={(e) => setProjectId(e.target.value)} placeholder="Select project">
+        {projects.map((project) => <option key={project.id} value={project.id}>{project.name || project.projectName || project.title || project.code || project.id}</option>)}
+      </SelectInput></Field>
+      <Field label="Remarks" optional htmlFor="remarks"><TextArea id="remarks" rows={2} value={remarks} disabled={busy} placeholder="Add remarks for this procurement sheet" onChange={(e) => setRemarks(e.target.value)} /></Field>
+    </div></Card>
+    <Card title="Material procurement items" subtitle="Choose materials, enter measurements and set quantities and prices." flush actions={<Button variant="secondary" icon={Plus} onClick={addItem} disabled={busy}>Add material</Button>}>
+      <div className="inos-table-wrap"><table className="inos-table" style={{ minWidth: 1550 }}>
+        <thead><tr><th rowSpan={2}>S.No</th><th rowSpan={2} style={{ minWidth: 140 }}>Area</th><th rowSpan={2} style={{ minWidth: 140 }}>Location</th><th rowSpan={2} style={{ minWidth: 280 }}>Material *</th><th colSpan={4} className="text-center">Surface area · sq.ft</th><th colSpan={3} className="text-center">Quantity & pricing</th><th rowSpan={2} aria-label="Item actions" /></tr>
+          <tr><th>Wall</th><th>Floor</th><th>Ceiling</th><th>Total area</th><th>Quantity</th><th>Price</th><th className="text-right">Amount</th></tr>
+        </thead>
+        <tbody>{items.map((item, index) => {
+          const material = materials.find((entry) => entry.id === item.materialId);
+          return <tr key={`material-${index}`}>
+            <td>{index + 1}</td>
+            <td><TextInput aria-label={`Area for item ${index + 1}`} value={item.area} disabled={busy} onChange={(e) => updateItem(index, 'area', e.target.value)} placeholder="Area" /></td>
+            <td><TextInput aria-label={`Location for item ${index + 1}`} value={item.location} disabled={busy} onChange={(e) => updateItem(index, 'location', e.target.value)} placeholder="Location" /></td>
+            <td><SelectInput aria-label={`Material for item ${index + 1}`} value={item.materialId} disabled={busy} onChange={(e) => updateItem(index, 'materialId', e.target.value)} placeholder={materialsLoading ? 'Loading materials…' : item.description || 'Select material'}>
+              {materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.material_code ? `${entry.material_code} — ` : ''}{entry.name}{entry.brand ? ` (${entry.brand})` : ''}</option>)}
+            </SelectInput>{material && <div className="inos-hint mt-1">{material.category ? `${material.category} · ` : ''}{material.unit?.name || 'Unit not specified'}</div>}</td>
+            <td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'wallArea', 'Wall area')}</td><td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'floorArea', 'Floor area')}</td><td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'ceilingArea', 'Ceiling area')}</td>
+            <td className="text-right font-semibold tabular-nums">{item.totalArea || '—'}</td><td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'quantity', 'Quantity')}</td><td style={{ minWidth: 110 }}>{renderNumberInput(item, index, 'price', 'Price')}</td><td className="text-right font-semibold tabular-nums whitespace-nowrap">{item.amount === '' ? '—' : `₹ ${amountLabel(item.amount)}`}</td>
+            <td><Button variant="ghost" icon={Trash2} aria-label={`Remove material ${index + 1}`} disabled={busy || items.length === 1} onClick={() => removeItem(index)} /></td>
+          </tr>;
+        })}</tbody>
+        <tfoot><tr><td colSpan={7}>Totals</td><td className="text-right">{totals.totalArea.toFixed(2)}</td><td className="text-right">{totals.quantity.toFixed(3)}</td><td /><td className="text-right whitespace-nowrap">₹ {amountLabel(totals.amount)}</td><td /></tr></tfoot>
+      </table></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4"><p className="inos-hint">Total area and amount calculate automatically. Material details come from Material Master.</p><Button variant="ghost" icon={Plus} onClick={addItem} disabled={busy}>Add material</Button></div>
+    </Card>
+  </Page>;
 }

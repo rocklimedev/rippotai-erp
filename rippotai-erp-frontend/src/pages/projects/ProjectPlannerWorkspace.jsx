@@ -1,20 +1,12 @@
-import { useRef, useState } from "react";
-import PlannerDocument from "../../components/projects/PlannerDocument";
-import { OFFSCREEN_STYLE } from "@/components/print-document/commerce";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import { toast } from "sonner";
-import {
-  AlertCircle,
-  Download,
-  FileDown,
-  Loader2,
-  MapPin,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
+import { useRef, useState } from 'react';
+import PlannerDocument from '../../components/projects/PlannerDocument';
+import { OFFSCREEN_STYLE } from '@/components/print-document/commerce';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import { toast } from 'sonner';
+import { AlertCircle, Download, FileDown, Loader2, MapPin, Plus, RefreshCw } from 'lucide-react';
 
 import {
   Page,
@@ -27,10 +19,10 @@ import {
   TextInput,
   Toolbar,
   ToolbarSpacer,
-} from "@/components/inos";
-import { Skeleton } from "@/components/projects/_projects-ui";
+} from '@/components/inos';
+import { Skeleton } from '@/components/projects/_projects-ui';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
 import {
   useGetPlannerByIdQuery,
@@ -39,19 +31,18 @@ import {
   useGeneratePlannerFromTemplateMutation,
   useCreateLocationMutation,
   useDownloadPlannerWorkbookMutation,
-} from "../../api/documents/project-planner.api";
+} from '../../api/documents/project-planner.api';
 
-import { PlannerWorkbook } from "../../components/projects/PlannerWorkbook";
-import { WORKBOOK_VIEWS } from "../../components/projects/plannerWorkbookFormat";
-import { PlannerRowActions } from "../../components/projects/PlannerRowActions";
-import { downloadPlannerPdf } from "../../components/projects/plannerWorkbookPdf";
+import { PlannerWorkbook } from '../../components/projects/PlannerWorkbook';
+import { WORKBOOK_VIEWS } from '../../components/projects/plannerWorkbookFormat';
+import { PlannerRowActions } from '../../components/projects/PlannerRowActions';
+import { downloadPlannerPdf } from '../../components/projects/plannerWorkbookPdf';
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-const array = (response) =>
-  Array.isArray(response) ? response : response?.data || [];
+const array = (response) => (Array.isArray(response) ? response : response?.data || []);
 
 // ============================================================
 // COMPONENT
@@ -59,7 +50,7 @@ const array = (response) =>
 
 export function ProjectPlannerWorkspace() {
   const params = useParams();
-  const recordInfo = useRecordInfo("project-planner", params.plannerId);
+  const recordInfo = useRecordInfo('project-planner', params.plannerId);
   const navigate = useNavigate();
 
   // ==========================================================
@@ -67,11 +58,13 @@ export function ProjectPlannerWorkspace() {
   // ==========================================================
 
   const [searchParams] = useSearchParams();
-  const [selectedProject, setSelectedProject] = useState(() => searchParams.get('projectId') || searchParams.get('project_id') || '');
+  const [selectedProject, setSelectedProject] = useState(
+    () => searchParams.get('projectId') || searchParams.get('project_id') || '',
+  );
   const [view, setView] = useState(() => searchParams.get('view') || 'Overview');
 
-  const [locationName, setLocationName] = useState("");
-  const [parent, setParent] = useState("");
+  const [locationName, setLocationName] = useState('');
+  const [parent, setParent] = useState('');
 
   const [busy, setBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -120,8 +113,7 @@ export function ProjectPlannerWorkspace() {
 
   const [createLocation] = useCreateLocationMutation();
 
-  const [download, { isLoading: downloading }] =
-    useDownloadPlannerWorkbookMutation();
+  const [download, { isLoading: downloading }] = useDownloadPlannerWorkbookMutation();
 
   // ==========================================================
   // INITIALIZE / SYNC
@@ -129,7 +121,7 @@ export function ProjectPlannerWorkspace() {
 
   const initializePlanner = async () => {
     if (!projectId) {
-      toast.error("Please select a project");
+      toast.error('Please select a project');
       return;
     }
 
@@ -144,7 +136,7 @@ export function ProjectPlannerWorkspace() {
       );
 
       if (!planners?.length || !planners[0]?.id) {
-        throw new Error("Planner initialization did not return a planner");
+        throw new Error('Planner initialization did not return a planner');
       }
 
       await generate({
@@ -154,11 +146,9 @@ export function ProjectPlannerWorkspace() {
 
       await refetch();
 
-      toast.success("Project planner updated across all four sheets");
+      toast.success('Project planner updated across all four sheets');
     } catch (err) {
-      toast.error(
-        err?.data?.message || err?.message || "Could not initialize planner",
-      );
+      toast.error(err?.data?.message || err?.message || 'Could not initialize planner');
     } finally {
       setBusy(false);
     }
@@ -170,7 +160,7 @@ export function ProjectPlannerWorkspace() {
 
   const addLocation = async () => {
     if (!projectId) {
-      toast.error("Please select a project");
+      toast.error('Please select a project');
       return;
     }
 
@@ -185,22 +175,20 @@ export function ProjectPlannerWorkspace() {
         projectId,
         data: {
           name: locationName.trim(),
-          type: parent ? "ROOM" : "FLOOR",
+          type: parent ? 'ROOM' : 'FLOOR',
           parent_id: parent || undefined,
           sort_order: (overview?.locations || []).length,
         },
       }).unwrap();
 
-      setLocationName("");
-      setParent("");
+      setLocationName('');
+      setParent('');
 
       await refetch();
 
-      toast.success("Location added");
+      toast.success('Location added');
     } catch (err) {
-      toast.error(
-        err?.data?.message || err?.message || "Could not add location",
-      );
+      toast.error(err?.data?.message || err?.message || 'Could not add location');
     } finally {
       setBusy(false);
     }
@@ -216,9 +204,9 @@ export function ProjectPlannerWorkspace() {
     try {
       await downloadPlannerPdf(() => pdfRef.current, overview?.project?.name, view);
 
-      toast.success("PDF downloaded");
+      toast.success('PDF downloaded');
     } catch (err) {
-      toast.error(err?.message || "Could not download PDF");
+      toast.error(err?.message || 'Could not download PDF');
     } finally {
       setPdfBusy(false);
     }
@@ -236,9 +224,9 @@ export function ProjectPlannerWorkspace() {
     try {
       await download(projectId).unwrap();
 
-      toast.success("Workbook downloaded");
+      toast.success('Workbook downloaded');
     } catch (err) {
-      toast.error(err?.data?.message || "Could not download workbook");
+      toast.error(err?.data?.message || 'Could not download workbook');
     }
   };
 
@@ -253,31 +241,39 @@ export function ProjectPlannerWorkspace() {
   // ==========================================================
 
   const floors = Array.isArray(overview?.locations)
-    ? overview.locations.filter((location) => location.type === "FLOOR")
+    ? overview.locations.filter((location) => location.type === 'FLOOR')
     : [];
 
   // ==========================================================
   // RENDER
   // ==========================================================
 
-  const projectName = overview?.project?.name || projectList.find((pr) => String(pr.id) === String(projectId))?.name;
-  const hasProjectPlanner = overview?.planners?.some((plannerItem) => plannerItem.type === "PROJECT");
+  const projectName =
+    overview?.project?.name || projectList.find((pr) => String(pr.id) === String(projectId))?.name;
+  const hasProjectPlanner = overview?.planners?.some(
+    (plannerItem) => plannerItem.type === 'PROJECT',
+  );
 
   return (
     <Page>
       <PageHeader
         crumbs={[
-          { label: "Projects", to: "/projects" },
-          { label: "Planners", to: "/projects/planner/list" },
-          { label: projectName || "Planner" },
+          { label: 'Projects', to: '/projects' },
+          { label: 'Planners', to: '/projects/planner/list' },
+          { label: projectName || 'Planner' },
         ]}
-        title={projectName ? `${projectName} planner` : "Project planner"}
+        title={projectName ? `${projectName} planner` : 'Project planner'}
         info={params.plannerId ? recordInfo : undefined}
         actions={
           <>
             {overview?.planners?.length > 0 && (
-              <Button variant="secondary" icon={pdfBusy ? Loader2 : FileDown} disabled={pdfBusy || isFetching || busy} onClick={handleDownloadPdf}>
-                {pdfBusy ? "Preparing PDF…" : "Download PDF"}
+              <Button
+                variant="secondary"
+                icon={pdfBusy ? Loader2 : FileDown}
+                disabled={pdfBusy || isFetching || busy}
+                onClick={handleDownloadPdf}
+              >
+                {pdfBusy ? 'Preparing PDF…' : 'Download PDF'}
               </Button>
             )}
             {projectId && (
@@ -287,12 +283,21 @@ export function ProjectPlannerWorkspace() {
                 disabled={downloading || isFetching || busy || !overview?.planners?.length}
                 onClick={handleDownloadExcel}
               >
-                {downloading ? "Downloading…" : "Excel"}
+                {downloading ? 'Downloading…' : 'Excel'}
               </Button>
             )}
             {projectId && (
-              <Button variant="primary" icon={busy ? Loader2 : RefreshCw} disabled={busy || isFetching} onClick={initializePlanner}>
-                {busy ? "Updating…" : hasProjectPlanner ? "Sync template & locations" : "Initialize planner"}
+              <Button
+                variant="primary"
+                icon={busy ? Loader2 : RefreshCw}
+                disabled={busy || isFetching}
+                onClick={initializePlanner}
+              >
+                {busy
+                  ? 'Updating…'
+                  : hasProjectPlanner
+                    ? 'Sync template & locations'
+                    : 'Initialize planner'}
               </Button>
             )}
           </>
@@ -309,7 +314,13 @@ export function ProjectPlannerWorkspace() {
             aria-label="Project"
             style={{ maxWidth: 420 }}
           >
-            <option value="">{projectsLoading ? "Loading projects…" : projectList.length ? "Select project" : "No projects found"}</option>
+            <option value="">
+              {projectsLoading
+                ? 'Loading projects…'
+                : projectList.length
+                  ? 'Select project'
+                  : 'No projects found'}
+            </option>
             {projectList.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
@@ -330,12 +341,18 @@ export function ProjectPlannerWorkspace() {
             value={locationName}
             onChange={(event) => setLocationName(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && !busy && locationName.trim()) addLocation();
+              if (event.key === 'Enter' && !busy && locationName.trim()) addLocation();
             }}
             disabled={busy}
             style={{ maxWidth: 280 }}
           />
-          <SelectInput value={parent} onChange={(e) => setParent(e.target.value)} disabled={busy} aria-label="Location parent" style={{ maxWidth: 240 }}>
+          <SelectInput
+            value={parent}
+            onChange={(e) => setParent(e.target.value)}
+            disabled={busy}
+            aria-label="Location parent"
+            style={{ maxWidth: 240 }}
+          >
             <option value="">New floor</option>
             {floors.map((floor) => (
               <option key={floor.id} value={floor.id}>
@@ -343,13 +360,18 @@ export function ProjectPlannerWorkspace() {
               </option>
             ))}
           </SelectInput>
-          <Button variant="soft" icon={Plus} disabled={busy || !locationName.trim()} onClick={addLocation}>
+          <Button
+            variant="soft"
+            icon={Plus}
+            disabled={busy || !locationName.trim()}
+            onClick={addLocation}
+          >
             Add location
           </Button>
           <ToolbarSpacer />
           {floors.length > 0 && (
             <span className="pj-muted" style={{ fontSize: 13 }}>
-              {floors.length} floor{floors.length === 1 ? "" : "s"}
+              {floors.length} floor{floors.length === 1 ? '' : 's'}
             </span>
           )}
         </Toolbar>
@@ -370,20 +392,38 @@ export function ProjectPlannerWorkspace() {
         </Card>
       ) : !projectId ? (
         <Card>
-          <EmptyState icon={MapPin} title="Select a project" text="Pick a project above to open its planner." />
+          <EmptyState
+            icon={MapPin}
+            title="Select a project"
+            text="Pick a project above to open its planner."
+          />
         </Card>
       ) : !overview ? (
         <Skeleton height={320} />
       ) : (
         <>
-          <Tabs value={view} onChange={setView} options={WORKBOOK_VIEWS.map((name) => ({ value: name, label: name }))} />
+          <Tabs
+            value={view}
+            onChange={setView}
+            options={WORKBOOK_VIEWS.map((name) => ({ value: name, label: name }))}
+          />
 
           <PlannerWorkbook key={projectId} overview={overview} view={view} refresh={refetch} />
 
-          <PlannerRowActions key={`${projectId}:${view}`} overview={overview} view={view} refresh={refetch} />
+          <PlannerRowActions
+            key={`${projectId}:${view}`}
+            overview={overview}
+            view={view}
+            refresh={refetch}
+          />
           {pdfBusy && (
             <div style={OFFSCREEN_STYLE} aria-hidden>
-              <PlannerDocument ref={pdfRef} overview={overview} view={view} project={projectList.find((pr) => String(pr.id) === String(projectId))} />
+              <PlannerDocument
+                ref={pdfRef}
+                overview={overview}
+                view={view}
+                project={projectList.find((pr) => String(pr.id) === String(projectId))}
+              />
             </div>
           )}
         </>

@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCreateSnagMutation } from "../../api/site-ops/site-ops.api";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCreateSnagMutation } from '../../api/site-ops/site-ops.api';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
+} from '@/components/ui/select';
+import { toast } from 'sonner';
 
-const STATUS_OPTIONS = ["Open", "In Progress", "Rectified", "Closed"];
+const STATUS_OPTIONS = ['Open', 'In Progress', 'Rectified', 'Closed'];
 
 export default function SnagCreatePage() {
   const navigate = useNavigate();
@@ -27,15 +27,15 @@ export default function SnagCreatePage() {
     : projectsData?.data || projectsData?.items || [];
 
   const [form, setForm] = useState({
-    project_id: "",
-    floor: "",
-    room: "",
-    category: "",
-    observation: "",
-    scope: "",
-    status: "Open",
-    remarks: "",
-    visit_id: "",
+    project_id: '',
+    floor: '',
+    room: '',
+    category: '',
+    observation: '',
+    scope: '',
+    status: 'Open',
+    remarks: '',
+    visit_id: '',
   });
 
   const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -43,7 +43,7 @@ export default function SnagCreatePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.project_id || !form.observation.trim()) {
-      toast.error("Project and observation are required");
+      toast.error('Project and observation are required');
       return;
     }
     try {
@@ -58,10 +58,10 @@ export default function SnagCreatePage() {
         remarks: form.remarks || undefined,
         visit_id: form.visit_id || undefined,
       }).unwrap();
-      toast.success("Snag created");
+      toast.success('Snag created');
       navigate(`/site-ops/snags/${result.id}`);
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to create snag");
+      toast.error(err?.data?.message || 'Failed to create snag');
     }
   };
 
@@ -77,10 +77,7 @@ export default function SnagCreatePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label className="bc-form-label">Project *</Label>
-            <Select
-              value={form.project_id}
-              onValueChange={(v) => set("project_id", v)}
-            >
+            <Select value={form.project_id} onValueChange={(v) => set('project_id', v)}>
               <SelectTrigger className="bc-input">
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
@@ -99,7 +96,7 @@ export default function SnagCreatePage() {
             <Input
               className="bc-input"
               value={form.floor}
-              onChange={(e) => set("floor", e.target.value)}
+              onChange={(e) => set('floor', e.target.value)}
               placeholder="e.g. Ground, L1"
             />
           </div>
@@ -108,7 +105,7 @@ export default function SnagCreatePage() {
             <Input
               className="bc-input"
               value={form.room}
-              onChange={(e) => set("room", e.target.value)}
+              onChange={(e) => set('room', e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -116,7 +113,7 @@ export default function SnagCreatePage() {
             <Input
               className="bc-input"
               value={form.category}
-              onChange={(e) => set("category", e.target.value)}
+              onChange={(e) => set('category', e.target.value)}
               placeholder="e.g. Finishes, MEP"
             />
           </div>
@@ -125,12 +122,12 @@ export default function SnagCreatePage() {
             <Input
               className="bc-input"
               value={form.scope}
-              onChange={(e) => set("scope", e.target.value)}
+              onChange={(e) => set('scope', e.target.value)}
             />
           </div>
           <div className="space-y-2">
             <Label className="bc-form-label">Status</Label>
-            <Select value={form.status} onValueChange={(v) => set("status", v)}>
+            <Select value={form.status} onValueChange={(v) => set('status', v)}>
               <SelectTrigger className="bc-input">
                 <SelectValue />
               </SelectTrigger>
@@ -148,7 +145,7 @@ export default function SnagCreatePage() {
             <Input
               className="bc-input"
               value={form.visit_id}
-              onChange={(e) => set("visit_id", e.target.value)}
+              onChange={(e) => set('visit_id', e.target.value)}
               placeholder="Optional UUID"
             />
           </div>
@@ -159,7 +156,7 @@ export default function SnagCreatePage() {
           <Textarea
             className="bc-input min-h-[100px]"
             value={form.observation}
-            onChange={(e) => set("observation", e.target.value)}
+            onChange={(e) => set('observation', e.target.value)}
             placeholder="Describe the defect or observation…"
             required
           />
@@ -170,19 +167,19 @@ export default function SnagCreatePage() {
           <Textarea
             className="bc-input"
             value={form.remarks}
-            onChange={(e) => set("remarks", e.target.value)}
+            onChange={(e) => set('remarks', e.target.value)}
           />
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" className="bc-btn-primary" disabled={isLoading}>
-            {isLoading ? "Creating…" : "Create snag"}
+            {isLoading ? 'Creating…' : 'Create snag'}
           </Button>
           <Button
             type="button"
             variant="outline"
             className="bc-btn-secondary"
-            onClick={() => navigate("/site-ops/snags")}
+            onClick={() => navigate('/site-ops/snags')}
           >
             Cancel
           </Button>

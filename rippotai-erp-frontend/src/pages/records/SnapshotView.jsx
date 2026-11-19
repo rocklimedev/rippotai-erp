@@ -1,24 +1,30 @@
 // Read-only render of a saved earlier version of a flow document
 // (document_snapshots: the main row + its child rows). Opened in a new tab
 // from "Open vN ↗" in the version history.
-import { useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { Card, EmptyState, Page, PageHeader, prettyStatus } from "@/components/inos";
-import { useLazyGetDocRevisionQuery } from "@/api/doc-flow/doc-flow.api";
-import { docCode, docMeta, fmtDay, projectLabel, viewPath } from "@/components/record-context/codes";
-import { useRecordContext } from "@/components/record-context/useRecordInfo";
-import "@/components/record-context/record-context.css";
+import { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { Card, EmptyState, Page, PageHeader, prettyStatus } from '@/components/inos';
+import { useLazyGetDocRevisionQuery } from '@/api/doc-flow/doc-flow.api';
+import {
+  docCode,
+  docMeta,
+  fmtDay,
+  projectLabel,
+  viewPath,
+} from '@/components/record-context/codes';
+import { useRecordContext } from '@/components/record-context/useRecordInfo';
+import '@/components/record-context/record-context.css';
 
 const HIDDEN = /(^id$|_id$|Id$|^password|token|signature_url$|^deleted_at$|^storage_filename$)/;
-const label = (k) => prettyStatus(k.replace(/_/g, " "));
+const label = (k) => prettyStatus(k.replace(/_/g, ' '));
 
 function show(v) {
-  if (v == null || v === "") return "—";
-  if (typeof v === "boolean") return v ? "Yes" : "No";
-  if (typeof v === "object") return JSON.stringify(v);
+  if (v == null || v === '') return '—';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (typeof v === 'object') return JSON.stringify(v);
   const s = String(v);
   if (/^\d{4}-\d{2}-\d{2}(T|\s|$)/.test(s)) return fmtDay(s) || s;
-  if (s.startsWith("[") || s.startsWith("{")) {
+  if (s.startsWith('[') || s.startsWith('{')) {
     try {
       return JSON.stringify(JSON.parse(s), null, 1).slice(0, 2000);
     } catch {
@@ -37,7 +43,7 @@ function Fields({ row }) {
           {keys.map((k) => (
             <tr key={k}>
               <th style={{ width: 240 }}>{label(k)}</th>
-              <td style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{show(row[k])}</td>
+              <td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{show(row[k])}</td>
             </tr>
           ))}
         </tbody>
@@ -47,7 +53,9 @@ function Fields({ row }) {
 }
 
 function Rows({ rows }) {
-  const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))].filter((k) => !HIDDEN.test(k) && !/^(created_at|updated_at|createdAt|updatedAt)$/.test(k)).slice(0, 10);
+  const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))]
+    .filter((k) => !HIDDEN.test(k) && !/^(created_at|updated_at|createdAt|updatedAt)$/.test(k))
+    .slice(0, 10);
   return (
     <div className="inos-table-wrap">
       <table className="inos-table">
@@ -87,9 +95,19 @@ export default function SnapshotView() {
   return (
     <Page>
       <PageHeader
-        crumbs={[{ label: meta.label, to: meta.list }, ...(current ? [{ label: code || meta.label, to: current }] : []), { label: `v${data?.version ?? ""}` }]}
-        title={`${code || meta.label} · v${data?.version ?? "…"}`}
-        info={[`Saved copy (read-only)`, ctx?.project ? `Project: ${projectLabel(ctx.project)}` : null, data?.created_at ? `Replaced ${fmtDay(data.created_at)}` : null].filter(Boolean).join(" · ")}
+        crumbs={[
+          { label: meta.label, to: meta.list },
+          ...(current ? [{ label: code || meta.label, to: current }] : []),
+          { label: `v${data?.version ?? ''}` },
+        ]}
+        title={`${code || meta.label} · v${data?.version ?? '…'}`}
+        info={[
+          `Saved copy (read-only)`,
+          ctx?.project ? `Project: ${projectLabel(ctx.project)}` : null,
+          data?.created_at ? `Replaced ${fmtDay(data.created_at)}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       />
       {isLoading ? (
         <Card>
@@ -97,7 +115,10 @@ export default function SnapshotView() {
         </Card>
       ) : isError ? (
         <Card>
-          <EmptyState title="Version unavailable" text={error?.data?.message || "It may have been removed or you may not have access."} />
+          <EmptyState
+            title="Version unavailable"
+            text={error?.data?.message || 'It may have been removed or you may not have access.'}
+          />
         </Card>
       ) : main ? (
         <>

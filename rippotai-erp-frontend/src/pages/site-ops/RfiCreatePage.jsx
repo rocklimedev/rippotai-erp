@@ -1,33 +1,33 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useRaiseRfiMutation } from "../../api/site-ops/site-ops.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useRaiseRfiMutation } from '../../api/site-ops/site-ops.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
+} from '@/components/ui/select';
+import { toast } from 'sonner';
 
-const PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"];
+const PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
 
 export default function RfiCreatePage() {
   const navigate = useNavigate();
   const [raiseRfi, { isLoading }] = useRaiseRfiMutation();
   const [form, setForm] = useState({
-    projectId: "",
-    stepId: "",
-    subject: "",
-    query: "",
-    raisedBy: "",
-    priority: "NORMAL",
-    routedToTeamId: "",
+    projectId: '',
+    stepId: '',
+    subject: '',
+    query: '',
+    raisedBy: '',
+    priority: 'NORMAL',
+    routedToTeamId: '',
   });
 
   const set = (key, value) => setForm((p) => ({ ...p, [key]: value }));
@@ -36,14 +36,8 @@ export default function RfiCreatePage() {
     e.preventDefault();
     const projectId = Number(form.projectId);
     const routedToTeamId = Number(form.routedToTeamId);
-    if (
-      !projectId ||
-      !form.subject ||
-      !form.query ||
-      !form.raisedBy ||
-      !routedToTeamId
-    ) {
-      toast.error("Fill all required fields");
+    if (!projectId || !form.subject || !form.query || !form.raisedBy || !routedToTeamId) {
+      toast.error('Fill all required fields');
       return;
     }
     try {
@@ -56,10 +50,10 @@ export default function RfiCreatePage() {
         priority: form.priority,
         routedToTeamId,
       }).unwrap();
-      toast.success("RFI raised");
+      toast.success('RFI raised');
       navigate(`/site-ops/rfis/${result.id}`);
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to raise RFI");
+      toast.error(err?.data?.message || 'Failed to raise RFI');
     }
   };
 
@@ -79,7 +73,7 @@ export default function RfiCreatePage() {
               type="number"
               className="bc-input"
               value={form.projectId}
-              onChange={(e) => set("projectId", e.target.value)}
+              onChange={(e) => set('projectId', e.target.value)}
               required
             />
           </div>
@@ -89,7 +83,7 @@ export default function RfiCreatePage() {
               type="number"
               className="bc-input"
               value={form.routedToTeamId}
-              onChange={(e) => set("routedToTeamId", e.target.value)}
+              onChange={(e) => set('routedToTeamId', e.target.value)}
               required
             />
           </div>
@@ -99,15 +93,12 @@ export default function RfiCreatePage() {
               type="number"
               className="bc-input"
               value={form.stepId}
-              onChange={(e) => set("stepId", e.target.value)}
+              onChange={(e) => set('stepId', e.target.value)}
             />
           </div>
           <div className="space-y-2">
             <Label>Priority</Label>
-            <Select
-              value={form.priority}
-              onValueChange={(v) => set("priority", v)}
-            >
+            <Select value={form.priority} onValueChange={(v) => set('priority', v)}>
               <SelectTrigger className="bc-input">
                 <SelectValue />
               </SelectTrigger>
@@ -125,7 +116,7 @@ export default function RfiCreatePage() {
             <Input
               className="bc-input"
               value={form.subject}
-              onChange={(e) => set("subject", e.target.value)}
+              onChange={(e) => set('subject', e.target.value)}
               maxLength={200}
               required
             />
@@ -135,7 +126,7 @@ export default function RfiCreatePage() {
             <Input
               className="bc-input"
               value={form.raisedBy}
-              onChange={(e) => set("raisedBy", e.target.value)}
+              onChange={(e) => set('raisedBy', e.target.value)}
               required
             />
           </div>
@@ -146,20 +137,20 @@ export default function RfiCreatePage() {
           <Textarea
             className="bc-input min-h-[120px]"
             value={form.query}
-            onChange={(e) => set("query", e.target.value)}
+            onChange={(e) => set('query', e.target.value)}
             required
           />
         </div>
 
         <div className="flex gap-3">
           <Button type="submit" className="bc-btn-primary" disabled={isLoading}>
-            {isLoading ? "Submitting…" : "Raise RFI"}
+            {isLoading ? 'Submitting…' : 'Raise RFI'}
           </Button>
           <Button
             type="button"
             variant="outline"
             className="bc-btn-secondary"
-            onClick={() => navigate("/site-ops/rfis")}
+            onClick={() => navigate('/site-ops/rfis')}
           >
             Cancel
           </Button>

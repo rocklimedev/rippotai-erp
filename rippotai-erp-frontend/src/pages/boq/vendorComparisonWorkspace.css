@@ -1,0 +1,830 @@
+/* Vendor comparison workspace — matches the "Quiet Studio" INOS system.
+   Table rules are prefixed with .vendor-comparison-workspace so they beat the
+   global .inos-table defaults (fixed row heights, hover tints, sticky heads). */
+
+.vendor-comparison-workspace {
+  gap: 12px;
+}
+
+/* ---------- header meta ---------- */
+.vc-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- summary row ---------- */
+.vc-summary {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.6fr) repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.vc-summary .inos-card__body {
+  padding: 14px 16px;
+}
+
+.vc-sheet-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.vc-stat .inos-card__body {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.vc-stat span {
+  color: var(--text-3);
+  font-size: var(--fs-cap);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vc-stat strong {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-stat small {
+  color: var(--text-2);
+  font-size: var(--fs-cap);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.vc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.vc-main {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+/* ---------- trade strip ---------- */
+.vc-trades .inos-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 240px);
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+  padding: 14px;
+}
+
+.vc-trades-heading,
+.vc-footer,
+.vc-toolbar,
+.vc-toolbar-actions,
+.vc-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vc-trades-heading {
+  justify-content: space-between;
+}
+
+.vc-trades-heading h2 {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.vc-trades-heading h2 span {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.vc-filters {
+  grid-column: 1 / -1;
+  gap: 4px;
+}
+
+.vc-filters button {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--mute-bg);
+  color: var(--text-2);
+  font-size: var(--fs-cap);
+  font-weight: 600;
+}
+
+.vc-filters button[aria-pressed="true"] {
+  background: var(--brand);
+  color: #fff;
+}
+
+.vc-trade-list {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+}
+
+.vc-trade {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  flex: 0 0 200px;
+  gap: 10px;
+  padding: 9px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  border-inline-start: 2px solid transparent;
+  color: var(--text);
+  font-size: var(--fs-cap);
+  text-align: start;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-trade:hover {
+  background: var(--surface-2);
+}
+
+.vc-trade[aria-current="true"] {
+  background: var(--brand-50);
+  border-inline-start-color: var(--brand);
+}
+
+.vc-trade-name {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.vc-trade-name strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.vc-trade-name small {
+  color: var(--text-2);
+  font-weight: 400;
+}
+
+.vc-trade-amount {
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vc-overview-table {
+  min-width: 400px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vendor-comparison-workspace .vc-overview-table tbody td {
+  height: auto;
+  padding: 8px 16px;
+}
+
+.vc-overview-trade {
+  color: var(--brand);
+  font-weight: 650;
+  text-align: start;
+}
+
+.vc-overview-trade:hover {
+  text-decoration: underline;
+}
+
+.vc-overview-table tfoot .vc-total > * {
+  padding: 10px 16px;
+  background: var(--brand);
+  color: white;
+}
+
+.vc-overview-table tfoot th {
+  text-align: start;
+}
+
+.vc-overview-notes {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+/* status dot: check = finalised, half = in progress, ring = not started */
+.vc-status {
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.vc-status[data-status="Finalised"] {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.vc-status[data-status="Finalised"]::after {
+  content: "✓";
+}
+
+.vc-status[data-status="Pending"] {
+  border-color: var(--warn-dot);
+  background: conic-gradient(var(--warn-dot) 0 50%, var(--surface) 50% 100%);
+}
+
+/* ---------- menus (+ Trade, ⋯, Create quotation) ---------- */
+.vc-menu {
+  position: relative;
+}
+
+.vc-menu summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 6px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.vc-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.vc-menu-content {
+  position: absolute;
+  inset: calc(100% + 4px) 0 auto auto;
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  max-width: min(260px, 80vw);
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.vc-trades .vc-menu-content {
+  width: min(220px, 70vw);
+}
+
+/* ---------- sheet card: toolbar, hint strip, footer ---------- */
+.vc-toolbar {
+  padding: 14px 16px 10px;
+}
+
+.vc-toolbar h2 {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.vc-count {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+.vc-toolbar-actions {
+  margin-inline-start: auto;
+}
+
+.vc-hint {
+  margin: 0;
+  padding: 8px 16px;
+  background: var(--surface-2);
+  border-block: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: var(--fs-cap);
+}
+
+p.vc-hint[role="alert"] {
+  color: var(--bad-fg);
+}
+
+.vc-footer {
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.vc-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.vc-save-state {
+  color: var(--text-3);
+  font-size: var(--fs-cap);
+}
+
+.vc-danger {
+  color: var(--bad-fg) !important;
+}
+
+/* ---------- comparison table ---------- */
+.vendor-comparison-workspace .vc-table-wrap {
+  overflow-x: auto;
+}
+
+.vendor-comparison-workspace .vc-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vendor-comparison-workspace .vc-table th,
+.vendor-comparison-workspace .vc-table td {
+  height: auto;
+  padding: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  vertical-align: middle;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 13.5px;
+  font-weight: 400;
+}
+
+.vendor-comparison-workspace .vc-table thead th {
+  position: static;
+  top: auto;
+  z-index: auto;
+  padding: 9px 10px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.vendor-comparison-workspace .vc-table .vc-right {
+  text-align: right;
+}
+
+.vendor-comparison-workspace .vc-table .vc-no {
+  width: 40px;
+  padding-inline: 10px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
+.vendor-comparison-workspace .vc-table .vc-item-col,
+.vendor-comparison-workspace .vc-table .vc-item {
+  width: 220px;
+}
+
+.vendor-comparison-workspace .vc-table tbody td {
+  padding: 4px 6px;
+}
+
+.vendor-comparison-workspace .vc-table tbody tr:hover td {
+  background: var(--surface);
+}
+
+.vendor-comparison-workspace .vc-table tbody tr:hover td.vc-add-col {
+  background: var(--add-stripe);
+}
+
+/* hatched "+ Add vendor" column */
+.vendor-comparison-workspace .vc-table {
+  --add-stripe: repeating-linear-gradient(
+    135deg,
+    var(--surface-2) 0 8px,
+    var(--surface) 8px 16px
+  );
+}
+
+.vendor-comparison-workspace .vc-table .vc-add-th,
+.vendor-comparison-workspace .vc-table .vc-add-col {
+  width: 128px;
+  background: var(--add-stripe);
+  border-inline-start: 1px solid var(--line);
+}
+
+.vendor-comparison-workspace .vc-table .vc-add-th {
+  padding: 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.vendor-comparison-workspace .vc-table .vc-act {
+  width: 40px;
+  padding: 0 4px;
+  text-align: center;
+}
+
+/* hint cell that sits above the item columns in the header */
+.vendor-comparison-workspace .vc-table .vc-hint-th {
+  padding: 14px 16px;
+  vertical-align: bottom;
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: var(--fs-cap);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+/* vendor header cards */
+.vendor-comparison-workspace .vc-table .vc-vh {
+  min-width: 212px;
+  padding: 14px 14px 12px;
+  background: var(--surface);
+  border-inline-start: 1px solid var(--line);
+  vertical-align: top;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.vendor-comparison-workspace .vc-table .vc-vh.is-finalised {
+  background: #f5f9f7;
+  box-shadow: inset 0 3px 0 var(--brand);
+}
+
+.vc-vh-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.vc-vh-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.vc-vh-name {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.vc-badge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vc-vh-total {
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 750;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-vh-delta {
+  color: var(--text-3);
+  font-size: var(--fs-cap);
+  font-weight: 600;
+}
+
+.vc-vh-delta.is-lowest {
+  color: var(--ok-fg);
+}
+
+.vc-vh-delta.is-higher {
+  color: var(--bad-fg);
+}
+
+.vendor-comparison-workspace .vc-finalise {
+  width: 100%;
+  justify-content: center;
+  height: 34px;
+  margin-top: 4px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.vendor-comparison-workspace .vc-finalise:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: var(--brand-50);
+}
+
+.vendor-comparison-workspace .vc-finalise.is-on {
+  border-color: var(--brand);
+  background: var(--brand-50);
+  color: var(--brand);
+}
+
+.vc-link {
+  justify-self: start;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text-2);
+  font-size: var(--fs-cap);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.vc-link:hover {
+  color: var(--brand);
+}
+
+.vc-vendor-edit {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.vc-vendor-edit .inos-label {
+  font-size: 11px;
+}
+
+.vc-vh-empty {
+  align-content: start;
+}
+
+.vc-vh-empty-title {
+  color: var(--text-3);
+  font-size: var(--fs-cap);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* item and quote cells — inputs read as plain text until hovered/focused */
+.vendor-comparison-workspace .vc-cell-input,
+.vendor-comparison-workspace .vc-cell-text {
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vendor-comparison-workspace .vc-cell-text {
+  min-height: 0;
+  height: auto;
+  resize: none;
+  line-height: 1.35;
+  font-weight: 600;
+  padding: 4px 6px;
+}
+
+.vendor-comparison-workspace .vc-cell-input::placeholder,
+.vendor-comparison-workspace .vc-cell-text::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.vendor-comparison-workspace .vc-cell-input:hover,
+.vendor-comparison-workspace .vc-cell-text:hover {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.vendor-comparison-workspace .vc-cell-input:focus,
+.vendor-comparison-workspace .vc-cell-text:focus {
+  outline: none;
+  border-color: var(--brand);
+  background: var(--surface);
+  box-shadow: var(--focus);
+}
+
+.vendor-comparison-workspace .vc-cell-input:disabled {
+  opacity: 0.45;
+}
+
+.vendor-comparison-workspace .vc-num {
+  text-align: right;
+}
+
+.vendor-comparison-workspace .vc-num::-webkit-outer-spin-button,
+.vendor-comparison-workspace .vc-num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.vendor-comparison-workspace .vc-num {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.vendor-comparison-workspace .vc-table .vc-qty {
+  width: 72px;
+}
+
+.vendor-comparison-workspace .vc-table .vc-unit {
+  width: 82px;
+}
+
+.vendor-comparison-workspace .vc-table .vc-unit-select {
+  appearance: auto;
+  height: auto;
+  padding-inline: 3px;
+}
+
+.vendor-comparison-workspace .vc-table .vc-rate {
+  width: 100px;
+  position: relative;
+  padding-inline-end: 4px;
+}
+
+.vendor-comparison-workspace .vc-table .vc-amt {
+  width: 112px;
+  padding: 0 12px;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.vendor-comparison-workspace .vc-table .vc-rate .vc-cell-input {
+  padding-inline-start: 16px;
+}
+
+.vendor-comparison-workspace .vc-table .vc-col-final {
+  background: #f5f9f7;
+}
+
+/* lowest rate: green dot + green figure; highest: red figure */
+.vendor-comparison-workspace .vc-table .vc-low-rate::before {
+  content: "•";
+  position: absolute;
+  inset-inline-start: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ok-dot);
+  font-size: 18px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.vendor-comparison-workspace .vc-table .vc-low-rate .vc-cell-input {
+  color: var(--ok-fg);
+  font-weight: 700;
+}
+
+.vendor-comparison-workspace .vc-table .vc-high-rate .vc-cell-input {
+  color: var(--bad-fg);
+}
+
+/* subtotal / GST / grand total */
+.vendor-comparison-workspace .vc-table tfoot td {
+  padding: 10px 12px;
+  font-size: 13.5px;
+}
+
+.vendor-comparison-workspace .vc-table tfoot td:not(:first-child) {
+  text-align: right;
+}
+
+.vendor-comparison-workspace .vc-table tfoot td.vc-tot {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vendor-comparison-workspace .vc-table tfoot td:first-child {
+  color: var(--text-2);
+}
+
+.vendor-comparison-workspace .vc-table tfoot tr.vc-gst td:first-child,
+.vendor-comparison-workspace .vc-table tfoot tr.vc-gst td.vc-tot {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.vendor-comparison-workspace .vc-table tfoot tr.vc-grand td {
+  background: var(--brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 750;
+  border-bottom: 0;
+}
+
+.vendor-comparison-workspace .vc-table tfoot tr.vc-grand td:not(:first-child) {
+  font-variant-numeric: tabular-nums;
+}
+
+.vendor-comparison-workspace .vc-table tfoot tr.vc-notes-row td {
+  padding: 10px 10px;
+  vertical-align: top;
+  text-align: start;
+  color: var(--text-2);
+  font-weight: 500;
+  border-bottom: 0;
+}
+
+.vendor-comparison-workspace .vc-table .vc-note-box {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  box-shadow: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.vendor-comparison-workspace .vc-table .vc-note-box:focus {
+  outline: none;
+  border-color: var(--brand);
+  background: var(--surface);
+  box-shadow: var(--focus);
+}
+
+.vendor-comparison-workspace .vc-table .vc-note-box:disabled {
+  background: transparent;
+  border-style: dashed;
+}
+
+/* add-item row, in the body */
+.vendor-comparison-workspace .vc-table tr.vc-add-row td {
+  padding: 4px 8px;
+  background: var(--surface);
+}
+
+.vendor-comparison-workspace .vc-table tr.vc-add-row td .inos-btn {
+  color: var(--brand);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1250px) {
+  .vc-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .vc-summary > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .vc-trades .inos-card__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vc-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vc-sheet-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vc-toolbar-actions {
+    margin-inline-start: 0;
+  }
+}

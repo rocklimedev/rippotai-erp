@@ -62,6 +62,11 @@ export const siteOpsApi = baseApi.injectEndpoints({
     // ============================================================
     // Architect Site Visits
     // ============================================================
+    deleteVisitStage: builder.mutation({
+      query: (id) => ({ url: `/architect/visit-stages/${id}`, method: "DELETE" }),
+      invalidatesTags: ["VisitStages"],
+    }),
+
     createSiteVisit: builder.mutation({
       query: (body) => ({
         url: "/architect/visits",
@@ -494,6 +499,7 @@ export const {
   useGetVisitStageByIdQuery,
   useCreateVisitStageMutation,
   useUpdateVisitStageMutation,
+  useDeleteVisitStageMutation,
 
   // Site visits
   useCreateSiteVisitMutation,

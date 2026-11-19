@@ -1,53 +1,57 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useRefill } from "@/components/doc-list/useRefill";
-import { PrefillNotice } from "@/components/PrefillNotice";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { Plus, Trash2, Upload, X, Loader2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRefill } from '@/components/doc-list/useRefill';
+import { PrefillNotice } from '@/components/PrefillNotice';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Plus, Trash2, Upload, X, Loader2 } from 'lucide-react';
 
-import { SiteRecceSectionForm } from "../../components/SiteRecceSectionForm";
-import { useAutoSave } from "../../hooks/use-autosave";
+import { SiteRecceSectionForm } from '../../components/SiteRecceSectionForm';
+import { useAutoSave } from '../../hooks/use-autosave';
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
-import { Page, EmptyState } from "@/components/inos";
-import { todayISODate } from "@/components/forms/crm-form-ui";
+import { Page, EmptyState } from '@/components/inos';
+import { todayISODate } from '@/components/forms/crm-form-ui';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
-import { useGetUsersByRoleNameQuery, useGetUsersQuery } from "../../api/users/user.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
+import { useGetUsersByRoleNameQuery, useGetUsersQuery } from '../../api/users/user.api';
 
 import {
   useCreateSiteRecceMutation,
   useGetSiteRecceQuery,
   useUpdateSiteRecceMutation,
   useUploadSiteRecceImageMutation,
-} from "../../api/documents/site-recce.api";
+} from '../../api/documents/site-recce.api';
 
-import { SITE_RECCE_FORM_SECTIONS } from "../../hooks/reki-sections";
-import { utilityFormValues, utilityPayloadValue, changeSiteRecceField } from "../../hooks/site-recce-form-helpers";
+import { SITE_RECCE_FORM_SECTIONS } from '../../hooks/reki-sections';
+import {
+  utilityFormValues,
+  utilityPayloadValue,
+  changeSiteRecceField,
+} from '../../hooks/site-recce-form-helpers';
 
-const SAVE_KEY = "bc.site-recce";
+const SAVE_KEY = 'bc.site-recce';
 
 // ============================================================
 // BACKEND ENUM CONSTANTS
 // ============================================================
 
 const ROOM_TYPE_VALUES = [
-  "LIVING_DINING",
-  "MASTER_BEDROOM",
-  "BEDROOM",
-  "KITCHEN",
-  "BATHROOM",
-  "BALCONY",
-  "OTHER",
+  'LIVING_DINING',
+  'MASTER_BEDROOM',
+  'BEDROOM',
+  'KITCHEN',
+  'BATHROOM',
+  'BALCONY',
+  'OTHER',
 ];
 
-const MEASUREMENT_UNIT_VALUES = ["FT", "M", "IN", "CM"];
+const MEASUREMENT_UNIT_VALUES = ['FT', 'M', 'IN', 'CM'];
 
 // ============================================================
 // NORMALIZATION HELPERS
 // ============================================================
 
 const toNumberOrUndefined = (v) => {
-  if (v === "" || v === null || v === undefined) return undefined;
+  if (v === '' || v === null || v === undefined) return undefined;
 
   const n = Number(v);
 
@@ -60,28 +64,26 @@ const toIntOrUndefined = (v) => {
   return n === undefined ? undefined : Math.trunc(n);
 };
 
-const strOrUndefined = (v) =>
-  v === "" || v === null || v === undefined ? undefined : v;
+const strOrUndefined = (v) => (v === '' || v === null || v === undefined ? undefined : v);
 
 const boolOrUndefined = (v) => {
-  if (v === "" || v === null || v === undefined) return undefined;
+  if (v === '' || v === null || v === undefined) return undefined;
 
-  if (typeof v === "boolean") return v;
+  if (typeof v === 'boolean') return v;
 
-  if (v === "true") return true;
+  if (v === 'true') return true;
 
-  if (v === "false") return false;
+  if (v === 'false') return false;
 
   return Boolean(v);
 };
 
-const normalizeRoomType = (type) =>
-  ROOM_TYPE_VALUES.includes(type) ? type : "OTHER";
+const normalizeRoomType = (type) => (ROOM_TYPE_VALUES.includes(type) ? type : 'OTHER');
 
 const normalizeMeasurementUnit = (unit) => {
-  const upper = String(unit || "FT").toUpperCase();
+  const upper = String(unit || 'FT').toUpperCase();
 
-  return MEASUREMENT_UNIT_VALUES.includes(upper) ? upper : "FT";
+  return MEASUREMENT_UNIT_VALUES.includes(upper) ? upper : 'FT';
 };
 
 // ============================================================
@@ -94,7 +96,7 @@ const normalizeMeasurementUnit = (unit) => {
 const mapBackendToFormValues = (data) => {
   if (!data) {
     return {
-      status: "draft",
+      status: 'draft',
       floors: [],
       layoutAttachments: [],
       documents: [],
@@ -106,33 +108,24 @@ const mapBackendToFormValues = (data) => {
   const rooms = (data.rooms || []).map((room) => ({
     id: room.id,
 
-    room_name: room.room_name || "",
-    room_type: room.room_type || "OTHER",
-    room_type_other: room.room_type_other || "",
+    room_name: room.room_name || '',
+    room_type: room.room_type || 'OTHER',
+    room_type_other: room.room_type_other || '',
     room_number:
-      room.room_number === null || room.room_number === undefined
-        ? ""
-        : String(room.room_number),
+      room.room_number === null || room.room_number === undefined ? '' : String(room.room_number),
 
-    length:
-      room.length === null || room.length === undefined
-        ? ""
-        : String(room.length),
+    length: room.length === null || room.length === undefined ? '' : String(room.length),
 
-    width:
-      room.width === null || room.width === undefined ? "" : String(room.width),
+    width: room.width === null || room.width === undefined ? '' : String(room.width),
 
-    height:
-      room.height === null || room.height === undefined
-        ? ""
-        : String(room.height),
+    height: room.height === null || room.height === undefined ? '' : String(room.height),
 
-    measurement_unit: room.measurement_unit || "FT",
-    area: room.area === null || room.area === undefined ? "" : String(room.area),
+    measurement_unit: room.measurement_unit || 'FT',
+    area: room.area === null || room.area === undefined ? '' : String(room.area),
 
-    existing_flooring: room.existing_flooring || "",
-    existing_ceiling: room.existing_ceiling || "",
-    notes: room.notes || "",
+    existing_flooring: room.existing_flooring || '',
+    existing_ceiling: room.existing_ceiling || '',
+    notes: room.notes || '',
 
     sort_order: room.sort_order ?? 0,
   }));
@@ -153,23 +146,23 @@ const mapBackendToFormValues = (data) => {
 
         shot_number:
           photo.shot_number === null || photo.shot_number === undefined
-            ? ""
+            ? ''
             : String(photo.shot_number),
 
-        layout_image_url: photo.layout_image_url || "",
-        layout_file_name: photo.layout_file_name || "",
+        layout_image_url: photo.layout_image_url || '',
+        layout_file_name: photo.layout_file_name || '',
 
-        photo_url: photo.photo_url || "",
-        photo_file_name: photo.photo_file_name || "",
+        photo_url: photo.photo_url || '',
+        photo_file_name: photo.photo_file_name || '',
 
-        standing_position: photo.standing_position || "",
-        camera_direction: photo.camera_direction || "",
-        notes: photo.notes || "",
+        standing_position: photo.standing_position || '',
+        camera_direction: photo.camera_direction || '',
+        notes: photo.notes || '',
 
         // Existing backend images do not need an object URL.
         // Keep the CDN URL as the preview.
-        preview: photo.photo_url || "",
-        layout_preview: photo.layout_image_url || "",
+        preview: photo.photo_url || '',
+        layout_preview: photo.layout_image_url || '',
       });
     });
   });
@@ -189,19 +182,16 @@ const mapBackendToFormValues = (data) => {
       ? [
           {
             id: `backend-floor-${data.id}`,
-            floor_name: data.unit_floor_no
-              ? `Floor ${data.unit_floor_no}`
-              : "Site Floor",
+            floor_name: data.unit_floor_no ? `Floor ${data.unit_floor_no}` : 'Site Floor',
 
             floor_order: 1,
 
             approx_area_sqft:
-              data.carpet_area_sqft !== null &&
-              data.carpet_area_sqft !== undefined
+              data.carpet_area_sqft !== null && data.carpet_area_sqft !== undefined
                 ? String(data.carpet_area_sqft)
-                : "",
+                : '',
 
-            remarks: "",
+            remarks: '',
 
             rooms: rooms.map((room) => ({
               id: room.id,
@@ -209,16 +199,16 @@ const mapBackendToFormValues = (data) => {
               room_name: room.room_name,
               room_type: room.room_type,
 
-              ceiling_height: room.height || "",
-              beam_column_details: "",
+              ceiling_height: room.height || '',
+              beam_column_details: '',
 
-              length: room.length || "",
-              width: room.width || "",
-              height: room.height || "",
+              length: room.length || '',
+              width: room.width || '',
+              height: room.height || '',
 
-              unit: String(room.measurement_unit || "FT").toLowerCase(),
+              unit: String(room.measurement_unit || 'FT').toLowerCase(),
 
-              remarks: room.notes || "",
+              remarks: room.notes || '',
             })),
           },
         ]
@@ -240,11 +230,11 @@ const mapBackendToFormValues = (data) => {
       layoutAttachments.push({
         id: `layout-${photo.id}`,
 
-        title: photo.layout_file_name || `${room.room_name || "Room"} Layout`,
+        title: photo.layout_file_name || `${room.room_name || 'Room'} Layout`,
 
-        remark: photo.notes || "",
+        remark: photo.notes || '',
 
-        floor_id: "",
+        floor_id: '',
 
         images: [
           {
@@ -254,9 +244,9 @@ const mapBackendToFormValues = (data) => {
 
             url: photo.layout_image_url,
 
-            file_name: photo.layout_file_name || "",
+            file_name: photo.layout_file_name || '',
 
-            caption: photo.notes || "",
+            caption: photo.notes || '',
           },
         ],
       });
@@ -264,36 +254,36 @@ const mapBackendToFormValues = (data) => {
   });
 
   return {
-    status: "draft",
+    status: 'draft',
 
     // ========================================================
     // MAIN SITE RECCE FIELDS
     // ========================================================
 
-    project_id: data.project_id || "",
+    project_id: data.project_id || '',
 
-    project_name: data.project_name || "",
+    project_name: data.project_name || '',
 
-    client_name: data.client_name || "",
+    client_name: data.client_name || '',
 
-    site_address: data.site_address || "",
+    site_address: data.site_address || '',
 
-    recce_date: data.recce_date || "",
+    recce_date: data.recce_date || '',
 
-    site_engineer_id: data.site_engineer_id || "",
+    site_engineer_id: data.site_engineer_id || '',
 
-    accompanied_by: data.accompanied_by || "",
+    accompanied_by: data.accompanied_by || '',
 
-    unit_floor_no: data.unit_floor_no || "",
+    unit_floor_no: data.unit_floor_no || '',
 
     carpet_area_sqft:
       data.carpet_area_sqft === null || data.carpet_area_sqft === undefined
-        ? ""
+        ? ''
         : String(data.carpet_area_sqft),
 
     built_up_area_sqft:
       data.built_up_area_sqft === null || data.built_up_area_sqft === undefined
-        ? ""
+        ? ''
         : String(data.built_up_area_sqft),
 
     number_of_rooms:
@@ -303,43 +293,43 @@ const mapBackendToFormValues = (data) => {
 
     number_of_floors:
       data.number_of_floors === null || data.number_of_floors === undefined
-        ? ""
+        ? ''
         : String(data.number_of_floors),
 
-    site_type: data.site_type || "",
+    site_type: data.site_type || '',
 
     lift_available:
-      data.lift_available === null || data.lift_available === undefined
-        ? ""
-        : data.lift_available,
+      data.lift_available === null || data.lift_available === undefined ? '' : data.lift_available,
 
-    lift_size: data.lift_size || "",
+    lift_size: data.lift_size || '',
 
-    staircase_width: data.staircase_width || "",
+    staircase_width: data.staircase_width || '',
 
-    material_entry_point: data.material_entry_point || "",
+    material_entry_point: data.material_entry_point || '',
 
-    water_connection: data.water_connection || "",
+    water_connection: data.water_connection || '',
 
-    power_load_available: data.power_load_available || "",
+    power_load_available: data.power_load_available || '',
 
-    drainage_point_location:
-      data.draining_point_location || data.drainage_point_location || "",
+    drainage_point_location: data.draining_point_location || data.drainage_point_location || '',
 
-    society_rwa_restrictions: data.society_rwa_restrictions || "",
+    society_rwa_restrictions: data.society_rwa_restrictions || '',
 
-    working_hours_allowed: data.working_hours_allowed || "",
+    working_hours_allowed: data.working_hours_allowed || '',
 
-    material_movement_rule: data.material_movement_rule || "",
+    material_movement_rule: data.material_movement_rule || '',
 
-    existing_condition: data.existing_condition || "",
+    existing_condition: data.existing_condition || '',
     existing_site_layouts: data.existing_site_layouts || [],
 
     // ========================================================
     // ROOM / PHOTO DATA
     // ========================================================
 
-    ...utilityFormValues({ ...data, drainage_point_location: data.draining_point_location || data.drainage_point_location }),
+    ...utilityFormValues({
+      ...data,
+      drainage_point_location: data.draining_point_location || data.drainage_point_location,
+    }),
     rooms,
 
     photos,
@@ -378,14 +368,13 @@ const buildRoomsPayload = (rooms, photos) => {
 
     return {
       // Do not send frontend-only UUID if this is a new room.
-      ...(room.id && !String(room.id).startsWith("room-")
-        ? { id: room.id }
-        : {}),
+      ...(room.id && !String(room.id).startsWith('room-') ? { id: room.id } : {}),
 
       room_name: room.room_name,
 
       room_type: normalizeRoomType(room.room_type),
-      room_type_other: room.room_type === "OTHER" ? strOrUndefined(room.room_type_other?.trim()) : undefined,
+      room_type_other:
+        room.room_type === 'OTHER' ? strOrUndefined(room.room_type_other?.trim()) : undefined,
 
       room_number: toIntOrUndefined(room.room_number),
 
@@ -453,11 +442,11 @@ const buildSiteReccePayload = (projectId, values) => {
 
     material_entry_point: strOrUndefined(values.material_entry_point),
 
-    water_connection: utilityPayloadValue(values, "water_connection"),
+    water_connection: utilityPayloadValue(values, 'water_connection'),
 
-    power_load_available: utilityPayloadValue(values, "power_load_available"),
+    power_load_available: utilityPayloadValue(values, 'power_load_available'),
 
-    drainage_point_location: utilityPayloadValue(values, "drainage_point_location"),
+    drainage_point_location: utilityPayloadValue(values, 'drainage_point_location'),
 
     society_rwa_restrictions: strOrUndefined(values.society_rwa_restrictions),
 
@@ -494,23 +483,20 @@ export function SiteRekiForm() {
   // SITE ENGINEERS
   // ==========================================================
 
-  const { data: siteEngineers = [] } =
-    useGetUsersByRoleNameQuery("SITE_ENGINEER");
+  const { data: siteEngineers = [] } = useGetUsersByRoleNameQuery('SITE_ENGINEER');
   const { data: users = [] } = useGetUsersQuery();
 
   // ==========================================================
   // CREATE
   // ==========================================================
 
-  const [createSiteRecce, { isLoading: isCreating }] =
-    useCreateSiteRecceMutation();
+  const [createSiteRecce, { isLoading: isCreating }] = useCreateSiteRecceMutation();
 
   // ==========================================================
   // UPDATE
   // ==========================================================
 
-  const [updateSiteRecce, { isLoading: isUpdating }] =
-    useUpdateSiteRecceMutation();
+  const [updateSiteRecce, { isLoading: isUpdating }] = useUpdateSiteRecceMutation();
 
   // ==========================================================
   // GET EXISTING SITE RECCE
@@ -537,8 +523,16 @@ export function SiteRekiForm() {
   // PROJECT ID
   // ==========================================================
 
-  const [projectId, setProjectId] = useState(() => searchParams.get('projectId') || searchParams.get('project_id') || '');
-  useRefill({ type: "site-recce", label: "Site Recce", projectId, enabled: !isEditMode, editPath: (id) => `/crm/recce/${id}/edit` });
+  const [projectId, setProjectId] = useState(
+    () => searchParams.get('projectId') || searchParams.get('project_id') || '',
+  );
+  useRefill({
+    type: 'site-recce',
+    label: 'Site Recce',
+    projectId,
+    enabled: !isEditMode,
+    editPath: (id) => `/crm/recce/${id}/edit`,
+  });
 
   // ==========================================================
   // FORM STATE
@@ -546,40 +540,40 @@ export function SiteRekiForm() {
 
   const draftKey = `${SAVE_KEY}.${isEditMode ? siteRecceId : projectId || 'new'}`;
   const [values, setValues, draftStorage] = useAutoSave(draftKey, {
-    status: "draft",
+    status: 'draft',
 
-    project_id: "",
+    project_id: '',
 
-    project_name: "",
-    client_name: "",
-    site_address: "",
+    project_name: '',
+    client_name: '',
+    site_address: '',
     recce_date: todayISODate(),
 
-    site_engineer_id: "",
-    accompanied_by: "",
+    site_engineer_id: '',
+    accompanied_by: '',
 
-    unit_floor_no: "",
-    carpet_area_sqft: "",
-    built_up_area_sqft: "",
-    number_of_rooms: "",
-    number_of_floors: "",
+    unit_floor_no: '',
+    carpet_area_sqft: '',
+    built_up_area_sqft: '',
+    number_of_rooms: '',
+    number_of_floors: '',
 
-    site_type: "",
+    site_type: '',
 
-    lift_available: "",
-    lift_size: "",
-    staircase_width: "",
-    material_entry_point: "",
+    lift_available: '',
+    lift_size: '',
+    staircase_width: '',
+    material_entry_point: '',
 
-    water_connection: "",
-    power_load_available: "",
-    drainage_point_location: "",
+    water_connection: '',
+    power_load_available: '',
+    drainage_point_location: '',
 
-    society_rwa_restrictions: "",
-    working_hours_allowed: "",
-    material_movement_rule: "",
+    society_rwa_restrictions: '',
+    working_hours_allowed: '',
+    material_movement_rule: '',
 
-    existing_condition: "",
+    existing_condition: '',
     existing_site_layouts: [],
 
     rooms: [],
@@ -594,18 +588,24 @@ export function SiteRekiForm() {
   // LOAD EXISTING SITE RECCE INTO FORM
   // ==========================================================
 
-  const prefill = useSharedProjectData(projectId, 'recce', values, setValues, !isEditMode || Boolean(existingSiteRecce));
+  const prefill = useSharedProjectData(
+    projectId,
+    'recce',
+    values,
+    setValues,
+    !isEditMode || Boolean(existingSiteRecce),
+  );
 
   useEffect(() => {
     if (!isEditMode) return;
 
     if (!existingSiteRecce) return;
 
-    console.log("========== EXISTING SITE RECCE ==========", existingSiteRecce);
+    console.log('========== EXISTING SITE RECCE ==========', existingSiteRecce);
 
     const mappedValues = mapBackendToFormValues(existingSiteRecce);
 
-    setProjectId(existingSiteRecce.project_id || "");
+    setProjectId(existingSiteRecce.project_id || '');
 
     setValues(mappedValues);
   }, [isEditMode, existingSiteRecce, setValues]);
@@ -624,7 +624,7 @@ export function SiteRekiForm() {
   // Preselect project from ?project_id= when opened from a project
   useEffect(() => {
     if (isEditMode) return;
-    const fromQuery = searchParams.get("project_id") || searchParams.get("projectId");
+    const fromQuery = searchParams.get('project_id') || searchParams.get('projectId');
     if (fromQuery) setProjectId(fromQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode]);
@@ -632,9 +632,9 @@ export function SiteRekiForm() {
   const handleSaveDraft = () => {
     try {
       draftStorage.setItem(draftKey, JSON.stringify(values));
-      toast.success("Draft saved on this device.");
+      toast.success('Draft saved on this device.');
     } catch {
-      toast.error("Could not save the draft.");
+      toast.error('Could not save the draft.');
     }
   };
 
@@ -645,9 +645,9 @@ export function SiteRekiForm() {
   useEffect(() => {
     if (!isSiteRecceError) return;
 
-    toast.error("Failed to load Site Recce.");
+    toast.error('Failed to load Site Recce.');
 
-    navigate("/crm/recce/all");
+    navigate('/crm/recce/all');
   }, [isSiteRecceError, navigate]);
 
   // ==========================================================
@@ -660,13 +660,15 @@ export function SiteRekiForm() {
 
       value: user.id,
     }));
-    const userOptions = (Array.isArray(users) ? users : users.data || []).map((user) => ({
-      label: user.name || user.full_name || user.email,
-      value: user.name || user.full_name || user.email,
-    })).filter((option) => option.value);
+    const userOptions = (Array.isArray(users) ? users : users.data || [])
+      .map((user) => ({
+        label: user.name || user.full_name || user.email,
+        value: user.name || user.full_name || user.email,
+      }))
+      .filter((option) => option.value);
 
     return SITE_RECCE_FORM_SECTIONS.map((section) => {
-      if (!section.fields?.some((field) => field.key === "site_engineer_id")) {
+      if (!section.fields?.some((field) => field.key === 'site_engineer_id')) {
         return section;
       }
 
@@ -674,12 +676,14 @@ export function SiteRekiForm() {
         ...section,
 
         fields: section.fields.map((field) =>
-          field.key === "site_engineer_id"
+          field.key === 'site_engineer_id'
             ? {
                 ...field,
                 options: engineerOptions,
               }
-            : field.key === "accompanied_by" ? { ...field, options: userOptions } : field,
+            : field.key === 'accompanied_by'
+              ? { ...field, options: userOptions }
+              : field,
         ),
       };
     });
@@ -701,21 +705,17 @@ export function SiteRekiForm() {
     try {
       const result = await uploadSiteRecceImage(file).unwrap();
 
-      console.log("SITE RECCE UPLOAD RESULT:", result);
+      console.log('SITE RECCE UPLOAD RESULT:', result);
 
-      const url =
-        result?.url ||
-        result?.data?.url ||
-        result?.file?.url ||
-        result?.data?.file?.url;
+      const url = result?.url || result?.data?.url || result?.file?.url || result?.data?.file?.url;
 
       if (!url) {
-        throw new Error("Upload succeeded but no file URL was returned.");
+        throw new Error('Upload succeeded but no file URL was returned.');
       }
 
       return url;
     } catch (error) {
-      console.error("SITE RECCE IMAGE UPLOAD FAILED:", error);
+      console.error('SITE RECCE IMAGE UPLOAD FAILED:', error);
 
       throw error;
     }
@@ -738,13 +738,13 @@ export function SiteRekiForm() {
           {
             id: crypto.randomUUID(),
 
-            floor_name: "",
+            floor_name: '',
 
             floor_order: (prev.floors?.length || 0) + 1,
 
-            approx_area_sqft: "",
+            approx_area_sqft: '',
 
-            remarks: "",
+            remarks: '',
 
             rooms: [],
           },
@@ -788,23 +788,23 @@ export function SiteRekiForm() {
           {
             id: `room-${crypto.randomUUID()}`,
 
-            room_name: "",
+            room_name: '',
 
-            room_type: "OTHER",
+            room_type: 'OTHER',
 
-            ceiling_height: "",
+            ceiling_height: '',
 
-            beam_column_details: "",
+            beam_column_details: '',
 
-            length: "",
+            length: '',
 
-            width: "",
+            width: '',
 
-            height: "",
+            height: '',
 
-            unit: "ft",
+            unit: 'ft',
 
-            remarks: "",
+            remarks: '',
           },
         ];
 
@@ -837,9 +837,7 @@ export function SiteRekiForm() {
       setValues((prev) => {
         const newFloors = [...(prev.floors || [])];
 
-        newFloors[floorIndex].rooms = newFloors[floorIndex].rooms.filter(
-          (_, i) => i !== roomIndex,
-        );
+        newFloors[floorIndex].rooms = newFloors[floorIndex].rooms.filter((_, i) => i !== roomIndex);
 
         return {
           ...prev,
@@ -877,10 +875,7 @@ export function SiteRekiForm() {
           </div>
         ) : (
           floors.map((floor, floorIndex) => (
-            <div
-              key={floor.id}
-              className="border border-[var(--line)] rounded-xl p-6 bg-white"
-            >
+            <div key={floor.id} className="border border-[var(--line)] rounded-xl p-6 bg-white">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <span className="text-xl font-bold text-[var(--brand)]">
@@ -889,10 +884,8 @@ export function SiteRekiForm() {
 
                   <input
                     type="text"
-                    value={floor.floor_name || ""}
-                    onChange={(e) =>
-                      updateFloor(floorIndex, "floor_name", e.target.value)
-                    }
+                    value={floor.floor_name || ''}
+                    onChange={(e) => updateFloor(floorIndex, 'floor_name', e.target.value)}
                     placeholder="Floor Name"
                     className="bc-input w-80"
                   />
@@ -901,14 +894,8 @@ export function SiteRekiForm() {
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
-                    value={floor.approx_area_sqft || ""}
-                    onChange={(e) =>
-                      updateFloor(
-                        floorIndex,
-                        "approx_area_sqft",
-                        e.target.value,
-                      )
-                    }
+                    value={floor.approx_area_sqft || ''}
+                    onChange={(e) => updateFloor(floorIndex, 'approx_area_sqft', e.target.value)}
                     placeholder="Area (sqft)"
                     className="bc-input w-40"
                   />
@@ -924,10 +911,8 @@ export function SiteRekiForm() {
               </div>
 
               <textarea
-                value={floor.remarks || ""}
-                onChange={(e) =>
-                  updateFloor(floorIndex, "remarks", e.target.value)
-                }
+                value={floor.remarks || ''}
+                onChange={(e) => updateFloor(floorIndex, 'remarks', e.target.value)}
                 rows={2}
                 className="bc-input w-full mb-6"
                 placeholder="Floor remarks..."
@@ -953,14 +938,14 @@ export function SiteRekiForm() {
                       <thead className="bg-[var(--surface-2)]">
                         <tr>
                           {[
-                            "Room Name",
-                            "Type",
-                            "Ceiling Height",
-                            "Length (ft)",
-                            "Width (ft)",
-                            "Beam/Column",
-                            "Remarks",
-                            "",
+                            'Room Name',
+                            'Type',
+                            'Ceiling Height',
+                            'Length (ft)',
+                            'Width (ft)',
+                            'Beam/Column',
+                            'Remarks',
+                            '',
                           ].map((heading, index) => (
                             <th
                               key={index}
@@ -978,14 +963,9 @@ export function SiteRekiForm() {
                             <td className="px-4 py-2">
                               <input
                                 type="text"
-                                value={room.room_name || ""}
+                                value={room.room_name || ''}
                                 onChange={(e) =>
-                                  updateRoom(
-                                    floorIndex,
-                                    roomIndex,
-                                    "room_name",
-                                    e.target.value,
-                                  )
+                                  updateRoom(floorIndex, roomIndex, 'room_name', e.target.value)
                                 }
                                 className="bc-input w-full"
                               />
@@ -993,20 +973,15 @@ export function SiteRekiForm() {
 
                             <td className="px-4 py-2">
                               <select
-                                value={room.room_type || "OTHER"}
+                                value={room.room_type || 'OTHER'}
                                 onChange={(e) =>
-                                  updateRoom(
-                                    floorIndex,
-                                    roomIndex,
-                                    "room_type",
-                                    e.target.value,
-                                  )
+                                  updateRoom(floorIndex, roomIndex, 'room_type', e.target.value)
                                 }
                                 className="bc-input w-full"
                               >
                                 {ROOM_TYPE_VALUES.map((type) => (
                                   <option key={type} value={type}>
-                                    {type.replace(/_/g, " ")}
+                                    {type.replace(/_/g, ' ')}
                                   </option>
                                 ))}
                               </select>
@@ -1015,12 +990,12 @@ export function SiteRekiForm() {
                             <td className="px-4 py-2">
                               <input
                                 type="text"
-                                value={room.ceiling_height || ""}
+                                value={room.ceiling_height || ''}
                                 onChange={(e) =>
                                   updateRoom(
                                     floorIndex,
                                     roomIndex,
-                                    "ceiling_height",
+                                    'ceiling_height',
                                     e.target.value,
                                   )
                                 }
@@ -1031,14 +1006,9 @@ export function SiteRekiForm() {
                             <td className="px-4 py-2">
                               <input
                                 type="number"
-                                value={room.length || ""}
+                                value={room.length || ''}
                                 onChange={(e) =>
-                                  updateRoom(
-                                    floorIndex,
-                                    roomIndex,
-                                    "length",
-                                    e.target.value,
-                                  )
+                                  updateRoom(floorIndex, roomIndex, 'length', e.target.value)
                                 }
                                 className="bc-input w-full"
                               />
@@ -1047,12 +1017,23 @@ export function SiteRekiForm() {
                             <td className="px-4 py-2">
                               <input
                                 type="number"
-                                value={room.width || ""}
+                                value={room.width || ''}
+                                onChange={(e) =>
+                                  updateRoom(floorIndex, roomIndex, 'width', e.target.value)
+                                }
+                                className="bc-input w-full"
+                              />
+                            </td>
+
+                            <td className="px-4 py-2">
+                              <input
+                                type="text"
+                                value={room.beam_column_details || ''}
                                 onChange={(e) =>
                                   updateRoom(
                                     floorIndex,
                                     roomIndex,
-                                    "width",
+                                    'beam_column_details',
                                     e.target.value,
                                   )
                                 }
@@ -1063,30 +1044,9 @@ export function SiteRekiForm() {
                             <td className="px-4 py-2">
                               <input
                                 type="text"
-                                value={room.beam_column_details || ""}
+                                value={room.remarks || ''}
                                 onChange={(e) =>
-                                  updateRoom(
-                                    floorIndex,
-                                    roomIndex,
-                                    "beam_column_details",
-                                    e.target.value,
-                                  )
-                                }
-                                className="bc-input w-full"
-                              />
-                            </td>
-
-                            <td className="px-4 py-2">
-                              <input
-                                type="text"
-                                value={room.remarks || ""}
-                                onChange={(e) =>
-                                  updateRoom(
-                                    floorIndex,
-                                    roomIndex,
-                                    "remarks",
-                                    e.target.value,
-                                  )
+                                  updateRoom(floorIndex, roomIndex, 'remarks', e.target.value)
                                 }
                                 className="bc-input w-full"
                               />
@@ -1095,9 +1055,7 @@ export function SiteRekiForm() {
                             <td className="px-4 py-2">
                               <button
                                 type="button"
-                                onClick={() =>
-                                  removeRoom(floorIndex, roomIndex)
-                                }
+                                onClick={() => removeRoom(floorIndex, roomIndex)}
                                 className="text-[var(--text-3)] hover:text-[var(--bad-fg)]"
                               >
                                 <Trash2 size={18} />
@@ -1109,9 +1067,7 @@ export function SiteRekiForm() {
                     </table>
                   </div>
                 ) : (
-                  <p className="text-[var(--text-3)] text-sm italic">
-                    No rooms added yet.
-                  </p>
+                  <p className="text-[var(--text-3)] text-sm italic">No rooms added yet.</p>
                 )}
               </div>
             </div>
@@ -1138,11 +1094,11 @@ export function SiteRekiForm() {
           {
             id: crypto.randomUUID(),
 
-            title: "",
+            title: '',
 
-            remark: "",
+            remark: '',
 
-            floor_id: "",
+            floor_id: '',
 
             images: [],
           },
@@ -1189,7 +1145,7 @@ export function SiteRekiForm() {
 
           preview: URL.createObjectURL(file),
 
-          caption: "",
+          caption: '',
         }));
 
         layout.images = [...(layout.images || []), ...newImages];
@@ -1200,7 +1156,7 @@ export function SiteRekiForm() {
         };
       });
 
-      e.target.value = "";
+      e.target.value = '';
     };
 
     const updateImageCaption = (layoutIndex, imageIndex, caption) => {
@@ -1229,9 +1185,9 @@ export function SiteRekiForm() {
         }
 
         if (newLayouts[layoutIndex]?.images) {
-          newLayouts[layoutIndex].images = newLayouts[
-            layoutIndex
-          ].images.filter((_, i) => i !== imageIndex);
+          newLayouts[layoutIndex].images = newLayouts[layoutIndex].images.filter(
+            (_, i) => i !== imageIndex,
+          );
         }
 
         return {
@@ -1270,27 +1226,20 @@ export function SiteRekiForm() {
           </div>
         ) : (
           layouts.map((layout, layoutIndex) => (
-            <div
-              key={layout.id}
-              className="border border-[var(--line)] rounded-xl p-6 bg-white"
-            >
+            <div key={layout.id} className="border border-[var(--line)] rounded-xl p-6 bg-white">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex-1">
                   <input
                     type="text"
-                    value={layout.title || ""}
-                    onChange={(e) =>
-                      updateLayout(layoutIndex, "title", e.target.value)
-                    }
+                    value={layout.title || ''}
+                    onChange={(e) => updateLayout(layoutIndex, 'title', e.target.value)}
                     placeholder="Layout Title"
                     className="bc-input text-lg font-semibold w-full mb-3"
                   />
 
                   <select
-                    value={layout.floor_id || ""}
-                    onChange={(e) =>
-                      updateLayout(layoutIndex, "floor_id", e.target.value)
-                    }
+                    value={layout.floor_id || ''}
+                    onChange={(e) => updateLayout(layoutIndex, 'floor_id', e.target.value)}
                     className="bc-input w-full max-w-xs"
                   >
                     <option value="">No specific floor</option>
@@ -1313,10 +1262,8 @@ export function SiteRekiForm() {
               </div>
 
               <textarea
-                value={layout.remark || ""}
-                onChange={(e) =>
-                  updateLayout(layoutIndex, "remark", e.target.value)
-                }
+                value={layout.remark || ''}
+                onChange={(e) => updateLayout(layoutIndex, 'remark', e.target.value)}
                 rows={3}
                 className="bc-input w-full mb-6"
                 placeholder="Remarks about this layout..."
@@ -1370,13 +1317,9 @@ export function SiteRekiForm() {
                       <div className="p-3">
                         <input
                           type="text"
-                          value={image.caption || ""}
+                          value={image.caption || ''}
                           onChange={(e) =>
-                            updateImageCaption(
-                              layoutIndex,
-                              imgIndex,
-                              e.target.value,
-                            )
+                            updateImageCaption(layoutIndex, imgIndex, e.target.value)
                           }
                           placeholder="Caption"
                           className="bc-input text-sm w-full"
@@ -1398,15 +1341,15 @@ export function SiteRekiForm() {
   // ============================================================
 
   const renderSection = (section) => {
-    if (section.type === "floors") {
+    if (section.type === 'floors') {
       return renderFloorsSection();
     }
 
-    if (section.type === "layoutAttachments") {
+    if (section.type === 'layoutAttachments') {
       return renderLayoutSection();
     }
 
-    if (section.type === "documents") {
+    if (section.type === 'documents') {
       return (
         <div className="py-12 text-center text-[var(--text-3)]">
           Additional Documents section coming soon...
@@ -1423,13 +1366,13 @@ export function SiteRekiForm() {
 
   const handleSubmit = async () => {
     if (!projectId) {
-      toast.error("Please select a project.");
+      toast.error('Please select a project.');
 
       return;
     }
 
     if (!values.recce_date) {
-      toast.error("Please select a recce date.");
+      toast.error('Please select a recce date.');
 
       return;
     }
@@ -1437,26 +1380,23 @@ export function SiteRekiForm() {
     try {
       const payload = buildSiteReccePayload(projectId, values);
 
-      console.log("========== SITE RECCE VALUES ==========", values);
+      console.log('========== SITE RECCE VALUES ==========', values);
 
-      console.log(
-        "========== SITE RECCE PAYLOAD ==========",
-        JSON.stringify(payload, null, 2),
-      );
+      console.log('========== SITE RECCE PAYLOAD ==========', JSON.stringify(payload, null, 2));
 
       // ========================================================
       // UPDATE
       // ========================================================
 
       if (isEditMode) {
-        console.log("UPDATING SITE RECCE:", siteRecceId);
+        console.log('UPDATING SITE RECCE:', siteRecceId);
 
         const updated = await updateSiteRecce({
           id: siteRecceId,
           ...payload,
         }).unwrap();
 
-        toast.success("Site Recce updated successfully.");
+        toast.success('Site Recce updated successfully.');
 
         draftStorage.removeItem(draftKey);
 
@@ -1471,26 +1411,22 @@ export function SiteRekiForm() {
 
       const recce = await createSiteRecce(payload).unwrap();
 
-      toast.success("Site Recce created successfully.");
+      toast.success('Site Recce created successfully.');
 
       draftStorage.removeItem(draftKey);
 
       navigate(`/crm/recce/${recce.id}`);
     } catch (error) {
-      console.error("SITE RECCE SAVE ERROR:", error);
+      console.error('SITE RECCE SAVE ERROR:', error);
 
       const backendMessage = error?.data?.message;
 
       if (Array.isArray(backendMessage) && backendMessage.length) {
         toast.error(backendMessage[0]);
-      } else if (typeof backendMessage === "string") {
+      } else if (typeof backendMessage === 'string') {
         toast.error(backendMessage);
       } else {
-        toast.error(
-          isEditMode
-            ? "Failed to update Site Recce."
-            : "Failed to create Site Recce.",
-        );
+        toast.error(isEditMode ? 'Failed to update Site Recce.' : 'Failed to create Site Recce.');
       }
     }
   };
@@ -1513,17 +1449,21 @@ export function SiteRekiForm() {
 
   return (
     <SiteRecceSectionForm
-      title={isEditMode ? "Edit site recce" : "Site recce"}
-      subtitle={<>{
-        isEditMode
-          ? "Update the site inspection record for this project."
-          : "Record what you found on the site visit — rooms, measurements, photos and site rules. Produces the site recce report."}<PrefillNotice prefill={prefill} /></>}
+      title={isEditMode ? 'Edit site recce' : 'Site recce'}
+      subtitle={
+        <>
+          {isEditMode
+            ? 'Update the site inspection record for this project.'
+            : 'Record what you found on the site visit — rooms, measurements, photos and site rules. Produces the site recce report.'}
+          <PrefillNotice prefill={prefill} />
+        </>
+      }
       crumbs={[
-        { label: "CRM", to: "/crm" },
-        { label: "Forms" },
-        { label: isEditMode ? "Edit site recce" : "Site recce" },
+        { label: 'CRM', to: '/crm' },
+        { label: 'Forms' },
+        { label: isEditMode ? 'Edit site recce' : 'Site recce' },
       ]}
-      submitLabel={isEditMode ? "Update site recce" : "Save site recce"}
+      submitLabel={isEditMode ? 'Update site recce' : 'Save site recce'}
       onSaveDraft={handleSaveDraft}
       sections={sections}
       values={values}

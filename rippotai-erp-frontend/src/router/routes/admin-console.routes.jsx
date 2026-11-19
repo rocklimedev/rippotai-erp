@@ -10,6 +10,7 @@ import DocumentTypes from "../../pages/documents/DocumentTypes";
 import ProjectPhases from "../../pages/projects/ProjectPhases";
 import ProjectStructure from "../../pages/projects/ProjectStructure";
 
+import VisitStageSettings from "@/pages/settings/VisitStageSettings";
 import AdminOverview from "@/pages/settings/AdminOverview";
 import CompanyProfile from "@/pages/settings/CompanyProfile";
 
@@ -36,6 +37,7 @@ export const adminConsoleRoutes = [
         "clients",
         "roles-permissions",
         "project-phases",
+        "site-visit-stages",
         "document-types",
         "project-structure",
         "estimate-signature",
@@ -74,6 +76,11 @@ export const adminConsoleRoutes = [
       {
         path: "roles-permissions",
         element: <RolesPermissions />,
+      },
+
+      {
+        path: "site-visit-stages",
+        element: <VisitStageSettings />,
       },
 
       {

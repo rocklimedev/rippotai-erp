@@ -1,27 +1,24 @@
-import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
-import { useRefill } from "@/components/doc-list/useRefill";
-import { PrefillNotice } from "@/components/PrefillNotice";
-import { termsToText, textToTermsHtml } from "@/lib/terms";
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { TermsFullDisplay } from '@/components/settings/TermsDisplay';
+import { useRefill } from '@/components/doc-list/useRefill';
+import { PrefillNotice } from '@/components/PrefillNotice';
+import { termsToText, textToTermsHtml } from '@/lib/terms';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { PlanOfActionSectionForm } from "../../components/plan-of-action/PlanOfActionSectionForm";
-import { useAutoSave } from "../../hooks/use-autosave";
-import { useSharedProjectData } from "../../hooks/use-shared-project-data";
+import { PlanOfActionSectionForm } from '../../components/plan-of-action/PlanOfActionSectionForm';
+import { useAutoSave } from '../../hooks/use-autosave';
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 
-import {
-  useGetProjectsQuery,
-  useGetProjectPhasesQuery,
-} from "../../api/projects/project.api";
+import { useGetProjectsQuery, useGetProjectPhasesQuery } from '../../api/projects/project.api';
 
 import {
   useCreatePlanOfActionMutation,
   useGetPlanOfActionQuery,
   useUpdatePlanOfActionMutation,
-} from "../../api/documents/plan-of-actions.api";
+} from '../../api/documents/plan-of-actions.api';
 
-import { POA_SECTIONS } from "../../hooks/plan-of-action-sections";
+import { POA_SECTIONS } from '../../hooks/plan-of-action-sections';
 
 import {
   Search,
@@ -38,7 +35,7 @@ import {
   Users,
   FileText,
   AlertCircle,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Page,
   EmptyState,
@@ -48,35 +45,27 @@ import {
   TextArea,
   SelectInput,
   prettyStatus,
-} from "@/components/inos";
-import {
-  RowCard,
-  IconButton,
-  AddRowButton,
-  EmptyRows,
-} from "@/components/forms/crm-form-ui";
+} from '@/components/inos';
+import { RowCard, IconButton, AddRowButton, EmptyRows } from '@/components/forms/crm-form-ui';
 
-import { useGetUsersQuery } from "../../api/users/user.api";
+import { useGetUsersQuery } from '../../api/users/user.api';
 import {
   useGetTermsTemplatesQuery,
   useCreateTermsTemplateMutation,
   useUpdateTermsTemplateContentMutation,
-} from "../../api/meta/terms.api";
-import {
-  useGetTeamsQuery,
-  useGetTeamMembersQuery,
-} from "../../api/users/team.api";
+} from '../../api/meta/terms.api';
+import { useGetTeamsQuery, useGetTeamMembersQuery } from '../../api/users/team.api';
 
 /* ============================================================
    ROLE SUGGESTIONS
 ============================================================ */
 
 const ROLE_SUGGESTIONS = [
-  "Principal Architect",
-  "Project Lead",
-  "Design Lead",
-  "Site Supervisor",
-  "Site Engineer",
+  'Principal Architect',
+  'Project Lead',
+  'Design Lead',
+  'Site Supervisor',
+  'Site Engineer',
 ];
 
 /* ============================================================
@@ -84,7 +73,7 @@ const ROLE_SUGGESTIONS = [
 ============================================================ */
 
 const toNumberOrUndefined = (value) => {
-  if (value === "" || value === null || value === undefined) {
+  if (value === '' || value === null || value === undefined) {
     return undefined;
   }
 
@@ -94,18 +83,12 @@ const toNumberOrUndefined = (value) => {
 };
 
 const calculateDurationLabel = (minDays, maxDays) => {
-  const min =
-    minDays !== "" && minDays !== null && minDays !== undefined
-      ? Number(minDays)
-      : null;
+  const min = minDays !== '' && minDays !== null && minDays !== undefined ? Number(minDays) : null;
 
-  const max =
-    maxDays !== "" && maxDays !== null && maxDays !== undefined
-      ? Number(maxDays)
-      : null;
+  const max = maxDays !== '' && maxDays !== null && maxDays !== undefined ? Number(maxDays) : null;
 
   if (min === null && max === null) {
-    return "";
+    return '';
   }
 
   if (min !== null && max !== null) {
@@ -130,41 +113,41 @@ const calculateDurationLabel = (minDays, maxDays) => {
 const mapPlanOfActionToForm = (plan) => {
   if (!plan) {
     return {
-      projectId: "",
+      projectId: '',
       values: {
         Overview: {
-          title: "Plan of Action",
-          execution_description: "",
-          total_duration_min_days: "",
-          total_duration_max_days: "",
-          total_duration_label: "",
+          title: 'Plan of Action',
+          execution_description: '',
+          total_duration_min_days: '',
+          total_duration_max_days: '',
+          total_duration_label: '',
         },
 
         phases: [],
 
-        team_id: "",
+        team_id: '',
 
         team_members: [],
 
-        terms_template_id: "",
+        terms_template_id: '',
       },
     };
   }
 
   return {
-    projectId: plan.project_id || "",
+    projectId: plan.project_id || '',
 
     values: {
       Overview: {
-        title: plan.title || "Plan of Action",
+        title: plan.title || 'Plan of Action',
 
-        execution_description: plan.execution_description || "",
+        execution_description: plan.execution_description || '',
 
-        total_duration_min_days: plan.total_duration_min_days ?? "",
+        total_duration_min_days: plan.total_duration_min_days ?? '',
 
-        total_duration_max_days: plan.total_duration_max_days ?? "",
+        total_duration_max_days: plan.total_duration_max_days ?? '',
 
-        total_duration_label: plan.total_duration_label || "",
+        total_duration_label: plan.total_duration_label || '',
       },
 
       phases: (plan.phases || []).map((phase, index) => {
@@ -177,20 +160,20 @@ const mapPlanOfActionToForm = (plan) => {
 
           phase_number: phase.phase_number ?? index + 1,
 
-          phase_code: phase.phase_code || "",
+          phase_code: phase.phase_code || '',
 
-          title: phase.title || "",
+          title: phase.title || '',
 
-          description: phase.description || "",
+          description: phase.description || '',
 
-          duration_min_days: poaPhase.duration_min_days ?? "",
+          duration_min_days: poaPhase.duration_min_days ?? '',
 
-          duration_max_days: poaPhase.duration_max_days ?? "",
+          duration_max_days: poaPhase.duration_max_days ?? '',
 
-          parallel_work_note: poaPhase.parallel_work_note || "",
+          parallel_work_note: poaPhase.parallel_work_note || '',
 
-          inclusion_note: poaPhase.inclusion_note || "",
-          details: poaPhase.details || "", // ← add
+          inclusion_note: poaPhase.inclusion_note || '',
+          details: poaPhase.details || '', // ← add
           gantt_start_offset_days: poaPhase.gantt_start_offset_days ?? 0,
 
           gantt_duration_days: poaPhase.gantt_duration_days ?? 0,
@@ -203,10 +186,7 @@ const mapPlanOfActionToForm = (plan) => {
          ADMIN TEAM
       ====================================================== */
 
-      team_id:
-        plan.team_id ||
-        plan.team_members?.find((member) => member.team_id)?.team_id ||
-        "",
+      team_id: plan.team_id || plan.team_members?.find((member) => member.team_id)?.team_id || '',
 
       /* ======================================================
          TEAM MEMBERS
@@ -215,16 +195,16 @@ const mapPlanOfActionToForm = (plan) => {
       team_members: (plan.team_members || []).map((member) => ({
         id: crypto.randomUUID(),
 
-        team_id: member.team_id || "",
+        team_id: member.team_id || '',
 
-        user_id: member.user_id || "",
+        user_id: member.user_id || '',
 
-        role_label: member.role_label || "",
+        role_label: member.role_label || '',
 
         is_primary: Boolean(member.is_primary),
       })),
 
-      terms_template_id: plan.terms_template_id || "",
+      terms_template_id: plan.terms_template_id || '',
     },
   };
 };
@@ -253,9 +233,7 @@ export function PlanOfActionForm() {
      AUTOSAVE KEY
   ============================================================ */
 
-  const SAVE_KEY = isEditMode
-    ? `bc.plan-of-action.edit.${id}`
-    : "bc.plan-of-action";
+  const SAVE_KEY = isEditMode ? `bc.plan-of-action.edit.${id}` : 'bc.plan-of-action';
 
   /* ============================================================
      API QUERIES
@@ -272,17 +250,16 @@ export function PlanOfActionForm() {
     skip: !isEditMode,
   });
 
-  const [phaseSearch, setPhaseSearch] = useState("");
+  const [phaseSearch, setPhaseSearch] = useState('');
 
-  const { data: projectPhases = [], isLoading: isLoadingPhases } =
-    useGetProjectPhasesQuery({
-      search: phaseSearch,
-    });
+  const { data: projectPhases = [], isLoading: isLoadingPhases } = useGetProjectPhasesQuery({
+    search: phaseSearch,
+  });
 
   const { data: users = [] } = useGetUsersQuery();
   const { data: teams = [], isLoading: isLoadingTeams } = useGetTeamsQuery();
 
-  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState('');
 
   const {
     data: teamMembersResponse,
@@ -296,11 +273,9 @@ export function PlanOfActionForm() {
     ? teamMembersResponse
     : teamMembersResponse?.data || teamMembersResponse?.items || [];
 
-  const { data: termsTemplates = [], refetch: refetchTermsTemplates } =
-    useGetTermsTemplatesQuery();
+  const { data: termsTemplates = [], refetch: refetchTermsTemplates } = useGetTermsTemplatesQuery();
 
-  const [createTermsTemplate, { isLoading: isCreatingTerms }] =
-    useCreateTermsTemplateMutation();
+  const [createTermsTemplate, { isLoading: isCreatingTerms }] = useCreateTermsTemplateMutation();
   const [updateTermsContent, { isLoading: isSavingTermsContent }] =
     useUpdateTermsTemplateContentMutation();
 
@@ -308,11 +283,9 @@ export function PlanOfActionForm() {
      MUTATIONS
   ============================================================ */
 
-  const [createPlanOfAction, { isLoading: isCreating }] =
-    useCreatePlanOfActionMutation();
+  const [createPlanOfAction, { isLoading: isCreating }] = useCreatePlanOfActionMutation();
 
-  const [updatePlanOfAction, { isLoading: isUpdating }] =
-    useUpdatePlanOfActionMutation();
+  const [updatePlanOfAction, { isLoading: isUpdating }] = useUpdatePlanOfActionMutation();
 
   const isSubmitting = isCreating || isUpdating;
 
@@ -323,32 +296,38 @@ export function PlanOfActionForm() {
   // Preselect the project when opened from a project (?project_id=…)
   const [searchParams] = useSearchParams();
   const [projectId, setProjectId] = useState(
-    () => searchParams.get("project_id") || searchParams.get("projectId") || "",
+    () => searchParams.get('project_id') || searchParams.get('projectId') || '',
   );
-  useRefill({ type: "plan-of-action", label: "Plan of Action", projectId, enabled: !isEditMode, editPath: (id) => `/crm/forms/plan-of-action/${id}/edit` });
+  useRefill({
+    type: 'plan-of-action',
+    label: 'Plan of Action',
+    projectId,
+    enabled: !isEditMode,
+    editPath: (id) => `/crm/forms/plan-of-action/${id}/edit`,
+  });
 
   /* ============================================================
      FORM STATE
   ============================================================ */
 
-  const draftKey = `${SAVE_KEY}.${isEditMode ? id : projectId || "new"}`;
+  const draftKey = `${SAVE_KEY}.${isEditMode ? id : projectId || 'new'}`;
   const [values, setValues, draftStorage] = useAutoSave(draftKey, {
     Overview: {
-      title: "Plan of Action",
-      execution_description: "",
-      total_duration_min_days: "",
-      total_duration_max_days: "",
-      total_duration_label: "",
+      title: 'Plan of Action',
+      execution_description: '',
+      total_duration_min_days: '',
+      total_duration_max_days: '',
+      total_duration_label: '',
     },
 
     phases: [],
-    team_id: "",
+    team_id: '',
 
     team_members: [],
 
-    terms_template_id: "",
+    terms_template_id: '',
   });
-  const prefill = useSharedProjectData(projectId, "plan", values, setValues, !isEditMode);
+  const prefill = useSharedProjectData(projectId, 'plan', values, setValues, !isEditMode);
 
   /* ============================================================
      TERMS CREATE / EDIT STATE
@@ -356,15 +335,15 @@ export function PlanOfActionForm() {
 
   const [termsCreateOpen, setTermsCreateOpen] = useState(false);
   const [termsCreateForm, setTermsCreateForm] = useState({
-    name: "",
-    scope: "PROJECT",
-    content_html: "",
+    name: '',
+    scope: 'PROJECT',
+    content_html: '',
   });
   const [termsCreatePreview, setTermsCreatePreview] = useState(false);
 
   const [editingTermsTemplate, setEditingTermsTemplate] = useState(null);
-  const [termsEditContent, setTermsEditContent] = useState("");
-  const [termsChangeNote, setTermsChangeNote] = useState("");
+  const [termsEditContent, setTermsEditContent] = useState('');
+  const [termsChangeNote, setTermsChangeNote] = useState('');
   const [termsEditPreview, setTermsEditPreview] = useState(false);
 
   /* ============================================================
@@ -384,7 +363,7 @@ export function PlanOfActionForm() {
 
     setProjectId(mapped.projectId);
 
-    setSelectedTeamId(mapped.values.team_id || "");
+    setSelectedTeamId(mapped.values.team_id || '');
 
     setValues(mapped.values);
   }, [isEditMode, existingPlanOfAction, setValues]);
@@ -395,9 +374,9 @@ export function PlanOfActionForm() {
 
   useEffect(() => {
     if (isEditMode && planError) {
-      console.error("Failed to load Plan of Action:", planError);
+      console.error('Failed to load Plan of Action:', planError);
 
-      toast.error("Failed to load Plan of Action.");
+      toast.error('Failed to load Plan of Action.');
     }
   }, [isEditMode, planError]);
 
@@ -417,8 +396,8 @@ export function PlanOfActionForm() {
        * whenever minimum or maximum duration changes.
        */
       if (
-        section === "Overview" &&
-        (key === "total_duration_min_days" || key === "total_duration_max_days")
+        section === 'Overview' &&
+        (key === 'total_duration_min_days' || key === 'total_duration_max_days')
       ) {
         nextSection.total_duration_label = calculateDurationLabel(
           nextSection.total_duration_min_days,
@@ -486,23 +465,23 @@ export function PlanOfActionForm() {
              */
             phase_number: nextOrder,
 
-            phase_code: phase.phase_code || "",
+            phase_code: phase.phase_code || '',
 
-            title: phase.title || "",
+            title: phase.title || '',
 
-            description: phase.description ?? "",
+            description: phase.description ?? '',
 
             /*
              * POA-specific configuration
              */
-            duration_min_days: "",
+            duration_min_days: '',
 
-            duration_max_days: "",
+            duration_max_days: '',
 
-            parallel_work_note: "",
+            parallel_work_note: '',
 
-            inclusion_note: "",
-            details: "", // ← add
+            inclusion_note: '',
+            details: '', // ← add
             gantt_start_offset_days: 0,
 
             gantt_duration_days: 0,
@@ -522,9 +501,7 @@ export function PlanOfActionForm() {
 
     const removePhase = (phaseId) => {
       setValues((prev) => {
-        const remaining = (prev.phases || []).filter(
-          (phase) => phase.project_phase_id !== phaseId,
-        );
+        const remaining = (prev.phases || []).filter((phase) => phase.project_phase_id !== phaseId);
 
         return {
           ...prev,
@@ -548,7 +525,7 @@ export function PlanOfActionForm() {
       setValues((prev) => {
         const phases = [...(prev.phases || [])];
 
-        const newIndex = direction === "up" ? index - 1 : index + 1;
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
 
         if (newIndex < 0 || newIndex >= phases.length) {
           return prev;
@@ -593,9 +570,7 @@ export function PlanOfActionForm() {
        AVAILABLE PHASES
     ======================================================== */
 
-    const availablePhases = projectPhases.filter(
-      (phase) => !isSelected(phase.id),
-    );
+    const availablePhases = projectPhases.filter((phase) => !isSelected(phase.id));
 
     /* ========================================================
        RENDER
@@ -608,7 +583,7 @@ export function PlanOfActionForm() {
             label="Find a phase"
             hint="Search the phase library by code, title or description."
           >
-            <label className="inos-search" style={{ maxWidth: "none" }}>
+            <label className="inos-search" style={{ maxWidth: 'none' }}>
               <Search aria-hidden />
               <input
                 type="search"
@@ -643,18 +618,18 @@ export function PlanOfActionForm() {
               disabled={isLoadingPhases || availablePhases.length === 0}
               placeholder={
                 isLoadingPhases
-                  ? "Loading phases…"
+                  ? 'Loading phases…'
                   : availablePhases.length === 0
                     ? phaseSearch
-                      ? "No matching phases left to add"
-                      : "No phases available"
-                    : "+ Select a phase to add…"
+                      ? 'No matching phases left to add'
+                      : 'No phases available'
+                    : '+ Select a phase to add…'
               }
             >
               {availablePhases.map((phase) => (
                 <option key={phase.id} value={phase.id}>
                   {phase.phase_code}
-                  {" — "}
+                  {' — '}
                   {phase.title}
                 </option>
               ))}
@@ -676,15 +651,13 @@ export function PlanOfActionForm() {
                 index={index + 1}
                 title={
                   <>
-                    {phase.phase_code ? `${phase.phase_code} · ` : ""}
+                    {phase.phase_code ? `${phase.phase_code} · ` : ''}
                     {phase.title}
                   </>
                 }
                 meta={
-                  calculateDurationLabel(
-                    phase.duration_min_days,
-                    phase.duration_max_days,
-                  ) || undefined
+                  calculateDurationLabel(phase.duration_min_days, phase.duration_max_days) ||
+                  undefined
                 }
                 onRemove={() => removePhase(phase.project_phase_id)}
                 removeLabel="Remove phase"
@@ -693,14 +666,14 @@ export function PlanOfActionForm() {
                     <IconButton
                       label="Move up"
                       disabled={index === 0}
-                      onClick={() => movePhase(index, "up")}
+                      onClick={() => movePhase(index, 'up')}
                     >
                       <ChevronUp />
                     </IconButton>
                     <IconButton
                       label="Move down"
                       disabled={index === selectedPhases.length - 1}
-                      onClick={() => movePhase(index, "down")}
+                      onClick={() => movePhase(index, 'down')}
                     >
                       <ChevronDown />
                     </IconButton>
@@ -723,8 +696,8 @@ export function PlanOfActionForm() {
                       onChange={(e) =>
                         updatePhase(
                           index,
-                          "duration_min_days",
-                          e.target.value === "" ? "" : Number(e.target.value),
+                          'duration_min_days',
+                          e.target.value === '' ? '' : Number(e.target.value),
                         )
                       }
                       placeholder="e.g. 30"
@@ -740,8 +713,8 @@ export function PlanOfActionForm() {
                       onChange={(e) =>
                         updatePhase(
                           index,
-                          "duration_max_days",
-                          e.target.value === "" ? "" : Number(e.target.value),
+                          'duration_max_days',
+                          e.target.value === '' ? '' : Number(e.target.value),
                         )
                       }
                       placeholder="e.g. 45"
@@ -751,9 +724,7 @@ export function PlanOfActionForm() {
                   <Field label="Parallel work note" optional>
                     <TextInput
                       value={phase.parallel_work_note}
-                      onChange={(e) =>
-                        updatePhase(index, "parallel_work_note", e.target.value)
-                      }
+                      onChange={(e) => updatePhase(index, 'parallel_work_note', e.target.value)}
                       placeholder="e.g. Overall material selection in parallel"
                     />
                   </Field>
@@ -761,9 +732,7 @@ export function PlanOfActionForm() {
                   <Field label="Inclusion note" optional>
                     <TextInput
                       value={phase.inclusion_note}
-                      onChange={(e) =>
-                        updatePhase(index, "inclusion_note", e.target.value)
-                      }
+                      onChange={(e) => updatePhase(index, 'inclusion_note', e.target.value)}
                       placeholder="e.g. Includes paint 1st coat"
                     />
                   </Field>
@@ -776,9 +745,7 @@ export function PlanOfActionForm() {
                     <TextArea
                       style={{ minHeight: 90 }}
                       value={phase.details}
-                      onChange={(e) =>
-                        updatePhase(index, "details", e.target.value)
-                      }
+                      onChange={(e) => updatePhase(index, 'details', e.target.value)}
                       placeholder="e.g. Includes site survey, material sampling and vendor finalisation."
                     />
                   </Field>
@@ -825,7 +792,7 @@ export function PlanOfActionForm() {
 
     const addMember = () => {
       if (!selectedTeamId) {
-        toast.error("Please select an Admin Team first.");
+        toast.error('Please select an Admin Team first.');
         return;
       }
 
@@ -840,9 +807,9 @@ export function PlanOfActionForm() {
 
             team_id: selectedTeamId,
 
-            user_id: "",
+            user_id: '',
 
-            role_label: "",
+            role_label: '',
 
             is_primary: false,
           },
@@ -866,7 +833,7 @@ export function PlanOfActionForm() {
         /*
          * Only one primary contact is allowed.
          */
-        if (field === "is_primary" && value === true) {
+        if (field === 'is_primary' && value === true) {
           return {
             ...prev,
 
@@ -914,7 +881,7 @@ export function PlanOfActionForm() {
         user?.display_name ||
         user?.email ||
         teamMember?.user_id ||
-        "Unknown User"
+        'Unknown User'
       );
     };
 
@@ -936,17 +903,15 @@ export function PlanOfActionForm() {
             required
             hint={
               selectedTeamId
-                ? "Only members of this team can be assigned. Changing it clears the list below."
-                : "Choose a team first, then assign its members."
+                ? 'Only members of this team can be assigned. Changing it clears the list below.'
+                : 'Choose a team first, then assign its members.'
             }
           >
             <SelectInput
               value={selectedTeamId}
               onChange={(e) => handleTeamChange(e.target.value)}
               disabled={isLoadingTeams}
-              placeholder={
-                isLoadingTeams ? "Loading teams…" : "Select admin team"
-              }
+              placeholder={isLoadingTeams ? 'Loading teams…' : 'Select admin team'}
             >
               {teams.map((team) => (
                 <option key={team.id} value={team.id}>
@@ -988,24 +953,14 @@ export function PlanOfActionForm() {
                     .map((item) => item.user_id)
                     .filter(Boolean);
 
-                  const selectedMember = teamMembers.find(
-                    (tm) => tm.user_id === member.user_id,
-                  );
+                  const selectedMember = teamMembers.find((tm) => tm.user_id === member.user_id);
 
                   return (
                     <RowCard
                       key={member.id}
                       index={index + 1}
-                      title={
-                        selectedMember
-                          ? getMemberUserName(selectedMember)
-                          : "New member"
-                      }
-                      meta={
-                        member.is_primary
-                          ? "Primary contact"
-                          : member.role_label || undefined
-                      }
+                      title={selectedMember ? getMemberUserName(selectedMember) : 'New member'}
+                      meta={member.is_primary ? 'Primary contact' : member.role_label || undefined}
                       onRemove={() => removeMember(index)}
                       removeLabel="Remove member"
                     >
@@ -1013,23 +968,18 @@ export function PlanOfActionForm() {
                         <Field
                           label="Team member"
                           required
-                          error={
-                            missingUser ? "Select a team member." : undefined
-                          }
+                          error={missingUser ? 'Select a team member.' : undefined}
                         >
                           <SelectInput
                             value={member.user_id}
                             invalid={missingUser}
-                            onChange={(e) =>
-                              updateMember(index, "user_id", e.target.value)
-                            }
+                            onChange={(e) => updateMember(index, 'user_id', e.target.value)}
                             placeholder="Select team member"
                           >
                             {teamMembers.map((teamMember) => {
                               const userId = teamMember.user_id;
 
-                              const isAlreadySelected =
-                                alreadySelectedUserIds.includes(userId);
+                              const isAlreadySelected = alreadySelectedUserIds.includes(userId);
 
                               return (
                                 <option
@@ -1047,15 +997,13 @@ export function PlanOfActionForm() {
                         <Field
                           label="Role"
                           required
-                          error={missingRole ? "Enter a role." : undefined}
+                          error={missingRole ? 'Enter a role.' : undefined}
                         >
                           <TextInput
                             list="role-options"
                             value={member.role_label}
                             invalid={missingRole}
-                            onChange={(e) =>
-                              updateMember(index, "role_label", e.target.value)
-                            }
+                            onChange={(e) => updateMember(index, 'role_label', e.target.value)}
                             placeholder="e.g. Project Lead"
                           />
                         </Field>
@@ -1065,9 +1013,7 @@ export function PlanOfActionForm() {
                         <input
                           type="checkbox"
                           checked={Boolean(member.is_primary)}
-                          onChange={(e) =>
-                            updateMember(index, "is_primary", e.target.checked)
-                          }
+                          onChange={(e) => updateMember(index, 'is_primary', e.target.checked)}
                         />
                         Primary contact for the client
                       </label>
@@ -1079,7 +1025,7 @@ export function PlanOfActionForm() {
 
             {teamMembers.length > members.length && (
               <AddRowButton onClick={addMember}>
-                {members.length ? "Add another member" : "Add first member"}
+                {members.length ? 'Add another member' : 'Add first member'}
               </AddRowButton>
             )}
           </>
@@ -1094,16 +1040,16 @@ export function PlanOfActionForm() {
 
   const resetTermsCreateForm = () => {
     setTermsCreateForm({
-      name: "",
-      scope: "PROJECT",
-      content_html: "",
+      name: '',
+      scope: 'PROJECT',
+      content_html: '',
     });
     setTermsCreatePreview(false);
   };
 
   const handleCreateTermsTemplate = async () => {
     if (!termsCreateForm.name.trim() || !termsCreateForm.content_html.trim()) {
-      toast.error("Name and content are required");
+      toast.error('Name and content are required');
       return;
     }
 
@@ -1113,7 +1059,7 @@ export function PlanOfActionForm() {
         name: termsCreateForm.name.trim(),
         content_html: textToTermsHtml(termsCreateForm.content_html),
       }).unwrap();
-      toast.success("Terms template created");
+      toast.success('Terms template created');
       setTermsCreateOpen(false);
       resetTermsCreateForm();
       await refetchTermsTemplates();
@@ -1125,14 +1071,14 @@ export function PlanOfActionForm() {
         }));
       }
     } catch {
-      toast.error("Failed to create terms template");
+      toast.error('Failed to create terms template');
     }
   };
 
   const openEditTermsContent = (template) => {
     setEditingTermsTemplate(template);
     setTermsEditContent(termsToText(template.content_html));
-    setTermsChangeNote("");
+    setTermsChangeNote('');
     setTermsEditPreview(false);
   };
 
@@ -1151,13 +1097,11 @@ export function PlanOfActionForm() {
         change_note: termsChangeNote || undefined,
       }).unwrap();
 
-      toast.success(
-        `Saved as v${(editingTermsTemplate.current_version || 1) + 1}`,
-      );
+      toast.success(`Saved as v${(editingTermsTemplate.current_version || 1) + 1}`);
       setEditingTermsTemplate(null);
       await refetchTermsTemplates();
     } catch {
-      toast.error("Failed to save terms changes");
+      toast.error('Failed to save terms changes');
     }
   };
 
@@ -1166,14 +1110,14 @@ export function PlanOfActionForm() {
 
     const termsEditor = (value, setValue, preview, setPreview, placeholder) => (
       <>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             variant="ghost"
             size="sm"
             icon={preview ? Code : Eye}
             onClick={() => setPreview((v) => !v)}
           >
-            {preview ? "Edit" : "Preview"}
+            {preview ? 'Edit' : 'Preview'}
           </Button>
         </div>
         {preview ? (
@@ -1218,18 +1162,14 @@ export function PlanOfActionForm() {
                 <TextInput
                   placeholder="e.g. Standard residential terms"
                   value={termsCreateForm.name}
-                  onChange={(e) =>
-                    setTermsCreateForm((f) => ({ ...f, name: e.target.value }))
-                  }
+                  onChange={(e) => setTermsCreateForm((f) => ({ ...f, name: e.target.value }))}
                 />
               </Field>
 
               <Field label="Used for">
                 <SelectInput
                   value={termsCreateForm.scope}
-                  onChange={(e) =>
-                    setTermsCreateForm((f) => ({ ...f, scope: e.target.value }))
-                  }
+                  onChange={(e) => setTermsCreateForm((f) => ({ ...f, scope: e.target.value }))}
                 >
                   <option value="GLOBAL">Global</option>
                   <option value="PROJECT">Projects</option>
@@ -1239,19 +1179,13 @@ export function PlanOfActionForm() {
                 </SelectInput>
               </Field>
 
-              <Field
-                label="Terms content"
-                required
-                full
-                hint="Write one term per line."
-              >
+              <Field label="Terms content" required full hint="Write one term per line.">
                 {termsEditor(
                   termsCreateForm.content_html,
                   (v) =>
                     setTermsCreateForm((f) => ({
                       ...f,
-                      content_html:
-                        typeof v === "function" ? v(f.content_html) : v,
+                      content_html: typeof v === 'function' ? v(f.content_html) : v,
                     })),
                   termsCreatePreview,
                   setTermsCreatePreview,
@@ -1262,9 +1196,7 @@ Any variation in scope shall be treated as extra work.`,
               </Field>
             </div>
 
-            <div
-              style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
-            >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -1279,7 +1211,7 @@ Any variation in scope shall be treated as extra work.`,
                 onClick={handleCreateTermsTemplate}
                 disabled={isCreatingTerms}
               >
-                {isCreatingTerms ? "Creating…" : "Create template"}
+                {isCreatingTerms ? 'Creating…' : 'Create template'}
               </Button>
             </div>
           </RowCard>
@@ -1291,17 +1223,13 @@ Any variation in scope shall be treated as extra work.`,
             title={`Edit “${editingTermsTemplate.name}”`}
             meta={`Saving creates v${(editingTermsTemplate.current_version || 1) + 1}`}
             actions={
-              <IconButton
-                label="Close"
-                onClick={() => setEditingTermsTemplate(null)}
-              >
+              <IconButton label="Close" onClick={() => setEditingTermsTemplate(null)}>
                 <X />
               </IconButton>
             }
           >
             <p className="inos-hint" style={{ margin: 0 }}>
-              Documents that already used an earlier version keep their original
-              text.
+              Documents that already used an earlier version keep their original text.
             </p>
 
             <Field label="Content" required>
@@ -1310,15 +1238,11 @@ Any variation in scope shall be treated as extra work.`,
                 setTermsEditContent,
                 termsEditPreview,
                 setTermsEditPreview,
-                "",
+                '',
               )}
             </Field>
 
-            <Field
-              label="Change note"
-              optional
-              hint="Describe what changed, for version history."
-            >
+            <Field label="Change note" optional hint="Describe what changed, for version history.">
               <TextInput
                 placeholder="e.g. Updated payment terms clause"
                 value={termsChangeNote}
@@ -1326,13 +1250,8 @@ Any variation in scope shall be treated as extra work.`,
               />
             </Field>
 
-            <div
-              style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
-            >
-              <Button
-                variant="ghost"
-                onClick={() => setEditingTermsTemplate(null)}
-              >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <Button variant="ghost" onClick={() => setEditingTermsTemplate(null)}>
                 Cancel
               </Button>
               <Button
@@ -1340,7 +1259,7 @@ Any variation in scope shall be treated as extra work.`,
                 onClick={handleSaveTermsContent}
                 disabled={isSavingTermsContent}
               >
-                {isSavingTermsContent ? "Saving…" : "Save as new version"}
+                {isSavingTermsContent ? 'Saving…' : 'Save as new version'}
               </Button>
             </div>
           </RowCard>
@@ -1370,7 +1289,7 @@ Any variation in scope shall be treated as extra work.`,
             className="inos-choices"
             role="radiogroup"
             aria-label="Terms template"
-            style={{ gridTemplateColumns: "1fr" }}
+            style={{ gridTemplateColumns: '1fr' }}
           >
             {termsTemplates.map((template) => {
               const isSelected = selectedId === template.id;
@@ -1380,7 +1299,7 @@ Any variation in scope shall be treated as extra work.`,
                   key={template.id}
                   className="inos-choice"
                   aria-checked={isSelected}
-                  style={{ padding: "8px 8px 8px 12px" }}
+                  style={{ padding: '8px 8px 8px 12px' }}
                 >
                   <button
                     type="button"
@@ -1395,9 +1314,9 @@ Any variation in scope shall be treated as extra work.`,
                     style={{
                       flex: 1,
                       minWidth: 0,
-                      textAlign: "left",
-                      display: "flex",
-                      alignItems: "center",
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: 10,
                     }}
                   >
@@ -1411,12 +1330,11 @@ Any variation in scope shall be treated as extra work.`,
                       />
                     )}
                     <span style={{ minWidth: 0 }}>
-                      <span style={{ display: "block", color: "var(--text)" }}>
+                      <span style={{ display: 'block', color: 'var(--text)' }}>
                         {template.name}
                       </span>
                       <span className="inos-hint" style={{ fontWeight: 500 }}>
-                        {prettyStatus(template.scope)} · v
-                        {template.current_version}
+                        {prettyStatus(template.scope)} · v{template.current_version}
                       </span>
                     </span>
                   </button>
@@ -1444,15 +1362,15 @@ Any variation in scope shall be treated as extra work.`,
   ============================================================ */
 
   const renderSection = (section) => {
-    if (section.type === "phases") {
+    if (section.type === 'phases') {
       return renderPhasesSection();
     }
 
-    if (section.type === "team") {
+    if (section.type === 'team') {
       return renderTeamSection();
     }
 
-    if (section.type === "terms") {
+    if (section.type === 'terms') {
       return renderTermsSection();
     }
 
@@ -1469,20 +1387,19 @@ Any variation in scope shall be treated as extra work.`,
     ====================================================== */
 
     if (!projectId) {
-      return toast.error("Please select a project.");
+      return toast.error('Please select a project.');
     }
 
     /* ======================================================
        UUID VALIDATION
     ====================================================== */
 
-    const UUID_REGEX =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
     if (!UUID_REGEX.test(projectId)) {
-      console.error("Invalid projectId:", projectId);
+      console.error('Invalid projectId:', projectId);
 
-      return toast.error("Selected project has an invalid ID.");
+      return toast.error('Selected project has an invalid ID.');
     }
 
     /* ======================================================
@@ -1490,7 +1407,7 @@ Any variation in scope shall be treated as extra work.`,
     ====================================================== */
 
     if (!values.phases?.length) {
-      return toast.error("Add at least one phase.");
+      return toast.error('Add at least one phase.');
     }
 
     /*
@@ -1498,16 +1415,13 @@ Any variation in scope shall be treated as extra work.`,
      * reusable ProjectPhase.
      */
     const invalidPhase = values.phases.find(
-      (phase) =>
-        !phase.project_phase_id || !UUID_REGEX.test(phase.project_phase_id),
+      (phase) => !phase.project_phase_id || !UUID_REGEX.test(phase.project_phase_id),
     );
 
     if (invalidPhase) {
-      console.error("Invalid phase:", invalidPhase);
+      console.error('Invalid phase:', invalidPhase);
 
-      return toast.error(
-        "One or more selected phases have an invalid Project Phase ID.",
-      );
+      return toast.error('One or more selected phases have an invalid Project Phase ID.');
     }
 
     const overview = values.Overview || {};
@@ -1518,14 +1432,12 @@ Any variation in scope shall be treated as extra work.`,
 
     const rawMembers = values.team_members || [];
 
-    const incompleteMembers = rawMembers.filter(
-      (member) => !(member.user_id && member.role_label),
-    );
+    const incompleteMembers = rawMembers.filter((member) => !(member.user_id && member.role_label));
 
     if (incompleteMembers.length > 0) {
       return toast.error(
         `${incompleteMembers.length} team member${
-          incompleteMembers.length > 1 ? "s are" : " is"
+          incompleteMembers.length > 1 ? 's are' : ' is'
         } missing a person or role. Fill both fields or remove the row before saving.`,
       );
     }
@@ -1539,7 +1451,7 @@ Any variation in scope shall be treated as extra work.`,
     const uniqueMemberUserIds = new Set(memberUserIds);
 
     if (uniqueMemberUserIds.size !== memberUserIds.length) {
-      return toast.error("A team member cannot be added more than once.");
+      return toast.error('A team member cannot be added more than once.');
     }
 
     /* ======================================================
@@ -1555,17 +1467,13 @@ Any variation in scope shall be treated as extra work.`,
       /*
        * OVERVIEW
        */
-      title: overview.title || "Plan of Action",
+      title: overview.title || 'Plan of Action',
 
       execution_description: overview.execution_description || undefined,
 
-      total_duration_min_days: toNumberOrUndefined(
-        overview.total_duration_min_days,
-      ),
+      total_duration_min_days: toNumberOrUndefined(overview.total_duration_min_days),
 
-      total_duration_max_days: toNumberOrUndefined(
-        overview.total_duration_max_days,
-      ),
+      total_duration_max_days: toNumberOrUndefined(overview.total_duration_max_days),
 
       total_duration_label: overview.total_duration_label || undefined,
 
@@ -1582,43 +1490,39 @@ Any variation in scope shall be treated as extra work.`,
          PHASES
       ==================================================== */
 
-      phases: values.phases.map(
-        ({ id: localId, project_phase_id, ...phase }) => ({
-          /*
-           * IMPORTANT:
-           * Send the reusable ProjectPhase UUID.
-           */
-          project_phase_id,
+      phases: values.phases.map(({ id: localId, project_phase_id, ...phase }) => ({
+        /*
+         * IMPORTANT:
+         * Send the reusable ProjectPhase UUID.
+         */
+        project_phase_id,
 
-          /*
-           * Existing master phase information.
-           */
-          phase_number: Number(phase.phase_number),
+        /*
+         * Existing master phase information.
+         */
+        phase_number: Number(phase.phase_number),
 
-          phase_code: phase.phase_code,
+        phase_code: phase.phase_code,
 
-          title: phase.title,
+        title: phase.title,
 
-          description: phase.description || undefined,
+        description: phase.description || undefined,
 
-          /*
-           * POA configuration.
-           */
-          duration_min_days: toNumberOrUndefined(phase.duration_min_days),
+        /*
+         * POA configuration.
+         */
+        duration_min_days: toNumberOrUndefined(phase.duration_min_days),
 
-          duration_max_days: toNumberOrUndefined(phase.duration_max_days),
+        duration_max_days: toNumberOrUndefined(phase.duration_max_days),
 
-          parallel_work_note: phase.parallel_work_note || undefined,
+        parallel_work_note: phase.parallel_work_note || undefined,
 
-          inclusion_note: phase.inclusion_note || undefined,
-          details: phase.details || undefined, // ← add
-          gantt_start_offset_days:
-            toNumberOrUndefined(phase.gantt_start_offset_days) ?? 0,
+        inclusion_note: phase.inclusion_note || undefined,
+        details: phase.details || undefined, // ← add
+        gantt_start_offset_days: toNumberOrUndefined(phase.gantt_start_offset_days) ?? 0,
 
-          gantt_duration_days:
-            toNumberOrUndefined(phase.gantt_duration_days) ?? 0,
-        }),
-      ),
+        gantt_duration_days: toNumberOrUndefined(phase.gantt_duration_days) ?? 0,
+      })),
 
       /* ====================================================
          TEAM
@@ -1633,22 +1537,20 @@ Any variation in scope shall be treated as extra work.`,
        * Admin Team automatically and stores that
        * team_id on the owner-scoped team_members row.
        */
-      team_members: rawMembers.map(
-        ({ id: localId, user_id, role_label, is_primary }) => ({
-          user_id,
+      team_members: rawMembers.map(({ id: localId, user_id, role_label, is_primary }) => ({
+        user_id,
 
-          role_label,
+        role_label,
 
-          is_primary: Boolean(is_primary),
-        }),
-      ),
+        is_primary: Boolean(is_primary),
+      })),
     };
 
     /* ======================================================
        DEBUG
     ====================================================== */
 
-    console.log("Plan of Action payload:", payload);
+    console.log('Plan of Action payload:', payload);
 
     /* ======================================================
        SAVE
@@ -1667,7 +1569,7 @@ Any variation in scope shall be treated as extra work.`,
           ...payload,
         }).unwrap();
 
-        toast.success("Plan of Action updated successfully.");
+        toast.success('Plan of Action updated successfully.');
       } else {
         /* ==================================================
            CREATE
@@ -1675,7 +1577,7 @@ Any variation in scope shall be treated as extra work.`,
 
         plan = await createPlanOfAction(payload).unwrap();
 
-        toast.success("Plan of Action created successfully.");
+        toast.success('Plan of Action created successfully.');
       }
 
       /* ======================================================
@@ -1690,7 +1592,7 @@ Any variation in scope shall be treated as extra work.`,
 
       navigate(`/plan-of-actions/${plan?.id || id}`);
     } catch (error) {
-      console.error("Plan of Action save failed:", error);
+      console.error('Plan of Action save failed:', error);
 
       /*
        * Show backend validation message
@@ -1699,13 +1601,11 @@ Any variation in scope shall be treated as extra work.`,
       const backendMessage = error?.data?.message || error?.error || null;
 
       if (Array.isArray(backendMessage)) {
-        toast.error(backendMessage.join(", "));
+        toast.error(backendMessage.join(', '));
       } else {
         toast.error(
           backendMessage ||
-            (isEditMode
-              ? "Failed to update Plan of Action."
-              : "Failed to create Plan of Action."),
+            (isEditMode ? 'Failed to update Plan of Action.' : 'Failed to create Plan of Action.'),
         );
       }
     }
@@ -1735,7 +1635,7 @@ Any variation in scope shall be treated as extra work.`,
           title="Failed to load plan of action"
           text="It may have been deleted, or the connection dropped."
           action={
-            <Button onClick={() => navigate("/crm/plan-of-action/all")}>
+            <Button onClick={() => navigate('/crm/plan-of-action/all')}>
               Back to plans of action
             </Button>
           }
@@ -1753,28 +1653,26 @@ Any variation in scope shall be treated as extra work.`,
   const sectionMeta = {
     Overview: {
       description:
-        "Name the plan and give the overall duration range. The duration label is worked out for you.",
+        'Name the plan and give the overall duration range. The duration label is worked out for you.',
       done: Boolean(
         overviewValues.execution_description?.trim() ||
-        overviewValues.total_duration_min_days !== "" ||
-        overviewValues.total_duration_max_days !== "",
+        overviewValues.total_duration_min_days !== '' ||
+        overviewValues.total_duration_max_days !== '',
       ),
     },
     Phases: {
-      description:
-        "Pick phases from the library, order them and set how long each takes.",
+      description: 'Pick phases from the library, order them and set how long each takes.',
       done: (values.phases || []).length > 0,
       count: (values.phases || []).length,
     },
     Team: {
-      description:
-        "Choose the admin team and assign who works on this project.",
+      description: 'Choose the admin team and assign who works on this project.',
       done: (values.team_members || []).some((m) => m.user_id && m.role_label),
       count: (values.team_members || []).length,
     },
-    "Terms & Conditions": {
+    'Terms & Conditions': {
       description:
-        "Attach a terms template. Templates are versioned, so saved documents keep their wording.",
+        'Attach a terms template. Templates are versioned, so saved documents keep their wording.',
       done: Boolean(values.terms_template_id),
       actions: (
         <Button
@@ -1796,27 +1694,31 @@ Any variation in scope shall be treated as extra work.`,
   const handleSaveDraft = () => {
     try {
       draftStorage.setItem(draftKey, JSON.stringify(values));
-      toast.success("Draft saved on this device.");
+      toast.success('Draft saved on this device.');
     } catch {
-      toast.error("Could not save the draft.");
+      toast.error('Could not save the draft.');
     }
   };
 
   return (
     <PlanOfActionSectionForm
-      title={isEditMode ? "Edit plan of action" : "Plan of action"}
-      subtitle={<>{
-        isEditMode
-          ? "Update the phases, team and terms. Saving updates the plan of action document."
-          : "Set out how the project will run — phases, durations, team and terms. Produces the plan of action document."}<PrefillNotice prefill={prefill} /></>}
+      title={isEditMode ? 'Edit plan of action' : 'Plan of action'}
+      subtitle={
+        <>
+          {isEditMode
+            ? 'Update the phases, team and terms. Saving updates the plan of action document.'
+            : 'Set out how the project will run — phases, durations, team and terms. Produces the plan of action document.'}
+          <PrefillNotice prefill={prefill} />
+        </>
+      }
       crumbs={[
-        { label: "CRM", to: "/crm" },
-        { label: "Forms" },
-        { label: isEditMode ? "Edit plan of action" : "Plan of action" },
+        { label: 'CRM', to: '/crm' },
+        { label: 'Forms' },
+        { label: isEditMode ? 'Edit plan of action' : 'Plan of action' },
       ]}
       sectionMeta={sectionMeta}
       onSaveDraft={handleSaveDraft}
-      submitLabel={isEditMode ? "Update plan of action" : "Save plan of action"}
+      submitLabel={isEditMode ? 'Update plan of action' : 'Save plan of action'}
       sections={POA_SECTIONS}
       values={values}
       onFieldChange={handleFieldChange}

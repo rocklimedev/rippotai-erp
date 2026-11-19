@@ -1,10 +1,10 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
-import { UserPlus, Users, SearchX, RefreshCw } from "lucide-react";
-import { useRequestEmailVerificationMutation } from "@/api/auth/auth.api";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { UserPlus, Users, SearchX, RefreshCw } from 'lucide-react';
+import { useRequestEmailVerificationMutation } from '@/api/auth/auth.api';
 import {
   Page,
   PageHeader,
@@ -16,16 +16,16 @@ import {
   Segmented,
   Pill,
   Avatar,
-} from "@/components/inos";
+} from '@/components/inos';
 import {
   useGetUsersQuery,
   useUpdateEmailVerificationMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
-} from "../../api/users/user.api";
-import { fmtDate } from "../../lib/settings.utils";
-import InviteUserModal from "../../components/users/InviteUserModal";
-import UserActionsMenu from "../../components/users/UserActionsMenu";
+} from '../../api/users/user.api';
+import { fmtDate } from '../../lib/settings.utils';
+import InviteUserModal from '../../components/users/InviteUserModal';
+import UserActionsMenu from '../../components/users/UserActionsMenu';
 import {
   AdminAccessDenied,
   SkeletonRows,
@@ -33,13 +33,14 @@ import {
   adminCrumbs,
   humanize,
   plural,
-} from "./_admin-ui";
+} from './_admin-ui';
 
-const emailVerified = (user) => Boolean(user.email_verified_at) && user.email_verified_address === user.email;
+const emailVerified = (user) =>
+  Boolean(user.email_verified_at) && user.email_verified_address === user.email;
 
 export default function UsersSettings() {
   const { user } = useAuth();
-  const isAdmin = ["ADMIN", "SUPERADMIN"].includes(user?.role);
+  const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
 
   const {
     data: users = [],
@@ -51,12 +52,18 @@ export default function UsersSettings() {
   const [updateUserMutation] = useUpdateUserMutation();
   const [deleteUserMutation] = useDeleteUserMutation();
   const [savingId, setSavingId] = useState(null);
-  const [updateVerification, { isLoading: updatingVerification }] = useUpdateEmailVerificationMutation();
+  const [updateVerification, { isLoading: updatingVerification }] =
+    useUpdateEmailVerificationMutation();
   const [manualId, setManualId] = useState(null);
   const manuallyVerify = async (person, verified) => {
-    if (!(await appConfirm(verified
-      ? `Mark ${person.email} as verified without sending an email? Existing sessions will be revoked.`
-      : `Mark ${person.email} as unverified? They must verify before signing in again. Existing sessions will be revoked.`))) return;
+    if (
+      !(await appConfirm(
+        verified
+          ? `Mark ${person.email} as verified without sending an email? Existing sessions will be revoked.`
+          : `Mark ${person.email} as unverified? They must verify before signing in again. Existing sessions will be revoked.`,
+      ))
+    )
+      return;
     setManualId(person.id);
     try {
       const result = await updateVerification({ id: person.id, verified }).unwrap();
@@ -67,7 +74,8 @@ export default function UsersSettings() {
       setManualId(null);
     }
   };
-  const [sendVerification, { isLoading: sendingVerification }] = useRequestEmailVerificationMutation();
+  const [sendVerification, { isLoading: sendingVerification }] =
+    useRequestEmailVerificationMutation();
   const [sendingId, setSendingId] = useState(null);
 
   const requestVerification = async (person) => {
@@ -86,22 +94,22 @@ export default function UsersSettings() {
   // null = closed, "new" = invite flow, a user object = edit flow
   const [modalUser, setModalUser] = useState(null);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Deep link from the Admin overview: /console/users?invite=1
   const [params, setParams] = useSearchParams();
   useEffect(() => {
-    if (params.get("invite") === "1") {
-      setModalUser("new");
+    if (params.get('invite') === '1') {
+      setModalUser('new');
       const next = new URLSearchParams(params);
-      next.delete("invite");
+      next.delete('invite');
       setParams(next, { replace: true });
     }
   }, [params, setParams]);
 
   useEffect(() => {
-    if (usersError) toast.error("Failed to load users");
+    if (usersError) toast.error('Failed to load users');
   }, [usersError]);
 
   const toggleActive = async (u) => {
@@ -109,9 +117,9 @@ export default function UsersSettings() {
     const next = !(u.is_active !== false);
     try {
       await updateUserMutation({ id: u.id, is_active: next }).unwrap();
-      toast.success(`${u.name} ${next ? "activated" : "deactivated"}`);
+      toast.success(`${u.name} ${next ? 'activated' : 'deactivated'}`);
     } catch (e) {
-      toast.error(e?.data?.detail || "Failed to update status");
+      toast.error(e?.data?.detail || 'Failed to update status');
     } finally {
       setSavingId(null);
     }
@@ -125,7 +133,7 @@ export default function UsersSettings() {
       await deleteUserMutation(u.id).unwrap();
       toast.success(`${u.name} deleted`);
     } catch (e) {
-      toast.error(e?.data?.detail || "Failed to delete user");
+      toast.error(e?.data?.detail || 'Failed to delete user');
     } finally {
       setSavingId(null);
     }
@@ -138,11 +146,11 @@ export default function UsersSettings() {
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return list.filter((u) => {
-      if (params.get("userId") && String(u.id) !== params.get("userId")) return false;
+      if (params.get('userId') && String(u.id) !== params.get('userId')) return false;
       const active = u.is_active !== false;
-      if (statusFilter === "active" && !active) return false;
-      if (statusFilter === "inactive" && active) return false;
-      if (statusFilter === "unverified" && emailVerified(u)) return false;
+      if (statusFilter === 'active' && !active) return false;
+      if (statusFilter === 'inactive' && active) return false;
+      if (statusFilter === 'unverified' && emailVerified(u)) return false;
       if (!q) return true;
       return [u.name, u.email, u.job_title, u.role?.name]
         .filter(Boolean)
@@ -157,32 +165,44 @@ export default function UsersSettings() {
   return (
     <Page>
       <PageHeader
-        crumbs={adminCrumbs("Users")}
+        crumbs={adminCrumbs('Users')}
         title="Users"
         subtitle="Provision accounts and manage access. Users must verify their email before signing in."
         actions={
           <>
-          <Button variant="secondary" icon={RefreshCw} onClick={() => refetch()} disabled={loadingUsers}>
-            Refresh
-          </Button>
-          <Button
-            variant="primary"
-            icon={UserPlus}
-            onClick={() => setModalUser("new")}
-            data-testid="invite-user-btn"
-          >
-            Invite user
-          </Button>
+            <Button
+              variant="secondary"
+              icon={RefreshCw}
+              onClick={() => refetch()}
+              disabled={loadingUsers}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="primary"
+              icon={UserPlus}
+              onClick={() => setModalUser('new')}
+              data-testid="invite-user-btn"
+            >
+              Invite user
+            </Button>
           </>
         }
       />
 
       <Toolbar>
-        {params.get("userId") && <Button variant="secondary" onClick={() => {
-          const next = new URLSearchParams(params);
-          next.delete("userId");
-          setParams(next, { replace: true });
-        }}>Show all users</Button>}
+        {params.get('userId') && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              next.delete('userId');
+              setParams(next, { replace: true });
+            }}
+          >
+            Show all users
+          </Button>
+        )}
         <SearchInput
           value={search}
           onChange={setSearch}
@@ -192,11 +212,11 @@ export default function UsersSettings() {
           value={statusFilter}
           onChange={setStatusFilter}
           options={[
-            { value: "all", label: `All · ${list.length}` },
-            { value: "active", label: `Active · ${activeCount}` },
-            { value: "unverified", label: `Unverified · ${unverifiedCount}` },
+            { value: 'all', label: `All · ${list.length}` },
+            { value: 'active', label: `Active · ${activeCount}` },
+            { value: 'unverified', label: `Unverified · ${unverifiedCount}` },
             {
-              value: "inactive",
+              value: 'inactive',
               label: `Inactive · ${list.length - activeCount}`,
             },
           ]}
@@ -225,19 +245,15 @@ export default function UsersSettings() {
                 <TableEmpty
                   cols={7}
                   icon={Users}
-                  title={usersError ? "Couldn't load users" : "No users yet"}
+                  title={usersError ? "Couldn't load users" : 'No users yet'}
                   text={
                     usersError
                       ? "The users service didn't respond. Try again in a moment."
-                      : "Invite your first team member to get started."
+                      : 'Invite your first team member to get started.'
                   }
                   action={
                     !usersError && (
-                      <Button
-                        variant="soft"
-                        icon={UserPlus}
-                        onClick={() => setModalUser("new")}
-                      >
+                      <Button variant="soft" icon={UserPlus} onClick={() => setModalUser('new')}>
                         Invite user
                       </Button>
                     )
@@ -259,17 +275,13 @@ export default function UsersSettings() {
                     <tr key={u.id}>
                       <td>
                         <div className="adm-cell-main">
-                          <Avatar
-                            name={u.name}
-                            src={u.avatar_url || undefined}
-                            size={36}
-                          />
+                          <Avatar name={u.name} src={u.avatar_url || undefined} size={36} />
                           <div style={{ minWidth: 0 }}>
                             <div
                               className="adm-cell-title"
                               style={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 8,
                               }}
                             >
@@ -281,9 +293,7 @@ export default function UsersSettings() {
                               )}
                             </div>
                             <div className="adm-cell-sub">
-                              {u.job_title ||
-                                humanize(u.role?.name) ||
-                                "Team member"}
+                              {u.job_title || humanize(u.role?.name) || 'Team member'}
                             </div>
                           </div>
                         </div>
@@ -298,18 +308,14 @@ export default function UsersSettings() {
                           <span className="muted">—</span>
                         )}
                       </td>
-                      <td className="adm-cell-2 tabular adm-hide-sm">
-                        {fmtDate(u.created_at)}
-                      </td>
+                      <td className="adm-cell-2 tabular adm-hide-sm">{fmtDate(u.created_at)}</td>
                       <td>
-                        <Pill tone={active ? "ok" : "mute"}>
-                          {active ? "Active" : "Inactive"}
-                        </Pill>
+                        <Pill tone={active ? 'ok' : 'mute'}>{active ? 'Active' : 'Inactive'}</Pill>
                       </td>
                       <td>
                         <div className="flex flex-col items-start gap-2">
-                          <Pill tone={verified ? "ok" : "mute"}>
-                            {verified ? "Verified" : "Unverified"}
+                          <Pill tone={verified ? 'ok' : 'mute'}>
+                            {verified ? 'Verified' : 'Unverified'}
                           </Pill>
                           {verified && (
                             <span className="adm-cell-sub">{fmtDate(u.email_verified_at)}</span>
@@ -342,14 +348,14 @@ export default function UsersSettings() {
         </div>
         {list.length > 0 && (
           <div className="adm-table-foot">
-            {plural(visible.length, "user")} shown · {activeCount} active
+            {plural(visible.length, 'user')} shown · {activeCount} active
           </div>
         )}
       </Card>
 
       {modalUser && (
         <InviteUserModal
-          user={modalUser === "new" ? undefined : modalUser}
+          user={modalUser === 'new' ? undefined : modalUser}
           onClose={() => setModalUser(null)}
         />
       )}

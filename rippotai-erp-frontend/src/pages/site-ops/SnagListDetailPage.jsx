@@ -1,18 +1,18 @@
-import { useNavigate, useParams } from "react-router-dom";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import DeleteSnagList from "./DeleteSnagList";
-import { toast } from "sonner";
-import { Page, PageHeader, Card, Button } from "@/components/inos";
+import { useNavigate, useParams } from 'react-router-dom';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import DeleteSnagList from './DeleteSnagList';
+import { toast } from 'sonner';
+import { Page, PageHeader, Card, Button } from '@/components/inos';
 import {
   useGetSnagDocumentQuery,
   useDownloadSnagDocumentMutation,
-} from "@/api/site-ops/snag-lists.api";
-import { snagError } from "./SnagListsPage";
+} from '@/api/site-ops/snag-lists.api';
+import { snagError } from './SnagListsPage';
 export default function SnagListDetailPage() {
   const { id } = useParams();
-  const recordInfo = useRecordInfo("snag-list", id);
+  const recordInfo = useRecordInfo('snag-list', id);
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetSnagDocumentQuery(id);
   const [download, downloading] = useDownloadSnagDocumentMutation();
@@ -26,9 +26,7 @@ export default function SnagListDetailPage() {
     return (
       <Page>
         <p role="alert">Unable to open snag list.</p>
-        <Button onClick={() => navigate("/site-operations/snag-lists")}>
-          Back to list
-        </Button>
+        <Button onClick={() => navigate('/site-operations/snag-lists')}>Back to list</Button>
       </Page>
     );
   return (
@@ -38,16 +36,13 @@ export default function SnagListDetailPage() {
         eyebrow="Site Operations · Snag List"
         title={data.title}
         actions={
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <DeleteSnagList document={data} onDeleted={() => navigate("/site-operations/snag-lists")} />
-            <Button onClick={() => navigate("/site-operations/snag-lists")}>
-              Back to list
-            </Button>
-            <Button
-              onClick={() =>
-                navigate(`/site-operations/snag-lists/${id}/workspace`)
-              }
-            >
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <DeleteSnagList
+              document={data}
+              onDeleted={() => navigate('/site-operations/snag-lists')}
+            />
+            <Button onClick={() => navigate('/site-operations/snag-lists')}>Back to list</Button>
+            <Button onClick={() => navigate(`/site-operations/snag-lists/${id}/workspace`)}>
               Edit
             </Button>
             <Button
@@ -68,23 +63,21 @@ export default function SnagListDetailPage() {
         }
       />
       <RecordContext type="snag-list" id={id} />
-      <Card
-        title={`${data.item_count} snag rows · ${data.open_count} not closed`}
-      >
-        <div style={{ overflowX: "auto" }}>
+      <Card title={`${data.item_count} snag rows · ${data.open_count} not closed`}>
+        <div style={{ overflowX: 'auto' }}>
           <table className="inos-table">
             <thead>
               <tr>
                 {[
-                  "S. No.",
-                  "Floor",
-                  "Room",
-                  "Category",
-                  "Observation",
-                  "Photo",
-                  "Scope",
-                  "Status",
-                  "Remarks",
+                  'S. No.',
+                  'Floor',
+                  'Room',
+                  'Category',
+                  'Observation',
+                  'Photo',
+                  'Scope',
+                  'Status',
+                  'Remarks',
                 ].map((h) => (
                   <th key={h}>{h}</th>
                 ))}
@@ -94,51 +87,46 @@ export default function SnagListDetailPage() {
               {data.items.map((row) => (
                 <tr key={row.s_no}>
                   <td>{row.s_no}</td>
-                  {["floor", "room", "category", "observation"].map((k) => (
+                  {['floor', 'room', 'category', 'observation'].map((k) => (
                     <td
                       key={k}
                       style={{
-                        minWidth: k === "observation" ? 250 : 120,
-                        whiteSpace: "pre-wrap",
-                        verticalAlign: "top",
+                        minWidth: k === 'observation' ? 250 : 120,
+                        whiteSpace: 'pre-wrap',
+                        verticalAlign: 'top',
                       }}
                     >
-                      {row[k] || "—"}
+                      {row[k] || '—'}
                     </td>
                   ))}
                   <td>
                     {row.photos?.length
                       ? row.photos.map((url, i) => (
-                          <a
-                            key={url + i}
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
+                          <a key={url + i} href={url} target="_blank" rel="noreferrer">
                             <img
                               src={url}
                               alt={`Snag ${row.s_no}, photo ${i + 1}`}
                               style={{
                                 width: 100,
                                 height: 80,
-                                objectFit: "cover",
+                                objectFit: 'cover',
                                 margin: 4,
                               }}
                             />
                           </a>
                         ))
-                      : "—"}
+                      : '—'}
                   </td>
-                  {["scope", "status", "remarks"].map((k) => (
+                  {['scope', 'status', 'remarks'].map((k) => (
                     <td
                       key={k}
                       style={{
                         minWidth: 150,
-                        whiteSpace: "pre-wrap",
-                        verticalAlign: "top",
+                        whiteSpace: 'pre-wrap',
+                        verticalAlign: 'top',
                       }}
                     >
-                      {row[k] || "—"}
+                      {row[k] || '—'}
                     </td>
                   ))}
                 </tr>

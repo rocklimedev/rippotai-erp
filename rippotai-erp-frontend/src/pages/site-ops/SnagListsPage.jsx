@@ -1,12 +1,15 @@
-import { ListTodo } from "lucide-react";
-import DocumentListPage from "@/components/doc-list/DocumentListPage";
-import { asRows, rowProjectId, rowProjectName, rowUpdated } from "@/components/doc-list/doc-utils";
-import { useListSnagDocumentsQuery, useDeleteSnagDocumentMutation } from "@/api/site-ops/snag-lists.api";
+import { ListTodo } from 'lucide-react';
+import DocumentListPage from '@/components/doc-list/DocumentListPage';
+import { asRows, rowProjectId, rowProjectName, rowUpdated } from '@/components/doc-list/doc-utils';
+import {
+  useListSnagDocumentsQuery,
+  useDeleteSnagDocumentMutation,
+} from '@/api/site-ops/snag-lists.api';
 
 export const snagError = (e) =>
-  typeof e?.data?.message === "string"
+  typeof e?.data?.message === 'string'
     ? e.data.message
-    : e?.data?.message?.join?.(", ") || "Request failed. Please try again.";
+    : e?.data?.message?.join?.(', ') || 'Request failed. Please try again.';
 
 export default function SnagListsPage() {
   const { data, isLoading, error } = useListSnagDocumentsQuery({ page: 1, limit: 100 });
@@ -21,7 +24,7 @@ export default function SnagListsPage() {
       error={error}
       getRow={(r) => ({
         id: r.id,
-        name: r.title || "Snag List",
+        name: r.title || 'Snag List',
         projectId: rowProjectId(r),
         projectName: rowProjectName(r),
         version: r.revision,

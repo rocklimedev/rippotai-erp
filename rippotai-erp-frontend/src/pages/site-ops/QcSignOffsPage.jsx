@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   ClipboardCheck,
   Search,
@@ -13,58 +13,58 @@ import {
   ShieldCheck,
   AlertTriangle,
   RefreshCw,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   useGetQcProjectHistoryQuery,
   useGetQcHandoffStatusQuery,
-} from "@/api/procuerment/site-ops.api";
+} from '@/api/procuerment/site-ops.api';
 
 const STATUS_META = {
   PASS: {
-    label: "Passed",
+    label: 'Passed',
     icon: CheckCircle2,
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   },
   FAIL: {
-    label: "Failed",
+    label: 'Failed',
     icon: XCircle,
-    className: "bg-red-50 text-red-700 border-red-200",
+    className: 'bg-red-50 text-red-700 border-red-200',
   },
   REWORK: {
-    label: "Rework",
+    label: 'Rework',
     icon: RotateCcw,
-    className: "bg-amber-50 text-amber-700 border-amber-200",
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
   },
 };
 
 const formatDate = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
 
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
 };
 
 const formatDateTime = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
 
-  return new Date(value).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Date(value).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
 function StatusBadge({ status }) {
   const meta = STATUS_META[status] || {
-    label: status || "Unknown",
+    label: status || 'Unknown',
     icon: Clock3,
-    className: "bg-slate-50 text-slate-700 border-slate-200",
+    className: 'bg-slate-50 text-slate-700 border-slate-200',
   };
 
   const Icon = meta.icon;
@@ -85,12 +85,8 @@ function StatCard({ icon: Icon, label, value, description }) {
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-            {value}
-          </p>
-          {description && (
-            <p className="mt-1 text-xs text-slate-400">{description}</p>
-          )}
+          <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+          {description && <p className="mt-1 text-xs text-slate-400">{description}</p>}
         </div>
 
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F453B]/10 text-[#1F453B]">
@@ -102,9 +98,9 @@ function StatCard({ icon: Icon, label, value, description }) {
 }
 
 export default function QcSignOffsPage() {
-  const [projectId, setProjectId] = useState("");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [projectId, setProjectId] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedQc, setSelectedQc] = useState(null);
 
   const {
@@ -123,29 +119,18 @@ export default function QcSignOffsPage() {
   const history = useMemo(() => {
     if (Array.isArray(historyResponse)) return historyResponse;
 
-    return (
-      historyResponse?.data ||
-      historyResponse?.history ||
-      historyResponse?.items ||
-      []
-    );
+    return historyResponse?.data || historyResponse?.history || historyResponse?.items || [];
   }, [historyResponse]);
 
   const handoffStatus = useMemo(() => {
     if (Array.isArray(handoffResponse)) return handoffResponse;
 
-    return (
-      handoffResponse?.data ||
-      handoffResponse?.items ||
-      handoffResponse?.handoffs ||
-      []
-    );
+    return handoffResponse?.data || handoffResponse?.items || handoffResponse?.handoffs || [];
   }, [handoffResponse]);
 
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
-      const matchesStatus =
-        statusFilter === "ALL" || item.result === statusFilter;
+      const matchesStatus = statusFilter === 'ALL' || item.result === statusFilter;
 
       const searchValue = search.trim().toLowerCase();
 
@@ -164,7 +149,7 @@ export default function QcSignOffsPage() {
         item.notes,
       ]
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
         .toLowerCase();
 
       return matchesStatus && haystack.includes(searchValue);
@@ -176,9 +161,9 @@ export default function QcSignOffsPage() {
 
     return {
       total,
-      passed: history.filter((x) => x.result === "PASS").length,
-      failed: history.filter((x) => x.result === "FAIL").length,
-      rework: history.filter((x) => x.result === "REWORK").length,
+      passed: history.filter((x) => x.result === 'PASS').length,
+      failed: history.filter((x) => x.result === 'FAIL').length,
+      rework: history.filter((x) => x.result === 'REWORK').length,
     };
   }, [history]);
 
@@ -194,9 +179,7 @@ export default function QcSignOffsPage() {
             QC Sign-Offs
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            QC Sign-Offs
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">QC Sign-Offs</h1>
 
           <p className="mt-1 text-sm text-slate-500">
             Review quality checks, rework cycles, and trade handoffs.
@@ -209,7 +192,7 @@ export default function QcSignOffsPage() {
             disabled={!projectId || isFetching}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+            <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
             Refresh
           </button>
 
@@ -229,12 +212,8 @@ export default function QcSignOffsPage() {
             </div>
 
             <div>
-              <p className="text-sm font-medium text-slate-900">
-                Project QC History
-              </p>
-              <p className="text-xs text-slate-500">
-                Enter a project ID to load its QC records.
-              </p>
+              <p className="text-sm font-medium text-slate-900">Project QC History</p>
+              <p className="text-xs text-slate-500">Enter a project ID to load its QC records.</p>
             </div>
           </div>
 
@@ -257,13 +236,10 @@ export default function QcSignOffsPage() {
               <ClipboardCheck size={27} />
             </div>
 
-            <h2 className="mt-4 text-base font-semibold text-slate-900">
-              Select a project
-            </h2>
+            <h2 className="mt-4 text-base font-semibold text-slate-900">Select a project</h2>
 
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              Enter a project ID above to view QC sign-offs and current trade
-              handoff status.
+              Enter a project ID above to view QC sign-offs and current trade handoff status.
             </p>
           </div>
         </div>
@@ -305,9 +281,7 @@ export default function QcSignOffsPage() {
             <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold text-slate-900">
-                    Trade Handoff Status
-                  </h2>
+                  <h2 className="font-semibold text-slate-900">Trade Handoff Status</h2>
                   <p className="mt-1 text-xs text-slate-500">
                     Latest QC state for each phase and trade.
                   </p>
@@ -319,8 +293,8 @@ export default function QcSignOffsPage() {
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {handoffStatus.map((item, index) => {
                   const passed =
-                    item.result === "PASS" ||
-                    item.status === "PASS" ||
+                    item.result === 'PASS' ||
+                    item.status === 'PASS' ||
                     item.handoffReady === true ||
                     item.isReady === true;
 
@@ -332,15 +306,13 @@ export default function QcSignOffsPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-medium text-slate-900">
-                            {item.step?.name ||
-                              item.stepName ||
-                              `Step ${item.stepId || "—"}`}
+                            {item.step?.name || item.stepName || `Step ${item.stepId || '—'}`}
                           </p>
 
                           <p className="mt-1 text-xs text-slate-500">
                             {item.tradeTeam?.name ||
                               item.tradeTeamName ||
-                              `Trade ${item.tradeTeamId || "—"}`}
+                              `Trade ${item.tradeTeamId || '—'}`}
                           </p>
                         </div>
 
@@ -400,13 +372,11 @@ export default function QcSignOffsPage() {
           {/* Table */}
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
-              <h2 className="font-semibold text-slate-900">
-                QC Sign-Off History
-              </h2>
+              <h2 className="font-semibold text-slate-900">QC Sign-Off History</h2>
 
               <p className="mt-1 text-xs text-slate-500">
                 {filteredHistory.length} record
-                {filteredHistory.length === 1 ? "" : "s"}
+                {filteredHistory.length === 1 ? '' : 's'}
               </p>
             </div>
 
@@ -418,9 +388,7 @@ export default function QcSignOffsPage() {
               <div className="flex h-72 flex-col items-center justify-center px-6 text-center">
                 <ClipboardCheck size={30} className="text-slate-300" />
 
-                <p className="mt-3 text-sm font-medium text-slate-700">
-                  No QC records found
-                </p>
+                <p className="mt-3 text-sm font-medium text-slate-700">No QC records found</p>
 
                 <p className="mt-1 text-xs text-slate-400">
                   Try changing the filters or create a new QC sign-off.
@@ -460,10 +428,7 @@ export default function QcSignOffsPage() {
 
                   <tbody className="divide-y divide-slate-100">
                     {filteredHistory.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="transition hover:bg-slate-50/70"
-                      >
+                      <tr key={item.id} className="transition hover:bg-slate-50/70">
                         <td className="px-5 py-4">
                           <div>
                             <p className="text-sm font-medium text-slate-900">
@@ -473,16 +438,14 @@ export default function QcSignOffsPage() {
                             </p>
 
                             <p className="mt-1 max-w-[240px] truncate text-xs text-slate-400">
-                              {item.notes || "No notes"}
+                              {item.notes || 'No notes'}
                             </p>
                           </div>
                         </td>
 
                         <td className="px-5 py-4">
                           <span className="text-sm text-slate-700">
-                            {item.step?.name ||
-                              item.stepName ||
-                              `Step ${item.stepId || "—"}`}
+                            {item.step?.name || item.stepName || `Step ${item.stepId || '—'}`}
                           </span>
                         </td>
 
@@ -490,7 +453,7 @@ export default function QcSignOffsPage() {
                           <span className="text-sm text-slate-700">
                             {item.tradeTeam?.name ||
                               item.tradeTeamName ||
-                              `Team ${item.tradeTeamId || "—"}`}
+                              `Team ${item.tradeTeamId || '—'}`}
                           </span>
                         </td>
 
@@ -505,13 +468,11 @@ export default function QcSignOffsPage() {
                         </td>
 
                         <td className="px-5 py-4 text-sm text-slate-700">
-                          {item.checkedBy || "—"}
+                          {item.checkedBy || '—'}
                         </td>
 
                         <td className="px-5 py-4">
-                          <p className="text-sm text-slate-700">
-                            {formatDate(item.checkedAt)}
-                          </p>
+                          <p className="text-sm text-slate-700">{formatDate(item.checkedAt)}</p>
                           <p className="mt-1 text-xs text-slate-400">
                             {formatDateTime(item.checkedAt)}
                           </p>
@@ -555,7 +516,7 @@ export default function QcSignOffsPage() {
                 <h2 className="mt-1 text-lg font-semibold text-slate-900">
                   {selectedQc.checklistTemplate?.name ||
                     selectedQc.checklistTemplateName ||
-                    "Quality Check"}
+                    'Quality Check'}
                 </h2>
               </div>
 
@@ -587,7 +548,7 @@ export default function QcSignOffsPage() {
                 <p className="mt-1 text-sm font-medium text-slate-800">
                   {selectedQc.step?.name ||
                     selectedQc.stepName ||
-                    `Step ${selectedQc.stepId || "—"}`}
+                    `Step ${selectedQc.stepId || '—'}`}
                 </p>
               </div>
 
@@ -596,14 +557,14 @@ export default function QcSignOffsPage() {
                 <p className="mt-1 text-sm font-medium text-slate-800">
                   {selectedQc.tradeTeam?.name ||
                     selectedQc.tradeTeamName ||
-                    `Team ${selectedQc.tradeTeamId || "—"}`}
+                    `Team ${selectedQc.tradeTeamId || '—'}`}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs text-slate-400">Checked By</p>
                 <p className="mt-1 text-sm font-medium text-slate-800">
-                  {selectedQc.checkedBy || "—"}
+                  {selectedQc.checkedBy || '—'}
                 </p>
               </div>
 
@@ -617,46 +578,41 @@ export default function QcSignOffsPage() {
               <div className="sm:col-span-2">
                 <p className="text-xs text-slate-400">Notes</p>
                 <div className="mt-2 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                  {selectedQc.notes || "No notes recorded."}
+                  {selectedQc.notes || 'No notes recorded.'}
                 </div>
               </div>
             </div>
 
-            {Array.isArray(selectedQc.itemResults) &&
-              selectedQc.itemResults.length > 0 && (
-                <div className="border-t border-slate-200 p-5">
-                  <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                    Checklist Results
-                  </h3>
+            {Array.isArray(selectedQc.itemResults) && selectedQc.itemResults.length > 0 && (
+              <div className="border-t border-slate-200 p-5">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Checklist Results</h3>
 
-                  <div className="space-y-2">
-                    {selectedQc.itemResults.map((result) => (
-                      <div
-                        key={result.id}
-                        className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 p-3"
-                      >
-                        <div>
-                          <p className="text-sm text-slate-800">
-                            {result.templateItem?.text ||
-                              result.text ||
-                              `Checklist Item #${result.templateItemId}`}
-                          </p>
+                <div className="space-y-2">
+                  {selectedQc.itemResults.map((result) => (
+                    <div
+                      key={result.id}
+                      className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 p-3"
+                    >
+                      <div>
+                        <p className="text-sm text-slate-800">
+                          {result.templateItem?.text ||
+                            result.text ||
+                            `Checklist Item #${result.templateItemId}`}
+                        </p>
 
-                          {result.remark && (
-                            <p className="mt-1 text-xs text-slate-500">
-                              {result.remark}
-                            </p>
-                          )}
-                        </div>
-
-                        <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                          {result.result}
-                        </span>
+                        {result.remark && (
+                          <p className="mt-1 text-xs text-slate-500">{result.remark}</p>
+                        )}
                       </div>
-                    ))}
-                  </div>
+
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                        {result.result}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </div>
       )}

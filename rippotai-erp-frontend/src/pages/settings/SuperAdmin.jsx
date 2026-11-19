@@ -1,18 +1,9 @@
-import React, { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { Activity, RefreshCw, SearchX, ShieldCheck, X } from "lucide-react";
-import {
-  Page,
-  PageHeader,
-  Card,
-  Button,
-  Field,
-  TextInput,
-  Pill,
-  Avatar,
-} from "@/components/inos";
-import { useGetActivityLogsQuery } from "../../api/engagement/activity-logs.api";
-import { fmtDateTime } from "../../lib/settings.utils";
+import React, { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { Activity, RefreshCw, SearchX, ShieldCheck, X } from 'lucide-react';
+import { Page, PageHeader, Card, Button, Field, TextInput, Pill, Avatar } from '@/components/inos';
+import { useGetActivityLogsQuery } from '../../api/engagement/activity-logs.api';
+import { fmtDateTime } from '../../lib/settings.utils';
 import {
   AdminAccessDenied,
   SkeletonRows,
@@ -23,16 +14,16 @@ import {
   fmtValue,
   humanize,
   plural,
-} from "./_admin-ui";
+} from './_admin-ui';
 
 export default function SuperAdmin() {
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  const isSuperAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   const [logFilters, setLogFilters] = useState({
-    user_id: "",
-    action: "",
-    entity_type: "",
-    entity_id: "",
+    user_id: '',
+    action: '',
+    entity_type: '',
+    entity_id: '',
   });
 
   const {
@@ -47,7 +38,7 @@ export default function SuperAdmin() {
   };
 
   const clearLogFilters = () =>
-    setLogFilters({ user_id: "", action: "", entity_type: "", entity_id: "" });
+    setLogFilters({ user_id: '', action: '', entity_type: '', entity_id: '' });
 
   const hasFilters = Object.values(logFilters).some(Boolean);
   const logs = Array.isArray(activityLogs) ? activityLogs : [];
@@ -65,7 +56,7 @@ export default function SuperAdmin() {
   return (
     <Page>
       <PageHeader
-        crumbs={adminCrumbs("Super admin")}
+        crumbs={adminCrumbs('Super admin')}
         title="Activity log"
         subtitle="An audit trail of every change made across the workspace — who did what, and when."
         actions={
@@ -75,7 +66,7 @@ export default function SuperAdmin() {
             onClick={() => refetchLogs()}
             disabled={loadingLogs}
           >
-            {loadingLogs ? "Refreshing…" : "Refresh"}
+            {loadingLogs ? 'Refreshing…' : 'Refresh'}
           </Button>
         }
       />
@@ -118,7 +109,7 @@ export default function SuperAdmin() {
               placeholder="Paste a user ID"
             />
           </Field>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <Button
               variant="ghost"
               icon={X}
@@ -153,17 +144,17 @@ export default function SuperAdmin() {
                   icon={hasFilters ? SearchX : isError ? ShieldCheck : Activity}
                   title={
                     hasFilters
-                      ? "No activity matches these filters"
+                      ? 'No activity matches these filters'
                       : isError
                         ? "Couldn't load the activity log"
-                        : "No activity yet"
+                        : 'No activity yet'
                   }
                   text={
                     hasFilters
-                      ? "Clear a filter or try a broader value."
+                      ? 'Clear a filter or try a broader value.'
                       : isError
                         ? "The activity service didn't respond. Try refreshing."
-                        : "Changes made by your team will appear here."
+                        : 'Changes made by your team will appear here.'
                   }
                   action={
                     hasFilters && (
@@ -177,49 +168,36 @@ export default function SuperAdmin() {
                 logs.map((log) => {
                   const entries = changeEntries(log.changes);
                   return (
-                    <tr key={log.id} style={{ verticalAlign: "top" }}>
+                    <tr key={log.id} style={{ verticalAlign: 'top' }}>
                       <td
                         className="adm-cell-2 tabular"
-                        style={{ whiteSpace: "nowrap", fontSize: 13 }}
+                        style={{ whiteSpace: 'nowrap', fontSize: 13 }}
                       >
                         {fmtDateTime(log.created_at)}
                       </td>
                       <td>
                         <div className="adm-cell-main">
-                          <Avatar name={log.user_email || "?"} size={30} />
+                          <Avatar name={log.user_email || '?'} size={30} />
                           <div style={{ minWidth: 0 }}>
-                            <div
-                              className="adm-cell-title"
-                              style={{ fontWeight: 550 }}
-                            >
-                              {log.user_email || "System"}
+                            <div className="adm-cell-title" style={{ fontWeight: 550 }}>
+                              {log.user_email || 'System'}
                             </div>
                             <div className="adm-cell-sub">
-                              {[
-                                log.user_role && humanize(log.user_role),
-                                log.ip_address,
-                              ]
+                              {[log.user_role && humanize(log.user_role), log.ip_address]
                                 .filter(Boolean)
-                                .join(" · ") || "—"}
+                                .join(' · ') || '—'}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <Pill tone={actionTone(log.action)}>
-                          {humanize(log.action)}
-                        </Pill>
+                        <Pill tone={actionTone(log.action)}>{humanize(log.action)}</Pill>
                       </td>
                       <td>
-                        <div
-                          className="adm-cell-title"
-                          style={{ fontWeight: 550 }}
-                        >
-                          {log.entity_label || log.entity_id || "—"}
+                        <div className="adm-cell-title" style={{ fontWeight: 550 }}>
+                          {log.entity_label || log.entity_id || '—'}
                         </div>
-                        <div className="adm-cell-sub">
-                          {humanize(log.entity_type) || "—"}
-                        </div>
+                        <div className="adm-cell-sub">{humanize(log.entity_type) || '—'}</div>
                       </td>
                       <td className="adm-hide-sm" style={{ maxWidth: 380 }}>
                         {entries.length === 0 ? (
@@ -227,8 +205,8 @@ export default function SuperAdmin() {
                         ) : (
                           <div
                             style={{
-                              display: "flex",
-                              flexWrap: "wrap",
+                              display: 'flex',
+                              flexWrap: 'wrap',
                               gap: 6,
                             }}
                           >
@@ -239,18 +217,16 @@ export default function SuperAdmin() {
                                 title={`${k}: ${fmtValue(v)}`}
                                 style={{
                                   maxWidth: 260,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
                                 }}
                               >
-                                {k ? `${humanize(k)}: ` : ""}
+                                {k ? `${humanize(k)}: ` : ''}
                                 {fmtValue(v)}
                               </span>
                             ))}
                             {entries.length > 4 && (
-                              <span className="adm-cell-sub">
-                                +{entries.length - 4} more
-                              </span>
+                              <span className="adm-cell-sub">+{entries.length - 4} more</span>
                             )}
                           </div>
                         )}
@@ -262,9 +238,7 @@ export default function SuperAdmin() {
             </tbody>
           </table>
         </div>
-        {logs.length > 0 && (
-          <div className="adm-table-foot">{plural(logs.length, "event")}</div>
-        )}
+        {logs.length > 0 && <div className="adm-table-foot">{plural(logs.length, 'event')}</div>}
       </Card>
     </Page>
   );

@@ -1,56 +1,58 @@
-import React, { useEffect, useRef, useState } from "react";
-import QuotationComparisonDocument, { comparisonFileName } from "../../components/commerce-documents/QuotationComparisonDocument";
-import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { Page, EmptyState, Button } from "@/components/inos";
-import { fmtINR, StatusChip } from "@/lib/format";
-import { ArrowLeft, Download, Save, Star, CheckCircle2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from 'react';
+import QuotationComparisonDocument, {
+  comparisonFileName,
+} from '../../components/commerce-documents/QuotationComparisonDocument';
+import { downloadWhenReady, OFFSCREEN_STYLE } from '@/components/print-document/commerce';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Page, EmptyState, Button } from '@/components/inos';
+import { fmtINR, StatusChip } from '@/lib/format';
+import { ArrowLeft, Download, Save, Star, CheckCircle2 } from 'lucide-react';
 import {
   useCompareQuotationsQuery,
   useMarkQuotationSelectedMutation,
   useSaveQuotationComparisonMutation,
-} from "../../api/procuerment/quotation.api"; // Adjust path as per your setup
+} from '../../api/procuerment/quotation.api'; // Adjust path as per your setup
 
 const ATTRIBUTES = [
-  { k: "quotation_number", l: "Estimate #" },
-  { k: "version", l: "Version" },
-  { k: "status", l: "Status", isChip: true },
-  { k: "quotation_date", l: "Date" },
-  { k: "valid_until", l: "Valid Until" },
-  { k: "currency", l: "Currency" },
+  { k: 'quotation_number', l: 'Estimate #' },
+  { k: 'version', l: 'Version' },
+  { k: 'status', l: 'Status', isChip: true },
+  { k: 'quotation_date', l: 'Date' },
+  { k: 'valid_until', l: 'Valid Until' },
+  { k: 'currency', l: 'Currency' },
 ];
 
 const SUB = [
-  { k: "base", l: "Base Total", money: true },
-  { k: "tax", l: "Tax", money: true },
-  { k: "transport", l: "Transportation", money: true },
-  { k: "installation", l: "Installation", money: true },
+  { k: 'base', l: 'Base Total', money: true },
+  { k: 'tax', l: 'Tax', money: true },
+  { k: 'transport', l: 'Transportation', money: true },
+  { k: 'installation', l: 'Installation', money: true },
 ];
 
 const TERMS = [
-  { k: "advance_pct", l: "Advance %" },
-  { k: "credit_period_days", l: "Credit Period (days)" },
-  { k: "warranty_months", l: "Warranty (months)" },
-  { k: "delivery_timeline_days", l: "Delivery Timeline (days)" },
-  { k: "completion_timeline_days", l: "Completion Timeline (days)" },
+  { k: 'advance_pct', l: 'Advance %' },
+  { k: 'credit_period_days', l: 'Credit Period (days)' },
+  { k: 'warranty_months', l: 'Warranty (months)' },
+  { k: 'delivery_timeline_days', l: 'Delivery Timeline (days)' },
+  { k: 'completion_timeline_days', l: 'Completion Timeline (days)' },
 ];
 
 const METRICS = [
-  { k: "rating", l: "Rating" },
-  { k: "completed_projects", l: "Completed Projects" },
-  { k: "on_time_pct", l: "On-Time %" },
-  { k: "similar_projects_completed", l: "Similar Projects" },
-  { k: "availability_status", l: "Availability" },
-  { k: "current_assignments", l: "Current Load" },
+  { k: 'rating', l: 'Rating' },
+  { k: 'completed_projects', l: 'Completed Projects' },
+  { k: 'on_time_pct', l: 'On-Time %' },
+  { k: 'similar_projects_completed', l: 'Similar Projects' },
+  { k: 'availability_status', l: 'Availability' },
+  { k: 'current_assignments', l: 'Current Load' },
 ];
 
 export default function QuotationCompare() {
   const nav = useNavigate();
   const [params] = useSearchParams();
-  const ids = (params.get("ids") || "").split(",").filter(Boolean);
+  const ids = (params.get('ids') || '').split(',').filter(Boolean);
 
-  const [saveName, setSaveName] = useState("");
+  const [saveName, setSaveName] = useState('');
   const [saveModal, setSaveModal] = useState(false);
   const [selectingId, setSelectingId] = useState(null);
   const [exporting, setExporting] = useState(false);
@@ -65,7 +67,7 @@ export default function QuotationCompare() {
 
   useEffect(() => {
     if (error) {
-      toast.error("Failed to load comparison");
+      toast.error('Failed to load comparison');
     }
   }, [error]);
 
@@ -78,7 +80,7 @@ export default function QuotationCompare() {
           title="Pick estimates to compare"
           text="Select two or more estimates in the Estimates list and choose Compare."
           action={
-            <Button variant="primary" onClick={() => nav("/procurement/estimates/all")}>
+            <Button variant="primary" onClick={() => nav('/procurement/estimates/all')}>
               Open estimates
             </Button>
           }
@@ -91,14 +93,13 @@ export default function QuotationCompare() {
       <Page>
         <EmptyState
           title="Couldn't load this comparison"
-          text={error?.data?.message || "One of the selected estimates may no longer exist."}
+          text={error?.data?.message || 'One of the selected estimates may no longer exist.'}
           action={<Button onClick={() => refetch()}>Try again</Button>}
         />
       </Page>
     );
 
-  if (isLoading || !data)
-    return <div className="p-8 text-[#6B7B7C]">Loading comparison…</div>;
+  if (isLoading || !data) return <div className="p-8 text-[#6B7B7C]">Loading comparison…</div>;
 
   const quotes = data.quotations || [];
   const lowestId = data.lowest_id;
@@ -115,11 +116,11 @@ export default function QuotationCompare() {
         quotation_ids: quotes.map((q) => q.id),
       }).unwrap();
 
-      toast.success("Comparison saved");
+      toast.success('Comparison saved');
       setSaveModal(false);
-      setSaveName("");
+      setSaveName('');
     } catch (e) {
-      toast.error(e?.data?.detail || "Failed to save comparison");
+      toast.error(e?.data?.detail || 'Failed to save comparison');
     }
   };
 
@@ -127,15 +128,15 @@ export default function QuotationCompare() {
   const exportPdf = async () => {
     const tid = `cmp-pdf-${Date.now()}`;
     setExporting(true);
-    toast.loading("Preparing the comparison…", { id: tid });
+    toast.loading('Preparing the comparison…', { id: tid });
     try {
       await downloadWhenReady(() => pdfRef.current, comparisonFileName(data), {
-        title: `Quotation comparison — ${quotes[0]?.project_name || ""}`,
+        title: `Quotation comparison — ${quotes[0]?.project_name || ''}`,
       });
-      toast.success("Comparison downloaded", { id: tid });
+      toast.success('Comparison downloaded', { id: tid });
     } catch (e) {
-      console.error("Comparison PDF failed", e);
-      toast.error("Failed to export PDF", { id: tid });
+      console.error('Comparison PDF failed', e);
+      toast.error('Failed to export PDF', { id: tid });
     } finally {
       setExporting(false);
     }
@@ -146,12 +147,12 @@ export default function QuotationCompare() {
     try {
       await markSelected({
         id: qid,
-        remarks: "Selected via comparison",
+        remarks: 'Selected via comparison',
       }).unwrap();
-      toast.success("Estimate marked as selected");
+      toast.success('Estimate marked as selected');
       refetch(); // Refresh comparison data
     } catch (e) {
-      toast.error(e?.data?.detail || "Failed");
+      toast.error(e?.data?.detail || 'Failed');
     }
     setSelectingId(null);
   };
@@ -159,7 +160,7 @@ export default function QuotationCompare() {
   return (
     <div className="max-w-[1728px] mx-auto p-6">
       <button
-        onClick={() => nav("/quotations")}
+        onClick={() => nav('/quotations')}
         className="text-[13px] text-[#6B7B7C] inline-flex items-center gap-1 mb-3"
       >
         <ArrowLeft size={14} /> Estimates
@@ -169,8 +170,8 @@ export default function QuotationCompare() {
         <div>
           <h1 className="text-[36px] font-bold text-[#333333]">Comparison</h1>
           <p className="text-[13px] text-[#6B7B7C]">
-            Comparing {quotes.length} quotations for {quotes[0]?.work_category}{" "}
-            · {quotes[0]?.project_name}
+            Comparing {quotes.length} quotations for {quotes[0]?.work_category} ·{' '}
+            {quotes[0]?.project_name}
           </p>
         </div>
         <div className="flex gap-2">
@@ -180,7 +181,7 @@ export default function QuotationCompare() {
             className="px-3 py-2 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold inline-flex items-center gap-1"
             data-testid="btn-export-comparison-pdf"
           >
-            <Download size={13} /> {exporting ? "Preparing…" : "Export PDF"}
+            <Download size={13} /> {exporting ? 'Preparing…' : 'Export PDF'}
           </button>
           <button
             onClick={() => setSaveModal(true)}
@@ -197,18 +198,14 @@ export default function QuotationCompare() {
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="border-b border-[#B5C4B6] bg-[#EAEEF0]">
-                <th className="text-left p-3 sticky left-0 bg-[#EAEEF0] w-[220px]">
-                  Attribute
-                </th>
+                <th className="text-left p-3 sticky left-0 bg-[#EAEEF0] w-[220px]">Attribute</th>
                 {quotes.map((q) => (
                   <th
                     key={q.id}
-                    className={`text-left p-3 min-w-[220px] ${q.id === lowestId ? "bg-[#EAEEF0]" : ""}`}
+                    className={`text-left p-3 min-w-[220px] ${q.id === lowestId ? 'bg-[#EAEEF0]' : ''}`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-[14px] font-bold text-[#333333]">
-                        {q.vendor_name}
-                      </span>
+                      <span className="text-[14px] font-bold text-[#333333]">{q.vendor_name}</span>
                       {q.id === lowestId && (
                         <span
                           className="text-[10px] font-bold text-white bg-[#1F453B] px-1.5 py-0.5 rounded"
@@ -219,10 +216,7 @@ export default function QuotationCompare() {
                       )}
                     </div>
                     <div className="flex items-center gap-1 mt-1">
-                      <Star
-                        size={11}
-                        className="text-[#333333] fill-[#1F453B]"
-                      />
+                      <Star size={11} className="text-[#333333] fill-[#1F453B]" />
                       <span className="text-[11px] font-semibold">
                         {(q.vendor?.rating || 0).toFixed(1)}
                       </span>
@@ -239,14 +233,9 @@ export default function QuotationCompare() {
             <tbody>
               {ATTRIBUTES.map((a) => (
                 <tr key={a.k} className="border-b border-[#EAEEF0]">
-                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">
-                    {a.l}
-                  </td>
+                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">{a.l}</td>
                   {quotes.map((q) => (
-                    <td
-                      key={q.id}
-                      className={`p-3 ${q.id === lowestId ? "bg-[#EAEEF0]" : ""}`}
-                    >
+                    <td key={q.id} className={`p-3 ${q.id === lowestId ? 'bg-[#EAEEF0]' : ''}`}>
                       {a.isChip ? <StatusChip status={q[a.k]} /> : q[a.k]}
                     </td>
                   ))}
@@ -255,17 +244,10 @@ export default function QuotationCompare() {
 
               {SUB.map((s) => (
                 <tr key={s.k} className="border-b border-[#EAEEF0]">
-                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">
-                    {s.l}
-                  </td>
+                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">{s.l}</td>
                   {quotes.map((q) => (
-                    <td
-                      key={q.id}
-                      className={`p-3 ${q.id === lowestId ? "bg-[#EAEEF0]" : ""}`}
-                    >
-                      {s.money
-                        ? fmtINR(q.subtotals?.[s.k] || 0)
-                        : q.subtotals?.[s.k] || "—"}
+                    <td key={q.id} className={`p-3 ${q.id === lowestId ? 'bg-[#EAEEF0]' : ''}`}>
+                      {s.money ? fmtINR(q.subtotals?.[s.k] || 0) : q.subtotals?.[s.k] || '—'}
                     </td>
                   ))}
                 </tr>
@@ -273,15 +255,10 @@ export default function QuotationCompare() {
 
               {TERMS.map((t) => (
                 <tr key={t.k} className="border-b border-[#EAEEF0]">
-                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">
-                    {t.l}
-                  </td>
+                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">{t.l}</td>
                   {quotes.map((q) => (
-                    <td
-                      key={q.id}
-                      className={`p-3 ${q.id === lowestId ? "bg-[#EAEEF0]" : ""}`}
-                    >
-                      {q.commercial_terms?.[t.k] ?? "—"}
+                    <td key={q.id} className={`p-3 ${q.id === lowestId ? 'bg-[#EAEEF0]' : ''}`}>
+                      {q.commercial_terms?.[t.k] ?? '—'}
                     </td>
                   ))}
                 </tr>
@@ -294,15 +271,13 @@ export default function QuotationCompare() {
                 {quotes.map((q) => (
                   <td
                     key={q.id}
-                    className={`p-3 font-bold ${q.id === lowestId ? "text-[#333333]" : "text-[#333333]"}`}
+                    className={`p-3 font-bold ${q.id === lowestId ? 'text-[#333333]' : 'text-[#333333]'}`}
                   >
                     <div className="text-[18px]" data-testid={`total-${q.id}`}>
                       {fmtINR(q.subtotals?.total || 0)}
                     </div>
                     {q.id === lowestId && (
-                      <div className="text-[11px] text-[#333333] font-semibold">
-                        Lowest total
-                      </div>
+                      <div className="text-[11px] text-[#333333] font-semibold">Lowest total</div>
                     )}
                   </td>
                 ))}
@@ -315,11 +290,11 @@ export default function QuotationCompare() {
                 {quotes.map((q) => (
                   <td key={q.id} className="p-3">
                     <span
-                      className={`font-semibold ${q.boq_variation_pct == null ? "text-[#B5C4B6]" : q.boq_variation_pct > 10 ? "text-[#333333]" : q.boq_variation_pct > 0 ? "text-[#333333]" : "text-[#333333]"}`}
+                      className={`font-semibold ${q.boq_variation_pct == null ? 'text-[#B5C4B6]' : q.boq_variation_pct > 10 ? 'text-[#333333]' : q.boq_variation_pct > 0 ? 'text-[#333333]' : 'text-[#333333]'}`}
                     >
                       {q.boq_variation_pct == null
-                        ? "—"
-                        : `${q.boq_variation_pct > 0 ? "+" : ""}${q.boq_variation_pct}%`}
+                        ? '—'
+                        : `${q.boq_variation_pct > 0 ? '+' : ''}${q.boq_variation_pct}%`}
                     </span>
                   </td>
                 ))}
@@ -336,21 +311,17 @@ export default function QuotationCompare() {
 
               {METRICS.map((m) => (
                 <tr key={m.k} className="border-b border-[#EAEEF0]">
-                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">
-                    {m.l}
-                  </td>
+                  <td className="p-3 sticky left-0 bg-white text-[#B5C4B6] font-semibold">{m.l}</td>
                   {quotes.map((q) => (
                     <td key={q.id} className="p-3">
-                      {q.vendor_metrics?.[m.k] ?? "—"}
+                      {q.vendor_metrics?.[m.k] ?? '—'}
                     </td>
                   ))}
                 </tr>
               ))}
 
               <tr>
-                <td className="p-3 sticky left-0 bg-white font-bold text-[#333333]">
-                  Action
-                </td>
+                <td className="p-3 sticky left-0 bg-white font-bold text-[#333333]">Action</td>
                 {quotes.map((q) => (
                   <td key={q.id} className="p-3">
                     {q.selected ? (
@@ -360,13 +331,11 @@ export default function QuotationCompare() {
                     ) : (
                       <button
                         onClick={() => doSelect(q.id)}
-                        disabled={
-                          selectingId === q.id || q.status === "rejected"
-                        }
+                        disabled={selectingId === q.id || q.status === 'rejected'}
                         className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12px] font-semibold disabled:opacity-50"
                         data-testid={`select-${q.id}`}
                       >
-                        {selectingId === q.id ? "Selecting..." : "Select This"}
+                        {selectingId === q.id ? 'Selecting...' : 'Select This'}
                       </button>
                     )}
                   </td>
@@ -380,9 +349,7 @@ export default function QuotationCompare() {
       {/* Line item comparison */}
       {data.line_items?.length > 0 && (
         <div className="mt-6 bg-white border border-[#B5C4B6] rounded-xl p-5">
-          <div className="text-[15px] font-bold text-[#333333] mb-3">
-            Line Item Comparison
-          </div>
+          <div className="text-[15px] font-bold text-[#333333] mb-3">Line Item Comparison</div>
           <div className="overflow-x-auto">
             <table className="w-full text-[12.5px]">
               <thead>
@@ -399,19 +366,18 @@ export default function QuotationCompare() {
               </thead>
               <tbody>
                 {data.line_items.map((li, idx) => {
-                  const rates = Object.entries(li.quotes || {}).map(
-                    ([qid, q]) => ({ qid, rate: q?.rate || 0 }),
-                  );
-                  const min = Math.min(
-                    ...rates.map((r) => r.rate).filter(Boolean),
-                  );
+                  const rates = Object.entries(li.quotes || {}).map(([qid, q]) => ({
+                    qid,
+                    rate: q?.rate || 0,
+                  }));
+                  const min = Math.min(...rates.map((r) => r.rate).filter(Boolean));
 
                   return (
                     <tr key={idx} className="border-b border-[#EAEEF0]">
                       <td className="py-2 pr-2">{li.description}</td>
                       <td className="py-2 pr-2">{li.unit}</td>
                       <td className="py-2 pr-2 text-right">
-                        {li.boq_rate ? fmtINR(li.boq_rate) : "—"}
+                        {li.boq_rate ? fmtINR(li.boq_rate) : '—'}
                       </td>
                       {quotes.map((q) => {
                         const cell = li.quotes?.[q.id];
@@ -419,9 +385,9 @@ export default function QuotationCompare() {
                         return (
                           <td
                             key={q.id}
-                            className={`py-2 pr-2 text-right ${isMin ? "bg-[#EAEEF0] font-semibold text-[#333333]" : ""}`}
+                            className={`py-2 pr-2 text-right ${isMin ? 'bg-[#EAEEF0] font-semibold text-[#333333]' : ''}`}
                           >
-                            {cell ? fmtINR(cell.rate) : "—"}
+                            {cell ? fmtINR(cell.rate) : '—'}
                           </td>
                         );
                       })}

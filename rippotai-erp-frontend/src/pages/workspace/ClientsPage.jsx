@@ -1,7 +1,7 @@
 // Client directory: /clients
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Users, Phone, Mail, Building2, LayoutGrid, List } from "lucide-react";
+import { Plus, Eye, Users, Phone, Mail, Building2, LayoutGrid, List } from "lucide-react";
 import { Page, PageHeader, Card, Button, Toolbar, ToolbarSpacer, SearchInput, Segmented, Pill, EmptyState, Avatar, Stats, StatTile } from "@/components/inos";
 import { useGetWsClientsSummaryQuery } from "@/api/workspace/workspace.api";
 import { useClientsList, inr, relTime, Loading, Meta } from "./shared";
@@ -80,6 +80,9 @@ export default function ClientsPage() {
                 <div><div className="tabular" style={{ fontWeight: 700 }}>{inr(c.approved_value || 0)}</div><Meta>Approved</Meta></div>
                 <div style={{ marginLeft: "auto", alignSelf: "end" }}><Meta>{c.last_activity ? `Active ${relTime(c.last_activity)}` : `Added ${relTime(c.created_at)}`}</Meta></div>
               </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+                <Button size="sm" icon={Eye} aria-label={`View client ${c.name}`} onClick={(event) => { event.stopPropagation(); navigate(`/clients/${c.id}`); }}>View client</Button>
+              </div>
             </Card>
           ))}
         </div>
@@ -87,7 +90,7 @@ export default function ClientsPage() {
         <Card flush>
           <div className="inos-table-wrap">
             <table className="inos-table">
-              <thead><tr><th>Client</th><th>Phone</th><th>Email</th><th className="num">Projects</th><th className="num">Approved value</th><th>Status</th></tr></thead>
+              <thead><tr><th>Client</th><th>Phone</th><th>Email</th><th className="num">Projects</th><th className="num">Approved value</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody>
                 {rows.map((c) => (
                   <tr key={c.id} className="is-clickable" onClick={() => navigate(`/clients/${c.id}`)} data-testid="client-row">
@@ -97,6 +100,7 @@ export default function ClientsPage() {
                     <td className="num tabular">{Number(c.project_count || 0)}</td>
                     <td className="num tabular">{inr(c.approved_value || 0)}</td>
                     <td>{Number(c.active_projects) > 0 ? <Pill tone="ok" size="sm">Active</Pill> : <Pill size="sm">{Number(c.project_count) ? "Past" : "New"}</Pill>}</td>
+                    <td><Button size="sm" icon={Eye} aria-label={`View client ${c.name}`} onClick={(event) => { event.stopPropagation(); navigate(`/clients/${c.id}`); }}>View client</Button></td>
                   </tr>
                 ))}
               </tbody>

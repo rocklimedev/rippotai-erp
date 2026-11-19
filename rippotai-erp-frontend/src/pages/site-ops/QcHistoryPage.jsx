@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   CheckCircle2,
   XCircle,
@@ -13,15 +13,18 @@ import {
   Layers3,
   Users,
   AlertCircle,
-} from "lucide-react";
+} from 'lucide-react';
 
-import { useDownloadExecutionChecklistMutation, useGetQcHistoryQuery } from "@/api/procuerment/site-ops.api";
-import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from "./siteProjects";
+import {
+  useDownloadExecutionChecklistMutation,
+  useGetQcHistoryQuery,
+} from '@/api/procuerment/site-ops.api';
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from './siteProjects';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import {
   Select,
@@ -29,9 +32,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
 
 import {
   Table,
@@ -40,7 +43,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 import {
   Sheet,
@@ -48,66 +51,63 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
+} from '@/components/ui/sheet';
 
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const STATUS_CONFIG = {
   PASS: {
-    label: "Passed",
+    label: 'Passed',
     icon: CheckCircle2,
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   },
   FAIL: {
-    label: "Failed",
+    label: 'Failed',
     icon: XCircle,
-    className: "border-red-200 bg-red-50 text-red-700",
+    className: 'border-red-200 bg-red-50 text-red-700',
   },
   REWORK: {
-    label: "Rework",
+    label: 'Rework',
     icon: RotateCcw,
-    className: "border-amber-200 bg-amber-50 text-amber-700",
+    className: 'border-amber-200 bg-amber-50 text-amber-700',
   },
 };
 
 const formatDate = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
 
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
 };
 
 const formatDateTime = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
 
-  return new Date(value).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Date(value).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
 function StatusBadge({ status }) {
   const config = STATUS_CONFIG[status] || {
-    label: status || "Unknown",
+    label: status || 'Unknown',
     icon: AlertCircle,
-    className: "border-slate-200 bg-slate-50 text-slate-700",
+    className: 'border-slate-200 bg-slate-50 text-slate-700',
   };
 
   const Icon = config.icon;
 
   return (
-    <Badge
-      variant="outline"
-      className={`gap-1.5 font-medium ${config.className}`}
-    >
+    <Badge variant="outline" className={`gap-1.5 font-medium ${config.className}`}>
       <Icon className="h-3.5 w-3.5" />
       {config.label}
     </Badge>
@@ -122,13 +122,9 @@ function SummaryCard({ title, value, description, icon: Icon }) {
           <div>
             <p className="text-sm font-medium text-slate-500">{title}</p>
 
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-              {value}
-            </p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{value}</p>
 
-            {description && (
-              <p className="mt-1 text-xs text-slate-500">{description}</p>
-            )}
+            {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
           </div>
 
           <div className="rounded-lg bg-slate-100 p-2.5">
@@ -145,13 +141,12 @@ export default function QcHistoryPage() {
   const [downloadExecutionChecklist, { isLoading: exportingChecklist }] =
     useDownloadExecutionChecklistMutation();
   const { projects, nameOf } = useSiteProjects();
-  const projectName = projectId ? nameOf(projectId) : "all projects";
-  const [search, setSearch] = useState("");
-  const [resultFilter, setResultFilter] = useState("ALL");
+  const projectName = projectId ? nameOf(projectId) : 'all projects';
+  const [search, setSearch] = useState('');
+  const [resultFilter, setResultFilter] = useState('ALL');
   const [selectedQc, setSelectedQc] = useState(null);
 
-  const { data, isLoading, isFetching, isError, refetch } =
-    useGetQcHistoryQuery({ projectId });
+  const { data, isLoading, isFetching, isError, refetch } = useGetQcHistoryQuery({ projectId });
 
   /*
    * Depending on your service response this may already be an array
@@ -169,8 +164,7 @@ export default function QcHistoryPage() {
     const term = search.trim().toLowerCase();
 
     return history.filter((item) => {
-      const matchesStatus =
-        resultFilter === "ALL" || item.result === resultFilter;
+      const matchesStatus = resultFilter === 'ALL' || item.result === resultFilter;
 
       if (!matchesStatus) return false;
 
@@ -193,11 +187,11 @@ export default function QcHistoryPage() {
   const summary = useMemo(() => {
     const total = history.length;
 
-    const passed = history.filter((item) => item.result === "PASS").length;
+    const passed = history.filter((item) => item.result === 'PASS').length;
 
-    const failed = history.filter((item) => item.result === "FAIL").length;
+    const failed = history.filter((item) => item.result === 'FAIL').length;
 
-    const rework = history.filter((item) => item.result === "REWORK").length;
+    const rework = history.filter((item) => item.result === 'REWORK').length;
 
     return {
       total,
@@ -230,26 +224,17 @@ export default function QcHistoryPage() {
               </div>
 
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                  QC History
-                </h1>
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">QC History</h1>
 
                 <p className="text-sm text-slate-500">
-                  Review quality checks, handoffs and rework history for{" "}
-                  {projectName}.
+                  Review quality checks, handoffs and rework history for {projectName}.
                 </p>
               </div>
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RotateCcw
-              className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            <RotateCcw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -324,7 +309,7 @@ export default function QcHistoryPage() {
                   disabled={exportingChecklist}
                   onClick={() => downloadExecutionChecklist(projectId)}
                 >
-                  {exportingChecklist ? "Preparing Excel…" : "Execution checklist (Excel)"}
+                  {exportingChecklist ? 'Preparing Excel…' : 'Execution checklist (Excel)'}
                 </Button>
               )}
 
@@ -374,7 +359,7 @@ export default function QcHistoryPage() {
 
                 <p className="mt-1 text-sm text-slate-500">
                   {filteredHistory.length} record
-                  {filteredHistory.length === 1 ? "" : "s"}
+                  {filteredHistory.length === 1 ? '' : 's'}
                 </p>
               </div>
             </div>
@@ -433,9 +418,7 @@ export default function QcHistoryPage() {
                             </p>
 
                             {item.notes && (
-                              <p className="mt-1 truncate text-xs text-slate-500">
-                                {item.notes}
-                              </p>
+                              <p className="mt-1 truncate text-xs text-slate-500">{item.notes}</p>
                             )}
                           </div>
                         </TableCell>
@@ -455,16 +438,13 @@ export default function QcHistoryPage() {
                             <Users className="h-4 w-4 text-slate-400" />
 
                             <span className="text-sm text-slate-700">
-                              {item.tradeTeam?.name ||
-                                `Team #${item.tradeTeamId}`}
+                              {item.tradeTeam?.name || `Team #${item.tradeTeamId}`}
                             </span>
                           </div>
                         </TableCell>
 
                         <TableCell>
-                          <Badge variant="secondary">
-                            #{item.attemptNumber || 1}
-                          </Badge>
+                          <Badge variant="secondary">#{item.attemptNumber || 1}</Badge>
                         </TableCell>
 
                         <TableCell>
@@ -538,16 +518,13 @@ export default function QcHistoryPage() {
                 {/* BASIC INFORMATION */}
 
                 <section>
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    Check Details
-                  </h3>
+                  <h3 className="text-sm font-semibold text-slate-900">Check Details</h3>
 
                   <div className="mt-3 rounded-lg border bg-white">
                     <DetailRow
                       label="Checklist"
                       value={
-                        selectedQc.checklistTemplate?.name ||
-                        `#${selectedQc.checklistTemplateId}`
+                        selectedQc.checklistTemplate?.name || `#${selectedQc.checklistTemplateId}`
                       }
                     />
 
@@ -558,26 +535,14 @@ export default function QcHistoryPage() {
 
                     <DetailRow
                       label="Trade"
-                      value={
-                        selectedQc.tradeTeam?.name ||
-                        `#${selectedQc.tradeTeamId}`
-                      }
+                      value={selectedQc.tradeTeam?.name || `#${selectedQc.tradeTeamId}`}
                     />
 
-                    <DetailRow
-                      label="Attempt"
-                      value={`Attempt ${selectedQc.attemptNumber || 1}`}
-                    />
+                    <DetailRow label="Attempt" value={`Attempt ${selectedQc.attemptNumber || 1}`} />
 
-                    <DetailRow
-                      label="Checked By"
-                      value={selectedQc.checkedBy}
-                    />
+                    <DetailRow label="Checked By" value={selectedQc.checkedBy} />
 
-                    <DetailRow
-                      label="Checked At"
-                      value={formatDateTime(selectedQc.checkedAt)}
-                    />
+                    <DetailRow label="Checked At" value={formatDateTime(selectedQc.checkedAt)} />
                   </div>
                 </section>
 
@@ -586,13 +551,10 @@ export default function QcHistoryPage() {
                 {/* NOTES */}
 
                 <section>
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    Notes
-                  </h3>
+                  <h3 className="text-sm font-semibold text-slate-900">Notes</h3>
 
                   <div className="mt-3 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                    {selectedQc.notes ||
-                      "No notes were added to this QC sign-off."}
+                    {selectedQc.notes || 'No notes were added to this QC sign-off.'}
                   </div>
                 </section>
 
@@ -602,14 +564,10 @@ export default function QcHistoryPage() {
 
                 <section>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      Checklist Results
-                    </h3>
+                    <h3 className="text-sm font-semibold text-slate-900">Checklist Results</h3>
 
                     {selectedQc.itemResults && (
-                      <Badge variant="secondary">
-                        {selectedQc.itemResults.length} items
-                      </Badge>
+                      <Badge variant="secondary">{selectedQc.itemResults.length} items</Badge>
                     )}
                   </div>
 
@@ -618,8 +576,7 @@ export default function QcHistoryPage() {
                       <div key={item.id} className="rounded-lg border p-3">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-sm font-medium text-slate-800">
-                            {item.templateItem?.text ||
-                              `Checklist item #${item.templateItemId}`}
+                            {item.templateItem?.text || `Checklist item #${item.templateItemId}`}
                           </p>
 
                           <Badge variant="outline" className="shrink-0">
@@ -628,15 +585,12 @@ export default function QcHistoryPage() {
                         </div>
 
                         {item.remark && (
-                          <p className="mt-2 text-xs text-slate-500">
-                            {item.remark}
-                          </p>
+                          <p className="mt-2 text-xs text-slate-500">{item.remark}</p>
                         )}
                       </div>
                     ))}
 
-                    {(!selectedQc.itemResults ||
-                      selectedQc.itemResults.length === 0) && (
+                    {(!selectedQc.itemResults || selectedQc.itemResults.length === 0) && (
                       <div className="rounded-lg border border-dashed p-6 text-center text-sm text-slate-500">
                         No individual checklist results available.
                       </div>
@@ -661,9 +615,7 @@ function DetailRow({ label, value }) {
     <div className="flex items-center justify-between gap-4 border-b px-4 py-3 last:border-b-0">
       <span className="text-sm text-slate-500">{label}</span>
 
-      <span className="text-right text-sm font-medium text-slate-900">
-        {value || "—"}
-      </span>
+      <span className="text-right text-sm font-medium text-slate-900">{value || '—'}</span>
     </div>
   );
 }
@@ -701,9 +653,7 @@ function EmptyState() {
         <ClipboardCheck className="h-7 w-7 text-slate-500" />
       </div>
 
-      <h3 className="mt-4 text-sm font-semibold text-slate-900">
-        No QC history found
-      </h3>
+      <h3 className="mt-4 text-sm font-semibold text-slate-900">No QC history found</h3>
 
       <p className="mt-1 max-w-sm text-sm text-slate-500">
         No quality-control sign-offs match the current filters.

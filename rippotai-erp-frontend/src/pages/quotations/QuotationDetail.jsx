@@ -1,14 +1,16 @@
-import React, { useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
-import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
+import React, { useRef, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { fmtINR, relativeTime, StatusChip } from '@/lib/format';
 // Excel export (blob download) isn't covered by the RTK Query slice below,
 // so that call still goes through the plain axios client.
-import api, { API } from "@/lib/api";
-import QuotationDocument, { quotationFileName } from "../../components/commerce-documents/QuotationDocument";
-import { DocumentPreview, downloadDocumentPdf } from "@/components/print-document";
-import { OFFSCREEN_STYLE } from "@/components/print-document/commerce";
+import api, { API } from '@/lib/api';
+import QuotationDocument, {
+  quotationFileName,
+} from '../../components/commerce-documents/QuotationDocument';
+import { DocumentPreview, downloadDocumentPdf } from '@/components/print-document';
+import { OFFSCREEN_STYLE } from '@/components/print-document/commerce';
 import {
   useGetQuotationByIdQuery,
   useSubmitQuotationMutation,
@@ -25,7 +27,7 @@ import {
   useCreateQuotationVersionMutation,
   useRestoreQuotationVersionMutation,
   useDeleteQuotationVersionMutation,
-} from "../../api/procuerment/quotation.api"; // adjust path if needed
+} from '../../api/procuerment/quotation.api'; // adjust path if needed
 import {
   ArrowLeft,
   Download,
@@ -40,33 +42,23 @@ import {
   ChevronRight,
   RotateCcw,
   Archive,
-} from "lucide-react";
+} from 'lucide-react';
 
-const TABS = ["Items", "Commercial Terms", "Document", "Approval History", "Versions"];
-
+const TABS = ['Items', 'Commercial Terms', 'Document', 'Approval History', 'Versions'];
 
 export default function QuotationDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === 'admin';
 
-  const {
-    data: q,
-    isLoading,
-    isError,
-  } = useGetQuotationByIdQuery(id, { skip: !id });
+  const { data: q, isLoading, isError } = useGetQuotationByIdQuery(id, { skip: !id });
 
-  const [submitQuotation, { isLoading: submitting }] =
-    useSubmitQuotationMutation();
-  const [approveQuotation, { isLoading: approving }] =
-    useApproveQuotationMutation();
-  const [returnQuotation, { isLoading: returning }] =
-    useReturnQuotationMutation();
-  const [declineQuotation, { isLoading: declining }] =
-    useDeclineQuotationMutation();
-  const [cancelQuotation, { isLoading: cancelling }] =
-    useCancelQuotationMutation();
+  const [submitQuotation, { isLoading: submitting }] = useSubmitQuotationMutation();
+  const [approveQuotation, { isLoading: approving }] = useApproveQuotationMutation();
+  const [returnQuotation, { isLoading: returning }] = useReturnQuotationMutation();
+  const [declineQuotation, { isLoading: declining }] = useDeclineQuotationMutation();
+  const [cancelQuotation, { isLoading: cancelling }] = useCancelQuotationMutation();
   const [restoreQuotation] = useRestoreQuotationMutation();
   const [softDeleteQuotation] = useSoftDeleteQuotationMutation();
 
@@ -74,9 +66,9 @@ export default function QuotationDetail() {
   const [updateQuotationItem] = useUpdateQuotationItemMutation();
   const [deleteQuotationItem] = useDeleteQuotationItemMutation();
 
-  const [tab, setTab] = useState("Items");
+  const [tab, setTab] = useState('Items');
   const [remarkModal, setRemarkModal] = useState(null); // { label, onConfirm(remarks) }
-  const [remark, setRemark] = useState("");
+  const [remark, setRemark] = useState('');
   const [exporting, setExporting] = useState(false);
   const busy = submitting || approving || returning || declining || cancelling;
 
@@ -89,8 +81,8 @@ export default function QuotationDetail() {
   // usually identical; we prefer the flat one and fall back to the snapshot.
   const vendor = q?.vendor || q?.vendorSnapshot || {};
   const project = q?.project || q?.projectSnapshot || {};
-  const readOnly = q?.status === "approved" && !isAdmin;
-  const editable = !readOnly && ["draft", "returned"].includes(q?.status);
+  const readOnly = q?.status === 'approved' && !isAdmin;
+  const editable = !readOnly && ['draft', 'returned'].includes(q?.status);
   const isDeleted = !!q?.deletedAt;
 
   const subtotal = Number(q?.subtotal || 0);
@@ -102,86 +94,72 @@ export default function QuotationDetail() {
   const docRef = useRef(null);
 
   if (isLoading) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
-  if (isError || !q)
-    return (
-      <div className="p-8 text-[#6B7B7C]">Couldn't load this quotation.</div>
-    );
+  if (isError || !q) return <div className="p-8 text-[#6B7B7C]">Couldn't load this quotation.</div>;
 
-  const runAction = async (mutationFn, args, successMsg = "Done") => {
+  const runAction = async (mutationFn, args, successMsg = 'Done') => {
     try {
       await mutationFn(args).unwrap();
       toast.success(successMsg);
       setRemarkModal(null);
-      setRemark("");
+      setRemark('');
     } catch (e) {
-      toast.error(e?.data?.detail || e?.error || "Action failed");
+      toast.error(e?.data?.detail || e?.error || 'Action failed');
     }
   };
 
   const handleSubmit = () =>
-    runAction(
-      submitQuotation,
-      { id, submitted_by: user?.id },
-      "Sent for review",
-    );
-  const handleApprove = (remarks) =>
-    runAction(approveQuotation, { id, remarks }, "Approved");
+    runAction(submitQuotation, { id, submitted_by: user?.id }, 'Sent for review');
+  const handleApprove = (remarks) => runAction(approveQuotation, { id, remarks }, 'Approved');
   const handleReturn = (remarks) =>
-    runAction(returnQuotation, { id, remarks }, "Returned for revision");
-  const handleDecline = (remarks) =>
-    runAction(declineQuotation, { id, remarks }, "Declined");
-  const handleCancel = () =>
-    runAction(cancelQuotation, { id, updated_by: user?.id }, "Cancelled");
-  const handleRestore = () => runAction(restoreQuotation, id, "Restored");
+    runAction(returnQuotation, { id, remarks }, 'Returned for revision');
+  const handleDecline = (remarks) => runAction(declineQuotation, { id, remarks }, 'Declined');
+  const handleCancel = () => runAction(cancelQuotation, { id, updated_by: user?.id }, 'Cancelled');
+  const handleRestore = () => runAction(restoreQuotation, id, 'Restored');
   const handleSoftDelete = () =>
-    runAction(
-      softDeleteQuotation,
-      { id, deleted_by: user?.id },
-      "Moved to trash",
-    );
+    runAction(softDeleteQuotation, { id, deleted_by: user?.id }, 'Moved to trash');
 
   const addItem = async () => {
     try {
       await createQuotationItem({
         quotationId: id,
-        particular: "New item",
+        particular: 'New item',
         quantity: 1,
         rate: 0,
-        remarks: "",
+        remarks: '',
       }).unwrap();
     } catch {
-      toast.error("Failed to add item");
+      toast.error('Failed to add item');
     }
   };
   const patchItem = async (itemId, patch) => {
     try {
       await updateQuotationItem({ itemId, ...patch }).unwrap();
     } catch {
-      toast.error("Failed to update item");
+      toast.error('Failed to update item');
     }
   };
   const delItem = async (itemId) => {
     try {
       await deleteQuotationItem(itemId).unwrap();
     } catch {
-      toast.error("Failed to delete item");
+      toast.error('Failed to delete item');
     }
   };
 
   // PDF export — the same A4 pages shown on the Document tab (shared Rippotai print kit).
   const exportPdf = async () => {
     if (!docRef.current) {
-      toast.error("Document is not ready yet");
+      toast.error('Document is not ready yet');
       return;
     }
     setExporting(true);
     try {
       await downloadDocumentPdf(docRef.current, quotationFileName(q), {
-        title: `Quotation ${q.quotationNumber || ""} — ${project.name || ""}`,
+        title: `Quotation ${q.quotationNumber || ''} — ${project.name || ''}`,
       });
-      toast.success("PDF exported");
+      toast.success('PDF exported');
     } catch (err) {
-      console.error("PDF export error:", err);
+      console.error('PDF export error:', err);
       toast.error("Couldn't create the PDF. Try again.");
     } finally {
       setExporting(false);
@@ -192,12 +170,12 @@ export default function QuotationDetail() {
     try {
       // Absolute /api/v1 URL — the legacy axios base is /api (no /v1).
       const res = await api.get(`${API}/v1/quotations/${id}/export/excel`, {
-        responseType: "blob",
+        responseType: 'blob',
       });
       const url = URL.createObjectURL(new Blob([res.data]));
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `Quotation_${String(q.quotationNumber || id).replace(/[^A-Za-z0-9_-]+/g, "-")}.xlsx`;
+      a.download = `Quotation_${String(q.quotationNumber || id).replace(/[^A-Za-z0-9_-]+/g, '-')}.xlsx`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
@@ -208,7 +186,7 @@ export default function QuotationDetail() {
   return (
     <div className="max-w-[1440px] mx-auto p-6">
       <button
-        onClick={() => nav("/procurement/estimates/all")}
+        onClick={() => nav('/procurement/estimates/all')}
         className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1 mb-3"
         data-testid="btn-back-quotations"
       >
@@ -218,7 +196,7 @@ export default function QuotationDetail() {
       {isDeleted && (
         <div className="mb-3 flex items-center justify-between bg-[#EAEEF0] border border-[#B5C4B6] rounded-lg px-4 py-2 text-[13px]">
           <span className="text-[#333333]">
-            This quotation was deleted{q.deletedBy ? ` by ${q.deletedBy}` : ""}.
+            This quotation was deleted{q.deletedBy ? ` by ${q.deletedBy}` : ''}.
           </span>
           {isAdmin && (
             <button
@@ -248,14 +226,11 @@ export default function QuotationDetail() {
               className="text-[36px] font-bold text-[#333333] mt-1.5"
               data-testid="quotation-title"
             >
-              {project.name || "Untitled Project"}
+              {project.name || 'Untitled Project'}
             </h1>
             <div className="text-[13px] text-[#6B7B7C] mt-1 space-x-3">
-              <Link
-                to={`/vendors/${q.vendorId || q.vendor_id}`}
-                className="hover:text-[#333333]"
-              >
-                <span className="font-semibold">{vendor.name || "—"}</span>
+              <Link to={`/vendors/${q.vendorId || q.vendor_id}`} className="hover:text-[#333333]">
+                <span className="font-semibold">{vendor.name || '—'}</span>
               </Link>
               {vendor.company_name && (
                 <>
@@ -266,9 +241,7 @@ export default function QuotationDetail() {
               {(vendor.businessType?.name || vendor.vendorCategory?.name) && (
                 <>
                   <span className="text-[#B5C4B6]">·</span>
-                  <span>
-                    {vendor.businessType?.name || vendor.vendorCategory?.name}
-                  </span>
+                  <span>{vendor.businessType?.name || vendor.vendorCategory?.name}</span>
                 </>
               )}
             </div>
@@ -287,16 +260,14 @@ export default function QuotationDetail() {
               {fmtINR(total)}
             </div>
             <div className="text-[11px] text-[#6B7B7C] mt-1">
-              Subtotal {fmtINR(subtotal)} · Tax ({q.taxPercent || 0}%){" "}
-              {fmtINR(taxAmount)}
+              Subtotal {fmtINR(subtotal)} · Tax ({q.taxPercent || 0}%) {fmtINR(taxAmount)}
             </div>
             {(discountValue > 0 || additionalCharges > 0) && (
               <div className="text-[11px] text-[#6B7B7C] mt-0.5">
                 {discountValue > 0 &&
-                  `Discount ${q.globalDiscountType === "percent" ? `${discountValue}%` : fmtINR(discountValue)}`}
-                {discountValue > 0 && additionalCharges > 0 && " · "}
-                {additionalCharges > 0 &&
-                  `Additional charges ${fmtINR(additionalCharges)}`}
+                  `Discount ${q.globalDiscountType === 'percent' ? `${discountValue}%` : fmtINR(discountValue)}`}
+                {discountValue > 0 && additionalCharges > 0 && ' · '}
+                {additionalCharges > 0 && `Additional charges ${fmtINR(additionalCharges)}`}
               </div>
             )}
           </div>
@@ -310,7 +281,7 @@ export default function QuotationDetail() {
             data-testid="btn-export-pdf"
             className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1 disabled:opacity-50"
           >
-            <Download size={13} /> {exporting ? "Exporting…" : "PDF"}
+            <Download size={13} /> {exporting ? 'Exporting…' : 'PDF'}
           </button>
           <button
             onClick={exportXlsx}
@@ -320,7 +291,7 @@ export default function QuotationDetail() {
             <Download size={13} /> Excel
           </button>
           <div className="ml-auto flex flex-wrap gap-2">
-            {!readOnly && !isDeleted && q.status === "draft" && (
+            {!readOnly && !isDeleted && q.status === 'draft' && (
               <button
                 onClick={handleSubmit}
                 disabled={busy}
@@ -332,14 +303,12 @@ export default function QuotationDetail() {
             )}
             {!readOnly &&
               !isDeleted &&
-              ["submitted", "under_review", "awaiting_approval"].includes(
-                q.status,
-              ) && (
+              ['submitted', 'under_review', 'awaiting_approval'].includes(q.status) && (
                 <>
                   <button
                     onClick={() =>
                       setRemarkModal({
-                        label: "Approve",
+                        label: 'Approve',
                         onConfirm: handleApprove,
                       })
                     }
@@ -352,7 +321,7 @@ export default function QuotationDetail() {
                   <button
                     onClick={() =>
                       setRemarkModal({
-                        label: "Return for Revision",
+                        label: 'Return for Revision',
                         onConfirm: handleReturn,
                       })
                     }
@@ -364,7 +333,7 @@ export default function QuotationDetail() {
                   <button
                     onClick={() =>
                       setRemarkModal({
-                        label: "Decline",
+                        label: 'Decline',
                         onConfirm: handleDecline,
                       })
                     }
@@ -375,16 +344,15 @@ export default function QuotationDetail() {
                   </button>
                 </>
               )}
-            {!isDeleted &&
-              ["approved", "submitted", "under_review"].includes(q.status) && (
-                <button
-                  onClick={handleCancel}
-                  disabled={busy}
-                  className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold"
-                >
-                  Cancel
-                </button>
-              )}
+            {!isDeleted && ['approved', 'submitted', 'under_review'].includes(q.status) && (
+              <button
+                onClick={handleCancel}
+                disabled={busy}
+                className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold"
+              >
+                Cancel
+              </button>
+            )}
             {isAdmin && !isDeleted && (
               <button
                 onClick={handleSoftDelete}
@@ -404,11 +372,9 @@ export default function QuotationDetail() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            data-testid={`detail-tab-${t.replace(/\s+/g, "-").toLowerCase()}`}
+            data-testid={`detail-tab-${t.replace(/\s+/g, '-').toLowerCase()}`}
             className={`px-4 py-2 text-[13px] font-semibold whitespace-nowrap ${
-              tab === t
-                ? "text-[#333333] border-b-2 border-[#1F453B]"
-                : "text-[#6B7B7C]"
+              tab === t ? 'text-[#333333] border-b-2 border-[#1F453B]' : 'text-[#6B7B7C]'
             }`}
           >
             {t}
@@ -417,7 +383,7 @@ export default function QuotationDetail() {
       </div>
 
       <div className="mt-4">
-        {tab === "Items" && (
+        {tab === 'Items' && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
             <div className="flex justify-between mb-3">
               <div className="text-[13px] font-semibold text-[#333333]">
@@ -453,10 +419,8 @@ export default function QuotationDetail() {
                       <td className="py-2 pr-2">
                         {editable ? (
                           <input
-                            value={it.particular || ""}
-                            onChange={(e) =>
-                              patchItem(it.id, { particular: e.target.value })
-                            }
+                            value={it.particular || ''}
+                            onChange={(e) => patchItem(it.id, { particular: e.target.value })}
                             className="w-full px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded"
                           />
                         ) : (
@@ -501,22 +465,17 @@ export default function QuotationDetail() {
                       <td className="py-2 pr-2">
                         {editable ? (
                           <input
-                            value={it.remarks || ""}
-                            onChange={(e) =>
-                              patchItem(it.id, { remarks: e.target.value })
-                            }
+                            value={it.remarks || ''}
+                            onChange={(e) => patchItem(it.id, { remarks: e.target.value })}
                             className="w-full px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded"
                           />
                         ) : (
-                          it.remarks || "—"
+                          it.remarks || '—'
                         )}
                       </td>
                       {editable && (
                         <td className="py-2">
-                          <button
-                            onClick={() => delItem(it.id)}
-                            className="text-[#333333]"
-                          >
+                          <button onClick={() => delItem(it.id)} className="text-[#333333]">
                             <Trash2 size={13} />
                           </button>
                         </td>
@@ -526,15 +485,10 @@ export default function QuotationDetail() {
                 </tbody>
                 <tfoot>
                   <tr className="text-[12.5px]">
-                    <td
-                      colSpan={4}
-                      className="py-2 pr-2 text-right font-semibold text-[#6B7B7C]"
-                    >
+                    <td colSpan={4} className="py-2 pr-2 text-right font-semibold text-[#6B7B7C]">
                       Subtotal
                     </td>
-                    <td className="py-2 pr-2 text-right font-semibold">
-                      {fmtINR(subtotal)}
-                    </td>
+                    <td className="py-2 pr-2 text-right font-semibold">{fmtINR(subtotal)}</td>
                     <td />
                   </tr>
                 </tfoot>
@@ -543,69 +497,53 @@ export default function QuotationDetail() {
           </div>
         )}
 
-        {tab === "Commercial Terms" && (
+        {tab === 'Commercial Terms' && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
               <div>
-                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
-                  Tax
-                </div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">Tax</div>
                 <div className="text-[#333333] font-semibold">
                   {q.taxPercent || 0}% ({fmtINR(taxAmount)})
                 </div>
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
-                  Discount
-                </div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">Discount</div>
                 <div className="text-[#333333] font-semibold">
                   {discountValue > 0
-                    ? q.globalDiscountType === "percent"
+                    ? q.globalDiscountType === 'percent'
                       ? `${discountValue}%`
                       : fmtINR(discountValue)
-                    : "—"}
+                    : '—'}
                 </div>
               </div>
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
                   Additional Charges
                 </div>
-                <div className="text-[#333333] font-semibold">
-                  {fmtINR(additionalCharges)}
-                </div>
+                <div className="text-[#333333] font-semibold">{fmtINR(additionalCharges)}</div>
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
-                  Created
-                </div>
-                <div className="text-[#333333] font-semibold">
-                  {relativeTime(q.created_at)}
-                </div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">Created</div>
+                <div className="text-[#333333] font-semibold">{relativeTime(q.created_at)}</div>
               </div>
               <div className="md:col-span-2">
                 <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
                   Terms &amp; Conditions
                 </div>
-                <div className="text-[#333333] whitespace-pre-wrap">
-                  {q.termsConditions || "—"}
-                </div>
+                <div className="text-[#333333] whitespace-pre-wrap">{q.termsConditions || '—'}</div>
               </div>
             </div>
           </div>
         )}
 
-        {tab === "Approval History" && (
+        {tab === 'Approval History' && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
             <ApprovalHistory q={q} />
           </div>
         )}
 
-        {tab === "Versions" && (
-          <VersionsTab
-            id={id}
-            currentVersion={q.currentVersion}
-            isAdmin={isAdmin}
-          />
+        {tab === 'Versions' && (
+          <VersionsTab id={id} currentVersion={q.currentVersion} isAdmin={isAdmin} />
         )}
       </div>
 
@@ -618,9 +556,7 @@ export default function QuotationDetail() {
             className="bg-white rounded-xl max-w-md w-full p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-[15px] font-bold mb-2">
-              {remarkModal.label}
-            </div>
+            <div className="text-[15px] font-bold mb-2">{remarkModal.label}</div>
             <textarea
               autoFocus
               value={remark}
@@ -652,7 +588,10 @@ export default function QuotationDetail() {
 
       {/* The client-ready document: shown on the Document tab, kept laid out off-screen otherwise
           so "PDF" always captures the same pages. */}
-      <div style={tab === "Document" ? { marginTop: 16 } : OFFSCREEN_STYLE} aria-hidden={tab !== "Document"}>
+      <div
+        style={tab === 'Document' ? { marginTop: 16 } : OFFSCREEN_STYLE}
+        aria-hidden={tab !== 'Document'}
+      >
         <DocumentPreview>
           <QuotationDocument ref={docRef} quotation={q} />
         </DocumentPreview>
@@ -665,16 +604,16 @@ function ApprovalHistory({ q }) {
   const events = [];
   if (q.submittedAt) {
     events.push({
-      id: "submitted",
-      action: "submitted",
+      id: 'submitted',
+      action: 'submitted',
       actor: q.submittedBy,
       at: q.submittedAt,
     });
   }
   if (q.reviewedAt) {
     events.push({
-      id: "reviewed",
-      action: q.status === "approved" ? "approved" : "reviewed",
+      id: 'reviewed',
+      action: q.status === 'approved' ? 'approved' : 'reviewed',
       actor: q.reviewedBy,
       at: q.reviewedAt,
       remarks: q.reviewRemarks,
@@ -682,11 +621,7 @@ function ApprovalHistory({ q }) {
   }
 
   if (events.length === 0) {
-    return (
-      <div className="text-[#B5C4B6] text-center py-6">
-        No approval events yet.
-      </div>
-    );
+    return <div className="text-[#B5C4B6] text-center py-6">No approval events yet.</div>;
   }
 
   return (
@@ -696,15 +631,13 @@ function ApprovalHistory({ q }) {
           <div className="w-2 h-2 rounded-full bg-[#1F453B] mt-1.5" />
           <div className="flex-1">
             <div className="text-[13px] font-semibold text-[#333333]">
-              {a.action.replace(/_/g, " ")}
+              {a.action.replace(/_/g, ' ')}
             </div>
             <div className="text-[12px] text-[#6B7B7C]">
-              {a.actor || "—"} · {relativeTime(a.at)}
+              {a.actor || '—'} · {relativeTime(a.at)}
             </div>
             {a.remarks && (
-              <div className="text-[12px] text-[#6B7B7C] mt-1">
-                &ldquo;{a.remarks}&rdquo;
-              </div>
+              <div className="text-[12px] text-[#6B7B7C] mt-1">&ldquo;{a.remarks}&rdquo;</div>
             )}
           </div>
         </li>
@@ -717,15 +650,14 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
   const { data: rows = [], isLoading } = useGetQuotationVersionsQuery(id, {
     skip: !id,
   });
-  const [createQuotationVersion, { isLoading: creating }] =
-    useCreateQuotationVersionMutation();
+  const [createQuotationVersion, { isLoading: creating }] = useCreateQuotationVersionMutation();
   const [restoreQuotationVersion] = useRestoreQuotationVersionMutation();
   const [deleteQuotationVersion] = useDeleteQuotationVersionMutation();
   const { user } = useAuth();
 
   const [openId, setOpenId] = useState(null);
   const [remarkModal, setRemarkModal] = useState(false);
-  const [remark, setRemark] = useState("");
+  const [remark, setRemark] = useState('');
 
   const handleCreateVersion = async () => {
     try {
@@ -734,11 +666,11 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
         created_by: user?.id,
         remarks: remark,
       }).unwrap();
-      toast.success("Version saved");
+      toast.success('Version saved');
       setRemarkModal(false);
-      setRemark("");
+      setRemark('');
     } catch {
-      toast.error("Failed to save version");
+      toast.error('Failed to save version');
     }
   };
 
@@ -748,18 +680,18 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
         id: versionId,
         restored_by: user?.id,
       }).unwrap();
-      toast.success("Version restored");
+      toast.success('Version restored');
     } catch {
-      toast.error("Failed to restore version");
+      toast.error('Failed to restore version');
     }
   };
 
   const handleDeleteVersion = async (versionId) => {
     try {
       await deleteQuotationVersion(versionId).unwrap();
-      toast.success("Version deleted");
+      toast.success('Version deleted');
     } catch {
-      toast.error("Failed to delete version");
+      toast.error('Failed to delete version');
     }
   };
 
@@ -777,7 +709,7 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
     <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
       <div className="flex justify-between items-center mb-3">
         <div className="text-[13px] font-semibold text-[#333333]">
-          {rows.length} version{rows.length === 1 ? "" : "s"}
+          {rows.length} version{rows.length === 1 ? '' : 's'}
         </div>
         <button
           onClick={() => setRemarkModal(true)}
@@ -796,10 +728,7 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
             const isOpen = openId === r.id;
             const snap = r.snapshot || {};
             return (
-              <div
-                key={r.id}
-                className="border border-[#B5C4B6] rounded-lg overflow-hidden"
-              >
+              <div key={r.id} className="border border-[#B5C4B6] rounded-lg overflow-hidden">
                 <div className="w-full flex justify-between items-center p-3 hover:bg-[#FAF8F5]">
                   <button
                     onClick={() => setOpenId(isOpen ? null : r.id)}
@@ -821,8 +750,7 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
                         <StatusChip status={snap.status} />
                       </div>
                       <div className="text-[12px] text-[#6B7B7C]">
-                        {r.remarks || "No remarks"} ·{" "}
-                        {relativeTime(r.created_at)}
+                        {r.remarks || 'No remarks'} · {relativeTime(r.created_at)}
                       </div>
                     </div>
                   </button>
@@ -855,33 +783,25 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
                   <div className="border-t border-[#EAEEF0] p-3 bg-[#FAF8F5]">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px] mb-3">
                       <div>
-                        <div className="text-[10px] uppercase text-[#B5C4B6]">
-                          Subtotal
-                        </div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">Subtotal</div>
                         <div className="font-semibold text-[#333333]">
                           {fmtINR(snap.subtotal || 0)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase text-[#B5C4B6]">
-                          Tax
-                        </div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">Tax</div>
                         <div className="font-semibold text-[#333333]">
                           {fmtINR(snap.taxAmount || 0)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase text-[#B5C4B6]">
-                          Discount
-                        </div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">Discount</div>
                         <div className="font-semibold text-[#333333]">
-                          {snap.discount ? fmtINR(snap.discount) : "—"}
+                          {snap.discount ? fmtINR(snap.discount) : '—'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase text-[#B5C4B6]">
-                          Items
-                        </div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">Items</div>
                         <div className="font-semibold text-[#333333]">
                           {snap.items?.length || 0}
                         </div>
@@ -902,15 +822,9 @@ function VersionsTab({ id, currentVersion, isAdmin }) {
                           <tr key={it.id} className="border-b border-[#EAEEF0]">
                             <td className="py-1 text-[#B5C4B6]">{it.sno}</td>
                             <td className="py-1">{it.particular}</td>
-                            <td className="py-1 text-right">
-                              {Number(it.quantity)}
-                            </td>
-                            <td className="py-1 text-right">
-                              {fmtINR(it.rate)}
-                            </td>
-                            <td className="py-1 text-right font-semibold">
-                              {fmtINR(it.amount)}
-                            </td>
+                            <td className="py-1 text-right">{Number(it.quantity)}</td>
+                            <td className="py-1 text-right">{fmtINR(it.rate)}</td>
+                            <td className="py-1 text-right font-semibold">{fmtINR(it.amount)}</td>
                           </tr>
                         ))}
                       </tbody>

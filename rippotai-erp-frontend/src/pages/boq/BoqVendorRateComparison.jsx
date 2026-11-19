@@ -1,13 +1,13 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import "./vendorComparisonWorkspace.css";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Page,
   PageHeader,
+  Tabs,
   Card,
   Button,
-  Tabs,
   Field,
   TextInput,
   SelectInput,
@@ -17,6 +17,8 @@ import {
 import vendorComparisonTemplate from "@/assets/xlsx-templates/vendor-comparison-v2.xlsx?url";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
+import { useGetUnitsQuery } from "../../api/meta/unit.api";
+import { UNITS } from "../../hooks/constants";
 import {
   useGetRateComparisonQuery,
   useCreateRateComparisonMutation,
@@ -45,12 +47,29 @@ import {
 
 const basePath = "/procurement/vendors/rate-comparison";
 const uid = () => crypto.randomUUID();
+const GST_RATE = 0.18;
+const cx = (...classes) => classes.filter(Boolean).join(" ");
+const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
 const money = (n) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(n);
+const num = (n) =>
+  new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n);
+// Compact lakh/crore form used in the trade list, e.g. ₹2.83L, ₹42K.
+const compactMoney = (n) => {
+  const abs = Math.abs(n);
+  if (abs >= 1e7) return `₹${parseFloat((n / 1e7).toFixed(2))}Cr`;
+  if (abs >= 1e5) return `₹${parseFloat((n / 1e5).toFixed(2))}L`;
+  if (abs >= 1e3) return `₹${Math.round(n / 1e3)}K`;
+  return money(n);
+};
 const list = (response) => {
   const data = response?.data?.data ?? response?.data ?? response;
   return Array.isArray(data)
@@ -125,7 +144,12 @@ function Workspace({
   const [projectLookupError, setProjectLookupError] = useState("");
   const [checkingProject, setCheckingProject] = useState(false);
   const projectLookupSequence = useRef(0);
-  useEffect(() => () => { projectLookupSequence.current += 1; }, []);
+  useEffect(
+    () => () => {
+      projectLookupSequence.current += 1;
+    },
+    [],
+  );
   const [fetchProjectComparisons] = useLazyGetRateComparisonsQuery();
   const selectProject = async (nextId) => {
     const sequence = ++projectLookupSequence.current;
@@ -162,11 +186,34 @@ function Workspace({
   const [activeId, setActiveId] = useState(() =>
     trades.some((t) => t.id === searchParams.get("trade"))
       ? searchParams.get("trade")
-      : trades[0]?.id || '',
+      : trades[0]?.id || "",
   );
-  const [workspaceTab, setWorkspaceTab] = useState(() =>
-    trades.some((t) => t.id === searchParams.get('trade')) ? 'comparison' : 'overview');
-  const openTrade = (id) => { setActiveId(id); setWorkspaceTab('comparison'); };
+  const requestedTab = searchParams.get("tab");
+  const [workspaceTab, setWorkspaceTab] = useState(() => {
+    if (requestedTab === "history") return "history";
+    if (requestedTab === "comparison" || searchParams.has("trade"))
+      return "comparison";
+    return "overview";
+  });
+  const [tradeSearch, setTradeSearch] = useState("");
+  const [tradeFilter, setTradeFilter] = useState("all");
+  const tradeStrip = useRef(null);
+  const [editingSlot, setEditingSlot] = useState(null);
+  const openTrade = (id) => {
+    setActiveId(id);
+    setWorkspaceTab("comparison");
+  };
+  useEffect(() => {
+    const strip = tradeStrip.current;
+    const selected = strip?.querySelector('[aria-current="true"]');
+    if (!selected) return;
+    const viewport = strip.getBoundingClientRect();
+    const trade = selected.getBoundingClientRect();
+    if (trade.left < viewport.left)
+      strip.scrollBy({ left: trade.left - viewport.left });
+    else if (trade.right > viewport.right)
+      strip.scrollBy({ left: trade.right - viewport.right });
+  }, [activeId, workspaceTab, tradeFilter, tradeSearch]);
   const [revision, setRevision] = useState(initialSheet?.revision || 1);
   const [saved, setSaved] = useState(() =>
     JSON.stringify({ title, projectId, notes, trades }),
@@ -174,6 +221,8 @@ function Workspace({
   const [exporting, setExporting] = useState(false);
   const projects = useGetProjectsQuery();
   const vendors = useGetVendorsQuery({ status: "ACTIVE" });
+  const { data: units } = useGetUnitsQuery();
+  const unitOptions = units?.length ? units.map(({ code }) => code) : UNITS;
   const [create, creating] = useCreateRateComparisonMutation();
   const [update, updating] = useUpdateRateComparisonMutation();
   const saving = creating.isLoading || updating.isLoading;
@@ -216,7 +265,7 @@ function Workspace({
       ),
     );
   const addSharedItem = () => {
-    const item = { id: uid(), description: "", quantity: null };
+    const item = { id: uid(), description: "", quantity: null, unit: "" };
     editTrade(active.id, withComparisonItems(active, [...active.items, item]));
   };
   const removeSharedItem = (id) =>
@@ -410,7 +459,6 @@ function Workspace({
         : active.finalised_vendor_id,
     });
   };
-  const overview = workspaceTab === "overview";
   const directory = list(vendors.data);
   const availableTrades = catalogue.filter(
     (record) =>
@@ -482,41 +530,157 @@ function Workspace({
     });
   };
   const removeTrade = async (trade) => {
-    if (!await appConfirm(`Remove ${trade.name} and its quotes from this sheet? The shared trade catalogue will remain unchanged.`)) return;
+    if (
+      !(await appConfirm(
+        `Remove ${trade.name} and its quotes from this sheet? The shared trade catalogue will remain unchanged.`,
+      ))
+    )
+      return;
     setTrades((current) => current.filter((t) => t.id !== trade.id));
-    if (activeId === trade.id) setActiveId(trades.find((t) => t.id !== trade.id)?.id || '');
+    if (activeId === trade.id)
+      setActiveId(trades.find((t) => t.id !== trade.id)?.id || "");
   };
-  const tradeActions = (<>
-        {availableTrades.length > 0 && (
-          <SelectInput
-            aria-label="Add existing trade"
-            value=""
-            onChange={(e) => addTrade(e.target.value)}
-            placeholder="Add existing trade"
-            style={{ width: 220 }}
-          >
-            {availableTrades.map((record) => (
-              <option key={record.id} value={record.id}>
-                {record.name}
-              </option>
-            ))}
-          </SelectInput>
-        )}
-        {canCreateTrade && (
-          <Button
-            variant="secondary"
-            disabled={creatingTrade.isLoading || catalogueError}
-            onClick={createNewTrade}
-          >
-            {creatingTrade.isLoading ? "Creating…" : "+ Create trade"}
-          </Button>
-        )}
-  </>);
+  const tradeActions = (
+    <>
+      {availableTrades.length > 0 && (
+        <SelectInput
+          aria-label="Add existing trade"
+          value=""
+          onChange={(e) => addTrade(e.target.value)}
+          placeholder="Add existing trade"
+          style={{ width: 220 }}
+        >
+          {availableTrades.map((record) => (
+            <option key={record.id} value={record.id}>
+              {record.name}
+            </option>
+          ))}
+        </SelectInput>
+      )}
+      {canCreateTrade && (
+        <Button
+          variant="secondary"
+          disabled={creatingTrade.isLoading || catalogueError}
+          onClick={createNewTrade}
+        >
+          {creatingTrade.isLoading ? "Creating…" : "+ Create trade"}
+        </Button>
+      )}
+    </>
+  );
+  const projectName =
+    list(projects.data).find((project) => project.id === projectId)?.name ||
+    initialSheet?.project?.name;
+  const finalisedTrades = trades.filter((trade) => trade.finalised_vendor_id);
+  const pendingCount = trades.length - finalisedTrades.length;
+  const inProgressCount = trades.filter(
+    (trade) => !trade.finalised_vendor_id && trade.vendors.length,
+  ).length;
+  const notStartedCount = pendingCount - inProgressCount;
+  const vendorCount = new Set(
+    trades.flatMap((trade) => trade.vendors.map((vendor) => vendor.id)),
+  ).size;
+  const tradesWithVendors = trades.filter((trade) => trade.vendors.length);
+  const vendorsPerTrade = tradesWithVendors.length
+    ? Math.round(
+        (tradesWithVendors.reduce(
+          (sum, trade) => sum + trade.vendors.length,
+          0,
+        ) /
+          tradesWithVendors.length) *
+          10,
+      ) / 10
+    : 0;
+  const savingsRows = finalisedTrades.flatMap((trade) => {
+    const picked = trade.vendors.find(
+      (vendor) => vendor.id === trade.finalised_vendor_id,
+    );
+    const complete = trade.vendors.filter(completeQuote);
+    if (!completeQuote(picked) || !complete.length) return [];
+    const highest = Math.max(...complete.map(quoteTotal));
+    return [{ saving: highest - quoteTotal(picked), highest }];
+  });
+  const savings = savingsRows.reduce((sum, row) => sum + row.saving, 0);
+  const highestTotal = savingsRows.reduce((sum, row) => sum + row.highest, 0);
+  const savingsPct = highestTotal > 0 ? (savings / highestTotal) * 100 : null;
+  const quotationVendors = [
+    ...new Map(
+      finalisedTrades.flatMap((trade) =>
+        trade.vendors
+          .filter(
+            (vendor) =>
+              vendor.id === trade.finalised_vendor_id &&
+              !vendor.custom &&
+              completeQuote(vendor),
+          )
+          .map((vendor) => [vendor.id, vendor]),
+      ),
+    ).values(),
+  ];
+  const activeIndex = trades.findIndex((trade) => trade.id === activeId);
+  const nextTrade = trades[activeIndex + 1];
+  const previousTrade = trades[activeIndex - 1];
+  const matchingTrades = trades.filter(
+    (trade) =>
+      trade.name.toLowerCase().includes(tradeSearch.trim().toLowerCase()) &&
+      (tradeFilter === "all" ||
+        Boolean(trade.finalised_vendor_id) === (tradeFilter === "finalised")),
+  );
+  const vendorAt = (slot) =>
+    active?.vendors.find((vendor, index) => (vendor.slot ?? index) === slot);
+  const slots = Array.from({ length: vendorColumnCount }, (_, slot) => slot);
+  const hasAddColumn = vendorColumnCount < 4;
+  const totalColumns = 4 + vendorColumnCount * 2 + (hasAddColumn ? 1 : 0) + 1;
+  // Explicit column widths (see vendorComparisonWorkspace.css); the table's
+  // min-width is their sum so columns keep their size and the wrapper scrolls.
+  const tableMinWidth =
+    40 +
+    220 +
+    72 +
+    64 +
+    vendorColumnCount * 212 +
+    (hasAddColumn ? 128 : 0) +
+    40;
+  const saveState = dirty
+    ? "Unsaved changes. Save to keep them."
+    : initialSheet
+      ? "All changes saved"
+      : "Not saved yet";
+  const removeVendor = async (vendor) => {
+    if (!(await appConfirm("Remove this vendor and its rates?"))) return;
+    setEditingSlot(null);
+    editTrade(active.id, {
+      vendors: active.vendors.filter((v) => v.id !== vendor.id),
+      finalised_vendor_id:
+        active.finalised_vendor_id === vendor.id
+          ? ""
+          : active.finalised_vendor_id,
+    });
+  };
+
   return (
-    <Page>
+    <Page className="vendor-comparison-workspace">
       <PageHeader
-        title={title || "Vendor Comparison"}
-        info={`v${revision} · ${trades.length} trades${dirty ? " · Unsaved changes" : ""}`}
+        title={title || "Vendor Comparison Workspace"}
+        info={
+          <span className="vc-meta">
+            {projectName && (
+              <Pill tone="mute" dot={false}>
+                {projectName}
+              </Pill>
+            )}
+            <Pill tone="mute" dot={false}>
+              v{revision}
+            </Pill>
+            <Pill tone={dirty ? "warn" : initialSheet ? "ok" : "info"}>
+              {dirty
+                ? "Unsaved changes"
+                : initialSheet
+                  ? "Saved"
+                  : "New comparison"}
+            </Pill>
+          </span>
+        }
         actions={
           <>
             <Button
@@ -539,6 +703,23 @@ function Workspace({
             >
               {exporting ? "Exporting…" : "Export Excel"}
             </Button>
+            {canCreateQuotation && quotationVendors.length > 0 && (
+              <details className="vc-menu">
+                <summary>Create quotation</summary>
+                <div className="vc-menu-content">
+                  {quotationVendors.map((vendor) => (
+                    <Button
+                      key={vendor.id}
+                      variant="ghost"
+                      disabled={saving || quotationStatus.isLoading}
+                      onClick={() => makeQuotation(vendor.id)}
+                    >
+                      {vendor.name}
+                    </Button>
+                  ))}
+                </div>
+              </details>
+            )}
             <Button
               disabled={
                 saving ||
@@ -562,677 +743,906 @@ function Workspace({
       {initialSheet && (
         <RecordContext type="vendor-comparison" id={initialSheet.id} />
       )}
-      <Card>
-        <div className="inos-form-grid">
-          <Field label="Sheet name" required htmlFor="comparison-title" hint={initialSheet ? 'Saved comparison names cannot be changed.' : undefined}>
-            <TextInput
-              id="comparison-title"
-              maxLength={255}
-              value={title}
-              readOnly={Boolean(initialSheet)}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </Field>
-          <Field label="Project" required htmlFor="comparison-project">
-            <SelectInput
-              id="comparison-project"
-              value={projectId}
-              disabled={Boolean(initialSheet) || checkingProject}
-              onChange={(e) => selectProject(e.target.value)}
-              placeholder="Select project"
+      <div className="vc-summary">
+        <Card className="vc-sheet-card">
+          <div className="vc-sheet-fields">
+            <Field
+              label="Sheet name"
+              required
+              htmlFor="comparison-title"
+              hint={
+                initialSheet
+                  ? "Saved comparison names cannot be changed."
+                  : undefined
+              }
             >
-              {initialSheet?.project &&
-                !list(projects.data).some((p) => p.id === projectId) && (
-                  <option value={projectId}>{initialSheet.project.name}</option>
-                )}
-              {list(projects.data).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
-        </div>
-        {checkingProject && (
-          <p role="status" className="inos-hint">
-            Checking for an existing vendor comparison…
-          </p>
-        )}
-        {projectLookupError && (
-          <p role="alert">
-            {projectLookupError}{" "}
-            <Button variant="ghost" onClick={() => selectProject(projectId)}>
-              Retry
-            </Button>
-          </p>
-        )}
-        {projects.isError && (
-          <p role="alert">
-            Could not load projects.{" "}
-            <Button variant="ghost" onClick={projects.refetch}>
-              Retry
-            </Button>
-          </p>
-        )}
-      </Card>
-      <Tabs value={workspaceTab} onChange={setWorkspaceTab} options={[
-        { value: 'overview', label: 'Overview' },
-        { value: 'comparison', label: 'Trade Comparison Sheet' },
-      ]} />
-      {!overview && <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-0 flex-1 basis-64">
-          <ScrollableTradeTabs
-            value={activeId}
-            onChange={openTrade}
-            options={[
-              ...trades.map((t) => ({
-                value: t.id,
-                label: t.name || "Unnamed trade",
-              })),
-            ]}
-          />
-        </div>
-        {tradeActions}
-      </div>}
-      {catalogueError && (
-        <p role="alert">
-          Could not load the trade catalogue.{" "}
-          <Button variant="ghost" onClick={retryCatalogue}>
-            Retry
-          </Button>
-        </p>
-      )}
-      {overview && (
-        <>
-          <Card title="Finalised vendors" flush actions={<div className="flex flex-wrap items-center gap-2">{tradeActions}</div>}>
+              <TextInput
+                id="comparison-title"
+                maxLength={255}
+                value={title}
+                readOnly={Boolean(initialSheet)}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </Field>
+            <Field label="Project" required htmlFor="comparison-project">
+              <SelectInput
+                id="comparison-project"
+                value={projectId}
+                disabled={Boolean(initialSheet) || checkingProject}
+                onChange={(e) => selectProject(e.target.value)}
+                placeholder="Select project"
+              >
+                {initialSheet?.project &&
+                  !list(projects.data).some((p) => p.id === projectId) && (
+                    <option value={projectId}>
+                      {initialSheet.project.name}
+                    </option>
+                  )}
+                {list(projects.data).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </div>
+          {checkingProject && (
+            <p role="status" className="inos-hint">
+              Checking for an existing vendor comparison…
+            </p>
+          )}
+          {projectLookupError && (
+            <p role="alert">
+              {projectLookupError}{" "}
+              <Button variant="ghost" onClick={() => selectProject(projectId)}>
+                Retry
+              </Button>
+            </p>
+          )}
+          {projects.isError && (
+            <p role="alert">
+              Could not load projects.{" "}
+              <Button variant="ghost" onClick={projects.refetch}>
+                Retry
+              </Button>
+            </p>
+          )}
+        </Card>
+        <Card className="vc-stat">
+          <span>Trades finalised</span>
+          <strong>
+            {finalisedTrades.length} / {trades.length}
+          </strong>
+          <small>
+            {inProgressCount} in progress · {notStartedCount} not started
+          </small>
+        </Card>
+        <Card className="vc-stat">
+          <span>Finalised value</span>
+          <strong>{money(total)}</strong>
+          <small>Across {finalisedTrades.length} trades</small>
+        </Card>
+        <Card className="vc-stat">
+          <span>Savings vs highest</span>
+          <strong>{money(savings)}</strong>
+          <small>
+            {savingsPct === null
+              ? "On finalised trades"
+              : `${savingsPct.toFixed(1)}% lower than the highest quotes`}
+          </small>
+        </Card>
+        <Card className="vc-stat">
+          <span>Vendors compared</span>
+          <strong>{vendorCount}</strong>
+          <small>{vendorsPerTrade} per trade on average</small>
+        </Card>
+      </div>
+      <Tabs
+        value={workspaceTab}
+        onChange={setWorkspaceTab}
+        options={[
+          { value: "overview", label: "Overview" },
+          { value: "comparison", label: "Vendor Comparison Sheet" },
+          { value: "history", label: "Version History" },
+        ]}
+      />
+      {workspaceTab === "overview" && (
+        <Card title="Comparison summary" flush>
+          <div role="tabpanel" aria-label="Overview">
             <div className="inos-table-wrap">
-              <table className="inos-table">
+              <table
+                className="inos-table vc-overview-table"
+                aria-label="Finalised vendor summary"
+              >
                 <thead>
                   <tr>
-                    <th>S.No</th>
-                    <th>Trade</th>
-                    <th>Finalised vendor</th>
-                    <th className="text-right">Amount</th>
-                    <th className="text-right">Actions</th>
+                    <th scope="col">S.No</th>
+                    <th scope="col">Trade</th>
+                    <th scope="col">Finalised vendor</th>
+                    <th scope="col" className="text-right">
+                      Amount
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
+                  {!trades.length && (
+                    <tr>
+                      <td colSpan={4}>No trades in this sheet.</td>
+                    </tr>
+                  )}
                   {trades.map((trade, index) => {
-                    const picked = trade.vendors.find(
-                      (v) => v.id === trade.finalised_vendor_id,
+                    const vendor = trade.vendors.find(
+                      ({ id }) => id === trade.finalised_vendor_id,
                     );
                     return (
                       <tr key={trade.id}>
                         <td>{index + 1}</td>
                         <td>
-                          <Button
-                            variant="ghost"
-                          onClick={() => openTrade(trade.id)}
+                          <button
+                            className="vc-overview-trade"
+                            type="button"
+                            onClick={() => openTrade(trade.id)}
                           >
-                            {trade.name || "Unnamed trade"}
-                          </Button>
+                            {trade.name}
+                          </button>
                         </td>
-                        <td>
-                          {picked ? (
-                            picked.name
-                          ) : (
-                            <Pill tone="warning">Pending</Pill>
-                          )}
+                        <td>{vendor?.name || "Pending"}</td>
+                        <td className="text-right whitespace-nowrap">
+                          {money(vendor ? quoteTotal(vendor) : 0)}
                         </td>
-                        <td className="text-right">
-                          {money(picked ? quoteTotal(picked) : 0)}
-                        </td>
-                        <td className="text-right"><Button variant="ghost" aria-label={`Remove ${trade.name}`} onClick={() => removeTrade(trade)}>Remove trade</Button></td>
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot>
-                  <tr>
-                    <td colSpan={3}>Total finalised amount</td>
-                    <td className="text-right font-semibold">{money(total)}</td><td />
+                  <tr className="vc-total">
+                    <th scope="row" colSpan={3}>
+                      Total finalised amount
+                    </th>
+                    <td className="text-right">{money(total)}</td>
                   </tr>
                 </tfoot>
               </table>
             </div>
-          </Card>
-          <p className="inos-hint">
-            {trades.filter((t) => !t.finalised_vendor_id).length} trade(s)
-            pending selection
-          </p>
-          <Card title="Comparison notes">
-            <TextArea
-              aria-label="Comparison notes"
-              rows={3}
-              maxLength={10000}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </Card>
-          {canCreateQuotation && (
-            <div className="flex flex-wrap gap-2">
-              {[
-                ...new Map(
-                  trades.flatMap((t) =>
-                    t.vendors
-                      .filter(
-                        (v) => v.id === t.finalised_vendor_id && !v.custom,
-                      )
-                      .map((v) => [v.id, v]),
-                  ),
-                ).values(),
-              ].map((v) => (
-                <Button
-                  key={v.id}
-                  variant="secondary"
-                  disabled={saving || quotationStatus.isLoading}
-                  onClick={() => makeQuotation(v.id)}
-                >
-                  Create / update quotation — {v.name}
+            <div className="vc-overview-notes">
+              <p className="inos-hint">
+                {pendingCount} {pendingCount === 1 ? "trade" : "trades"} pending
+                selection
+              </p>
+              <Field label="Comparison notes" htmlFor="vc-overview-notes">
+                <TextArea
+                  id="vc-overview-notes"
+                  rows={3}
+                  maxLength={10000}
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+        </Card>
+      )}
+      {workspaceTab === "comparison" && (
+        <div
+          className="vc-layout"
+          role="tabpanel"
+          aria-label="Vendor Comparison Sheet"
+        >
+          <Card className="vc-trades">
+            <div className="vc-trades-heading">
+              <h2>
+                Trades <span>{trades.length}</span>
+              </h2>
+              <details className="vc-menu">
+                <summary>+ Trade</summary>
+                <div className="vc-menu-content">
+                  {tradeActions}
+                  {!availableTrades.length && !canCreateTrade && (
+                    <span>No trades available to add</span>
+                  )}
+                </div>
+              </details>
+            </div>
+            {catalogueError && (
+              <p role="alert">
+                Trade catalogue unavailable.{" "}
+                <Button variant="ghost" onClick={retryCatalogue}>
+                  Retry
                 </Button>
+              </p>
+            )}
+            <TextInput
+              type="search"
+              aria-label="Search trades"
+              placeholder="Search trades…"
+              value={tradeSearch}
+              onChange={(event) => setTradeSearch(event.target.value)}
+            />
+            <div className="vc-filters" aria-label="Filter trades" role="group">
+              {[
+                ["all", `All ${trades.length}`],
+                ["pending", `Pending ${pendingCount}`],
+                ["finalised", `Finalised ${finalisedTrades.length}`],
+              ].map(([filter, label]) => (
+                <button
+                  key={filter}
+                  type="button"
+                  aria-pressed={tradeFilter === filter}
+                  onClick={() => setTradeFilter(filter)}
+                >
+                  {label}
+                </button>
               ))}
             </div>
-          )}
-        </>
-      )}
-      {!overview && !active && <Card title="No trades in this sheet"><p className="inos-hint">Add an existing trade or create a new trade to start comparing vendors.</p></Card>}
-      {!overview && active && (
-        <>
-          <Card>
-            <div className="flex items-end flex-wrap gap-4">
-              <div className="flex-1 min-w-48">
-                <Field label="Trade name" htmlFor="trade-name" required>
-                  <TextInput id="trade-name" value={active.name} readOnly />
-                </Field>
-              </div>
-              <div className="flex-1 min-w-48">
-                <Field label="Vendor columns">
-                  <SelectInput
-                    aria-label="Number of vendors"
-                    value={vendorColumnCount}
-                    onChange={(e) =>
-                      resizeVendorColumns(Number(e.target.value))
-                    }
+            <div ref={tradeStrip} className="vc-trade-list" aria-label="Trades">
+              {!matchingTrades.length && (
+                <p className="inos-hint">No matching trades.</p>
+              )}
+              {matchingTrades.map((trade) => {
+                const picked = trade.vendors.find(
+                  (vendor) => vendor.id === trade.finalised_vendor_id,
+                );
+                const status = picked
+                  ? "Finalised"
+                  : trade.vendors.length
+                    ? "Pending"
+                    : "No vendors yet";
+                return (
+                  <button
+                    key={trade.id}
+                    type="button"
+                    className="vc-trade"
+                    aria-current={trade.id === activeId ? "true" : undefined}
+                    onClick={() => openTrade(trade.id)}
                   >
-                    {[1, 2, 3, 4].map((count) => (
-                      <option key={count} value={count}>
-                        {count} vendor{count > 1 ? "s" : ""}
-                      </option>
-                    ))}
-                  </SelectInput>
-                </Field>
-              </div>
-              <div className="flex-1 min-w-48">
-                <Field label="Finalised vendor" htmlFor="trade-finalised">
-                  <SelectInput
-                    id="trade-finalised"
-                    value={active.finalised_vendor_id}
-                    onChange={(e) =>
-                      editTrade(active.id, {
-                        finalised_vendor_id: e.target.value,
-                      })
-                    }
-                    placeholder="Pending"
-                  >
-                    {active.vendors.map((v) => (
-                      <option
-                        key={v.id}
-                        value={v.id}
-                        disabled={!completeQuote(v)}
-                      >
-                        {v.name}
-                        {!completeQuote(v) ? " — incomplete quote" : ""}
-                      </option>
-                    ))}
-                  </SelectInput>
-                </Field>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={() => removeTrade(active)}
-              >
-                Remove trade
-              </Button>
+                    <span
+                      className="vc-status"
+                      data-status={status}
+                      role="img"
+                      aria-label={status}
+                      title={status}
+                    />
+                    <span className="vc-trade-name">
+                      <strong>{trade.name || "Unnamed trade"}</strong>
+                      <small>
+                        {picked?.name ||
+                          (trade.vendors.length
+                            ? `${plural(trade.vendors.length, "vendor")} · ${plural(trade.items.length, "item")}`
+                            : status)}
+                      </small>
+                    </span>
+                    <span className="vc-trade-amount">
+                      {picked ? compactMoney(quoteTotal(picked)) : "—"}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </Card>
-          <p className="inos-hint">
-            Leave quantity blank for lump sums. Negative rates can be used for
-            discounts. Amounts and totals calculate automatically.
-          </p>
-          {vendors.isError && (
-            <p role="alert">
-              Vendor directory unavailable.{" "}
-              <Button variant="ghost" onClick={vendors.refetch}>
-                Retry
-              </Button>
-            </p>
-          )}
-          <Card
-            title="Vendor comparison"
-            flush
-            actions={
-              <Button variant="secondary" onClick={addSharedItem}>
-                + Add item
-              </Button>
-            }
-          >
-            <div
-              className="inos-table-wrap"
-              data-testid="trade-comparison-table"
-            >
-              <table
-                className="inos-table"
-                style={{
-                  minWidth: 500 + vendorColumnCount * 220,
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th rowSpan={2} scope="col">
-                      S.No
-                    </th>
-                    <th rowSpan={2} scope="col" style={{ minWidth: 260 }}>
-                      Item Description
-                    </th>
-                    <th rowSpan={2} scope="col" style={{ minWidth: 100 }}>
-                      Qty
-                    </th>
-                    {Array.from(
-                      {
-                        length: vendorColumnCount,
-                      },
-                      (_, slot) => {
-                        const vendor = active.vendors.find(
-                          (v, index) => (v.slot ?? index) === slot,
-                        );
-                        return (
-                          <th
-                            key={slot}
-                            colSpan={2}
-                            scope="colgroup"
-                            style={{ minWidth: 240, verticalAlign: "top" }}
+          <div className="vc-main">
+            {!active && (
+              <Card title="No trades in this sheet">
+                <p className="inos-hint">
+                  Add an existing trade or create a new trade to start comparing
+                  vendors.
+                </p>
+              </Card>
+            )}
+            {active && (
+              <Card flush className="vc-sheet">
+                <div className="vc-toolbar">
+                  <h2>{active.name}</h2>
+                  <Pill tone={active.finalised_vendor_id ? "ok" : "warn"}>
+                    {active.finalised_vendor_id
+                      ? "Finalised"
+                      : "Pending decision"}
+                  </Pill>
+                  <span className="vc-count">
+                    {plural(active.items.length, "item")} ·{" "}
+                    {plural(active.vendors.length, "vendor")}
+                  </span>
+                  <div className="vc-toolbar-actions">
+                    <Button
+                      variant="secondary"
+                      disabled={!hasAddColumn}
+                      onClick={() => resizeVendorColumns(vendorColumnCount + 1)}
+                    >
+                      + Add vendor
+                    </Button>
+                    <Button variant="secondary" onClick={addSharedItem}>
+                      + Add item
+                    </Button>
+                    <details className="vc-menu">
+                      <summary aria-label="Trade options">⋯</summary>
+                      <div className="vc-menu-content">
+                        <Field label="Vendor columns">
+                          <SelectInput
+                            aria-label="Number of vendors"
+                            value={vendorColumnCount}
+                            onChange={(event) =>
+                              resizeVendorColumns(Number(event.target.value))
+                            }
                           >
-                            <div className="mb-2 font-semibold">
-                              Vendor {slot + 1}
-                            </div>
-                            <SelectInput
-                              aria-label={`Select vendor ${slot + 1}`}
-                              value={vendor && !vendor.custom ? vendor.id : ""}
-                              placeholder="Select vendor"
-                              onChange={(e) =>
-                                selectVendor(vendor, e.target.value, slot)
+                            {[1, 2, 3, 4].map((count) => (
+                              <option key={count} value={count}>
+                                {count}
+                              </option>
+                            ))}
+                          </SelectInput>
+                        </Field>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+                <p className="vc-hint">
+                  Lowest rate in each row is marked green · Leave quantity blank
+                  for lump sums · Totals update automatically
+                </p>
+                {vendors.isError && (
+                  <p role="alert" className="vc-hint">
+                    Vendor directory unavailable.{" "}
+                    <Button variant="ghost" onClick={vendors.refetch}>
+                      Retry
+                    </Button>
+                  </p>
+                )}
+                <div
+                  className="inos-table-wrap vc-table-wrap"
+                  data-testid="trade-comparison-table"
+                >
+                  <table
+                    className="vc-table"
+                    style={{ minWidth: tableMinWidth }}
+                  >
+                    <thead>
+                      <tr>
+                        <th colSpan={4} className="vc-hint-th">
+                          Pick a vendor to finalise. The finalised column is
+                          highlighted and can be turned into a quotation.
+                        </th>
+                        {slots.map((slot) => {
+                          const vendor = vendorAt(slot);
+                          const picked =
+                            Boolean(vendor) &&
+                            active.finalised_vendor_id === vendor.id;
+                          const complete = completeQuote(vendor);
+                          const difference = complete
+                            ? quoteTotal(vendor) - lowest
+                            : null;
+                          const percent =
+                            difference !== null && lowest > 0
+                              ? ((difference / lowest) * 100).toFixed(1)
+                              : null;
+                          const editing = editingSlot === slot;
+                          return (
+                            <th
+                              key={slot}
+                              colSpan={2}
+                              scope="colgroup"
+                              className={cx("vc-vh", picked && "is-finalised")}
+                            >
+                              {vendor ? (
+                                <div className="vc-vh-body">
+                                  <div className="vc-vh-name-row">
+                                    <span
+                                      className="vc-vh-name"
+                                      title={vendor.name}
+                                    >
+                                      {vendor.name || `Vendor ${slot + 1}`}
+                                    </span>
+                                    {picked && (
+                                      <span className="vc-badge">
+                                        Finalised
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="vc-vh-total">
+                                    {money(quoteTotal(vendor))}
+                                  </div>
+                                  <div
+                                    className={cx(
+                                      "vc-vh-delta",
+                                      difference === 0 && "is-lowest",
+                                      difference > 0 && "is-higher",
+                                    )}
+                                  >
+                                    {difference === null
+                                      ? "Incomplete quote"
+                                      : difference === 0
+                                        ? "Lowest"
+                                        : `+${money(difference)}${
+                                            percent !== null
+                                              ? ` · ${percent}%`
+                                              : ""
+                                          }`}
+                                  </div>
+                                  <Button
+                                    variant="secondary"
+                                    className={cx(
+                                      "vc-finalise",
+                                      picked && "is-on",
+                                    )}
+                                    disabled={!picked && !complete}
+                                    onClick={() =>
+                                      editTrade(active.id, {
+                                        finalised_vendor_id: picked
+                                          ? ""
+                                          : vendor.id,
+                                      })
+                                    }
+                                  >
+                                    {picked
+                                      ? "✓ Finalised vendor"
+                                      : "Finalise this vendor"}
+                                  </Button>
+                                  {picked && (
+                                    <button
+                                      type="button"
+                                      className="vc-link"
+                                      onClick={() =>
+                                        editTrade(active.id, {
+                                          finalised_vendor_id: "",
+                                        })
+                                      }
+                                    >
+                                      Clear finalisation
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="vc-link"
+                                    aria-expanded={editing}
+                                    onClick={() =>
+                                      setEditingSlot(editing ? null : slot)
+                                    }
+                                  >
+                                    {editing ? "Done editing" : "Edit vendor"}
+                                  </button>
+                                  {editing && (
+                                    <div className="vc-vendor-edit">
+                                      <Field label="Vendor">
+                                        <SelectInput
+                                          aria-label={`Select vendor ${slot + 1}`}
+                                          value={vendor.custom ? "" : vendor.id}
+                                          placeholder="Custom vendor"
+                                          onChange={(e) =>
+                                            selectVendor(
+                                              vendor,
+                                              e.target.value,
+                                              slot,
+                                            )
+                                          }
+                                        >
+                                          {vendor &&
+                                            !vendor.custom &&
+                                            !directory.some(
+                                              (v) => String(v.id) === vendor.id,
+                                            ) && (
+                                              <option value={vendor.id}>
+                                                {vendor.name}
+                                              </option>
+                                            )}
+                                          {directory
+                                            .filter(
+                                              (v) =>
+                                                !active.vendors.some(
+                                                  (a) =>
+                                                    a.id === String(v.id) &&
+                                                    a.id !== vendor?.id,
+                                                ),
+                                            )
+                                            .map((v) => (
+                                              <option key={v.id} value={v.id}>
+                                                {v.name ||
+                                                  v.company_name ||
+                                                  v.business_name}
+                                              </option>
+                                            ))}
+                                        </SelectInput>
+                                      </Field>
+                                      <Field label="Name">
+                                        <TextInput
+                                          aria-label={`Vendor ${slot + 1} name`}
+                                          value={vendor.name}
+                                          onChange={(e) =>
+                                            editVendor(vendor.id, {
+                                              name: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      </Field>
+                                      <Button
+                                        variant="ghost"
+                                        className="vc-danger"
+                                        onClick={() => removeVendor(vendor)}
+                                      >
+                                        Remove vendor
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="vc-vh-body vc-vh-empty">
+                                  <span className="vc-vh-empty-title">
+                                    Vendor {slot + 1}
+                                  </span>
+                                  <SelectInput
+                                    aria-label={`Select vendor ${slot + 1}`}
+                                    value=""
+                                    placeholder="Select vendor"
+                                    onChange={(e) =>
+                                      selectVendor(
+                                        undefined,
+                                        e.target.value,
+                                        slot,
+                                      )
+                                    }
+                                  >
+                                    {directory
+                                      .filter(
+                                        (v) =>
+                                          !active.vendors.some(
+                                            (a) => a.id === String(v.id),
+                                          ),
+                                      )
+                                      .map((v) => (
+                                        <option key={v.id} value={v.id}>
+                                          {v.name ||
+                                            v.company_name ||
+                                            v.business_name}
+                                        </option>
+                                      ))}
+                                  </SelectInput>
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => addVendor("", slot)}
+                                  >
+                                    Enter custom vendor
+                                  </Button>
+                                </div>
+                              )}
+                            </th>
+                          );
+                        })}
+                        {hasAddColumn && (
+                          <th rowSpan={2} className="vc-add-th" scope="col">
+                            <Button
+                              variant="ghost"
+                              onClick={() =>
+                                resizeVendorColumns(vendorColumnCount + 1)
                               }
                             >
-                              {vendor &&
-                                !vendor.custom &&
-                                !directory.some(
-                                  (v) => String(v.id) === vendor.id,
-                                ) && (
-                                  <option value={vendor.id}>
-                                    {vendor.name}
-                                  </option>
-                                )}
-                              {directory
-                                .filter(
-                                  (v) =>
-                                    !active.vendors.some(
-                                      (a) =>
-                                        a.id === String(v.id) &&
-                                        a.id !== vendor?.id,
-                                    ),
-                                )
-                                .map((v) => (
-                                  <option key={v.id} value={v.id}>
-                                    {v.name ||
-                                      v.company_name ||
-                                      v.business_name}
-                                  </option>
-                                ))}
-                            </SelectInput>
-                            {vendor ? (
-                              <div className="flex items-center gap-2 mt-2">
-                                <TextInput
-                                  aria-label={`Vendor ${slot + 1} name`}
-                                  value={vendor.name}
-                                  onChange={(e) =>
-                                    editVendor(vendor.id, {
-                                      name: e.target.value,
-                                    })
-                                  }
-                                />
-                                <Button
-                                  variant="ghost"
-                                  onClick={async () => {
-                                    if (
-                                      await appConfirm(
-                                        "Remove this vendor and its rates?",
-                                      )
-                                    )
-                                      editTrade(active.id, {
-                                        vendors: active.vendors.filter(
-                                          (v) => v.id !== vendor.id,
-                                        ),
-                                        finalised_vendor_id:
-                                          active.finalised_vendor_id ===
-                                          vendor.id
-                                            ? ""
-                                            : active.finalised_vendor_id,
-                                      });
-                                  }}
-                                >
-                                  ×
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                onClick={() => addVendor("", slot)}
-                              >
-                                Enter custom vendor
-                              </Button>
-                            )}
+                              + Add vendor
+                            </Button>
                           </th>
+                        )}
+                        <th rowSpan={2} aria-label="Item actions" />
+                      </tr>
+                      <tr>
+                        <th scope="col" className="vc-no">
+                          #
+                        </th>
+                        <th scope="col" className="vc-item-col">
+                          Item
+                        </th>
+                        <th scope="col" className="vc-right vc-qty">
+                          Qty
+                        </th>
+                        <th scope="col" className="vc-unit">
+                          Unit
+                        </th>
+                        {slots.map((slot) => (
+                          <Fragment key={slot}>
+                            <th scope="col" className="vc-right">
+                              Rate
+                            </th>
+                            <th scope="col" className="vc-right">
+                              Amount
+                            </th>
+                          </Fragment>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {active.items.map((item, index) => {
+                        const rates = active.vendors.flatMap((vendor) =>
+                          vendor.items
+                            .filter(
+                              (line) =>
+                                line.id === item.id &&
+                                Number.isFinite(line.rate),
+                            )
+                            .map((line) => line.rate),
                         );
-                      },
-                    )}
-                    <th rowSpan={2} aria-label="Item actions" />
-                  </tr>
-                  <tr>
-                    {Array.from(
-                      {
-                        length: vendorColumnCount,
-                      },
-                      (_, slot) => (
-                        <Fragment key={slot}>
-                          <th scope="col">Rate</th>
-                          <th scope="col" className="text-right">
-                            Amount
-                          </th>
-                        </Fragment>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {active.items.map((item, index) => (
-                    <tr key={item.id}>
-                      <td>{index + 1}</td>
-                      <td>
-                        <TextArea
-                          aria-label={`Item description ${index + 1}`}
-                          rows={2}
-                          value={item.description}
-                          onChange={(e) =>
-                            editSharedItem(item.id, {
-                              description: e.target.value,
-                            })
-                          }
-                        />
-                      </td>
-                      <td>
-                        <TextInput
-                          aria-label={`Quantity ${index + 1}`}
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.quantity ?? ""}
-                          onChange={(e) =>
-                            editSharedItem(item.id, {
-                              quantity:
-                                e.target.value === ""
-                                  ? null
-                                  : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </td>
-                      {Array.from(
-                        {
-                          length: vendorColumnCount,
-                        },
-                        (_, slot) => {
-                          const vendor = active.vendors.find(
-                            (v, vi) => (v.slot ?? vi) === slot,
-                          );
-                          const quote = vendor?.items.find(
-                            (line) => line.id === item.id,
-                          );
-                          return (
-                            <Fragment key={slot}>
-                              <td>
-                                <TextInput
-                                  aria-label={`Rate ${index + 1} for ${vendor?.name || `Vendor ${slot + 1}`}`}
-                                  type="number"
-                                  step="any"
-                                  disabled={!vendor}
-                                  value={quote?.rate ?? ""}
-                                  onChange={(e) =>
-                                    editRate(
-                                      vendor,
-                                      item.id,
+                        const lowRate = Math.min(...rates);
+                        const highRate = Math.max(...rates);
+                        const spread = lowRate < highRate;
+                        return (
+                          <tr key={item.id}>
+                            <td className="vc-no">{index + 1}</td>
+                            <td className="vc-item">
+                              <TextArea
+                                className="vc-cell-text"
+                                aria-label={`Item description ${index + 1}`}
+                                rows={2}
+                                value={item.description}
+                                onChange={(e) =>
+                                  editSharedItem(item.id, {
+                                    description: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td className="vc-qty">
+                              <TextInput
+                                className="vc-cell-input vc-num"
+                                aria-label={`Quantity ${index + 1}`}
+                                type="number"
+                                min="0"
+                                step="any"
+                                placeholder="—"
+                                value={item.quantity ?? ""}
+                                onChange={(e) =>
+                                  editSharedItem(item.id, {
+                                    quantity:
                                       e.target.value === ""
                                         ? null
                                         : Number(e.target.value),
-                                    )
-                                  }
-                                />
-                              </td>
-                              <td className="text-right whitespace-nowrap">
-                                {!quote || quoteAmount(quote) === null
-                                  ? "—"
-                                  : money(quoteAmount(quote))}
-                              </td>
-                            </Fragment>
-                          );
-                        },
-                      )}
-                      <td>
-                        <Button
-                          variant="ghost"
-                          aria-label={`Remove item ${index + 1}`}
-                          onClick={() => removeSharedItem(item.id)}
-                        >
-                          ×
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={3}>Total amount</td>
-                    {Array.from(
-                      {
-                        length: vendorColumnCount,
-                      },
-                      (_, slot) => {
-                        const vendor = active.vendors.find(
-                          (v, index) => (v.slot ?? index) === slot,
-                        );
-                        return (
-                          <td
-                            key={slot}
-                            colSpan={2}
-                            className="text-right font-semibold"
-                          >
-                            {vendor ? money(quoteTotal(vendor)) : "—"}
-                          </td>
-                        );
-                      },
-                    )}
-                    <td />
-                  </tr>
-                  <tr>
-                    <td colSpan={3}>Finalised vendor</td>
-                    {Array.from(
-                      {
-                        length: vendorColumnCount,
-                      },
-                      (_, slot) => {
-                        const vendor = active.vendors.find(
-                          (v, index) => (v.slot ?? index) === slot,
-                        );
-                        const picked =
-                          vendor && active.finalised_vendor_id === vendor.id;
-                        return (
-                          <td key={slot} colSpan={2}>
-                            {vendor && (
-                              <>
-                                <Button
-                                  variant={picked ? "secondary" : "ghost"}
-                                  disabled={!completeQuote(vendor)}
-                                  onClick={() =>
-                                    editTrade(active.id, {
-                                      finalised_vendor_id: picked
-                                        ? ""
-                                        : vendor.id,
-                                    })
-                                  }
-                                >
-                                  {picked
-                                    ? "✓ Finalised · Clear"
-                                    : "Finalise vendor"}
-                                </Button>
-                                {completeQuote(vendor) &&
-                                  quoteTotal(vendor) === lowest && (
-                                    <Pill tone="success">★ Lowest</Pill>
+                                  })
+                                }
+                              />
+                            </td>
+                            <td className="vc-unit">
+                              <SelectInput
+                                className="vc-cell-input vc-unit-select"
+                                aria-label={`Unit ${index + 1}`}
+                                placeholder="—"
+                                value={item.unit ?? ""}
+                                onChange={(e) =>
+                                  editSharedItem(item.id, {
+                                    unit: e.target.value,
+                                  })
+                                }
+                              >
+                                {item.unit &&
+                                  !unitOptions.includes(item.unit) && (
+                                    <option value={item.unit}>
+                                      {item.unit}
+                                    </option>
                                   )}
-                              </>
+                                {unitOptions.map((unit) => (
+                                  <option key={unit} value={unit}>
+                                    {unit}
+                                  </option>
+                                ))}
+                              </SelectInput>
+                            </td>
+                            {slots.map((slot) => {
+                              const vendor = vendorAt(slot);
+                              const quote = vendor?.items.find(
+                                (line) => line.id === item.id,
+                              );
+                              const isFinal =
+                                Boolean(vendor) &&
+                                active.finalised_vendor_id === vendor.id;
+                              const tone =
+                                spread && quote?.rate === lowRate
+                                  ? "vc-low-rate"
+                                  : spread && quote?.rate === highRate
+                                    ? "vc-high-rate"
+                                    : "";
+                              const amount = quote ? quoteAmount(quote) : null;
+                              return (
+                                <Fragment key={slot}>
+                                  <td
+                                    className={cx(
+                                      "vc-rate",
+                                      isFinal && "vc-col-final",
+                                      tone,
+                                    )}
+                                  >
+                                    <TextInput
+                                      className="vc-cell-input vc-num"
+                                      aria-label={`Rate ${index + 1} for ${vendor?.name || `Vendor ${slot + 1}`}`}
+                                      type="number"
+                                      step="any"
+                                      placeholder="—"
+                                      disabled={!vendor}
+                                      value={quote?.rate ?? ""}
+                                      onChange={(e) =>
+                                        editRate(
+                                          vendor,
+                                          item.id,
+                                          e.target.value === ""
+                                            ? null
+                                            : Number(e.target.value),
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td
+                                    className={cx(
+                                      "vc-amt",
+                                      isFinal && "vc-col-final",
+                                    )}
+                                  >
+                                    {amount === null ? "—" : num(amount)}
+                                  </td>
+                                </Fragment>
+                              );
+                            })}
+                            {hasAddColumn && (
+                              <td className="vc-add-col" aria-hidden />
                             )}
-                          </td>
+                            <td className="vc-act">
+                              <Button
+                                variant="ghost"
+                                aria-label={`Remove item ${index + 1}`}
+                                onClick={() => removeSharedItem(item.id)}
+                              >
+                                ×
+                              </Button>
+                            </td>
+                          </tr>
                         );
-                      },
-                    )}
-                    <td />
-                  </tr>
-                  <tr>
-                    <td colSpan={3}>Vendor notes</td>
-                    {Array.from(
-                      {
-                        length: vendorColumnCount,
-                      },
-                      (_, slot) => {
-                        const vendor = active.vendors.find(
-                          (v, index) => (v.slot ?? index) === slot,
-                        );
-                        return (
-                          <td key={slot} colSpan={2}>
-                            <TextArea
-                              aria-label={`Vendor ${slot + 1} notes`}
-                              rows={3}
-                              maxLength={10000}
-                              disabled={!vendor}
-                              value={vendor?.notes || ""}
-                              onChange={(e) =>
-                                editVendor(vendor.id, { notes: e.target.value })
-                              }
-                            />
-                          </td>
-                        );
-                      },
-                    )}
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            <div className="flex justify-between gap-3 p-4">
-              <Button variant="ghost" onClick={addSharedItem}>
-                + Add item
-              </Button>
-              {vendorColumnCount < 4 && (
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    editTrade(active.id, {
-                      vendor_column_count: vendorColumnCount + 1,
-                    })
-                  }
-                >
-                  + Add vendor column
-                </Button>
-              )}
-            </div>
-          </Card>{" "}
-        </>
+                      })}
+                      <tr className="vc-add-row">
+                        <td colSpan={totalColumns}>
+                          <Button variant="ghost" onClick={addSharedItem}>
+                            + Add item
+                          </Button>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr className="vc-sub">
+                        <td colSpan={4}>Subtotal</td>
+                        {slots.map((slot) => {
+                          const vendor = vendorAt(slot);
+                          const isFinal =
+                            Boolean(vendor) &&
+                            active.finalised_vendor_id === vendor.id;
+                          return (
+                            <td
+                              key={slot}
+                              colSpan={2}
+                              className={cx(
+                                "vc-tot",
+                                isFinal && "vc-col-final",
+                              )}
+                            >
+                              {vendor ? money(quoteTotal(vendor)) : "—"}
+                            </td>
+                          );
+                        })}
+                        {hasAddColumn && (
+                          <td className="vc-add-col" aria-hidden />
+                        )}
+                        <td />
+                      </tr>
+                      <tr className="vc-gst">
+                        <td colSpan={4}>GST {Math.round(GST_RATE * 100)}%</td>
+                        {slots.map((slot) => {
+                          const vendor = vendorAt(slot);
+                          const isFinal =
+                            Boolean(vendor) &&
+                            active.finalised_vendor_id === vendor.id;
+                          return (
+                            <td
+                              key={slot}
+                              colSpan={2}
+                              className={cx(
+                                "vc-tot",
+                                isFinal && "vc-col-final",
+                              )}
+                            >
+                              {vendor
+                                ? money(quoteTotal(vendor) * GST_RATE)
+                                : "—"}
+                            </td>
+                          );
+                        })}
+                        {hasAddColumn && (
+                          <td className="vc-add-col" aria-hidden />
+                        )}
+                        <td />
+                      </tr>
+                      <tr className="vc-grand">
+                        <td colSpan={4}>Grand total (incl. GST)</td>
+                        {slots.map((slot) => {
+                          const vendor = vendorAt(slot);
+                          return (
+                            <td key={slot} colSpan={2}>
+                              {vendor
+                                ? money(quoteTotal(vendor) * (1 + GST_RATE))
+                                : "—"}
+                            </td>
+                          );
+                        })}
+                        {hasAddColumn && <td />}
+                        <td />
+                      </tr>
+                      <tr className="vc-notes-row">
+                        <td colSpan={4}>Vendor notes</td>
+                        {slots.map((slot) => {
+                          const vendor = vendorAt(slot);
+                          return (
+                            <td key={slot} colSpan={2}>
+                              <TextArea
+                                className="vc-note-box"
+                                aria-label={`Vendor ${slot + 1} notes`}
+                                rows={2}
+                                maxLength={10000}
+                                disabled={!vendor}
+                                placeholder={vendor ? "Add note…" : ""}
+                                value={vendor?.notes || ""}
+                                onChange={(e) =>
+                                  editVendor(vendor.id, {
+                                    notes: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                          );
+                        })}
+                        {hasAddColumn && (
+                          <td className="vc-add-col" aria-hidden />
+                        )}
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <div className="vc-footer">
+                  <span className="vc-save-state">{saveState}</span>
+                  <div className="vc-footer-actions">
+                    <Button
+                      variant="ghost"
+                      className="vc-danger"
+                      onClick={() => removeTrade(active)}
+                    >
+                      Remove trade
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={!previousTrade}
+                      onClick={() => openTrade(previousTrade.id)}
+                    >
+                      Previous trade
+                    </Button>
+                    <Button
+                      disabled={!nextTrade}
+                      onClick={() => openTrade(nextTrade.id)}
+                    >
+                      {nextTrade
+                        ? `Next trade: ${nextTrade.name} →`
+                        : "Next trade"}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
       )}
-      {initialSheet && (
-        <VersionHistory type="vendor-comparison" id={initialSheet.id} />
+      {workspaceTab === "history" && (
+        <div role="tabpanel" aria-label="Version History">
+          {initialSheet ? (
+            <VersionHistory
+              type="vendor-comparison"
+              id={initialSheet.id}
+              title="Version & approval history"
+            />
+          ) : (
+            <Card title="Version & approval history">
+              <p className="inos-hint">
+                Save this vendor comparison to start its version and approval
+                history.
+              </p>
+            </Card>
+          )}
+        </div>
       )}
     </Page>
   );
 }
-
-function ScrollableTradeTabs({ value, onChange, options }) {
-  const viewport = useRef(null);
-  const [position, setPosition] = useState({
-    overflow: false,
-    left: false,
-    right: false,
-  });
-  const updatePosition = () => {
-    const element = viewport.current;
-    if (!element) return;
-    setPosition({
-      overflow: element.scrollWidth > element.clientWidth + 1,
-      left: element.scrollLeft > 1,
-      right: element.scrollLeft + element.clientWidth < element.scrollWidth - 1,
-    });
-  };
-  useEffect(() => {
-    const element = viewport.current;
-    const observer = new ResizeObserver(updatePosition);
-    observer.observe(element);
-    observer.observe(element.firstElementChild);
-    return () => observer.disconnect();
-  }, []);
-  useEffect(() => {
-    const element = viewport.current;
-    const selected = element.querySelector('[aria-selected="true"]');
-    if (!selected) return;
-    const bounds = element.getBoundingClientRect();
-    const tab = selected.getBoundingClientRect();
-    if (tab.left < bounds.left)
-      element.scrollBy({ left: tab.left - bounds.left, behavior: "smooth" });
-    else if (tab.right > bounds.right)
-      element.scrollBy({ left: tab.right - bounds.right, behavior: "smooth" });
-  }, [value]);
-  const slide = (direction) =>
-    viewport.current.scrollBy({
-      left: direction * Math.max(160, viewport.current.clientWidth * 0.75),
-      behavior: "smooth",
-    });
-  return (
-    <div className="flex min-w-0 items-center gap-1">
-      {position.overflow && (
-        <Button
-          variant="ghost"
-          aria-label="Scroll trades left"
-          disabled={!position.left}
-          onClick={() => slide(-1)}
-        >
-          <ChevronLeft size={18} />
-        </Button>
-      )}
-      <div
-        ref={viewport}
-        onScroll={updatePosition}
-        className="min-w-0 flex-1 overflow-x-auto [&_.inos-tabs]:w-max [&_.inos-tabs]:min-w-full [&_.inos-tabs]:overflow-visible [&_button]:shrink-0"
-        style={{ scrollbarWidth: "thin", paddingBottom: 4 }}
-      >
-        <Tabs value={value} onChange={onChange} options={options} />
-      </div>
-      {position.overflow && (
-        <Button
-          variant="ghost"
-          aria-label="Scroll trades right"
-          disabled={!position.right}
-          onClick={() => slide(1)}
-        >
-          <ChevronRight size={18} />
-        </Button>
-      )}
-    </div>
-  );
-}
-

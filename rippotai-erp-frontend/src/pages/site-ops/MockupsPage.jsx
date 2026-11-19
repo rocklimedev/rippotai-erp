@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
-import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from "./siteProjects";
+import React, { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from './siteProjects';
 import {
   Plus,
   Search,
@@ -23,19 +23,13 @@ import {
   Check,
   X,
   ArrowUpRight,
-} from "lucide-react";
+} from 'lucide-react';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
-import { Input } from "@/components/ui/input";
+import { Input } from '@/components/ui/input';
 
 import {
   Select,
@@ -43,7 +37,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 import {
   DropdownMenu,
@@ -51,9 +45,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
 
 import {
   Dialog,
@@ -62,45 +56,49 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 
-import { Separator } from "@/components/ui/separator";
+import { Separator } from '@/components/ui/separator';
 
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from '@/components/ui/textarea';
 
 import {
   useListMockupsQuery,
   useProposeMockupMutation,
   useReviewMockupMutation,
-} from "@/api/procuerment/site-ops.api";
+} from '@/api/procuerment/site-ops.api';
 
 const STATUS_CONFIG = {
   PROPOSED: {
-    label: "Proposed",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
+    label: 'Proposed',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
     icon: Clock3,
   },
   APPROVED: {
-    label: "Approved",
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    label: 'Approved',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     icon: CheckCircle2,
   },
   REJECTED: {
-    label: "Rejected",
-    className: "bg-red-50 text-red-700 border-red-200",
+    label: 'Rejected',
+    className: 'bg-red-50 text-red-700 border-red-200',
     icon: XCircle,
   },
   UNDER_REVIEW: {
-    label: "Under review",
-    className: "bg-orange-50 text-orange-700 border-orange-200",
+    label: 'Under review',
+    className: 'bg-orange-50 text-orange-700 border-orange-200',
     icon: RotateCcw,
   },
 };
 
 const imagesOf = (m) => {
   let v = m?.referenceImageUrls;
-  if (typeof v === "string") {
-    try { v = JSON.parse(v); } catch { v = []; }
+  if (typeof v === 'string') {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      v = [];
+    }
   }
   return Array.isArray(v) ? v : [];
 };
@@ -126,15 +124,9 @@ function StatCard({ title, value, description, icon: Icon }) {
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
 
-            <p className="mt-2 text-2xl font-semibold tracking-tight">
-              {value}
-            </p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
 
-            {description && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {description}
-              </p>
-            )}
+            {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
           </div>
 
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1F453B]/10 text-[#1F453B]">
@@ -157,14 +149,11 @@ function EmptyState({ onCreate }) {
         <h3 className="text-lg font-semibold">No mockups found</h3>
 
         <p className="mt-1 max-w-md text-sm text-muted-foreground">
-          Create a mockup proposal for a finish or construction detail that
-          needs approval before site-wide rollout.
+          Create a mockup proposal for a finish or construction detail that needs approval before
+          site-wide rollout.
         </p>
 
-        <Button
-          onClick={onCreate}
-          className="mt-5 bg-[#1F453B] hover:bg-[#16352D]"
-        >
+        <Button onClick={onCreate} className="mt-5 bg-[#1F453B] hover:bg-[#16352D]">
           <Plus className="mr-2 h-4 w-4" />
           Propose Mockup
         </Button>
@@ -183,7 +172,9 @@ function MockupCard({ mockup, onView, onReview }) {
           <img
             src={image}
             alt=""
-            onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+            onError={(e) => {
+              e.currentTarget.style.visibility = 'hidden';
+            }}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -213,7 +204,7 @@ function MockupCard({ mockup, onView, onReview }) {
               View Details
             </DropdownMenuItem>
 
-            {mockup.status !== "APPROVED" && (
+            {mockup.status !== 'APPROVED' && (
               <DropdownMenuItem onClick={() => onReview(mockup)}>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Review
@@ -240,13 +231,13 @@ function MockupCard({ mockup, onView, onReview }) {
           <div className="min-w-0">
             <h3 className="truncate font-semibold">{mockup.name}</h3>
             {mockup.project?.name && (
-              <p className="mt-0.5 truncate text-xs font-medium text-[#1F453B]">{mockup.project.name}</p>
+              <p className="mt-0.5 truncate text-xs font-medium text-[#1F453B]">
+                {mockup.project.name}
+              </p>
             )}
 
             {mockup.finishType && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {mockup.finishType}
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{mockup.finishType}</p>
             )}
           </div>
 
@@ -292,12 +283,8 @@ function MockupCard({ mockup, onView, onReview }) {
             <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
           </Button>
 
-          {mockup.status !== "APPROVED" && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onReview(mockup)}
-            >
+          {mockup.status !== 'APPROVED' && (
+            <Button size="sm" variant="outline" onClick={() => onReview(mockup)}>
               Review
             </Button>
           )}
@@ -320,9 +307,7 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
             <StatusBadge status={mockup.status} />
           </div>
 
-          <DialogDescription>
-            Mockup proposal and approval details.
-          </DialogDescription>
+          <DialogDescription>Mockup proposal and approval details.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
@@ -331,7 +316,9 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
               <img
                 src={imagesOf(mockup)[0]}
                 alt=""
-                onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                onError={(e) => {
+                  e.currentTarget.style.visibility = 'hidden';
+                }}
                 className="aspect-video h-full w-full object-cover"
               />
             ) : (
@@ -346,21 +333,21 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Finish Type
               </p>
-              <p className="mt-1 text-sm">{mockup.finishType || "—"}</p>
+              <p className="mt-1 text-sm">{mockup.finishType || '—'}</p>
             </div>
 
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Location
               </p>
-              <p className="mt-1 text-sm">{mockup.location || "—"}</p>
+              <p className="mt-1 text-sm">{mockup.location || '—'}</p>
             </div>
 
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Proposed By
               </p>
-              <p className="mt-1 text-sm">{mockup.proposedBy || "—"}</p>
+              <p className="mt-1 text-sm">{mockup.proposedBy || '—'}</p>
             </div>
 
             <div>
@@ -368,9 +355,7 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
                 Proposed At
               </p>
               <p className="mt-1 text-sm">
-                {mockup.proposedAt
-                  ? new Date(mockup.proposedAt).toLocaleString()
-                  : "—"}
+                {mockup.proposedAt ? new Date(mockup.proposedAt).toLocaleString() : '—'}
               </p>
             </div>
           </div>
@@ -380,9 +365,7 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
           <div>
             <p className="text-sm font-medium">Description</p>
 
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {mockup.description}
-            </p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{mockup.description}</p>
           </div>
         )}
 
@@ -390,9 +373,7 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
           <div className="rounded-lg border bg-muted/40 p-4">
             <p className="text-sm font-medium">Review Notes</p>
 
-            <p className="mt-2 text-sm text-muted-foreground">
-              {mockup.reviewNotes}
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">{mockup.reviewNotes}</p>
           </div>
         )}
 
@@ -406,9 +387,7 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
             {mockup.reviewedAt && (
               <div>
                 <span className="text-muted-foreground">Reviewed </span>
-                <span className="font-medium">
-                  {new Date(mockup.reviewedAt).toLocaleString()}
-                </span>
+                <span className="font-medium">{new Date(mockup.reviewedAt).toLocaleString()}</span>
               </div>
             )}
           </div>
@@ -419,13 +398,13 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
 }
 
 function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
-  const [status, setStatus] = useState("APPROVED");
-  const [reviewNotes, setReviewNotes] = useState("");
+  const [status, setStatus] = useState('APPROVED');
+  const [reviewNotes, setReviewNotes] = useState('');
 
   React.useEffect(() => {
     if (open) {
-      setStatus("APPROVED");
-      setReviewNotes("");
+      setStatus('APPROVED');
+      setReviewNotes('');
     }
   }, [open]);
 
@@ -447,9 +426,7 @@ function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
         <DialogHeader>
           <DialogTitle>Review Mockup</DialogTitle>
 
-          <DialogDescription>
-            Review "{mockup.name}" and record the decision.
-          </DialogDescription>
+          <DialogDescription>Review "{mockup.name}" and record the decision.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
@@ -487,9 +464,7 @@ function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Review Notes
-            </label>
+            <label className="mb-2 block text-sm font-medium">Review Notes</label>
 
             <Textarea
               value={reviewNotes}
@@ -499,7 +474,7 @@ function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
             />
           </div>
 
-          {status === "APPROVED" && (
+          {status === 'APPROVED' && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
               <div className="flex gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
@@ -519,12 +494,8 @@ function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
             Cancel
           </Button>
 
-          <Button
-            onClick={submit}
-            disabled={loading}
-            className="bg-[#1F453B] hover:bg-[#16352D]"
-          >
-            {loading ? "Saving..." : "Save Review"}
+          <Button onClick={submit} disabled={loading} className="bg-[#1F453B] hover:bg-[#16352D]">
+            {loading ? 'Saving...' : 'Save Review'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -532,16 +503,24 @@ function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
   );
 }
 
-function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultProjectId, projects, proposer }) {
+function ProposeMockupDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  loading,
+  defaultProjectId,
+  projects,
+  proposer,
+}) {
   const [tried, setTried] = useState(false);
   const [form, setForm] = useState({
-    projectId: "",
-    name: "",
-    finishType: "",
-    location: "",
-    description: "",
-    proposedBy: "",
-    stepId: "",
+    projectId: '',
+    name: '',
+    finishType: '',
+    location: '',
+    description: '',
+    proposedBy: '',
+    stepId: '',
   });
 
   const update = (key, value) => {
@@ -554,7 +533,11 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
   React.useEffect(() => {
     if (open) {
       setTried(false);
-      setForm((f) => ({ ...f, projectId: defaultProjectId || f.projectId || "", proposedBy: f.proposedBy || proposer || "" }));
+      setForm((f) => ({
+        ...f,
+        projectId: defaultProjectId || f.projectId || '',
+        proposedBy: f.proposedBy || proposer || '',
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -581,8 +564,7 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
           <DialogTitle>Propose Mockup</DialogTitle>
 
           <DialogDescription>
-            Submit a finish or construction detail for review before site-wide
-            rollout.
+            Submit a finish or construction detail for review before site-wide rollout.
           </DialogDescription>
         </DialogHeader>
 
@@ -593,34 +575,32 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
             </label>
             <ProjectPicker
               value={form.projectId}
-              onChange={(v) => update("projectId", v)}
+              onChange={(v) => update('projectId', v)}
               placeholder="Select a project"
               projects={projects}
               invalid={tried && !form.projectId}
             />
-            {tried && !form.projectId && <p className="mt-1 text-xs text-red-600">Pick the project</p>}
+            {tried && !form.projectId && (
+              <p className="mt-1 text-xs text-red-600">Pick the project</p>
+            )}
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium">
-              Mockup Name
-            </label>
+            <label className="mb-2 block text-sm font-medium">Mockup Name</label>
 
             <Input
               value={form.name}
-              onChange={(e) => update("name", e.target.value)}
+              onChange={(e) => update('name', e.target.value)}
               placeholder="e.g. Living room flooring mockup - Option B"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Finish Type
-            </label>
+            <label className="mb-2 block text-sm font-medium">Finish Type</label>
 
             <Input
               value={form.finishType}
-              onChange={(e) => update("finishType", e.target.value)}
+              onChange={(e) => update('finishType', e.target.value)}
               placeholder="Flooring, Paint, Cladding..."
             />
           </div>
@@ -630,19 +610,17 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
 
             <Input
               value={form.location}
-              onChange={(e) => update("location", e.target.value)}
+              onChange={(e) => update('location', e.target.value)}
               placeholder="Living Room / Lobby / Site..."
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Proposed By
-            </label>
+            <label className="mb-2 block text-sm font-medium">Proposed By</label>
 
             <Input
               value={form.proposedBy}
-              onChange={(e) => update("proposedBy", e.target.value)}
+              onChange={(e) => update('proposedBy', e.target.value)}
               placeholder="Name"
             />
           </div>
@@ -653,19 +631,17 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
             <Input
               type="number"
               value={form.stepId}
-              onChange={(e) => update("stepId", e.target.value)}
+              onChange={(e) => update('stepId', e.target.value)}
               placeholder="Optional"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium">
-              Description
-            </label>
+            <label className="mb-2 block text-sm font-medium">Description</label>
 
             <Textarea
               value={form.description}
-              onChange={(e) => update("description", e.target.value)}
+              onChange={(e) => update('description', e.target.value)}
               placeholder="Describe the proposed mockup, finish, specification or installation detail..."
               rows={5}
             />
@@ -683,7 +659,7 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
             className="bg-[#1F453B] hover:bg-[#16352D]"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {loading ? "Creating..." : "Create Proposal"}
+            {loading ? 'Creating...' : 'Create Proposal'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -695,9 +671,9 @@ export default function MockupsPage() {
   const { user } = useAuth();
   const [projectId, setProjectId] = useProjectParam();
   const { projects, nameOf } = useSiteProjects();
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [view, setView] = useState("grid");
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('ALL');
+  const [view, setView] = useState('grid');
 
   const [createOpen, setCreateOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -707,7 +683,7 @@ export default function MockupsPage() {
 
   const { data, isLoading, isFetching } = useListMockupsQuery({
     projectId,
-    status: status === "ALL" ? undefined : status,
+    status: status === 'ALL' ? undefined : status,
   });
 
   const [proposeMockup, { isLoading: proposing }] = useProposeMockupMutation();
@@ -738,22 +714,22 @@ export default function MockupsPage() {
   const stats = useMemo(() => {
     return {
       total: mockups.length,
-      proposed: mockups.filter((m) => ["PROPOSED", "UNDER_REVIEW"].includes(m.status)).length,
-      approved: mockups.filter((m) => m.status === "APPROVED").length,
-      rework: mockups.filter((m) => m.status === "REJECTED").length,
+      proposed: mockups.filter((m) => ['PROPOSED', 'UNDER_REVIEW'].includes(m.status)).length,
+      approved: mockups.filter((m) => m.status === 'APPROVED').length,
+      rework: mockups.filter((m) => m.status === 'REJECTED').length,
       rollout: mockups.filter((m) => m.clearedForRollout).length,
     };
   }, [mockups]);
 
   const errMsg = (e) => {
     const m = e?.data?.message;
-    return Array.isArray(m) ? m.join(", ") : m || "Something went wrong";
+    return Array.isArray(m) ? m.join(', ') : m || 'Something went wrong';
   };
 
   const handleCreate = async (body) => {
     try {
       await proposeMockup(body).unwrap();
-      toast.success("Mock-up proposed");
+      toast.success('Mock-up proposed');
       setCreateOpen(false);
     } catch (e) {
       toast.error(errMsg(e));
@@ -762,8 +738,8 @@ export default function MockupsPage() {
 
   const handleReview = async ({ id, body }) => {
     try {
-      await reviewMockup({ id, reviewedBy: user?.name || "Reviewer", ...body }).unwrap();
-      toast.success("Review saved");
+      await reviewMockup({ id, reviewedBy: user?.name || 'Reviewer', ...body }).unwrap();
+      toast.success('Review saved');
       setReviewOpen(false);
       setSelectedMockup(null);
     } catch (e) {
@@ -792,19 +768,14 @@ export default function MockupsPage() {
             <span>Mockups</span>
           </div>
 
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Mockups
-          </h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Mockups</h1>
 
           <p className="mt-1 text-sm text-muted-foreground">
             Manage finish mockups and approvals before site-wide rollout.
           </p>
         </div>
 
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="bg-[#1F453B] hover:bg-[#16352D]"
-        >
+        <Button onClick={() => setCreateOpen(true)} className="bg-[#1F453B] hover:bg-[#16352D]">
           <Plus className="mr-2 h-4 w-4" />
           Propose Mockup
         </Button>
@@ -815,7 +786,7 @@ export default function MockupsPage() {
         <StatCard
           title="Total Mockups"
           value={stats.total}
-          description={projectId ? nameOf(projectId) : "Across all projects"}
+          description={projectId ? nameOf(projectId) : 'Across all projects'}
           icon={ImageIcon}
         />
 
@@ -885,16 +856,16 @@ export default function MockupsPage() {
             <div className="flex rounded-lg border bg-muted/30 p-1">
               <Button
                 size="sm"
-                variant={view === "grid" ? "secondary" : "ghost"}
-                onClick={() => setView("grid")}
+                variant={view === 'grid' ? 'secondary' : 'ghost'}
+                onClick={() => setView('grid')}
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
 
               <Button
                 size="sm"
-                variant={view === "list" ? "secondary" : "ghost"}
-                onClick={() => setView("list")}
+                variant={view === 'list' ? 'secondary' : 'ghost'}
+                onClick={() => setView('list')}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -919,7 +890,7 @@ export default function MockupsPage() {
         </div>
       ) : mockups.length === 0 ? (
         <EmptyState onCreate={() => setCreateOpen(true)} />
-      ) : view === "grid" ? (
+      ) : view === 'grid' ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {mockups.map((mockup) => (
             <MockupCard
@@ -943,7 +914,9 @@ export default function MockupsPage() {
                     <img
                       src={imagesOf(mockup)[0]}
                       alt=""
-                      onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                      onError={(e) => {
+                        e.currentTarget.style.visibility = 'hidden';
+                      }}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -961,7 +934,9 @@ export default function MockupsPage() {
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
-                    {mockup.project?.name && <span className="font-medium text-[#1F453B]">{mockup.project.name}</span>}
+                    {mockup.project?.name && (
+                      <span className="font-medium text-[#1F453B]">{mockup.project.name}</span>
+                    )}
                     {mockup.finishType && <span>{mockup.finishType}</span>}
 
                     {mockup.location && (
@@ -981,16 +956,12 @@ export default function MockupsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openDetails(mockup)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => openDetails(mockup)}>
                     <Eye className="mr-2 h-4 w-4" />
                     View
                   </Button>
 
-                  {mockup.status !== "APPROVED" && (
+                  {mockup.status !== 'APPROVED' && (
                     <Button
                       size="sm"
                       onClick={() => openReview(mockup)}

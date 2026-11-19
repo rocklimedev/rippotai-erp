@@ -1,12 +1,12 @@
-import { useParams } from "react-router-dom";
+import { useParams } from 'react-router-dom';
 import {
   useGetDailySiteReportByIdQuery,
   useShareDailySiteReportMutation,
-} from "../../api/site-ops/site-ops.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Share2 } from "lucide-react";
+} from '../../api/site-ops/site-ops.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { Share2 } from 'lucide-react';
 
 export default function DailyReportDetailPage() {
   const { id } = useParams();
@@ -21,16 +21,14 @@ export default function DailyReportDetailPage() {
   const handleShare = async () => {
     try {
       await share(reportId).unwrap();
-      toast.success("Report marked as shared");
+      toast.success('Report marked as shared');
     } catch (e) {
-      toast.error(e?.data?.message || "Failed to share");
+      toast.error(e?.data?.message || 'Failed to share');
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="bg-page min-h-full p-6 text-[var(--muted)]">Loading…</div>
-    );
+    return <div className="bg-page min-h-full p-6 text-[var(--muted)]">Loading…</div>;
   }
 
   if (error || !report) {
@@ -45,19 +43,13 @@ export default function DailyReportDetailPage() {
     <div className="bg-page min-h-full p-6">
       <PageHeader
         title={`Daily report — ${
-          report.reportDate
-            ? new Date(report.reportDate).toLocaleDateString()
-            : id
+          report.reportDate ? new Date(report.reportDate).toLocaleDateString() : id
         }`}
         description={`Project #${report.projectId}`}
         backTo="/site-ops/daily-reports"
         actions={
           !report.sharedAt ? (
-            <Button
-              className="bc-btn-primary"
-              onClick={handleShare}
-              disabled={sharing}
-            >
+            <Button className="bc-btn-primary" onClick={handleShare} disabled={sharing}>
               <Share2 className="h-4 w-4 mr-1.5" />
               Mark shared
             </Button>
@@ -70,14 +62,12 @@ export default function DailyReportDetailPage() {
           <div>
             <dt className="text-[var(--muted)]">Weather</dt>
             <dd className="font-medium text-[var(--ink-green)]">
-              {report.weatherCondition || "—"}
+              {report.weatherCondition || '—'}
             </dd>
           </div>
           <div>
             <dt className="text-[var(--muted)]">Reported by</dt>
-            <dd className="font-medium text-[var(--ink-green)]">
-              {report.reportedBy}
-            </dd>
+            <dd className="font-medium text-[var(--ink-green)]">{report.reportedBy}</dd>
           </div>
           {report.weatherNotes && (
             <div className="sm:col-span-2">
@@ -94,9 +84,7 @@ export default function DailyReportDetailPage() {
           {report.issues && (
             <div className="sm:col-span-2">
               <dt className="text-[var(--muted)]">Issues</dt>
-              <dd className="text-[var(--ink-green)] whitespace-pre-wrap mt-1">
-                {report.issues}
-              </dd>
+              <dd className="text-[var(--ink-green)] whitespace-pre-wrap mt-1">{report.issues}</dd>
             </div>
           )}
           {report.manpower && report.manpower.length > 0 && (

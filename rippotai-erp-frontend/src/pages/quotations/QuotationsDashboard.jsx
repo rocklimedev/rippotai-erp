@@ -1,21 +1,21 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
-import { Button, PageHeader, StatTile, Stats } from "@/components/inos";
-import { useGetQuotationsQuery } from "../../api/procuerment/quotation.api";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { fmtINR, relativeTime, StatusChip } from '@/lib/format';
+import { Button, PageHeader, StatTile, Stats } from '@/components/inos';
+import { useGetQuotationsQuery } from '../../api/procuerment/quotation.api';
 import {
   useSoftDeleteQuotationMutation,
   useRestoreQuotationMutation,
   useDeleteQuotationPermanentMutation,
-} from "../../api/procuerment/quotation.api";
+} from '../../api/procuerment/quotation.api';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Plus,
   Send,
@@ -30,15 +30,15 @@ import {
   Trash2,
   RotateCcw,
   Scale,
-} from "lucide-react";
+} from 'lucide-react';
 
 const TABS = [
-  { k: "all", l: "All" },
-  { k: "draft", l: "Draft" },
-  { k: "awaiting_approval", l: "Awaiting Approval" },
-  { k: "returned_for_editing", l: "Returned" },
-  { k: "approved", l: "Approved" },
-  { k: "cancelled", l: "Cancelled" },
+  { k: 'all', l: 'All' },
+  { k: 'draft', l: 'Draft' },
+  { k: 'awaiting_approval', l: 'Awaiting Approval' },
+  { k: 'returned_for_editing', l: 'Returned' },
+  { k: 'approved', l: 'Approved' },
+  { k: 'cancelled', l: 'Cancelled' },
 ];
 
 function isExpiringSoon(q) {
@@ -49,15 +49,12 @@ function isExpiringSoon(q) {
 
 export default function QuotationsDashboard() {
   const nav = useNavigate();
-  const [tab, setTab] = useState("all");
-  const [q, setQ] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [tab, setTab] = useState('all');
+  const [q, setQ] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const queryArgs = useMemo(
-    () => ({ status: tab !== "all" ? tab : undefined }),
-    [tab],
-  );
+  const queryArgs = useMemo(() => ({ status: tab !== 'all' ? tab : undefined }), [tab]);
 
   const {
     data: quotations = [],
@@ -76,7 +73,7 @@ export default function QuotationsDashboard() {
   }, [tab, searchTerm]);
 
   useEffect(() => {
-    if (isError) toast.error("Failed to load quotations");
+    if (isError) toast.error('Failed to load quotations');
   }, [isError]);
 
   const rows = useMemo(() => {
@@ -105,22 +102,22 @@ export default function QuotationsDashboard() {
     };
     quotations.forEach((r) => {
       switch (r.status) {
-        case "draft":
+        case 'draft':
           counts.drafts++;
           break;
-        case "requested":
+        case 'requested':
           counts.requested++;
           break;
-        case "received":
+        case 'received':
           counts.received++;
           break;
-        case "under_review":
+        case 'under_review':
           counts.under_review++;
           break;
-        case "awaiting_approval":
+        case 'awaiting_approval':
           counts.awaiting_approval++;
           break;
-        case "approved":
+        case 'approved':
           counts.approved++;
           break;
         default:
@@ -133,15 +130,11 @@ export default function QuotationsDashboard() {
 
   const awaiting = useMemo(
     () => ({
-      needs_review: quotations.filter((r) => r.status === "under_review")
-        .length,
-      returned: quotations.filter((r) => r.status === "returned").length,
+      needs_review: quotations.filter((r) => r.status === 'under_review').length,
+      returned: quotations.filter((r) => r.status === 'returned').length,
       expiring: summary.expiring_soon,
-      missing_response: quotations.filter((r) => r.status === "requested")
-        .length,
-      pending_approval: quotations.filter(
-        (r) => r.status === "awaiting_approval",
-      ).length,
+      missing_response: quotations.filter((r) => r.status === 'requested').length,
+      pending_approval: quotations.filter((r) => r.status === 'awaiting_approval').length,
     }),
     [quotations, summary.expiring_soon],
   );
@@ -168,10 +161,10 @@ export default function QuotationsDashboard() {
 
   const handleCompare = () => {
     if (selectedIds.size < 2) {
-      toast.error("Select at least 2 quotations to compare");
+      toast.error('Select at least 2 quotations to compare');
       return;
     }
-    const idsParam = Array.from(selectedIds).join(",");
+    const idsParam = Array.from(selectedIds).join(',');
     nav(`/procurement/estimates/compare?ids=${idsParam}`);
   };
 
@@ -180,7 +173,7 @@ export default function QuotationsDashboard() {
   const handleSoftDelete = async (id, number) => {
     if (!(await appConfirm(`Move quotation ${number} to trash?`))) return;
     try {
-      await softDeleteQuotation({ id, deleted_by: "current_user" }).unwrap();
+      await softDeleteQuotation({ id, deleted_by: 'current_user' }).unwrap();
       toast.success(`Quotation ${number} moved to trash`);
       setSelectedIds((prev) => {
         const newSet = new Set(prev);
@@ -188,7 +181,7 @@ export default function QuotationsDashboard() {
         return newSet;
       });
     } catch (err) {
-      toast.error("Failed to delete quotation");
+      toast.error('Failed to delete quotation');
     }
   };
 
@@ -198,16 +191,12 @@ export default function QuotationsDashboard() {
       await restoreQuotation(id).unwrap();
       toast.success(`Quotation ${number} restored`);
     } catch (err) {
-      toast.error("Failed to restore quotation");
+      toast.error('Failed to restore quotation');
     }
   };
 
   const handlePermanentDelete = async (id, number) => {
-    if (
-      !(await appConfirm(
-        `PERMANENTLY DELETE quotation ${number}?\n\nThis cannot be undone.`,
-      ))
-    )
+    if (!(await appConfirm(`PERMANENTLY DELETE quotation ${number}?\n\nThis cannot be undone.`)))
       return;
     try {
       await deleteQuotationPermanent(id).unwrap();
@@ -218,7 +207,7 @@ export default function QuotationsDashboard() {
         return newSet;
       });
     } catch (err) {
-      toast.error("Failed to permanently delete quotation");
+      toast.error('Failed to permanently delete quotation');
     }
   };
 
@@ -237,7 +226,7 @@ export default function QuotationsDashboard() {
             <Button
               variant="primary"
               icon={Plus}
-              onClick={() => nav("/procurement/estimates/new")}
+              onClick={() => nav('/procurement/estimates/new')}
               data-testid="btn-create-quotation"
             >
               Create Estimate
@@ -249,10 +238,10 @@ export default function QuotationsDashboard() {
       {/* Summary — the four states people act on; the rest live in tabs */}
       <Stats>
         {[
-          ["Total", summary.total, "all"],
-          ["Drafts", summary.drafts, "draft"],
-          ["Awaiting approval", summary.awaiting_approval, "awaiting_approval"],
-          ["Approved", summary.approved, "approved"],
+          ['Total', summary.total, 'all'],
+          ['Drafts', summary.drafts, 'draft'],
+          ['Awaiting approval', summary.awaiting_approval, 'awaiting_approval'],
+          ['Approved', summary.approved, 'approved'],
         ].map(([label, value, k]) => (
           <StatTile
             key={k}
@@ -267,18 +256,15 @@ export default function QuotationsDashboard() {
       {/* Needs attention — only the non-zero items, as one quiet row */}
       {(() => {
         const items = [
-          ["Needs review", awaiting.needs_review, Clock, "under_review"],
-          ["Returned", awaiting.returned, AlertTriangle, "returned"],
-          ["Expiring soon", awaiting.expiring, Clock, null],
-          ["Missing response", awaiting.missing_response, Send, "requested"],
-          ["Received", summary.received, CheckCircle2, "received"],
+          ['Needs review', awaiting.needs_review, Clock, 'under_review'],
+          ['Returned', awaiting.returned, AlertTriangle, 'returned'],
+          ['Expiring soon', awaiting.expiring, Clock, null],
+          ['Missing response', awaiting.missing_response, Send, 'requested'],
+          ['Received', summary.received, CheckCircle2, 'received'],
         ].filter(([, n]) => Number(n) > 0);
         if (!items.length) return null;
         return (
-          <div
-            className="flex flex-wrap items-center gap-2"
-            data-testid="quotations-attention"
-          >
+          <div className="flex flex-wrap items-center gap-2" data-testid="quotations-attention">
             <span className="text-[12.5px] font-semibold text-[var(--text-3)] mr-1">
               Needs attention
             </span>
@@ -306,7 +292,7 @@ export default function QuotationsDashboard() {
                 key={t.k}
                 onClick={() => setTab(t.k)}
                 data-testid={`tab-${t.k}`}
-                className={`px-3 py-1.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap ${tab === t.k ? "bg-[#EAEEF0] text-[#333333]" : "text-[#6B7B7C] hover:bg-[#EAEEF0]"}`}
+                className={`px-3 py-1.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap ${tab === t.k ? 'bg-[#EAEEF0] text-[#333333]' : 'text-[#6B7B7C] hover:bg-[#EAEEF0]'}`}
               >
                 {t.l}
               </button>
@@ -340,8 +326,7 @@ export default function QuotationsDashboard() {
           {selectedIds.size > 0 && (
             <div className="flex items-center justify-between bg-[#EAEEF0] border border-[var(--line)] rounded-lg px-4 py-2 mb-3 text-[13px]">
               <div className="font-medium">
-                {selectedIds.size} quotation{selectedIds.size > 1 ? "s" : ""}{" "}
-                selected
+                {selectedIds.size} quotation{selectedIds.size > 1 ? 's' : ''} selected
               </div>
               <div className="flex gap-2">
                 <button
@@ -380,9 +365,7 @@ export default function QuotationsDashboard() {
                   <th className="w-8 py-2">
                     <input
                       type="checkbox"
-                      checked={
-                        selectedIds.size === rows.length && rows.length > 0
-                      }
+                      checked={selectedIds.size === rows.length && rows.length > 0}
                       onChange={selectAll}
                       className="w-4 h-4 accent-[#1F453B]"
                     />
@@ -419,7 +402,7 @@ export default function QuotationsDashboard() {
                     return (
                       <tr
                         key={r.id}
-                        className={`border-b border-[#EAEEF0] hover:bg-[#EAEEF0] group ${isSelected ? "bg-[#F0F4F2]" : ""}`}
+                        className={`border-b border-[#EAEEF0] hover:bg-[#EAEEF0] group ${isSelected ? 'bg-[#F0F4F2]' : ''}`}
                       >
                         <td className="py-2.5">
                           <input
@@ -439,15 +422,13 @@ export default function QuotationsDashboard() {
                           className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                           onClick={() => nav(`/procurement/estimates/${r.id}`)}
                         >
-                          {r.vendorSnapshot?.name ||
-                            r.vendorSnapshot?.company_name ||
-                            "—"}
+                          {r.vendorSnapshot?.name || r.vendorSnapshot?.company_name || '—'}
                         </td>
                         <td
                           className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                           onClick={() => nav(`/procurement/estimates/${r.id}`)}
                         >
-                          {r.projectSnapshot?.name || "—"}
+                          {r.projectSnapshot?.name || '—'}
                         </td>
                         <td
                           className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
@@ -455,7 +436,7 @@ export default function QuotationsDashboard() {
                         >
                           {r.vendorSnapshot?.businessType?.name ||
                             r.vendorSnapshot?.vendorCategory?.name ||
-                            "—"}
+                            '—'}
                         </td>
                         <td
                           className="py-2.5 pr-3 text-right font-semibold text-[#333333] cursor-pointer"
@@ -477,7 +458,7 @@ export default function QuotationsDashboard() {
                             ? r.quotationDate
                             : r.submittedAt
                               ? relativeTime(r.submittedAt)
-                              : "—"}
+                              : '—'}
                         </td>
 
                         {/* Actions Column — same fix as ProjectsDashboard:
@@ -503,51 +484,38 @@ export default function QuotationsDashboard() {
                                   view stays on the detail page, edit
                                   goes to /quotations/:id/edit */}
                               <DropdownMenuItem
-                                onSelect={() =>
-                                  nav(`/procurement/estimates/${r.id}`)
-                                }
+                                onSelect={() => nav(`/procurement/estimates/${r.id}`)}
                               >
                                 <Eye size={16} className="mr-2" /> View
                               </DropdownMenuItem>
 
                               <DropdownMenuItem
-                                onSelect={() =>
-                                  nav(`/procurement/estimates/${r.id}/edit`)
-                                }
+                                onSelect={() => nav(`/procurement/estimates/${r.id}/edit`)}
                               >
                                 <Edit size={16} className="mr-2" /> Edit
                               </DropdownMenuItem>
 
-                              {r.status !== "archived" ? (
+                              {r.status !== 'archived' ? (
                                 <DropdownMenuItem
-                                  onSelect={() =>
-                                    handleSoftDelete(r.id, r.quotationNumber)
-                                  }
+                                  onSelect={() => handleSoftDelete(r.id, r.quotationNumber)}
                                   className="text-amber-700"
                                 >
-                                  <Archive size={16} className="mr-2" /> Archive
-                                  / Trash
+                                  <Archive size={16} className="mr-2" /> Archive / Trash
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem
-                                  onSelect={() =>
-                                    handleRestore(r.id, r.quotationNumber)
-                                  }
+                                  onSelect={() => handleRestore(r.id, r.quotationNumber)}
                                   className="text-emerald-700"
                                 >
-                                  <RotateCcw size={16} className="mr-2" />{" "}
-                                  Restore
+                                  <RotateCcw size={16} className="mr-2" /> Restore
                                 </DropdownMenuItem>
                               )}
 
                               <DropdownMenuItem
-                                onSelect={() =>
-                                  handlePermanentDelete(r.id, r.quotationNumber)
-                                }
+                                onSelect={() => handlePermanentDelete(r.id, r.quotationNumber)}
                                 className="text-red-600"
                               >
-                                <Trash2 size={16} className="mr-2" /> Permanent
-                                Delete
+                                <Trash2 size={16} className="mr-2" /> Permanent Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

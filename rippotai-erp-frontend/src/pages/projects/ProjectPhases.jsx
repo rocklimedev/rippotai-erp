@@ -1,7 +1,7 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Layers3, RefreshCw, SearchX } from "lucide-react";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { Plus, Pencil, Trash2, Layers3, RefreshCw, SearchX } from 'lucide-react';
 
 import {
   Page,
@@ -15,14 +15,14 @@ import {
   Field,
   TextInput,
   TextArea,
-} from "@/components/inos";
+} from '@/components/inos';
 
 import {
   useGetProjectPhasesQuery,
   useCreateProjectPhaseMutation,
   useUpdateProjectPhaseMutation,
   useDeleteProjectPhaseMutation,
-} from "../../api/projects/project.api";
+} from '../../api/projects/project.api';
 import {
   AdminModal,
   ModalActions,
@@ -31,30 +31,30 @@ import {
   adminCrumbs,
   humanize,
   plural,
-} from "../settings/_admin-ui";
+} from '../settings/_admin-ui';
 
 const EMPTY_FORM = {
-  name: "",
-  code: "",
-  description: "",
-  phase_number: "",
+  name: '',
+  code: '',
+  description: '',
+  phase_number: '',
 };
 
 const toCode = (s) =>
-  String(s || "")
+  String(s || '')
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 
 /** "01 BRIEF" -> "Brief" — the number already has its own column */
 const phaseLabel = (item) => {
-  const raw = String(item.title || item.name || "").replace(/^\d+[\s._-]+/, "");
-  return humanize(raw) || item.title || item.name || "Untitled phase";
+  const raw = String(item.title || item.name || '').replace(/^\d+[\s._-]+/, '');
+  return humanize(raw) || item.title || item.name || 'Untitled phase';
 };
 
 const ProjectPhases = () => {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -71,14 +71,11 @@ const ProjectPhases = () => {
     search: search.trim() || undefined,
   });
 
-  const [createProjectPhase, { isLoading: isCreating }] =
-    useCreateProjectPhaseMutation();
+  const [createProjectPhase, { isLoading: isCreating }] = useCreateProjectPhaseMutation();
 
-  const [updateProjectPhase, { isLoading: isUpdating }] =
-    useUpdateProjectPhaseMutation();
+  const [updateProjectPhase, { isLoading: isUpdating }] = useUpdateProjectPhaseMutation();
 
-  const [deleteProjectPhase, { isLoading: isDeleting }] =
-    useDeleteProjectPhaseMutation();
+  const [deleteProjectPhase, { isLoading: isDeleting }] = useDeleteProjectPhaseMutation();
 
   const allPhases = Array.isArray(projectPhases) ? projectPhases : [];
 
@@ -95,8 +92,7 @@ const ProjectPhases = () => {
     );
   }, [projectPhases, search]);
 
-  const nextNumber =
-    allPhases.reduce((m, p) => Math.max(m, Number(p.phase_number) || 0), 0) + 1;
+  const nextNumber = allPhases.reduce((m, p) => Math.max(m, Number(p.phase_number) || 0), 0) + 1;
 
   const openCreate = () => {
     setEditingId(null);
@@ -110,10 +106,10 @@ const ProjectPhases = () => {
     setEditingId(item.id);
 
     setForm({
-      name: item.title || item.name || "",
-      code: item.phase_code || item.code || item.phaseCode || "",
-      description: item.description || "",
-      phase_number: item.phase_number != null ? String(item.phase_number) : "",
+      name: item.title || item.name || '',
+      code: item.phase_code || item.code || item.phaseCode || '',
+      description: item.description || '',
+      phase_number: item.phase_number != null ? String(item.phase_number) : '',
     });
     setCodeTouched(true);
     setErrors({});
@@ -134,10 +130,10 @@ const ProjectPhases = () => {
     setForm((prev) => {
       const next = { ...prev, [name]: value };
       // Suggest a code from the name until the user edits the code themselves
-      if (name === "name" && !codeTouched) next.code = toCode(value);
+      if (name === 'name' && !codeTouched) next.code = toCode(value);
       return next;
     });
-    if (name === "code") setCodeTouched(true);
+    if (name === 'code') setCodeTouched(true);
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
@@ -145,10 +141,10 @@ const ProjectPhases = () => {
     event.preventDefault();
 
     const next = {};
-    if (!form.name.trim()) next.name = "Phase name is required.";
-    if (!form.code.trim()) next.code = "A short code is required.";
+    if (!form.name.trim()) next.name = 'Phase name is required.';
+    if (!form.code.trim()) next.code = 'A short code is required.';
     const num = Number(form.phase_number);
-    if (!Number.isInteger(num) || num < 1) next.phase_number = "Use a whole number from 1.";
+    if (!Number.isInteger(num) || num < 1) next.phase_number = 'Use a whole number from 1.';
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -171,11 +167,11 @@ const ProjectPhases = () => {
           ...payload,
         }).unwrap();
 
-        toast.success("Project phase updated successfully");
+        toast.success('Project phase updated successfully');
       } else {
         await createProjectPhase(payload).unwrap();
 
-        toast.success("Project phase created successfully");
+        toast.success('Project phase created successfully');
       }
 
       setShowModal(false);
@@ -184,30 +180,26 @@ const ProjectPhases = () => {
     } catch (error) {
       const msg = error?.data?.message;
       toast.error(
-        (Array.isArray(msg) ? msg.join(" ") : msg) ||
+        (Array.isArray(msg) ? msg.join(' ') : msg) ||
           error?.message ||
-          "Unable to save project phase",
+          'Unable to save project phase',
       );
     }
   };
 
   const handleDelete = async (item) => {
-    const confirmed = (await appConfirm(
+    const confirmed = await appConfirm(
       `Delete project phase "${item.title}"? This action cannot be undone.`,
-    ));
+    );
 
     if (!confirmed) return;
 
     try {
       await deleteProjectPhase(item.id).unwrap();
 
-      toast.success("Project phase deleted successfully");
+      toast.success('Project phase deleted successfully');
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to delete project phase",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to delete project phase');
     }
   };
 
@@ -216,7 +208,7 @@ const ProjectPhases = () => {
   return (
     <Page>
       <PageHeader
-        crumbs={adminCrumbs("Project phases")}
+        crumbs={adminCrumbs('Project phases')}
         title="Project phases"
         subtitle="The master stages every project moves through, from brief to handover."
         actions={
@@ -230,7 +222,7 @@ const ProjectPhases = () => {
         <SearchInput value={search} onChange={setSearch} placeholder="Search phases" />
         <ToolbarSpacer />
         <Button variant="ghost" icon={RefreshCw} onClick={() => refetch()} disabled={isFetching}>
-          {isFetching ? "Refreshing…" : "Refresh"}
+          {isFetching ? 'Refreshing…' : 'Refresh'}
         </Button>
       </Toolbar>
 
@@ -254,12 +246,27 @@ const ProjectPhases = () => {
                 <TableEmpty
                   cols={5}
                   icon={Layers3}
-                  title={isError ? "Couldn't load phases" : "No phases yet"}
-                  text={isError ? "The phases service didn't respond. Try refreshing." : "Add the stages your projects move through — for example Brief, Design, Execution."}
-                  action={!isError && <Button variant="soft" icon={Plus} onClick={openCreate}>Add phase</Button>}
+                  title={isError ? "Couldn't load phases" : 'No phases yet'}
+                  text={
+                    isError
+                      ? "The phases service didn't respond. Try refreshing."
+                      : 'Add the stages your projects move through — for example Brief, Design, Execution.'
+                  }
+                  action={
+                    !isError && (
+                      <Button variant="soft" icon={Plus} onClick={openCreate}>
+                        Add phase
+                      </Button>
+                    )
+                  }
                 />
               ) : normalizedPhases.length === 0 ? (
-                <TableEmpty cols={5} icon={SearchX} title="No matching phases" text="Try a different name or code." />
+                <TableEmpty
+                  cols={5}
+                  icon={SearchX}
+                  title="No matching phases"
+                  text="Try a different name or code."
+                />
               ) : (
                 normalizedPhases.map((item, index) => (
                   <tr key={item.id}>
@@ -278,11 +285,24 @@ const ProjectPhases = () => {
                       )}
                     </td>
                     <td className="adm-hide-sm">
-                      {item.module ? <Pill tone="info" dot={false}>{humanize(item.module)}</Pill> : <span className="muted">—</span>}
+                      {item.module ? (
+                        <Pill tone="info" dot={false}>
+                          {humanize(item.module)}
+                        </Pill>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
                     </td>
                     <td className="actions">
                       <div className="adm-icon-btns">
-                        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(item)} title="Edit" aria-label={`Edit ${item.title}`} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={Pencil}
+                          onClick={() => openEdit(item)}
+                          title="Edit"
+                          aria-label={`Edit ${item.title}`}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
@@ -302,7 +322,9 @@ const ProjectPhases = () => {
         </div>
         {allPhases.length > 0 && (
           <div className="adm-table-foot">
-            {search ? `${plural(normalizedPhases.length, "phase")} match` : plural(allPhases.length, "phase")}
+            {search
+              ? `${plural(normalizedPhases.length, 'phase')} match`
+              : plural(allPhases.length, 'phase')}
           </div>
         )}
       </Card>
@@ -314,7 +336,7 @@ const ProjectPhases = () => {
         onClose={closeModal}
         busy={saving}
         icon={Layers3}
-        title={editingId ? "Edit phase" : "Add phase"}
+        title={editingId ? 'Edit phase' : 'Add phase'}
         subtitle="Phases order the project workflow and group its documents."
         width={560}
         testId="phase-modal"
@@ -322,7 +344,7 @@ const ProjectPhases = () => {
           <ModalActions
             onCancel={closeModal}
             submitting={saving}
-            submitLabel={editingId ? "Save changes" : "Add phase"}
+            submitLabel={editingId ? 'Save changes' : 'Add phase'}
           />
         }
       >
@@ -339,7 +361,13 @@ const ProjectPhases = () => {
             />
           </Field>
 
-          <Field label="Code" required error={errors.code} htmlFor="ph-code" hint="Filled in from the name — edit if you like.">
+          <Field
+            label="Code"
+            required
+            error={errors.code}
+            htmlFor="ph-code"
+            hint="Filled in from the name — edit if you like."
+          >
             <TextInput
               id="ph-code"
               name="code"
@@ -351,7 +379,13 @@ const ProjectPhases = () => {
             />
           </Field>
 
-          <Field label="Order" required error={errors.phase_number} htmlFor="ph-num" hint="Position in the workflow.">
+          <Field
+            label="Order"
+            required
+            error={errors.phase_number}
+            htmlFor="ph-num"
+            hint="Position in the workflow."
+          >
             <TextInput
               id="ph-num"
               name="phase_number"

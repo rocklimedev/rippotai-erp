@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   CreditCard,
   Crown,
@@ -7,46 +7,42 @@ import {
   Download,
   Wallet,
   AlertTriangle,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 
 export default function BillingSettings() {
   const invoices = [
     {
-      id: "#INV-1001",
-      date: "01 Jul 2026",
-      amount: "₹2,999",
-      status: "Paid",
+      id: '#INV-1001',
+      date: '01 Jul 2026',
+      amount: '₹2,999',
+      status: 'Paid',
     },
     {
-      id: "#INV-0998",
-      date: "01 Jun 2026",
-      amount: "₹2,999",
-      status: "Paid",
+      id: '#INV-0998',
+      date: '01 Jun 2026',
+      amount: '₹2,999',
+      status: 'Paid',
     },
     {
-      id: "#INV-0994",
-      date: "01 May 2026",
-      amount: "₹2,999",
-      status: "Paid",
+      id: '#INV-0994',
+      date: '01 May 2026',
+      amount: '₹2,999',
+      status: 'Paid',
     },
   ];
 
   return (
     <div className="max-w-5xl space-y-8">
       <div>
-        <h2
-          className="text-2xl font-semibold"
-          style={{ color: "var(--ink-green)" }}
-        >
+        <h2 className="text-2xl font-semibold" style={{ color: 'var(--ink-green)' }}>
           Billing & Subscription
         </h2>
 
         <p className="text-[#6B7B7C] mt-2">
-          Manage your subscription, payment methods, invoices, and billing
-          preferences.
+          Manage your subscription, payment methods, invoices, and billing preferences.
         </p>
       </div>
 
@@ -184,10 +180,7 @@ export default function BillingSettings() {
 
         <div className="divide-y">
           {invoices.map((invoice) => (
-            <div
-              key={invoice.id}
-              className="flex items-center justify-between px-6 py-4"
-            >
+            <div key={invoice.id} className="flex items-center justify-between px-6 py-4">
               <div>
                 <p className="font-medium">{invoice.id}</p>
                 <p className="text-sm text-[#6B7B7C]">{invoice.date}</p>
@@ -196,9 +189,7 @@ export default function BillingSettings() {
               <div className="flex items-center gap-6">
                 <span className="font-semibold">{invoice.amount}</span>
 
-                <span className="text-green-600 text-sm font-medium">
-                  {invoice.status}
-                </span>
+                <span className="text-green-600 text-sm font-medium">{invoice.status}</span>
 
                 <Button variant="ghost" size="icon">
                   <Download size={18} />
@@ -216,14 +207,11 @@ export default function BillingSettings() {
             <AlertTriangle size={22} className="text-red-600 mt-1" />
 
             <div>
-              <h3 className="font-semibold text-red-700">
-                Cancel Subscription
-              </h3>
+              <h3 className="font-semibold text-red-700">Cancel Subscription</h3>
 
               <p className="text-sm text-red-600 mt-1 max-w-xl">
-                Cancelling your subscription will keep your account active until
-                the end of the current billing period. After that, premium
-                features will no longer be available.
+                Cancelling your subscription will keep your account active until the end of the
+                current billing period. After that, premium features will no longer be available.
               </p>
             </div>
           </div>

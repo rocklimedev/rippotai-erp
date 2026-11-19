@@ -1,28 +1,28 @@
-import { appConfirm } from "@/lib/app-dialog";
-import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { appConfirm } from '@/lib/app-dialog';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import {
   useGetSnagByIdQuery,
   useUpdateSnagMutation,
   useDeleteSnagMutation,
-} from "../../api/site-ops/site-ops.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { StatusBadge } from "@/components/site-ops/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
+} from '../../api/site-ops/site-ops.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { StatusBadge } from '@/components/site-ops/StatusBadge';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { Pencil, Trash2 } from "lucide-react";
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+import { Pencil, Trash2 } from 'lucide-react';
 
-const STATUS_OPTIONS = ["Open", "In Progress", "Rectified", "Closed"];
+const STATUS_OPTIONS = ['Open', 'In Progress', 'Rectified', 'Closed'];
 
 export default function SnagDetailPage() {
   const { id } = useParams();
@@ -43,12 +43,12 @@ export default function SnagDetailPage() {
     if (!snag) return;
     setForm({
       status: snag.status,
-      floor: snag.floor || "",
-      room: snag.room || "",
-      category: snag.category || "",
+      floor: snag.floor || '',
+      room: snag.room || '',
+      category: snag.category || '',
       observation: snag.observation,
-      scope: snag.scope || "",
-      remarks: snag.remarks || "",
+      scope: snag.scope || '',
+      remarks: snag.remarks || '',
     });
     setEditing(true);
   };
@@ -66,28 +66,26 @@ export default function SnagDetailPage() {
         scope: form.scope || undefined,
         remarks: form.remarks || undefined,
       }).unwrap();
-      toast.success("Snag updated");
+      toast.success('Snag updated');
       setEditing(false);
     } catch (e) {
-      toast.error(e?.data?.message || "Update failed");
+      toast.error(e?.data?.message || 'Update failed');
     }
   };
 
   const handleDelete = async () => {
-    if (!id || !(await appConfirm("Delete this snag?"))) return;
+    if (!id || !(await appConfirm('Delete this snag?'))) return;
     try {
       await deleteSnag(id).unwrap();
-      toast.success("Snag deleted");
-      navigate("/site-ops/snags");
+      toast.success('Snag deleted');
+      navigate('/site-ops/snags');
     } catch (e) {
-      toast.error(e?.data?.message || "Delete failed");
+      toast.error(e?.data?.message || 'Delete failed');
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="bg-page min-h-full p-6 text-[var(--muted)]">Loading…</div>
-    );
+    return <div className="bg-page min-h-full p-6 text-[var(--muted)]">Loading…</div>;
   }
 
   if (error || !snag) {
@@ -107,12 +105,7 @@ export default function SnagDetailPage() {
         actions={
           <>
             {!editing && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="bc-btn-secondary"
-                onClick={startEdit}
-              >
+              <Button variant="outline" size="sm" className="bc-btn-secondary" onClick={startEdit}>
                 <Pencil className="h-4 w-4 mr-1.5" />
                 Edit
               </Button>
@@ -160,9 +153,7 @@ export default function SnagDetailPage() {
                 <Input
                   className="bc-input"
                   value={form.category}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, category: e.target.value }))
-                  }
+                  onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -170,9 +161,7 @@ export default function SnagDetailPage() {
                 <Input
                   className="bc-input"
                   value={form.floor}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, floor: e.target.value }))
-                  }
+                  onChange={(e) => setForm((p) => ({ ...p, floor: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -180,9 +169,7 @@ export default function SnagDetailPage() {
                 <Input
                   className="bc-input"
                   value={form.room}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, room: e.target.value }))
-                  }
+                  onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))}
                 />
               </div>
             </div>
@@ -191,9 +178,7 @@ export default function SnagDetailPage() {
               <Textarea
                 className="bc-input min-h-[100px]"
                 value={form.observation}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, observation: e.target.value }))
-                }
+                onChange={(e) => setForm((p) => ({ ...p, observation: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -201,18 +186,12 @@ export default function SnagDetailPage() {
               <Textarea
                 className="bc-input"
                 value={form.remarks}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, remarks: e.target.value }))
-                }
+                onChange={(e) => setForm((p) => ({ ...p, remarks: e.target.value }))}
               />
             </div>
             <div className="flex gap-2">
-              <Button
-                className="bc-btn-primary"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? "Saving…" : "Save"}
+              <Button className="bc-btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
               </Button>
               <Button
                 variant="outline"
@@ -228,30 +207,24 @@ export default function SnagDetailPage() {
             <div>
               <dt className="text-[var(--muted)] mb-0.5">Location</dt>
               <dd className="text-[var(--ink-green)] font-medium">
-                {[snag.floor, snag.room].filter(Boolean).join(" · ") || "—"}
+                {[snag.floor, snag.room].filter(Boolean).join(' · ') || '—'}
               </dd>
             </div>
             <div>
               <dt className="text-[var(--muted)] mb-0.5">Category</dt>
-              <dd className="text-[var(--ink-green)]">
-                {snag.category || "—"}
-              </dd>
+              <dd className="text-[var(--ink-green)]">{snag.category || '—'}</dd>
             </div>
             <div>
               <dt className="text-[var(--muted)] mb-0.5">Scope</dt>
-              <dd className="text-[var(--ink-green)]">{snag.scope || "—"}</dd>
+              <dd className="text-[var(--ink-green)]">{snag.scope || '—'}</dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-[var(--muted)] mb-0.5">Observation</dt>
-              <dd className="text-[var(--ink-green)] whitespace-pre-wrap">
-                {snag.observation}
-              </dd>
+              <dd className="text-[var(--ink-green)] whitespace-pre-wrap">{snag.observation}</dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-[var(--muted)] mb-0.5">Remarks</dt>
-              <dd className="text-[var(--ink-green)] whitespace-pre-wrap">
-                {snag.remarks || "—"}
-              </dd>
+              <dd className="text-[var(--ink-green)] whitespace-pre-wrap">{snag.remarks || '—'}</dd>
             </div>
             {snag.photos && snag.photos.length > 0 && (
               <div className="sm:col-span-2">

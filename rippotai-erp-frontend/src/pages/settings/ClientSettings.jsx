@@ -1,9 +1,10 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { Building2, SearchX, UserPlus } from "lucide-react";
+import { appConfirm } from '@/lib/app-dialog';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { Building2, SearchX, UserPlus } from 'lucide-react';
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from '@/context/AuthContext';
 import {
   Page,
   PageHeader,
@@ -15,30 +16,25 @@ import {
   Segmented,
   Pill,
   Avatar,
-} from "@/components/inos";
+} from '@/components/inos';
 
 import {
   useGetClientsQuery,
   useDeleteClientMutation,
   useRestoreClientMutation,
-} from "../../api/projects/client.api";
+} from '../../api/projects/client.api';
 
-import ClientModal from "../../components/clients/ClientModal";
-import ClientActionsMenu from "../../components/clients/ClientActionsMenu";
-import {
-  AdminAccessDenied,
-  SkeletonRows,
-  TableEmpty,
-  adminCrumbs,
-  plural,
-} from "./_admin-ui";
+import ClientModal from '../../components/clients/ClientModal';
+import ClientActionsMenu from '../../components/clients/ClientActionsMenu';
+import { AdminAccessDenied, SkeletonRows, TableEmpty, adminCrumbs, plural } from './_admin-ui';
 
 export default function ClientSettings() {
+  const navigate = useNavigate();
   const { user } = useAuth();
 
-  const isAdmin = ["ADMIN", "SUPERADMIN"].includes(user?.role);
+  const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
 
   // null = closed
@@ -66,7 +62,7 @@ export default function ClientSettings() {
 
   useEffect(() => {
     if (clientsError) {
-      toast.error("Failed to load clients");
+      toast.error('Failed to load clients');
     }
   }, [clientsError]);
 
@@ -103,9 +99,7 @@ export default function ClientSettings() {
    */
   const deleteClient = async (client) => {
     if (
-      !(await appConfirm(
-        `Delete ${client.name}? This client will be moved to deleted clients.`,
-      ))
+      !(await appConfirm(`Delete ${client.name}? This client will be moved to deleted clients.`))
     ) {
       return;
     }
@@ -117,9 +111,7 @@ export default function ClientSettings() {
 
       toast.success(`${client.name} deleted`);
     } catch (e) {
-      toast.error(
-        e?.data?.detail || e?.data?.message || "Failed to delete client",
-      );
+      toast.error(e?.data?.detail || e?.data?.message || 'Failed to delete client');
     } finally {
       setSavingId(null);
     }
@@ -136,9 +128,7 @@ export default function ClientSettings() {
 
       toast.success(`${client.name} restored`);
     } catch (e) {
-      toast.error(
-        e?.data?.detail || e?.data?.message || "Failed to restore client",
-      );
+      toast.error(e?.data?.detail || e?.data?.message || 'Failed to restore client');
     } finally {
       setSavingId(null);
     }
@@ -156,14 +146,14 @@ export default function ClientSettings() {
   return (
     <Page>
       <PageHeader
-        crumbs={adminCrumbs("Clients")}
+        crumbs={adminCrumbs('Clients')}
         title="Clients"
         subtitle="The people and companies you build for — used on projects, estimates and invoices."
         actions={
           <Button
             variant="primary"
             icon={UserPlus}
-            onClick={() => setModalClient("new")}
+            onClick={() => setModalClient('new')}
             data-testid="add-client-btn"
           >
             Add client
@@ -178,11 +168,11 @@ export default function ClientSettings() {
           placeholder="Search name, email, phone or company"
         />
         <Segmented
-          value={showDeleted ? "all" : "current"}
-          onChange={(v) => setShowDeleted(v === "all")}
+          value={showDeleted ? 'all' : 'current'}
+          onChange={(v) => setShowDeleted(v === 'all')}
           options={[
-            { value: "current", label: "Current" },
-            { value: "all", label: "Include deleted" },
+            { value: 'current', label: 'Current' },
+            { value: 'all', label: 'Include deleted' },
           ]}
         />
         <ToolbarSpacer />
@@ -209,21 +199,15 @@ export default function ClientSettings() {
                 <TableEmpty
                   cols={6}
                   icon={Building2}
-                  title={
-                    clientsError ? "Couldn't load clients" : "No clients yet"
-                  }
+                  title={clientsError ? "Couldn't load clients" : 'No clients yet'}
                   text={
                     clientsError
                       ? "The clients service didn't respond. Try again in a moment."
-                      : "Add a client once and pick them on every project, estimate and invoice."
+                      : 'Add a client once and pick them on every project, estimate and invoice.'
                   }
                   action={
                     !clientsError && (
-                      <Button
-                        variant="soft"
-                        icon={UserPlus}
-                        onClick={() => setModalClient("new")}
-                      >
+                      <Button variant="soft" icon={UserPlus} onClick={() => setModalClient('new')}>
                         Add client
                       </Button>
                     )
@@ -238,33 +222,25 @@ export default function ClientSettings() {
                 />
               ) : (
                 filteredClients.map((client) => {
-                  const active =
-                    client.is_active !== false && client.deleted_at == null;
+                  const active = client.is_active !== false && client.deleted_at == null;
 
-                  const deleted =
-                    client.deleted_at != null || client.is_deleted === true;
+                  const deleted = client.deleted_at != null || client.is_deleted === true;
 
                   const company = client.company_name || client.company;
                   const sub =
                     client.client_code ||
-                    (client.contact_person &&
-                    client.contact_person !== client.name
+                    (client.contact_person && client.contact_person !== client.name
                       ? client.contact_person
                       : null) ||
                     client.address;
 
                   return (
-                    <tr
-                      key={client.id}
-                      style={deleted ? { opacity: 0.7 } : undefined}
-                    >
+                    <tr key={client.id} style={deleted ? { opacity: 0.7 } : undefined}>
                       <td>
                         <div className="adm-cell-main">
                           <Avatar name={client.name} size={36} />
                           <div style={{ minWidth: 0 }}>
-                            <div className="adm-cell-title">
-                              {client.name || "Unnamed client"}
-                            </div>
+                            <div className="adm-cell-title">{client.name || 'Unnamed client'}</div>
                             {sub && <div className="adm-cell-sub">{sub}</div>}
                           </div>
                         </div>
@@ -274,13 +250,8 @@ export default function ClientSettings() {
                         {client.email || <span className="muted">—</span>}
                       </td>
 
-                      <td
-                        className="adm-cell-2 tabular"
-                        style={{ whiteSpace: "nowrap" }}
-                      >
-                        {client.phone || client.mobile || (
-                          <span className="muted">—</span>
-                        )}
+                      <td className="adm-cell-2 tabular" style={{ whiteSpace: 'nowrap' }}>
+                        {client.phone || client.mobile || <span className="muted">—</span>}
                       </td>
 
                       <td className="adm-cell-2 adm-hide-sm">
@@ -288,13 +259,14 @@ export default function ClientSettings() {
                       </td>
 
                       <td>
-                        <Pill tone={deleted ? "bad" : active ? "ok" : "mute"}>
-                          {deleted ? "Deleted" : active ? "Active" : "Inactive"}
+                        <Pill tone={deleted ? 'bad' : active ? 'ok' : 'mute'}>
+                          {deleted ? 'Deleted' : active ? 'Active' : 'Inactive'}
                         </Pill>
                       </td>
 
                       <td className="actions">
                         <ClientActionsMenu
+                          onView={() => navigate(`/clients/${client.id}`)}
                           client={client}
                           isDeleted={deleted}
                           saving={savingId === client.id}
@@ -311,16 +283,14 @@ export default function ClientSettings() {
           </table>
         </div>
         {total > 0 && (
-          <div className="adm-table-foot">
-            {plural(filteredClients.length, "client")} shown
-          </div>
+          <div className="adm-table-foot">{plural(filteredClients.length, 'client')} shown</div>
         )}
       </Card>
 
       {/* Create / Edit Modal */}
       {modalClient && (
         <ClientModal
-          client={modalClient === "new" ? undefined : modalClient}
+          client={modalClient === 'new' ? undefined : modalClient}
           onClose={() => setModalClient(null)}
         />
       )}

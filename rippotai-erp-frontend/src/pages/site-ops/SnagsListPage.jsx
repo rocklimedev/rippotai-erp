@@ -1,19 +1,19 @@
-import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Plus, AlertTriangle, Filter, RefreshCw } from "lucide-react";
-import { useGetSnagsQuery } from "../../api/site-ops/site-ops.api";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { StatusBadge } from "@/components/site-ops/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Plus, AlertTriangle, Filter, RefreshCw } from 'lucide-react';
+import { useGetSnagsQuery } from '../../api/site-ops/site-ops.api';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { StatusBadge } from '@/components/site-ops/StatusBadge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -21,9 +21,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
-const STATUS_OPTIONS = ["Open", "In Progress", "Rectified", "Closed"];
+const STATUS_OPTIONS = ['Open', 'In Progress', 'Rectified', 'Closed'];
 
 function normalizeListdata(data) {
   if (!data) return [];
@@ -33,9 +33,9 @@ function normalizeListdata(data) {
 
 export default function SnagsListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const projectId = searchParams.get("project_id") || undefined;
-  const status = searchParams.get("status") || undefined;
-  const search = searchParams.get("search") || undefined;
+  const projectId = searchParams.get('project_id') || undefined;
+  const status = searchParams.get('status') || undefined;
+  const search = searchParams.get('search') || undefined;
 
   const { data, isLoading, isFetching, refetch } = useGetSnagsQuery({
     project_id: projectId,
@@ -74,9 +74,7 @@ export default function SnagsListPage() {
               onClick={() => refetch()}
               disabled={isFetching}
             >
-              <RefreshCw
-                className={`h-4 w-4 mr-1.5 ${isFetching ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button asChild className="bc-btn-primary">
@@ -93,10 +91,8 @@ export default function SnagsListPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Filter className="h-4 w-4 text-[var(--muted)]" />
           <Select
-            value={projectId || "all"}
-            onValueChange={(v) =>
-              setFilter("project_id", v === "all" ? undefined : v)
-            }
+            value={projectId || 'all'}
+            onValueChange={(v) => setFilter('project_id', v === 'all' ? undefined : v)}
           >
             <SelectTrigger className="bc-input w-[220px] h-10">
               <SelectValue placeholder="All projects" />
@@ -112,10 +108,8 @@ export default function SnagsListPage() {
           </Select>
 
           <Select
-            value={status || "all"}
-            onValueChange={(v) =>
-              setFilter("status", v === "all" ? undefined : v)
-            }
+            value={status || 'all'}
+            onValueChange={(v) => setFilter('status', v === 'all' ? undefined : v)}
           >
             <SelectTrigger className="bc-input w-[160px] h-10">
               <SelectValue placeholder="All statuses" />
@@ -133,10 +127,10 @@ export default function SnagsListPage() {
           <Input
             className="bc-input w-[200px] h-10"
             placeholder="Search observations…"
-            defaultValue={search || ""}
+            defaultValue={search || ''}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                setFilter("search", e.target.value || undefined);
+              if (e.key === 'Enter') {
+                setFilter('search', e.target.value || undefined);
               }
             }}
           />
@@ -159,10 +153,7 @@ export default function SnagsListPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-12 text-[var(--muted)]"
-                  >
+                  <TableCell colSpan={6} className="text-center py-12 text-[var(--muted)]">
                     Loading snags…
                   </TableCell>
                 </TableRow>
@@ -177,19 +168,16 @@ export default function SnagsListPage() {
                 </TableRow>
               ) : (
                 snags.map((s) => (
-                  <TableRow
-                    key={s.id}
-                    className="hover:bg-[var(--mist-soft)]/60"
-                  >
+                  <TableRow key={s.id} className="hover:bg-[var(--mist-soft)]/60">
                     <TableCell className="max-w-[280px]">
                       <span className="line-clamp-2 font-medium text-[var(--ink-green)]">
                         {s.observation}
                       </span>
                     </TableCell>
                     <TableCell className="nowrap">
-                      {[s.floor, s.room].filter(Boolean).join(" · ") || "—"}
+                      {[s.floor, s.room].filter(Boolean).join(' · ') || '—'}
                     </TableCell>
-                    <TableCell>{s.category || "—"}</TableCell>
+                    <TableCell>{s.category || '—'}</TableCell>
                     <TableCell>
                       <StatusBadge status={s.status} />
                     </TableCell>

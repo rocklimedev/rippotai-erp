@@ -1,11 +1,12 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import RecordContext from "@/components/record-context/RecordContext";
 import VersionHistory from "@/components/record-context/VersionHistory";
 import { useRecordInfo } from "@/components/record-context/useRecordInfo";
 import DeleteMaterialProcurement from "@/components/materials/DeleteMaterialProcurement";
 import {
   ArrowLeft,
-  Calculator,
+  PackageSearch,
   Download,
   Edit,
   FileSpreadsheet,
@@ -33,44 +34,7 @@ import {
   useSubmitMaterialProcurementMutation,
 } from "../../api/procuerment/material-procurement.api";
 
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const statusLabel = (status) => {
-  if (!status) return "—";
-
-  return status
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
-
-const statusClass = (status) => {
-  switch (status) {
-    case "DRAFT":
-      return "bg-muted text-muted-foreground";
-
-    case "SUBMITTED":
-      return "bg-[#E7EEEB] text-[#0D3D2F]";
-
-    case "IN_PROGRESS":
-      return "bg-amber-50 text-amber-700";
-
-    case "PARTIALLY_PROCURED":
-      return "bg-orange-50 text-orange-700";
-
-    case "PROCURED":
-      return "bg-green-50 text-green-700";
-
-    case "CANCELLED":
-      return "bg-red-50 text-red-700";
-
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-};
+import { Page, PageHeader, Button, Card, Stats, StatTile, Tabs, StatusPill, EmptyState } from "@/components/inos";
 
 const numberValue = (value) => Number(value || 0);
 
@@ -110,6 +74,7 @@ const resolveItem = (item) => {
 
 export default function MaterialProcurementSheetView() {
   const navigate = useNavigate();
+  const [tab, setTab] = useState("items");
   const { id } = useParams();
   const recordInfo = useRecordInfo("procurement-sheet", id);
 
@@ -127,48 +92,8 @@ export default function MaterialProcurementSheetView() {
 
   const procurement = response?.data ?? response;
 
-  if (isLoading || isFetching) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Material Procurement"
-          description="Loading procurement sheet..."
-        />
-        <Card>
-          <CardContent className="py-16 text-center text-sm text-muted-foreground">
-            Loading procurement sheet...
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error || !procurement) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Material Procurement"
-          description="The requested procurement sheet could not be found."
-        />
-        <Card>
-          <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
-            <FileSpreadsheet className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Unable to load this procurement sheet.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/procurement/material-procurement/list")}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Procurement
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
+  if (isLoading || (isFetching && !procurement)) return <Page><PageHeader title="Material Procurement" /><Card>Loading procurement sheet…</Card></Page>;
+  if (error || !procurement) return <Page><PageHeader title="Material Procurement" /><Card><EmptyState icon={FileSpreadsheet} title="Unable to load procurement sheet" action={<Button onClick={() => navigate('/procurement/material-procurement/list')}>Back to procurement</Button>} /></Card></Page>;
   const items = procurement.items || [];
   const resolvedItems = items.map(resolveItem);
 
@@ -290,338 +215,42 @@ export default function MaterialProcurementSheetView() {
     }
   };
 
-  return (
-    <div className="space-y-6 pb-10">
-      <PageHeader
-        title={procurement.procurementNo || "Material Procurement"}
-        description={recordInfo}
-      />
-      <RecordContext type="procurement-sheet" id={id} />
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button
-          variant="outline"
-          onClick={() => navigate("/procurement/material-procurement/list")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-
-        <div className="flex flex-wrap gap-2">
-          <DeleteMaterialProcurement procurement={procurement} onDeleted={() => navigate("/procurement/material-procurement/list")} />
-          {/* Download Excel – always available */}
-          <Button variant="outline" onClick={handleDownloadExcel}>
-            <Download className="mr-2 h-4 w-4" />
-            Download Excel
-          </Button>
-
-          {procurement.status === "DRAFT" && (
-            <>
-              <Button variant="outline" asChild>
-                <Link to={`/procurement/material-procurement/${procurement.id}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </Button>
-
-              <Button disabled={submitting} onClick={handleSubmit}>
-                <Send className="mr-2 h-4 w-4" />
-                {submitting ? "Submitting..." : "Submit"}
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-muted-foreground">Procurement No.</p>
-            <p className="mt-1 text-lg font-semibold">
-              {procurement.procurementNo || "—"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-muted-foreground">Project</p>
-            <p className="mt-1 truncate text-lg font-semibold">{projectName}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-muted-foreground">Status</p>
-            <div className="mt-2">
-              <span
-                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusClass(
-                  procurement.status,
-                )}`}
-              >
-                {statusLabel(procurement.status)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-muted-foreground">Created</p>
-            <p className="mt-1 text-lg font-semibold">
-              {procurement.createdAt
-                ? new Date(procurement.createdAt).toLocaleDateString("en-IN")
-                : "—"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Procurement info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Procurement Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 md:grid-cols-3">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Project
-              </p>
-              <p className="mt-1 font-medium">{projectName}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Created By
-              </p>
-              <p className="mt-1 font-medium">
-                {procurement.createdBy?.name ||
-                  procurement.createdBy?.fullName ||
-                  procurement.createdBy?.email ||
-                  "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Last Updated
-              </p>
-              <p className="mt-1 font-medium">
-                {procurement.updatedAt
-                  ? new Date(procurement.updatedAt).toLocaleString("en-IN")
-                  : "—"}
-              </p>
-            </div>
-          </div>
-
-          {procurement.remarks && (
-            <div className="mt-6 border-t pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Remarks
-              </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm">
-                {procurement.remarks}
-              </p>
-            </div>
-          )}
-        </CardContent>
+  return <Page>
+    <PageHeader title={procurement.procurementNo || 'Material Procurement'} info={recordInfo} actions={<>
+      <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/procurement/material-procurement/list')}>Back</Button>
+      <DeleteMaterialProcurement procurement={procurement} onDeleted={() => navigate('/procurement/material-procurement/list')} />
+      <Button variant="secondary" icon={Download} onClick={handleDownloadExcel}>Download Excel</Button>
+      {procurement.status === 'DRAFT' && <><Button variant="secondary" icon={Edit} onClick={() => navigate(`/procurement/material-procurement/${procurement.id}/edit`)}>Edit</Button><Button variant="primary" icon={Send} disabled={submitting} onClick={handleSubmit}>{submitting ? 'Submitting…' : 'Submit'}</Button></>}
+    </>} />
+    <RecordContext type="procurement-sheet" id={id} />
+    <Stats>
+      <StatTile label="Material items" value={items.length} icon={<PackageSearch />} />
+      <StatTile label="Total area" value={formatNumber(totalArea)} meta="sq.ft" />
+      <StatTile label="Total quantity" value={formatNumber(totalQuantity, 3)} />
+      <StatTile label="Procurement value" value={`₹ ${formatCurrency(totalAmount)}`} />
+    </Stats>
+    <Card title="Procurement details" actions={<StatusPill status={procurement.status} />}>
+      <dl className="inos-kv" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 20 }}>
+        <div><dt>Project</dt><dd>{projectName}</dd></div>
+        <div><dt>Created by</dt><dd>{procurement.createdBy?.name || procurement.createdBy?.fullName || procurement.createdBy?.email || '—'}</dd></div>
+        <div><dt>Created</dt><dd>{procurement.createdAt ? new Date(procurement.createdAt).toLocaleDateString('en-IN') : '—'}</dd></div>
+        <div><dt>Last updated</dt><dd>{procurement.updatedAt ? new Date(procurement.updatedAt).toLocaleString('en-IN') : '—'}</dd></div>
+      </dl>
+    </Card>
+    <Tabs value={tab} onChange={setTab} options={[{ value: 'items', label: 'Material items' }, { value: 'history', label: 'Version History' }]} />
+    {tab === 'items' ? <>
+      <Card title="Material procurement items" subtitle={`${items.length} items`} flush>
+        <div className="inos-table-wrap"><table className="inos-table" style={{ minWidth: 1200 }}>
+          <thead><tr><th>S.No</th><th>Area</th><th>Location</th><th style={{ minWidth: 230 }}>Material</th><th className="text-right">Wall (sq.ft)</th><th className="text-right">Floor (sq.ft)</th><th className="text-right">Ceiling (sq.ft)</th><th className="text-right">Total area</th><th className="text-right">Quantity</th><th className="text-right">Price</th><th className="text-right">Amount</th></tr></thead>
+          <tbody>{resolvedItems.length ? resolvedItems.map((item, index) => <tr key={items[index].id || index}>
+            <td>{item.serialNo ?? index + 1}</td><td>{item.area}</td><td>{item.location}</td>
+            <td><div className="font-semibold">{item.name}</div><div className="inos-hint">{item.material} · {item.brand}</div><div className="inos-hint">{item.code}</div></td>
+            <td className="text-right tabular-nums">{formatNumber(item.wallArea)}</td><td className="text-right tabular-nums">{formatNumber(item.floorArea)}</td><td className="text-right tabular-nums">{formatNumber(item.ceilingArea)}</td><td className="text-right font-semibold tabular-nums">{formatNumber(item.totalArea)}</td><td className="text-right tabular-nums">{formatNumber(item.quantity, 3)}</td><td className="text-right tabular-nums">{formatCurrency(item.price)}</td><td className="text-right font-semibold tabular-nums">{formatCurrency(item.amount)}</td>
+          </tr>) : <tr><td colSpan={11}><EmptyState icon={PackageSearch} title="No material items" /></td></tr>}</tbody>
+          <tfoot><tr><td colSpan={7}>Totals</td><td className="text-right">{formatNumber(totalArea)}</td><td className="text-right">{formatNumber(totalQuantity, 3)}</td><td /><td className="text-right">₹ {formatCurrency(totalAmount)}</td></tr></tfoot>
+        </table></div>
       </Card>
-
-      {/* ========== Excel-like sheet view ========== */}
-      <Card className="overflow-hidden border-2 border-border shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between border-b bg-[#217346]/px-4 py-3 text-white">
-          {/* Excel green header bar */}
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            <div>
-              <CardTitle className="text-base font-semibold tracking-wide text-white">
-                MATERIAL PROCUREMENT LIST – {projectName}
-              </CardTitle>
-              <p className="text-xs text-white/80">
-                {items.length} material {items.length === 1 ? "item" : "items"}{" "}
-                · {procurement.procurementNo}
-              </p>
-            </div>
-          </div>
-          <Calculator className="h-5 w-5 text-white/80" />
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            {/* Excel-style table */}
-            <table className="w-full min-w-[1450px] border-collapse text-sm">
-              <thead>
-                {/* Title row (like Excel merged title) */}
-                <tr className="bg-[#e2efda]">
-                  <th
-                    colSpan={14}
-                    className="border border-[#b4b4b4] px-3 py-2 text-center text-sm font-bold uppercase tracking-wide text-[#1f4e2e]"
-                  >
-                    MATERIAL PROCUREMENT LIST PROJECT MATERIAL
-                  </th>
-                </tr>
-
-                {/* Column headers – classic Excel look */}
-                <tr className="bg-[#d9e1f2] text-[13px]">
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
-                    S. No.
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
-                    Area
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
-                    Location
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
-                    Material
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
-                    Brand
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
-                    Name
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
-                    Code
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
-                    Wall(Sq.ft)
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
-                    Floor(Sq.ft)
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
-                    Ceiling(Sq.ft)
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
-                    Total Area(Sq.ft)
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
-                    Quantity
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
-                    Price
-                  </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {resolvedItems.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={14}
-                      className="border border-[#b4b4b4] px-4 py-12 text-center text-muted-foreground"
-                    >
-                      No material items found.
-                    </td>
-                  </tr>
-                ) : (
-                  resolvedItems.map((item, index) => (
-                    <tr
-                      key={items[index]?.id || `${procurement.id}-${index}`}
-                      className={
-                        index % 2 === 0
-                          ? "bg-white hover:bg-[#f2f2f2]"
-                          : "bg-[#fafafa] hover:bg-[#f2f2f2]"
-                      }
-                    >
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 font-medium text-slate-700">
-                        {item.serialNo ?? index + 1}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">
-                        {item.area}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">
-                        {item.location}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 font-medium">
-                        {item.material}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">
-                        {item.brand}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">
-                        {item.name}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 font-mono text-xs">
-                        {item.code}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
-                        {formatNumber(item.wallArea)}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
-                        {formatNumber(item.floorArea)}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
-                        {formatNumber(item.ceilingArea)}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right font-medium tabular-nums">
-                        {formatNumber(item.totalArea)}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
-                        {formatNumber(item.quantity, 3)}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
-                        {formatNumber(item.price, 2)}
-                      </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right font-medium tabular-nums">
-                        {formatNumber(item.amount, 2)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-
-              {/* Totals row – Excel style */}
-              <tfoot>
-                <tr className="bg-[#fff2cc] font-semibold">
-                  <td
-                    colSpan={10}
-                    className="border border-[#b4b4b4] px-3 py-2.5 text-right text-slate-800"
-                  >
-                    Totals
-                  </td>
-                  <td className="border border-[#b4b4b4] px-3 py-2.5 text-right tabular-nums">
-                    {formatNumber(totalArea)}
-                  </td>
-                  <td className="border border-[#b4b4b4] px-3 py-2.5 text-right tabular-nums">
-                    {formatNumber(totalQuantity, 3)}
-                  </td>
-                  <td className="border border-[#b4b4b4] px-3 py-2.5" />
-                  <td className="border border-[#b4b4b4] px-3 py-2.5 text-right tabular-nums">
-                    {formatCurrency(totalAmount)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Summary footer */}
-      <Card>
-        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-medium">Procurement Summary</p>
-            <p className="text-sm text-muted-foreground">
-              {items.length} items · {formatNumber(totalQuantity, 3)} total
-              quantity
-            </p>
-          </div>
-          <div className="text-left sm:text-right">
-            <p className="text-sm text-muted-foreground">
-              Total Procurement Value
-            </p>
-            <p className="text-2xl font-semibold">
-              ₹ {formatCurrency(totalAmount)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      <VersionHistory type="procurement-sheet" id={id} />
-    </div>
-  );
+      {procurement.remarks && <Card title="Remarks"><p className="whitespace-pre-wrap text-sm">{procurement.remarks}</p></Card>}
+    </> : <VersionHistory type="procurement-sheet" id={id} title="Version & approval history" />}
+  </Page>;
 }

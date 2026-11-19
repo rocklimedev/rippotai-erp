@@ -1,19 +1,18 @@
-import React from "react";
-import ReminderSyncPanel from "../workspace/ReminderSyncPanel";
-import NasConnector from "./NasConnector";
-import { useNasStatusQuery } from "@/api/meta/cdn.api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import React from 'react';
+import ReminderSyncPanel from '../workspace/ReminderSyncPanel';
+import NasConnector from './NasConnector';
+import { useNasStatusQuery } from '@/api/meta/cdn.api';
 import {
-  CheckCircle2,
-  Link2,
-  Mail,
-  RefreshCw,
-  Settings2,
-  Unplug,
-} from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { CheckCircle2, Link2, Mail, RefreshCw, Settings2, Unplug } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 import {
   useLazyGoogleAuthorizeUrlQuery,
@@ -25,7 +24,7 @@ import {
   useLazyZohoAuthorizeUrlQuery,
   useZohoStatusQuery,
   useZohoDisconnectMutation,
-} from "../../api/auth/authConnectors.api";
+} from '../../api/auth/authConnectors.api';
 
 /* ---------------------------------------------------------------------- */
 /* Brand marks                                                            */
@@ -169,12 +168,7 @@ function IntegrationCard({
               )}
             </Button>
           ) : (
-            <Button
-              size="sm"
-              onClick={onConnect}
-              disabled={isBusy}
-              className="w-full sm:w-auto"
-            >
+            <Button size="sm" onClick={onConnect} disabled={isBusy} className="w-full sm:w-auto">
               <Link2 className="mr-2 h-3.5 w-3.5" />
               Connect
             </Button>
@@ -191,9 +185,7 @@ function IntegrationCard({
           <React.Fragment key={feature}>
             <span className="text-[#22302D]">{feature}</span>
 
-            {i < features.length - 1 && (
-              <span className="text-[#C7D1CD]">·</span>
-            )}
+            {i < features.length - 1 && <span className="text-[#C7D1CD]">·</span>}
           </React.Fragment>
         ))}
       </div>
@@ -209,13 +201,9 @@ function IntegrationCard({
               </div>
 
               <div>
-                <p className="text-[13px] font-medium text-[#22302D]">
-                  Account linked
-                </p>
+                <p className="text-[13px] font-medium text-[#22302D]">Account linked</p>
 
-                <p className="text-[12px] text-[#9AA6A3]">
-                  Data is syncing automatically
-                </p>
+                <p className="text-[12px] text-[#9AA6A3]">Data is syncing automatically</p>
               </div>
             </div>
 
@@ -273,8 +261,7 @@ export default function IntegrationSettings() {
 
   const [disconnectGoogle, googleDisconnecting] = useGoogleDisconnectMutation();
 
-  const [disconnectMicrosoft, microsoftDisconnecting] =
-    useMicrosoftDisconnectMutation();
+  const [disconnectMicrosoft, microsoftDisconnecting] = useMicrosoftDisconnectMutation();
 
   const [disconnectZoho, zohoDisconnecting] = useZohoDisconnectMutation();
 
@@ -287,15 +274,15 @@ export default function IntegrationSettings() {
       let result;
 
       switch (provider) {
-        case "google":
+        case 'google':
           result = await getGoogleAuthorizeUrl(undefined).unwrap();
           break;
 
-        case "microsoft":
+        case 'microsoft':
           result = await getMicrosoftAuthorizeUrl(undefined).unwrap();
           break;
 
-        case "zoho":
+        case 'zoho':
           result = await getZohoAuthorizeUrl(undefined).unwrap();
           break;
 
@@ -304,15 +291,15 @@ export default function IntegrationSettings() {
       }
 
       if (!result?.authorizationUrl) {
-        throw new Error("Authorization URL was not returned by the server");
+        throw new Error('Authorization URL was not returned by the server');
       }
 
       // Create a temporary anchor and trigger it as a user navigation.
-      const link = document.createElement("a");
+      const link = document.createElement('a');
 
       link.href = result.authorizationUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
 
       document.body.appendChild(link);
       link.click();
@@ -327,23 +314,23 @@ export default function IntegrationSettings() {
 
   const providers = [
     {
-      key: "zoho",
+      key: 'zoho',
 
-      name: "Zoho",
+      name: 'Zoho',
       onManage: () => setManageOpen(true),
 
       description:
-        "Manage leads, contacts, pipelines, and activities without leaving your workflow.",
+        'Manage leads, contacts, pipelines, and activities without leaving your workflow.',
 
       icon: <ZohoLogo size={22} />,
 
-      iconClass: "bg-[#FFF1E8]",
+      iconClass: 'bg-[#FFF1E8]',
 
-      features: ["Leads", "Contacts", "Pipelines", "Activities", "Notes", "Reminders"],
+      features: ['Leads', 'Contacts', 'Pipelines', 'Activities', 'Notes', 'Reminders'],
 
       status: zoho,
 
-      onConnect: () => connectProvider("zoho"),
+      onConnect: () => connectProvider('zoho'),
 
       onDisconnect: () => disconnectZoho(),
 
@@ -351,22 +338,21 @@ export default function IntegrationSettings() {
     },
 
     {
-      key: "google",
+      key: 'google',
 
-      name: "Google",
+      name: 'Google',
 
-      description:
-        "Bring your calendar and tasks in from Google Workspace and keep them current.",
+      description: 'Bring your calendar and tasks in from Google Workspace and keep them current.',
 
       icon: <GoogleLogo size={22} />,
 
-      iconClass: "bg-[#EEF4FF]",
+      iconClass: 'bg-[#EEF4FF]',
 
-      features: ["Calendar", "Tasks"],
+      features: ['Calendar', 'Tasks'],
 
       status: google,
 
-      onConnect: () => connectProvider("google"),
+      onConnect: () => connectProvider('google'),
 
       onDisconnect: () => disconnectGoogle(),
 
@@ -374,21 +360,21 @@ export default function IntegrationSettings() {
     },
 
     {
-      key: "microsoft",
+      key: 'microsoft',
 
-      name: "Microsoft",
+      name: 'Microsoft',
 
-      description: "Link Microsoft 365 to work with files stored in OneDrive.",
+      description: 'Link Microsoft 365 to work with files stored in OneDrive.',
 
       icon: <MicrosoftLogo size={20} />,
 
-      iconClass: "bg-[#EEF4FF]",
+      iconClass: 'bg-[#EEF4FF]',
 
-      features: ["OneDrive"],
+      features: ['OneDrive'],
 
       status: microsoft,
 
-      onConnect: () => connectProvider("microsoft"),
+      onConnect: () => connectProvider('microsoft'),
 
       onDisconnect: () => disconnectMicrosoft(),
 
@@ -400,9 +386,9 @@ export default function IntegrationSettings() {
   /* Connected count                                                     */
   /* ------------------------------------------------------------------ */
 
-  const connectedCount = providers.filter(
-    (provider) => !!provider.status.data?.connected,
-  ).length + (nas.data?.connected && !nas.isError ? 1 : 0);
+  const connectedCount =
+    providers.filter((provider) => !!provider.status.data?.connected).length +
+    (nas.data?.connected && !nas.isError ? 1 : 0);
 
   /* ------------------------------------------------------------------ */
   /* Render                                                              */
@@ -412,13 +398,11 @@ export default function IntegrationSettings() {
     <div className="max-w-3xl space-y-8">
       <div className="flex items-end justify-between border-b border-[#E4EAE7] pb-6">
         <div>
-          <h2 className="text-[22px] font-semibold text-[#22302D]">
-            Connectors
-          </h2>
+          <h2 className="text-[22px] font-semibold text-[#22302D]">Connectors</h2>
 
           <p className="mt-1.5 max-w-lg text-[14px] text-[#6B7B7C]">
-            Connect your business tools to sync CRM data, emails, calendars, and
-            files with your workspace.
+            Connect your business tools to sync CRM data, emails, calendars, and files with your
+            workspace.
           </p>
         </div>
 
@@ -431,32 +415,31 @@ export default function IntegrationSettings() {
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Zoho reminders</DialogTitle>
-            <DialogDescription>Choose task and calendar destinations and reminder preferences. Enabled reminders sync automatically in the background every minute.</DialogDescription>
+            <DialogDescription>
+              Choose task and calendar destinations and reminder preferences. Enabled reminders sync
+              automatically in the background every minute.
+            </DialogDescription>
           </DialogHeader>
-          {manageOpen && <><ReminderSyncPanel kind="tasks" /><ReminderSyncPanel kind="calendar" /></>}
+          {manageOpen && (
+            <>
+              <ReminderSyncPanel kind="tasks" />
+              <ReminderSyncPanel kind="calendar" />
+            </>
+          )}
         </DialogContent>
       </Dialog>
       <div className="space-y-4">
         <NasConnector status={nas} />
-        {providers.map(
-          ({
-            key,
-            status,
-            onConnect,
-            onDisconnect,
-            disconnectState,
-            ...rest
-          }) => (
-            <IntegrationCard
-              key={key}
-              status={status}
-              onConnect={onConnect}
-              onDisconnect={onDisconnect}
-              disconnectState={disconnectState}
-              {...rest}
-            />
-          ),
-        )}
+        {providers.map(({ key, status, onConnect, onDisconnect, disconnectState, ...rest }) => (
+          <IntegrationCard
+            key={key}
+            status={status}
+            onConnect={onConnect}
+            onDisconnect={onDisconnect}
+            disconnectState={disconnectState}
+            {...rest}
+          />
+        ))}
       </div>
     </div>
   );

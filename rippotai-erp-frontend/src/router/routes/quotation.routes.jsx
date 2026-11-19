@@ -13,6 +13,7 @@ export const quotationRoutes = [
     blockRoles: ["client"],
     children: [
       { index: true, element: <QuotationList /> },
+      { path: "new", element: <QuotationEdit creating /> },
       { path: ":id", element: <QuotationView /> },
       { path: ":id/edit", element: <QuotationEdit /> },
     ],

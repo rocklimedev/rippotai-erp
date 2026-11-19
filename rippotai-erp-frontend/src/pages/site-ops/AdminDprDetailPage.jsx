@@ -1,34 +1,34 @@
-import { useNavigate, useParams } from "react-router-dom";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import DeleteAdminDpr from "./DeleteAdminDpr";
-import { toast } from "sonner";
-import { Page, PageHeader, Card, Button } from "@/components/inos";
+import { useNavigate, useParams } from 'react-router-dom';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import DeleteAdminDpr from './DeleteAdminDpr';
+import { toast } from 'sonner';
+import { Page, PageHeader, Card, Button } from '@/components/inos';
 import {
   useGetAdminDprDocumentQuery,
   useDownloadSavedAdminDprMutation,
-} from "@/api/site-ops/admin-dpr.api";
+} from '@/api/site-ops/admin-dpr.api';
 const reportFields = [
-  ["report_date", "Date"],
-  ["project", "Project"],
-  ["work_status", "Work status"],
-  ["work_details", "Work details"],
-  ["contractor_working", "Contractor working"],
-  ["work_planned_tomorrow", "Work planned tomorrow"],
-  ["material_required_tomorrow", "Material required tomorrow"],
-  ["material_sent_from_vendor", "Material sent from vendor"],
-  ["material_sent_from_inventory", "Material sent from inventory"],
-  ["issues_blockers", "Issues / blockers"],
+  ['report_date', 'Date'],
+  ['project', 'Project'],
+  ['work_status', 'Work status'],
+  ['work_details', 'Work details'],
+  ['contractor_working', 'Contractor working'],
+  ['work_planned_tomorrow', 'Work planned tomorrow'],
+  ['material_required_tomorrow', 'Material required tomorrow'],
+  ['material_sent_from_vendor', 'Material sent from vendor'],
+  ['material_sent_from_inventory', 'Material sent from inventory'],
+  ['issues_blockers', 'Issues / blockers'],
 ];
 const logFields = [
-  ["work_type", "Work type"],
-  ["project", "Project"],
-  ["details", "Details"],
-  ["status", "Status"],
-  ["pending_with", "Pending with"],
-  ["due_date", "Due date"],
-  ["remarks", "Remarks"],
+  ['work_type', 'Work type'],
+  ['project', 'Project'],
+  ['details', 'Details'],
+  ['status', 'Status'],
+  ['pending_with', 'Pending with'],
+  ['due_date', 'Due date'],
+  ['remarks', 'Remarks'],
 ];
 function DocumentSection({ title, rows, fields }) {
   return (
@@ -36,7 +36,7 @@ function DocumentSection({ title, rows, fields }) {
       {!rows.length ? (
         <p>No entries in this section.</p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: 'auto' }}>
           <table className="inos-table">
             <thead>
               <tr>
@@ -52,13 +52,12 @@ function DocumentSection({ title, rows, fields }) {
                     <td
                       key={key}
                       style={{
-                        minWidth: key === "project" ? 180 : 160,
-                        whiteSpace: "pre-wrap",
-                        verticalAlign: "top",
+                        minWidth: key === 'project' ? 180 : 160,
+                        whiteSpace: 'pre-wrap',
+                        verticalAlign: 'top',
                       }}
                     >
-                      {(key === "project" ? row.project?.name : row[key]) ||
-                        "—"}
+                      {(key === 'project' ? row.project?.name : row[key]) || '—'}
                     </td>
                   ))}
                 </tr>
@@ -72,7 +71,7 @@ function DocumentSection({ title, rows, fields }) {
 }
 export default function AdminDprDetailPage() {
   const { id } = useParams();
-  const recordInfo = useRecordInfo("admin-dpr", id);
+  const recordInfo = useRecordInfo('admin-dpr', id);
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetAdminDprDocumentQuery(id);
   const [download, exporting] = useDownloadSavedAdminDprMutation();
@@ -88,9 +87,7 @@ export default function AdminDprDetailPage() {
         <PageHeader
           title="DPR unavailable"
           actions={
-            <Button onClick={() => navigate("/site-operations/admin-dpr")}>
-              Back to records
-            </Button>
+            <Button onClick={() => navigate('/site-operations/admin-dpr')}>Back to records</Button>
           }
         />
         <p role="alert">Unable to open this saved DPR.</p>
@@ -103,11 +100,12 @@ export default function AdminDprDetailPage() {
         eyebrow="Site Operations · Saved DPR"
         title={data.title}
         actions={
-          <div style={{ display: "flex", gap: 12 }}>
-            <DeleteAdminDpr document={data} onDeleted={() => navigate("/site-operations/admin-dpr")} />
-            <Button onClick={() => navigate("/site-operations/admin-dpr")}>
-              Back to records
-            </Button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <DeleteAdminDpr
+              document={data}
+              onDeleted={() => navigate('/site-operations/admin-dpr')}
+            />
+            <Button onClick={() => navigate('/site-operations/admin-dpr')}>Back to records</Button>
             <Button
               variant="primary"
               loading={exporting.isLoading}
@@ -115,7 +113,7 @@ export default function AdminDprDetailPage() {
                 try {
                   await download(id).unwrap();
                 } catch (err) {
-                  toast.error(err?.data?.message || "Unable to download Excel");
+                  toast.error(err?.data?.message || 'Unable to download Excel');
                 }
               }}
             >
@@ -127,30 +125,19 @@ export default function AdminDprDetailPage() {
       <RecordContext type="admin-dpr" id={id} />
       <Card>
         <p>
-          <strong>Projects:</strong>{" "}
-          {data.project_names?.join(", ") || "All projects / no entries"}
+          <strong>Projects:</strong> {data.project_names?.join(', ') || 'All projects / no entries'}
         </p>
         <p>
-          <strong>Period:</strong> {data.from_date || "All dates"}
-          {data.to_date && data.to_date !== data.from_date
-            ? ` to ${data.to_date}`
-            : ""}
+          <strong>Period:</strong> {data.from_date || 'All dates'}
+          {data.to_date && data.to_date !== data.from_date ? ` to ${data.to_date}` : ''}
         </p>
         <p>
-          This document contains the saved progress and coordination records.
-          Its Excel download retains the complete workbook as saved.
+          This document contains the saved progress and coordination records. Its Excel download
+          retains the complete workbook as saved.
         </p>
       </Card>
-      <DocumentSection
-        title="Project progress"
-        rows={data.reports || []}
-        fields={reportFields}
-      />
-      <DocumentSection
-        title="Admin coordination"
-        rows={data.logs || []}
-        fields={logFields}
-      />
+      <DocumentSection title="Project progress" rows={data.reports || []} fields={reportFields} />
+      <DocumentSection title="Admin coordination" rows={data.logs || []} fields={logFields} />
       <VersionHistory type="admin-dpr" id={id} />
     </Page>
   );

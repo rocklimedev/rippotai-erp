@@ -2,9 +2,9 @@
 // defaults printed on POs, work orders and challans.
 // Stored in the settings table as JSON: company_profile, bank_details, billing
 // (read by print-document/commerce.jsx → useCompanyProfile()).
-import React, { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { ImageUp, X } from "lucide-react";
+import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { ImageUp, X } from 'lucide-react';
 import {
   Page,
   PageHeader,
@@ -15,40 +15,37 @@ import {
   FormSection,
   FormActions,
   Pill,
-} from "@/components/inos";
-import {
-  useGetSettingsQuery,
-  useUpsertSettingMutation,
-} from "@/api/meta/settings.api";
+} from '@/components/inos';
+import { useGetSettingsQuery, useUpsertSettingMutation } from '@/api/meta/settings.api';
 import {
   settingObject,
   COMPANY_PROFILE_KEY,
   BANK_DETAILS_KEY,
-} from "@/components/print-document/commerce";
-import { useAuth } from "@/context/AuthContext";
-import { AdminAccessDenied, adminCrumbs } from "./_admin-ui";
+} from '@/components/print-document/commerce';
+import { useAuth } from '@/context/AuthContext';
+import { AdminAccessDenied, adminCrumbs } from './_admin-ui';
 
-const BILLING_KEY = "billing";
+const BILLING_KEY = 'billing';
 
 const EMPTY = {
-  name: "",
-  legalName: "",
-  tagline: "",
-  address: "",
-  phone: "",
-  email: "",
-  website: "",
-  gstin: "",
-  pan: "",
-  logoUrl: "",
-  bank: "",
-  accountName: "",
-  accountNumber: "",
-  ifsc: "",
-  branch: "",
-  upi: "",
-  defaultGstRate: "18",
-  invoicePrefix: "",
+  name: '',
+  legalName: '',
+  tagline: '',
+  address: '',
+  phone: '',
+  email: '',
+  website: '',
+  gstin: '',
+  pan: '',
+  logoUrl: '',
+  bank: '',
+  accountName: '',
+  accountNumber: '',
+  ifsc: '',
+  branch: '',
+  upi: '',
+  defaultGstRate: '18',
+  invoicePrefix: '',
 };
 
 const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
@@ -58,28 +55,19 @@ const UPI_RE = /^[\w.-]{2,}@[a-zA-Z]{2,}$/;
 
 function validate(f) {
   const e = {};
-  if (!f.name.trim()) e.name = "Enter the name printed on documents.";
-  if (f.gstin && !GSTIN_RE.test(f.gstin))
-    e.gstin = "15 characters, e.g. 07AAVFR4821K1Z6.";
-  if (f.pan && !PAN_RE.test(f.pan)) e.pan = "10 characters, e.g. AAVFR4821K.";
-  if (
-    f.gstin &&
-    f.pan &&
-    GSTIN_RE.test(f.gstin) &&
-    f.gstin.slice(2, 12) !== f.pan
-  )
+  if (!f.name.trim()) e.name = 'Enter the name printed on documents.';
+  if (f.gstin && !GSTIN_RE.test(f.gstin)) e.gstin = '15 characters, e.g. 07AAVFR4821K1Z6.';
+  if (f.pan && !PAN_RE.test(f.pan)) e.pan = '10 characters, e.g. AAVFR4821K.';
+  if (f.gstin && f.pan && GSTIN_RE.test(f.gstin) && f.gstin.slice(2, 12) !== f.pan)
     e.pan = "PAN doesn't match the GSTIN (characters 3–12).";
-  if (f.ifsc && !IFSC_RE.test(f.ifsc))
-    e.ifsc = "11 characters, e.g. HDFC0000236.";
-  if (f.accountNumber && !/^\d{9,18}$/.test(f.accountNumber))
-    e.accountNumber = "9–18 digits.";
-  if (f.accountNumber && !f.ifsc) e.ifsc = "Needed with an account number.";
-  if (f.upi && !UPI_RE.test(f.upi)) e.upi = "Looks like name@bank.";
-  if (f.email && !/^\S+@\S+\.\S+$/.test(f.email))
-    e.email = "Enter a valid email.";
+  if (f.ifsc && !IFSC_RE.test(f.ifsc)) e.ifsc = '11 characters, e.g. HDFC0000236.';
+  if (f.accountNumber && !/^\d{9,18}$/.test(f.accountNumber)) e.accountNumber = '9–18 digits.';
+  if (f.accountNumber && !f.ifsc) e.ifsc = 'Needed with an account number.';
+  if (f.upi && !UPI_RE.test(f.upi)) e.upi = 'Looks like name@bank.';
+  if (f.email && !/^\S+@\S+\.\S+$/.test(f.email)) e.email = 'Enter a valid email.';
   const gst = Number(f.defaultGstRate);
-  if (f.defaultGstRate !== "" && (!Number.isFinite(gst) || gst < 0 || gst > 28))
-    e.defaultGstRate = "0–28%.";
+  if (f.defaultGstRate !== '' && (!Number.isFinite(gst) || gst < 0 || gst > 28))
+    e.defaultGstRate = '0–28%.';
   return e;
 }
 
@@ -106,7 +94,7 @@ export default function CompanyProfile() {
     const b = settings[BANK_DETAILS_KEY] || {};
     const bl = settings[BILLING_KEY] || {};
     setStored({ c, b, bl });
-    const s = (v) => (v == null ? "" : String(v));
+    const s = (v) => (v == null ? '' : String(v));
     setForm({
       name: s(c.name),
       legalName: s(c.legalName),
@@ -130,9 +118,7 @@ export default function CompanyProfile() {
   }, [data, settings, dirty]);
 
   const set = (k, upper) => (e) => {
-    const v = upper
-      ? e.target.value.toUpperCase().replace(/\s/g, "")
-      : e.target.value;
+    const v = upper ? e.target.value.toUpperCase().replace(/\s/g, '') : e.target.value;
     setForm((f) => ({ ...f, [k]: v }));
     setDirty(true);
     if (errors[k]) setErrors((x) => ({ ...x, [k]: undefined }));
@@ -140,12 +126,10 @@ export default function CompanyProfile() {
 
   const onLogo = (e) => {
     const file = e.target.files?.[0];
-    e.target.value = "";
+    e.target.value = '';
     if (!file) return;
-    if (!/^image\//.test(file.type))
-      return toast.error("Choose an image (PNG, JPG or SVG).");
-    if (file.size > 300 * 1024)
-      return toast.error("Keep the logo under 300 KB.");
+    if (!/^image\//.test(file.type)) return toast.error('Choose an image (PNG, JPG or SVG).');
+    if (file.size > 300 * 1024) return toast.error('Keep the logo under 300 KB.');
     const r = new FileReader();
     r.onload = () => {
       setForm((f) => ({ ...f, logoUrl: String(r.result) }));
@@ -158,11 +142,11 @@ export default function CompanyProfile() {
     const e = validate(form);
     setErrors(e);
     if (Object.keys(e).length) {
-      toast.error("Check the highlighted fields.");
+      toast.error('Check the highlighted fields.');
       return;
     }
     setSaving(true);
-    const t = (v) => String(v || "").trim();
+    const t = (v) => String(v || '').trim();
     try {
       await upsert({
         key: COMPANY_PROFILE_KEY,
@@ -196,13 +180,12 @@ export default function CompanyProfile() {
         key: BILLING_KEY,
         value: {
           ...stored.bl,
-          defaultGstRate:
-            form.defaultGstRate === "" ? 18 : Number(form.defaultGstRate),
+          defaultGstRate: form.defaultGstRate === '' ? 18 : Number(form.defaultGstRate),
           invoicePrefix: t(form.invoicePrefix),
         },
       }).unwrap();
       setDirty(false);
-      toast.success("Company profile saved — new PDFs will use it.");
+      toast.success('Company profile saved — new PDFs will use it.');
     } catch (err) {
       toast.error(err?.data?.message || "Couldn't save the company profile.");
     } finally {
@@ -212,9 +195,7 @@ export default function CompanyProfile() {
 
   if (
     user &&
-    !["ADMIN", "SUPERADMIN"].includes(
-      String(user.role?.name || user.role || "").toUpperCase(),
-    )
+    !['ADMIN', 'SUPERADMIN'].includes(String(user.role?.name || user.role || '').toUpperCase())
   ) {
     return (
       <AdminAccessDenied
@@ -228,7 +209,7 @@ export default function CompanyProfile() {
   return (
     <Page width="narrow">
       <PageHeader
-        crumbs={adminCrumbs("Company profile")}
+        crumbs={adminCrumbs('Company profile')}
         title="Company profile"
         subtitle="Letterhead, tax registration and bank details printed on purchase orders, work orders and challans."
         actions={
@@ -242,12 +223,9 @@ export default function CompanyProfile() {
 
       <div>
         {isLoading ? (
-          <div style={{ display: "grid", gap: 12 }}>
-            <div className="adm-skel" style={{ width: "40%" }} />
-            <div
-              className="adm-skel"
-              style={{ height: 160, borderRadius: 12 }}
-            />
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div className="adm-skel" style={{ width: '40%' }} />
+            <div className="adm-skel" style={{ height: 160, borderRadius: 12 }} />
           </div>
         ) : (
           <form
@@ -264,19 +242,15 @@ export default function CompanyProfile() {
               <Field label="Name on documents" required error={errors.name}>
                 <TextInput
                   value={form.name}
-                  onChange={set("name")}
+                  onChange={set('name')}
                   placeholder="Rippotai Architecture"
                   invalid={!!errors.name}
                 />
               </Field>
-              <Field
-                label="Legal name"
-                optional
-                hint="Registered entity, if different."
-              >
+              <Field label="Legal name" optional hint="Registered entity, if different.">
                 <TextInput
                   value={form.legalName}
-                  onChange={set("legalName")}
+                  onChange={set('legalName')}
                   placeholder="Rippotai Architecture LLP"
                 />
               </Field>
@@ -284,14 +258,14 @@ export default function CompanyProfile() {
                 <TextArea
                   rows={2}
                   value={form.address}
-                  onChange={set("address")}
+                  onChange={set('address')}
                   placeholder="Street, area, city, PIN"
                 />
               </Field>
               <Field label="Phone">
                 <TextInput
                   value={form.phone}
-                  onChange={set("phone")}
+                  onChange={set('phone')}
                   placeholder="+91 98xxx xxxxx"
                 />
               </Field>
@@ -299,7 +273,7 @@ export default function CompanyProfile() {
                 <TextInput
                   type="email"
                   value={form.email}
-                  onChange={set("email")}
+                  onChange={set('email')}
                   placeholder="studio@rippotai.in"
                   invalid={!!errors.email}
                 />
@@ -307,14 +281,14 @@ export default function CompanyProfile() {
               <Field label="Website" optional>
                 <TextInput
                   value={form.website}
-                  onChange={set("website")}
+                  onChange={set('website')}
                   placeholder="https://rippotai.in"
                 />
               </Field>
               <Field label="Tagline" optional>
                 <TextInput
                   value={form.tagline}
-                  onChange={set("tagline")}
+                  onChange={set('tagline')}
                   placeholder="Architecture | Interiors | Turnkey"
                 />
               </Field>
@@ -325,46 +299,28 @@ export default function CompanyProfile() {
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 12,
-                    flexWrap: "wrap",
+                    flexWrap: 'wrap',
                   }}
                 >
-                  <div
-                    className="adm-sig"
-                    style={{ minHeight: 64, minWidth: 160, padding: 10 }}
-                  >
+                  <div className="adm-sig" style={{ minHeight: 64, minWidth: 160, padding: 10 }}>
                     {form.logoUrl ? (
-                      <img
-                        src={form.logoUrl}
-                        alt="Company logo"
-                        style={{ maxHeight: 48 }}
-                      />
+                      <img src={form.logoUrl} alt="Company logo" style={{ maxHeight: 48 }} />
                     ) : (
                       <span className="adm-cell-sub">No logo</span>
                     )}
                   </div>
-                  <label
-                    className="inos-btn inos-btn--soft"
-                    style={{ cursor: "pointer" }}
-                  >
+                  <label className="inos-btn inos-btn--soft" style={{ cursor: 'pointer' }}>
                     <ImageUp size={16} aria-hidden /> Upload
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={onLogo}
-                    />
+                    <input type="file" accept="image/*" hidden onChange={onLogo} />
                   </label>
                   {form.logoUrl && (
                     <Button
                       variant="ghost"
                       icon={X}
-                      onClick={() => (
-                        setForm((f) => ({ ...f, logoUrl: "" })),
-                        setDirty(true)
-                      )}
+                      onClick={() => (setForm((f) => ({ ...f, logoUrl: '' })), setDirty(true))}
                     >
                       Remove
                     </Button>
@@ -381,7 +337,7 @@ export default function CompanyProfile() {
               <Field label="GSTIN" error={errors.gstin} hint="15 characters">
                 <TextInput
                   value={form.gstin}
-                  onChange={set("gstin", true)}
+                  onChange={set('gstin', true)}
                   maxLength={15}
                   placeholder="07AAVFR4821K1Z6"
                   invalid={!!errors.gstin}
@@ -390,7 +346,7 @@ export default function CompanyProfile() {
               <Field label="PAN" error={errors.pan} hint="10 characters">
                 <TextInput
                   value={form.pan}
-                  onChange={set("pan", true)}
+                  onChange={set('pan', true)}
                   maxLength={10}
                   placeholder="AAVFR4821K"
                   invalid={!!errors.pan}
@@ -404,23 +360,19 @@ export default function CompanyProfile() {
               description="Shown in the “Bank details” section of printed documents. Leave the account number empty to hide it."
             >
               <Field label="Bank name">
-                <TextInput
-                  value={form.bank}
-                  onChange={set("bank")}
-                  placeholder="HDFC Bank"
-                />
+                <TextInput value={form.bank} onChange={set('bank')} placeholder="HDFC Bank" />
               </Field>
               <Field label="Branch">
                 <TextInput
                   value={form.branch}
-                  onChange={set("branch")}
+                  onChange={set('branch')}
                   placeholder="Nehru Place, New Delhi"
                 />
               </Field>
               <Field label="Account name">
                 <TextInput
                   value={form.accountName}
-                  onChange={set("accountName")}
+                  onChange={set('accountName')}
                   placeholder="Rippotai Architecture LLP"
                 />
               </Field>
@@ -428,7 +380,7 @@ export default function CompanyProfile() {
                 <TextInput
                   inputMode="numeric"
                   value={form.accountNumber}
-                  onChange={set("accountNumber", true)}
+                  onChange={set('accountNumber', true)}
                   placeholder="50200071234567"
                   invalid={!!errors.accountNumber}
                 />
@@ -436,7 +388,7 @@ export default function CompanyProfile() {
               <Field label="IFSC" error={errors.ifsc}>
                 <TextInput
                   value={form.ifsc}
-                  onChange={set("ifsc", true)}
+                  onChange={set('ifsc', true)}
                   maxLength={11}
                   placeholder="HDFC0000236"
                   invalid={!!errors.ifsc}
@@ -445,7 +397,7 @@ export default function CompanyProfile() {
               <Field label="UPI ID" optional error={errors.upi}>
                 <TextInput
                   value={form.upi}
-                  onChange={set("upi")}
+                  onChange={set('upi')}
                   placeholder="rippotai@hdfcbank"
                   invalid={!!errors.upi}
                 />
@@ -464,21 +416,21 @@ export default function CompanyProfile() {
                   min={0}
                   max={28}
                   value={form.defaultGstRate}
-                  onChange={set("defaultGstRate")}
+                  onChange={set('defaultGstRate')}
                   invalid={!!errors.defaultGstRate}
                 />
               </Field>
               <Field label="Invoice prefix" optional>
                 <TextInput
                   value={form.invoicePrefix}
-                  onChange={set("invoicePrefix")}
+                  onChange={set('invoicePrefix')}
                   placeholder="RA/INV/"
                 />
               </Field>
             </FormSection>
 
             <FormActions
-              note={dirty ? "Unsaved changes" : "All changes saved"}
+              note={dirty ? 'Unsaved changes' : 'All changes saved'}
               submitLabel="Save profile"
               submitting={saving}
               submitDisabled={!dirty}

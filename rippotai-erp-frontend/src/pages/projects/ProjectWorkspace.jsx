@@ -1,10 +1,21 @@
 // Project page: Overview (status + action required), Drawings, Documents.
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { CheckCircle2, Copy, ExternalLink, FileText, FolderOpen, LayoutDashboard, LayoutGrid, Pencil, RefreshCw, Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  CheckCircle2,
+  Copy,
+  ExternalLink,
+  FileText,
+  FolderOpen,
+  LayoutDashboard,
+  LayoutGrid,
+  Pencil,
+  RefreshCw,
+  Share2,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-import api from "@/lib/api";
+import api from '@/lib/api';
 import {
   Page,
   PageHeader,
@@ -18,35 +29,38 @@ import {
   Field,
   TextInput,
   ChoiceGroup,
-} from "@/components/inos";
+} from '@/components/inos';
 import {
   Skeleton,
   Modal,
   formatDate,
   normalizeCommandCenterPhases,
   commandCenterProgress,
-} from "@/components/projects/_projects-ui";
-import "@/components/projects/projects-ui.css";
-import { useGetProjectPhasesQuery as useGetCommandCenterPhasesQuery } from "@/api/projects/command-center.api";
-import { useGetProjectByIdQuery } from "../../api/projects/project.api";
-import { useGetDocumentHubQuery, useGetProjectPendingWorkQuery } from "@/api/projects/document-hub.api";
-import { PRE_DESIGN_SLOTS, PROJECT_DOCUMENTS } from "@/config/projectDocuments";
-import ProjectDocumentsHub from "@/components/projects/ProjectDocumentsHub";
-import ProjectDrawingsTab from "@/components/projects/ProjectDrawingsTab";
-import { useAccess } from "@/hooks/use-permission";
-import RecentActivity from "@/components/record-context/RecentActivity";
-import { phaseLabel } from "@/components/record-context/codes";
+} from '@/components/projects/_projects-ui';
+import '@/components/projects/projects-ui.css';
+import { useGetProjectPhasesQuery as useGetCommandCenterPhasesQuery } from '@/api/projects/command-center.api';
+import { useGetProjectByIdQuery } from '../../api/projects/project.api';
+import {
+  useGetDocumentHubQuery,
+  useGetProjectPendingWorkQuery,
+} from '@/api/projects/document-hub.api';
+import { PRE_DESIGN_SLOTS, PROJECT_DOCUMENTS } from '@/config/projectDocuments';
+import ProjectDocumentsHub from '@/components/projects/ProjectDocumentsHub';
+import ProjectDrawingsTab from '@/components/projects/ProjectDrawingsTab';
+import { useAccess } from '@/hooks/use-permission';
+import RecentActivity from '@/components/record-context/RecentActivity';
+import { phaseLabel } from '@/components/record-context/codes';
 
 const SHARE_PURPOSES = [
-  { value: "project_view", label: "Project view" },
-  { value: "boq_approval", label: "BOQ approval" },
-  { value: "handover_acceptance", label: "Handover acceptance" },
+  { value: 'project_view', label: 'Project view' },
+  { value: 'boq_approval', label: 'BOQ approval' },
+  { value: 'handover_acceptance', label: 'Handover acceptance' },
 ];
 
 const TABS = [
-  { value: "overview", label: "Overview", icon: LayoutDashboard },
-  { value: "drawings", label: "Drawings", icon: LayoutGrid },
-  { value: "documents", label: "Documents", icon: FileText },
+  { value: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { value: 'drawings', label: 'Drawings', icon: LayoutGrid },
+  { value: 'documents', label: 'Documents', icon: FileText },
 ];
 
 /* ============================================================
@@ -56,19 +70,43 @@ const TABS = [
 function StatusCard({ project, progress }) {
   const clientName = project.client?.name || project.client?.contact_person;
   const facts = [
-    ["Status", <StatusPill key="s" status={project.status?.toLowerCase() || "active"} size="sm" />],
-    ["Stage", progress.current?.name || (progress.total && progress.done === progress.total ? "Complete" : "Not started")],
-    ["Client", clientName || "—"],
-    ["Site", project.site_location || "—"],
-    ["Completion", project.expected_completion_date ? formatDate(project.expected_completion_date) : "—"],
+    ['Status', <StatusPill key="s" status={project.status?.toLowerCase() || 'active'} size="sm" />],
+    [
+      'Stage',
+      progress.current?.name ||
+        (progress.total && progress.done === progress.total ? 'Complete' : 'Not started'),
+    ],
+    ['Client', clientName || '—'],
+    ['Site', project.site_location || '—'],
+    [
+      'Completion',
+      project.expected_completion_date ? formatDate(project.expected_completion_date) : '—',
+    ],
   ];
   return (
-    <Card title="Project status" actions={<span className="tabular" style={{ fontWeight: 700 }}>{progress.percent}%</span>}>
+    <Card
+      title="Project status"
+      actions={
+        <span className="tabular" style={{ fontWeight: 700 }}>
+          {progress.percent}%
+        </span>
+      }
+    >
       <Progress value={progress.percent} />
-      <dl className="pj-facts" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, margin: "16px 0 0" }}>
+      <dl
+        className="pj-facts"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: 12,
+          margin: '16px 0 0',
+        }}
+      >
         {facts.map(([k, v]) => (
           <div key={k}>
-            <dt className="pj-muted" style={{ fontSize: 12 }}>{k}</dt>
+            <dt className="pj-muted" style={{ fontSize: 12 }}>
+              {k}
+            </dt>
             <dd style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>{v}</dd>
           </div>
         ))}
@@ -84,24 +122,54 @@ function ActionRequired({ projectId }) {
 
   const items = useMemo(() => {
     const out = [];
-    (work.delayed || []).forEach((t) => out.push({ key: `d${t.id}`, tone: "bad", tag: "Overdue", title: t.title, sub: t.due_date ? `Due ${formatDate(t.due_date)}` : "", to: `/tasks/${t.id}` }));
-    (work.blocked || []).forEach((t) => out.push({ key: `b${t.id}`, tone: "bad", tag: "Blocked", title: t.title, to: `/tasks/${t.id}` }));
+    (work.delayed || []).forEach((t) =>
+      out.push({
+        key: `d${t.id}`,
+        tone: 'bad',
+        tag: 'Overdue',
+        title: t.title,
+        sub: t.due_date ? `Due ${formatDate(t.due_date)}` : '',
+        to: `/tasks/${t.id}`,
+      }),
+    );
+    (work.blocked || []).forEach((t) =>
+      out.push({
+        key: `b${t.id}`,
+        tone: 'bad',
+        tag: 'Blocked',
+        title: t.title,
+        to: `/tasks/${t.id}`,
+      }),
+    );
     (work.awaiting_approval || []).forEach((a) => {
-      const boq = String(a.title || "").startsWith("BOQ: ");
-      out.push({ key: `a${a.id}`, tone: "warn", tag: "Approval", title: a.title, to: boq ? `/ledger/boq/${a.id}` : `/projects/documents/${a.id}` });
+      const boq = String(a.title || '').startsWith('BOQ: ');
+      out.push({
+        key: `a${a.id}`,
+        tone: 'warn',
+        tag: 'Approval',
+        title: a.title,
+        to: boq ? `/ledger/boq/${a.id}` : `/projects/documents/${a.id}`,
+      });
     });
     if (hub) {
       // Next documents of the flow this project does not have yet.
-      const missing = PROJECT_DOCUMENTS.filter((d) => d.kind !== "register" && d.key !== "quotation").filter((d) =>
-        d.kind === "stage" ? !PRE_DESIGN_SLOTS.every((s) => hub[s.key]?.count) : !hub[d.key]?.count,
+      const missing = PROJECT_DOCUMENTS.filter(
+        (d) => d.kind !== 'register' && d.key !== 'quotation',
+      ).filter((d) =>
+        d.kind === 'stage' ? !PRE_DESIGN_SLOTS.every((s) => hub[s.key]?.count) : !hub[d.key]?.count,
       );
       missing.slice(0, 3).forEach((d) =>
         out.push({
           key: `m${d.key}`,
-          tone: "mute",
-          tag: "Pending",
+          tone: 'mute',
+          tag: 'Pending',
           title: d.name,
-          to: d.kind === "stage" ? d.stagePath(projectId) : d.kind === "form" ? d.createPath(projectId) : `${d.listPath}?projectId=${projectId}`,
+          to:
+            d.kind === 'stage'
+              ? d.stagePath(projectId)
+              : d.kind === 'form'
+                ? d.createPath(projectId)
+                : `${d.listPath}?projectId=${projectId}`,
         }),
       );
     }
@@ -109,17 +177,44 @@ function ActionRequired({ projectId }) {
   }, [work, hub, projectId]);
 
   return (
-    <Card flush title="Action required" actions={items.length ? <Pill tone="warn" size="sm">{items.length}</Pill> : <Pill tone="ok" size="sm">All clear</Pill>}>
+    <Card
+      flush
+      title="Action required"
+      actions={
+        items.length ? (
+          <Pill tone="warn" size="sm">
+            {items.length}
+          </Pill>
+        ) : (
+          <Pill tone="ok" size="sm">
+            All clear
+          </Pill>
+        )
+      }
+    >
       {!items.length ? (
         <EmptyState icon={CheckCircle2} title="Nothing pending" />
       ) : (
         <div data-testid="action-required">
           {items.map((it) => (
-            <button type="button" key={it.key} className="pj-action-row pj-list-item" onClick={() => nav(it.to)} style={{ width: "100%", textAlign: "left" }}>
-              <Pill tone={it.tone} size="sm">{it.tag}</Pill>
+            <button
+              type="button"
+              key={it.key}
+              className="pj-action-row pj-list-item"
+              onClick={() => nav(it.to)}
+              style={{ width: '100%', textAlign: 'left' }}
+            >
+              <Pill tone={it.tone} size="sm">
+                {it.tag}
+              </Pill>
               <span className="pj-action-row__main">
                 <span style={{ fontWeight: 600 }}>{it.title}</span>
-                {it.sub && <span className="pj-muted" style={{ fontSize: 12 }}> · {it.sub}</span>}
+                {it.sub && (
+                  <span className="pj-muted" style={{ fontSize: 12 }}>
+                    {' '}
+                    · {it.sub}
+                  </span>
+                )}
               </span>
             </button>
           ))}
@@ -149,24 +244,35 @@ function ClientLinksList({ projectId, refreshKey, onCopy }) {
   const revoke = async (id) => {
     try {
       await api.post(`/v1/client-links/${id}/revoke`);
-      toast.success("Link revoked — it no longer opens");
+      toast.success('Link revoked — it no longer opens');
       load();
     } catch {
       toast.error("Couldn't revoke the link");
     }
   };
-  const active = (links || []).filter((l) => l.state === "active");
+  const active = (links || []).filter((l) => l.state === 'active');
   if (!active.length) return null;
   return (
     <Field label={`Active links (${active.length})`}>
-      <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ display: 'grid', gap: 8 }}>
         {active.slice(0, 5).map((l) => (
-          <div key={l.id} className="inos-card inos-card--inset" style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            key={l.id}
+            className="inos-card inos-card--inset"
+            style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}
+          >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{PURPOSE_LABEL[l.purpose] || l.purpose}</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>
+                {PURPOSE_LABEL[l.purpose] || l.purpose}
+              </div>
               <div className="pj-muted" style={{ fontSize: 12 }}>
-                {l.client_name || l.client_email || "Client"} · expires {new Date(l.expires_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                {l.open_count ? ` · opened ${l.open_count}×` : " · not opened yet"}
+                {l.client_name || l.client_email || 'Client'} · expires{' '}
+                {new Date(l.expires_at).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+                {l.open_count ? ` · opened ${l.open_count}×` : ' · not opened yet'}
               </div>
             </div>
             {l.url && (
@@ -184,7 +290,17 @@ function ClientLinksList({ projectId, refreshKey, onCopy }) {
   );
 }
 
-function ShareClientModal({ open, onClose, form, setForm, createdLink, onCreate, onCopy, onDone, projectId }) {
+function ShareClientModal({
+  open,
+  onClose,
+  form,
+  setForm,
+  createdLink,
+  onCreate,
+  onCopy,
+  onDone,
+  projectId,
+}) {
   const [creating, setCreating] = useState(false);
   const create = async () => {
     setCreating(true);
@@ -216,7 +332,12 @@ function ShareClientModal({ open, onClose, form, setForm, createdLink, onCreate,
             <Button variant="secondary" icon={Copy} onClick={() => onCopy(createdLink.url)}>
               Copy
             </Button>
-            <a href={createdLink.url} target="_blank" rel="noreferrer" className="inos-btn inos-btn--secondary">
+            <a
+              href={createdLink.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inos-btn inos-btn--secondary"
+            >
               <ExternalLink aria-hidden />
               <span>Open</span>
             </a>
@@ -231,19 +352,21 @@ function ShareClientModal({ open, onClose, form, setForm, createdLink, onCreate,
         <>
           <Field label="Purpose">
             <div className="pj-choices-2">
-            <ChoiceGroup
-              name="Purpose"
-              value={form.purpose}
-              onChange={(purpose) => setForm((current) => ({ ...current, purpose }))}
-              options={SHARE_PURPOSES}
-            />
+              <ChoiceGroup
+                name="Purpose"
+                value={form.purpose}
+                onChange={(purpose) => setForm((current) => ({ ...current, purpose }))}
+                options={SHARE_PURPOSES}
+              />
             </div>
           </Field>
           <div className="inos-form-grid">
             <Field label="Client name">
               <TextInput
                 value={form.client_name}
-                onChange={(e) => setForm((current) => ({ ...current, client_name: e.target.value }))}
+                onChange={(e) =>
+                  setForm((current) => ({ ...current, client_name: e.target.value }))
+                }
                 placeholder="e.g. Sagar Mehta"
               />
             </Field>
@@ -251,24 +374,28 @@ function ShareClientModal({ open, onClose, form, setForm, createdLink, onCreate,
               <TextInput
                 type="email"
                 value={form.client_email}
-                onChange={(e) => setForm((current) => ({ ...current, client_email: e.target.value }))}
+                onChange={(e) =>
+                  setForm((current) => ({ ...current, client_email: e.target.value }))
+                }
                 placeholder="name@company.com"
               />
             </Field>
           </div>
           <ClientLinksList projectId={projectId} refreshKey={open} onCopy={onCopy} />
           <Field label="The client can see">
-            <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: 'grid', gap: 10 }}>
               {[
-                ["show_rates", "Rates on the BOQ"],
-                ["show_vendor_names", "Vendor names"],
-                ["show_ratings", "Vendor ratings"],
+                ['show_rates', 'Rates on the BOQ'],
+                ['show_vendor_names', 'Vendor names'],
+                ['show_ratings', 'Vendor ratings'],
               ].map(([key, label]) => (
                 <label key={key} className="pj-check">
                   <input
                     type="checkbox"
                     checked={!!form[key]}
-                    onChange={(e) => setForm((current) => ({ ...current, [key]: e.target.checked }))}
+                    onChange={(e) =>
+                      setForm((current) => ({ ...current, [key]: e.target.checked }))
+                    }
                   />
                   {label}
                 </label>
@@ -279,7 +406,10 @@ function ShareClientModal({ open, onClose, form, setForm, createdLink, onCreate,
       ) : (
         <>
           <Pill tone="ok">Link generated</Pill>
-          <div className="inos-card inos-card--inset" style={{ padding: 12, fontSize: 13, color: "var(--text-2)", overflowWrap: "anywhere" }}>
+          <div
+            className="inos-card inos-card--inset"
+            style={{ padding: 12, fontSize: 13, color: 'var(--text-2)', overflowWrap: 'anywhere' }}
+          >
             {createdLink.url}
           </div>
         </>
@@ -297,40 +427,49 @@ export default function ProjectWorkspace() {
   const nav = useNavigate();
   const access = useAccess();
   const [params, setParams] = useSearchParams();
-  const tab = TABS.some((t) => t.value === params.get("tab")) ? params.get("tab") : "overview";
+  const tab = TABS.some((t) => t.value === params.get('tab')) ? params.get('tab') : 'overview';
   const setTab = (value) => {
     const next = new URLSearchParams(params);
-    if (value === "overview") next.delete("tab");
-    else next.set("tab", value);
+    if (value === 'overview') next.delete('tab');
+    else next.set('tab', value);
     setParams(next, { replace: true });
   };
 
-  const { data: projectData, isLoading, error, refetch: refetchProject } = useGetProjectByIdQuery(id, { skip: !id });
+  const {
+    data: projectData,
+    isLoading,
+    error,
+    refetch: refetchProject,
+  } = useGetProjectByIdQuery(id, { skip: !id });
   const { data: ccPhases } = useGetCommandCenterPhasesQuery(id, { skip: !id });
 
   const [shareModal, setShareModal] = useState(false);
   const [shareForm, setShareForm] = useState({
-    purpose: "project_view",
-    client_email: "",
-    client_name: "",
+    purpose: 'project_view',
+    client_email: '',
+    client_name: '',
     show_rates: true,
     show_vendor_names: true,
     show_ratings: true,
   });
   const [createdLink, setCreatedLink] = useState(null);
 
-
   const openShare = () => {
     setShareForm((current) => ({
       ...current,
-      client_email: current.client_email || projectData?.client?.email || "",
-      client_name: current.client_name || projectData?.client?.name || projectData?.client?.contact_person || "",
+      client_email: current.client_email || projectData?.client?.email || '',
+      client_name:
+        current.client_name ||
+        projectData?.client?.name ||
+        projectData?.client?.contact_person ||
+        '',
     }));
     setShareModal(true);
   };
 
   const progress = useMemo(() => {
-    if (ccPhases?.phases?.length) return commandCenterProgress(ccPhases, normalizeCommandCenterPhases(ccPhases));
+    if (ccPhases?.phases?.length)
+      return commandCenterProgress(ccPhases, normalizeCommandCenterPhases(ccPhases));
     return { percent: 0, total: 0, done: 0, current: null };
   }, [ccPhases]);
 
@@ -348,17 +487,17 @@ export default function ProjectWorkspace() {
       },
     };
     try {
-      const { data } = await api.post("/v1/client-links", payload);
+      const { data } = await api.post('/v1/client-links', payload);
       setCreatedLink(data);
-      toast.success("Client link created");
+      toast.success('Client link created');
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to create client link");
+      toast.error(e?.response?.data?.message || 'Failed to create client link');
     }
   };
 
   const copyUrl = async (url) => {
     await navigator.clipboard.writeText(url);
-    toast.success("Copied");
+    toast.success('Copied');
   };
 
   if (isLoading) {
@@ -379,11 +518,11 @@ export default function ProjectWorkspace() {
             icon={FolderOpen}
             title="This project could not be loaded"
             action={
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <Button variant="secondary" icon={RefreshCw} onClick={() => refetchProject()}>
                   Retry
                 </Button>
-                <Button variant="primary" onClick={() => nav("/projects")}>
+                <Button variant="primary" onClick={() => nav('/projects')}>
                   All projects
                 </Button>
               </div>
@@ -397,9 +536,13 @@ export default function ProjectWorkspace() {
   const p = projectData;
   const members = Array.isArray(p.team_members) ? p.team_members : [];
   const lead =
-    members.find((m) => /lead/i.test(m.role_label || "")) || members.find((m) => m.is_primary) || members[0];
+    members.find((m) => /lead/i.test(m.role_label || '')) ||
+    members.find((m) => m.is_primary) ||
+    members[0];
   const stage = progress.current?.name || phaseLabel(p.current_phase);
-  const infoLine = [p.code, stage, lead?.user?.name ? `Project lead: ${lead.user.name}` : null].filter(Boolean).join(" · ");
+  const infoLine = [p.code, stage, lead?.user?.name ? `Project lead: ${lead.user.name}` : null]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <Page className="pj-page">
@@ -408,12 +551,12 @@ export default function ProjectWorkspace() {
         info={infoLine}
         actions={
           <>
-            {access.can("projects", "update") && (
+            {access.can('projects', 'update') && (
               <Button variant="secondary" icon={Pencil} onClick={() => nav(`/projects/${id}/edit`)}>
                 Edit
               </Button>
             )}
-            {access.can("client-portal", "create") ? (
+            {access.can('client-portal', 'create') ? (
               <Button variant="secondary" icon={Share2} onClick={openShare}>
                 Share with client
               </Button>
@@ -424,15 +567,15 @@ export default function ProjectWorkspace() {
 
       <Tabs value={tab} onChange={setTab} options={TABS} />
 
-      {tab === "overview" && (
+      {tab === 'overview' && (
         <div className="pj-two-col pj-two-col--even">
           <StatusCard project={p} progress={progress} />
           <ActionRequired projectId={id} />
         </div>
       )}
-      {tab === "overview" && <RecentActivity projectId={id} projectCode={p.code} />}
-      {tab === "drawings" && <ProjectDrawingsTab projectId={id} />}
-      {tab === "documents" && <ProjectDocumentsHub project={p} />}
+      {tab === 'overview' && <RecentActivity projectId={id} projectCode={p.code} />}
+      {tab === 'drawings' && <ProjectDrawingsTab projectId={id} />}
+      {tab === 'documents' && <ProjectDocumentsHub project={p} />}
 
       <ShareClientModal
         open={shareModal}

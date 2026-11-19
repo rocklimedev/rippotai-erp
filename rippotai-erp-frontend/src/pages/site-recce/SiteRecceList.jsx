@@ -1,7 +1,10 @@
-import { MapPin } from "lucide-react";
-import DocumentListPage from "@/components/doc-list/DocumentListPage";
-import { rowProjectId, rowProjectName, rowUpdated } from "@/components/doc-list/doc-utils";
-import { useGetSiteReccesQuery, useDeleteSiteRecceMutation } from "../../api/documents/site-recce.api";
+import { MapPin } from 'lucide-react';
+import DocumentListPage from '@/components/doc-list/DocumentListPage';
+import { rowProjectId, rowProjectName, rowUpdated } from '@/components/doc-list/doc-utils';
+import {
+  useGetSiteReccesQuery,
+  useDeleteSiteRecceMutation,
+} from '../../api/documents/site-recce.api';
 
 export default function SiteRecceList() {
   const { data: rows = [], isLoading, error } = useGetSiteReccesQuery();
@@ -16,11 +19,11 @@ export default function SiteRecceList() {
       error={error}
       getRow={(r) => ({
         id: r.id,
-        name: "Site Recce",
+        name: 'Site Recce',
         projectId: rowProjectId(r),
         projectName: rowProjectName(r),
         updatedAt: rowUpdated(r),
-        search: [r.client_name, r.recce_date].filter(Boolean).join(" "),
+        search: [r.client_name, r.recce_date].filter(Boolean).join(' '),
       })}
       viewTo={(r) => `/crm/recce/${r.id}`}
       editTo={(r) => `/crm/recce/${r.id}/edit`}
