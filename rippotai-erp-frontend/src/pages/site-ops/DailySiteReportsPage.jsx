@@ -1,9 +1,18 @@
-import { NotebookPen } from "lucide-react";
-import DocumentListPage from "@/components/doc-list/DocumentListPage";
-import { asRows, fmtDate, rowProjectId, rowProjectName, rowUpdated } from "@/components/doc-list/doc-utils";
-import { useListDailySiteReportsQuery, useDeleteDailySiteReportMutation } from "@/api/procuerment/site-ops.api";
+import { NotebookPen } from 'lucide-react';
+import DocumentListPage from '@/components/doc-list/DocumentListPage';
+import {
+  asRows,
+  fmtDate,
+  rowProjectId,
+  rowProjectName,
+  rowUpdated,
+} from '@/components/doc-list/doc-utils';
+import {
+  useListDailySiteReportsQuery,
+  useDeleteDailySiteReportMutation,
+} from '@/api/procuerment/site-ops.api';
 
-const BASE = "/site-operations/daily-reports";
+const BASE = '/site-operations/daily-reports';
 
 export default function DailySiteReportsPage() {
   const { data, isLoading, error } = useListDailySiteReportsQuery({});

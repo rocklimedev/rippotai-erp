@@ -1,18 +1,18 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, MessageSquareWarning, RefreshCw } from "lucide-react";
-import { useGetRfisByProjectQuery } from "../../api/site-ops/site-ops.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { StatusBadge } from "@/components/site-ops/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, MessageSquareWarning, RefreshCw } from 'lucide-react';
+import { useGetRfisByProjectQuery } from '../../api/site-ops/site-ops.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { StatusBadge } from '@/components/site-ops/StatusBadge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -20,13 +20,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
-const STATUS_OPTIONS = ["all", "OPEN", "ANSWERED", "CLOSED"];
+const STATUS_OPTIONS = ['all', 'OPEN', 'ANSWERED', 'CLOSED'];
 
 export default function RfisListPage() {
-  const [projectId, setProjectId] = useState("");
-  const [status, setStatus] = useState("all");
+  const [projectId, setProjectId] = useState('');
+  const [status, setStatus] = useState('all');
   const [queryProjectId, setQueryProjectId] = useState(null);
 
   const {
@@ -37,7 +37,7 @@ export default function RfisListPage() {
   } = useGetRfisByProjectQuery(
     {
       projectId: queryProjectId,
-      status: status === "all" ? undefined : status,
+      status: status === 'all' ? undefined : status,
     },
     { skip: !queryProjectId },
   );
@@ -63,9 +63,7 @@ export default function RfisListPage() {
                 onClick={() => refetch()}
                 disabled={isFetching}
               >
-                <RefreshCw
-                  className={`h-4 w-4 mr-1.5 ${isFetching ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             )}
@@ -89,7 +87,7 @@ export default function RfisListPage() {
               placeholder="e.g. 12"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && load()}
+              onKeyDown={(e) => e.key === 'Enter' && load()}
             />
           </div>
           <div className="space-y-1">
@@ -101,7 +99,7 @@ export default function RfisListPage() {
               <SelectContent>
                 {STATUS_OPTIONS.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {s === "all" ? "All" : s}
+                    {s === 'all' ? 'All' : s}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -132,36 +130,25 @@ export default function RfisListPage() {
                   <TableCell colSpan={6} className="text-center py-12">
                     <div className="bc-empty-state">
                       <MessageSquareWarning className="h-10 w-10 mx-auto mb-3 text-[var(--sage)]" />
-                      <p className="text-[var(--muted)]">
-                        Enter a project ID and load RFIs.
-                      </p>
+                      <p className="text-[var(--muted)]">Enter a project ID and load RFIs.</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-12 text-[var(--muted)]"
-                  >
+                  <TableCell colSpan={6} className="text-center py-12 text-[var(--muted)]">
                     Loading…
                   </TableCell>
                 </TableRow>
               ) : rfis.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-12 text-[var(--muted)]"
-                  >
+                  <TableCell colSpan={6} className="text-center py-12 text-[var(--muted)]">
                     No RFIs for this project.
                   </TableCell>
                 </TableRow>
               ) : (
                 rfis.map((r) => (
-                  <TableRow
-                    key={r.id}
-                    className="hover:bg-[var(--mist-soft)]/60"
-                  >
+                  <TableRow key={r.id} className="hover:bg-[var(--mist-soft)]/60">
                     <TableCell className="font-medium text-[var(--ink-green)] max-w-[260px]">
                       <span className="line-clamp-2">{r.subject}</span>
                     </TableCell>
@@ -173,9 +160,7 @@ export default function RfisListPage() {
                     </TableCell>
                     <TableCell>{r.raisedBy}</TableCell>
                     <TableCell className="nowrap">
-                      {r.raisedAt
-                        ? new Date(r.raisedAt).toLocaleDateString()
-                        : "—"}
+                      {r.raisedAt ? new Date(r.raisedAt).toLocaleDateString() : '—'}
                     </TableCell>
                     <TableCell className="actions">
                       <Button variant="ghost" size="sm" asChild>

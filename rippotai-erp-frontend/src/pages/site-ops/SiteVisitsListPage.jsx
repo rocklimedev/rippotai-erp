@@ -1,11 +1,6 @@
-import { Link } from "react-router-dom";
-import { useGetAllocatedVisitLogsQuery } from "@/api/procuerment/site-ops.api";
-import {
-  useSiteProjects,
-  useProjectParam,
-  ProjectPicker,
-  rowProjectName,
-} from "./siteProjects";
+import { Link } from 'react-router-dom';
+import { useGetAllocatedVisitLogsQuery } from '@/api/procuerment/site-ops.api';
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from './siteProjects';
 export default function SiteVisitsListPage() {
   const [projectId, setProjectId] = useProjectParam();
   const { projects, nameOf } = useSiteProjects();
@@ -22,18 +17,11 @@ export default function SiteVisitsListPage() {
             Attendance and findings for allocated visit events.
           </p>
         </div>
-        <Link
-          className="rounded border px-4 py-2"
-          to="/site-operations/site-visits/new"
-        >
+        <Link className="rounded border px-4 py-2" to="/site-operations/site-visits/new">
           Record visit
         </Link>
       </div>
-      <ProjectPicker
-        projects={projects}
-        value={projectId}
-        onChange={setProjectId}
-      />
+      <ProjectPicker projects={projects} value={projectId} onChange={setProjectId} />
       {error ? (
         <p role="alert">Unable to load visits.</p>
       ) : isLoading ? (
@@ -43,13 +31,7 @@ export default function SiteVisitsListPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-muted">
               <tr>
-                {[
-                  "Project",
-                  "Visitor",
-                  "Scheduled date",
-                  "Stage / Purpose",
-                  "Status",
-                ].map((h) => (
+                {['Project', 'Visitor', 'Scheduled date', 'Stage / Purpose', 'Status'].map((h) => (
                   <th key={h} className="p-3">
                     {h}
                   </th>
@@ -62,19 +44,12 @@ export default function SiteVisitsListPage() {
                   <td className="p-3">{rowProjectName(v, nameOf)}</td>
                   <td className="p-3">
                     {v.visitorName}
-                    <p className="text-xs text-muted-foreground">
-                      {v.visitorType}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{v.visitorType}</p>
                   </td>
                   <td className="p-3">{v.scheduledDate}</td>
                   <td className="p-3">
-                    <Link
-                      className="underline"
-                      to={`/site-operations/site-visits/${v.id}`}
-                    >
-                      {v.visitAssignment?.stageName ||
-                        v.purpose ||
-                        "View visit"}
+                    <Link className="underline" to={`/site-operations/site-visits/${v.id}`}>
+                      {v.visitAssignment?.stageName || v.purpose || 'View visit'}
                     </Link>
                   </td>
                   <td className="p-3">{v.status}</td>

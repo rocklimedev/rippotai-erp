@@ -1,7 +1,10 @@
-import { ListChecks } from "lucide-react";
-import DocumentListPage from "@/components/doc-list/DocumentListPage";
-import { rowProjectId, rowProjectName, rowUpdated } from "@/components/doc-list/doc-utils";
-import { useFindAllPlanOfActionsQuery, useDeletePlanOfActionMutation } from "../../api/documents/plan-of-actions.api";
+import { ListChecks } from 'lucide-react';
+import DocumentListPage from '@/components/doc-list/DocumentListPage';
+import { rowProjectId, rowProjectName, rowUpdated } from '@/components/doc-list/doc-utils';
+import {
+  useFindAllPlanOfActionsQuery,
+  useDeletePlanOfActionMutation,
+} from '../../api/documents/plan-of-actions.api';
 
 export default function PlanOfActionList() {
   const { data: rows = [], isLoading, error } = useFindAllPlanOfActionsQuery(undefined);
@@ -16,11 +19,11 @@ export default function PlanOfActionList() {
       error={error}
       getRow={(r) => ({
         id: r.id,
-        name: r.title || "Plan of Action",
+        name: r.title || 'Plan of Action',
         projectId: rowProjectId(r),
         projectName: rowProjectName(r),
         version: r.version,
-        status: r.status || (r.is_published ? "published" : "draft"),
+        status: r.status || (r.is_published ? 'published' : 'draft'),
         updatedAt: rowUpdated(r),
       })}
       viewTo={(r) => `/crm/plan-of-action/${r.id}`}

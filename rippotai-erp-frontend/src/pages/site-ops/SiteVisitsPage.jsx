@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   CalendarDays,
   CheckCircle2,
@@ -11,24 +11,24 @@ import {
   UserCheck,
   Users,
   XCircle,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -36,55 +36,55 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 import {
   useListVisitAssignmentsQuery,
   useGetVisitLogQuery,
   useDeactivateVisitAssignmentMutation,
   useCheckInSiteVisitMutation,
-} from "@/api/procuerment/site-ops.api";
+} from '@/api/procuerment/site-ops.api';
 
 const STATUS_STYLES = {
-  SCHEDULED: "bg-slate-100 text-slate-700 border-slate-200",
-  COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  MISSED: "bg-red-50 text-red-700 border-red-200",
-  CANCELLED: "bg-gray-100 text-gray-600 border-gray-200",
+  SCHEDULED: 'bg-slate-100 text-slate-700 border-slate-200',
+  COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  MISSED: 'bg-red-50 text-red-700 border-red-200',
+  CANCELLED: 'bg-gray-100 text-gray-600 border-gray-200',
 };
 
 const FREQUENCY_LABELS = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  FIXED_SCHEDULE: "Fixed schedule",
-  AD_HOC: "Ad hoc",
+  DAILY: 'Daily',
+  WEEKLY: 'Weekly',
+  FIXED_SCHEDULE: 'Fixed schedule',
+  AD_HOC: 'Ad hoc',
 };
 
 const formatDate = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
 
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
 };
 
 const formatDateTime = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
 
-  return new Date(value).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Date(value).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
 function StatusBadge({ status }) {
   return (
-    <Badge variant="outline" className={STATUS_STYLES[status] || "bg-slate-50"}>
-      {status || "UNKNOWN"}
+    <Badge variant="outline" className={STATUS_STYLES[status] || 'bg-slate-50'}>
+      {status || 'UNKNOWN'}
     </Badge>
   );
 }
@@ -94,29 +94,25 @@ function VisitorTypeBadge({ type }) {
     <Badge variant="secondary" className="font-normal">
       {type
         ? type
-            .replaceAll("_", " ")
+            .replaceAll('_', ' ')
             .toLowerCase()
             .replace(/\b\w/g, (c) => c.toUpperCase())
-        : "—"}
+        : '—'}
     </Badge>
   );
 }
 
 export default function SiteVisitsPage({ projectId }) {
-  const [activeTab, setActiveTab] = useState("log");
-  const [search, setSearch] = useState("");
-  const [visitorType, setVisitorType] = useState("ALL");
-  const [status, setStatus] = useState("ALL");
+  const [activeTab, setActiveTab] = useState('log');
+  const [search, setSearch] = useState('');
+  const [visitorType, setVisitorType] = useState('ALL');
+  const [status, setStatus] = useState('ALL');
 
   const today = new Date();
 
   const from = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
-  const to = new Date(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    0,
-  ).toISOString();
+  const to = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString();
 
   const {
     data: assignmentsData,
@@ -143,8 +139,7 @@ export default function SiteVisitsPage({ projectId }) {
 
   const [deactivateAssignment] = useDeactivateVisitAssignmentMutation();
 
-  const [checkInVisit, { isLoading: checkingIn }] =
-    useCheckInSiteVisitMutation();
+  const [checkInVisit, { isLoading: checkingIn }] = useCheckInSiteVisitMutation();
 
   const assignments = assignmentsData || [];
   const visits = visitsData || [];
@@ -159,10 +154,9 @@ export default function SiteVisitsPage({ projectId }) {
         visit.purpose?.toLowerCase().includes(query) ||
         visit.notes?.toLowerCase().includes(query);
 
-      const matchesType =
-        visitorType === "ALL" || visit.visitorType === visitorType;
+      const matchesType = visitorType === 'ALL' || visit.visitorType === visitorType;
 
-      const matchesStatus = status === "ALL" || visit.status === status;
+      const matchesStatus = status === 'ALL' || visit.status === status;
 
       return matchesSearch && matchesType && matchesStatus;
     });
@@ -171,9 +165,9 @@ export default function SiteVisitsPage({ projectId }) {
   const stats = useMemo(() => {
     return {
       total: visits.length,
-      completed: visits.filter((v) => v.status === "COMPLETED").length,
-      scheduled: visits.filter((v) => v.status === "SCHEDULED").length,
-      missed: visits.filter((v) => v.status === "MISSED").length,
+      completed: visits.filter((v) => v.status === 'COMPLETED').length,
+      scheduled: visits.filter((v) => v.status === 'SCHEDULED').length,
+      missed: visits.filter((v) => v.status === 'MISSED').length,
     };
   }, [visits]);
 
@@ -210,18 +204,12 @@ export default function SiteVisitsPage({ projectId }) {
             </h1>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Manage recurring site visit assignments and track actual site
-              visits.
+              Manage recurring site visit assignments and track actual site visits.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              title="Refresh"
-            >
+            <Button variant="outline" size="icon" onClick={handleRefresh} title="Refresh">
               <RefreshCw className="h-4 w-4" />
             </Button>
 
@@ -251,9 +239,7 @@ export default function SiteVisitsPage({ projectId }) {
             <CardContent className="flex items-center justify-between p-5">
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="mt-1 text-2xl font-semibold text-emerald-700">
-                  {stats.completed}
-                </p>
+                <p className="mt-1 text-2xl font-semibold text-emerald-700">{stats.completed}</p>
               </div>
 
               <div className="rounded-xl bg-emerald-50 p-3">
@@ -279,9 +265,7 @@ export default function SiteVisitsPage({ projectId }) {
             <CardContent className="flex items-center justify-between p-5">
               <div>
                 <p className="text-sm text-muted-foreground">Missed</p>
-                <p className="mt-1 text-2xl font-semibold text-red-600">
-                  {stats.missed}
-                </p>
+                <p className="mt-1 text-2xl font-semibold text-red-600">{stats.missed}</p>
               </div>
 
               <div className="rounded-xl bg-red-50 p-3">
@@ -294,22 +278,22 @@ export default function SiteVisitsPage({ projectId }) {
         {/* Tabs */}
         <div className="flex border-b">
           <button
-            onClick={() => setActiveTab("log")}
+            onClick={() => setActiveTab('log')}
             className={`border-b-2 px-4 py-3 text-sm font-medium transition ${
-              activeTab === "log"
-                ? "border-[#1F453B] text-[#1F453B]"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+              activeTab === 'log'
+                ? 'border-[#1F453B] text-[#1F453B]'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             Visit Log
           </button>
 
           <button
-            onClick={() => setActiveTab("assignments")}
+            onClick={() => setActiveTab('assignments')}
             className={`border-b-2 px-4 py-3 text-sm font-medium transition ${
-              activeTab === "assignments"
-                ? "border-[#1F453B] text-[#1F453B]"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+              activeTab === 'assignments'
+                ? 'border-[#1F453B] text-[#1F453B]'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             Visit Assignments
@@ -317,7 +301,7 @@ export default function SiteVisitsPage({ projectId }) {
         </div>
 
         {/* Visit Log */}
-        {activeTab === "log" && (
+        {activeTab === 'log' && (
           <Card>
             <CardHeader className="border-b">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -415,9 +399,7 @@ export default function SiteVisitsPage({ projectId }) {
                               </div>
 
                               <div>
-                                <p className="font-medium">
-                                  {visit.visitorName}
-                                </p>
+                                <p className="font-medium">{visit.visitorName}</p>
 
                                 {visit.loggedBy && (
                                   <p className="text-xs text-muted-foreground">
@@ -432,16 +414,12 @@ export default function SiteVisitsPage({ projectId }) {
                             <VisitorTypeBadge type={visit.visitorType} />
                           </TableCell>
 
-                          <TableCell>
-                            {formatDate(visit.scheduledDate)}
-                          </TableCell>
+                          <TableCell>{formatDate(visit.scheduledDate)}</TableCell>
 
-                          <TableCell>
-                            {formatDateTime(visit.actualVisitAt)}
-                          </TableCell>
+                          <TableCell>{formatDateTime(visit.actualVisitAt)}</TableCell>
 
                           <TableCell className="max-w-[260px] truncate">
-                            {visit.purpose || "—"}
+                            {visit.purpose || '—'}
                           </TableCell>
 
                           <TableCell>
@@ -457,7 +435,7 @@ export default function SiteVisitsPage({ projectId }) {
                               </DropdownMenuTrigger>
 
                               <DropdownMenuContent align="end">
-                                {visit.status === "SCHEDULED" && (
+                                {visit.status === 'SCHEDULED' && (
                                   <DropdownMenuItem
                                     disabled={checkingIn}
                                     onClick={() => handleCheckIn(visit.id)}
@@ -484,7 +462,7 @@ export default function SiteVisitsPage({ projectId }) {
         )}
 
         {/* Assignments */}
-        {activeTab === "assignments" && (
+        {activeTab === 'assignments' && (
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
@@ -517,8 +495,8 @@ export default function SiteVisitsPage({ projectId }) {
                   <h3 className="mt-4 font-medium">No visit assignments</h3>
 
                   <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                    Create an assignment for supervisors, architects, vendors,
-                    contractors or clients.
+                    Create an assignment for supervisors, architects, vendors, contractors or
+                    clients.
                   </p>
                 </div>
               ) : (
@@ -549,20 +527,19 @@ export default function SiteVisitsPage({ projectId }) {
                               <span>
                                 {assignment.externalPartyName ||
                                   assignment.team?.name ||
-                                  `Team #${assignment.teamId || "—"}`}
+                                  `Team #${assignment.teamId || '—'}`}
                               </span>
                             </div>
                           </TableCell>
 
                           <TableCell>
-                            {FREQUENCY_LABELS[assignment.frequency] ||
-                              assignment.frequency}
+                            {FREQUENCY_LABELS[assignment.frequency] || assignment.frequency}
                           </TableCell>
 
                           <TableCell>
                             {assignment.scheduleDays?.length
-                              ? assignment.scheduleDays.join(", ")
-                              : "—"}
+                              ? assignment.scheduleDays.join(', ')
+                              : '—'}
                           </TableCell>
 
                           <TableCell>
@@ -592,16 +569,10 @@ export default function SiteVisitsPage({ projectId }) {
                               </DropdownMenuTrigger>
 
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  Edit Assignment
-                                </DropdownMenuItem>
+                                <DropdownMenuItem>Edit Assignment</DropdownMenuItem>
 
                                 {assignment.isActive && (
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleDeactivate(assignment.id)
-                                    }
-                                  >
+                                  <DropdownMenuItem onClick={() => handleDeactivate(assignment.id)}>
                                     Deactivate
                                   </DropdownMenuItem>
                                 )}

@@ -85,6 +85,7 @@ try {
       { endpointName: "getRateComparisons", arg: undefined, value: [sheet] },
       { endpointName: "getProjects", arg: undefined, value: [sheet.project] },
       { endpointName: "getVendors", arg: { status: "ACTIVE" }, value: [] },
+      { endpointName: "getUnits", arg: undefined, value: [{ code: "kg" }] },
     ]),
   );
   const render = (url, component, route) =>
@@ -135,7 +136,7 @@ try {
     "Entered vendor rates must be restored",
   );
   assert.ok(
-    html.includes("251.00"),
+    html.includes("₹251"),
     "Vendor totals must be recalculated from restored quotes",
   );
   assert.ok(
@@ -143,6 +144,7 @@ try {
     "Workspace must not show a BOQ reference",
   );
   assert.equal((html.match(/aria-label="Item description 1"/g) || []).length, 1, "Item description is entered once for all vendors");
+  assert.match(html, /<select[^>]*aria-label="Unit 1"[^>]*>[\s\S]*?<option value="sqm" selected="">sqm<\/option><option value="kg">kg<\/option><\/select>/, "The unit dropdown preserves a saved legacy unit and offers catalogue units");
   const list = render(
     "/procurement/vendors/rate-comparison",
     List,
@@ -196,22 +198,29 @@ try {
     "/procurement/vendors/rate-comparison/:id/edit",
   );
   assert.ok(
-    independent.includes("Overview") &&
+    independent.includes('aria-label="Finalised vendor summary"') &&
       independent.includes("Independent vendor") &&
-      independent.includes("1,200.00"),
-    "New trade quotes and finalised totals must render",
+      independent.includes("Total finalised amount") &&
+      independent.includes("₹1,200") &&
+      !independent.includes("trade-comparison-table"),
+    "Overview opens by default with the workbook summary and finalised totals",
   );
   const fourSnapshot = structuredClone(newSnapshot); fourSnapshot.trades[0].vendor_column_count = 4;
   store.dispatch(baseApi.util.upsertQueryEntries([{ endpointName: 'getRateComparison', arg: 'sheet-1', value: { ...sheet, snapshot: fourSnapshot } }]));
   const four = render('/procurement/vendors/rate-comparison/sheet-1/edit?trade=trade-2', Workspace, '/procurement/vendors/rate-comparison/:id/edit');
-  assert.ok(four.includes('Vendor 4') && four.includes('Item Description') && four.includes('Number of vendors'), 'Trade comparison supports four grouped vendor columns');
+  assert.ok(four.includes('Select vendor 4') && four.includes('vc-item-col') && four.includes('Number of vendors'), 'Trade comparison supports four grouped vendor columns');
   assert.equal((four.match(/aria-label="Item description 1"/g) || []).length, 1);
   const fresh = render(
-    "/procurement/vendors/rate-comparison/new",
+    "/procurement/vendors/rate-comparison/new?tab=comparison",
     Workspace,
     "/procurement/vendors/rate-comparison/new",
   );
-  assert.ok(fresh.includes('Trade Comparison Sheet') && !fresh.includes('trade-comparison-table'), 'Overview is a top-level tab and hides the trade editor');
+  assert.ok(
+    fresh.includes('aria-label="Search trades"') &&
+      /vc-trade-list[\s\S]*trade-comparison-table/.test(fresh) &&
+      fresh.includes('Version History'),
+    'The comparison sheet displays searchable trades above the comparison table',
+  );
   assert.ok(
     fresh.includes("Select project") &&
       !fresh.includes("Select BOQ") &&

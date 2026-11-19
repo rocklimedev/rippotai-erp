@@ -186,6 +186,7 @@ export const APP_MENUS = {
         I('Vendors', '/procurement/vendors/directory'),
         I('Roles & Permissions', 'roles-permissions'),
         I('Project Phases', 'project-phases'),
+        I('Site Visit Stages', 'site-visit-stages'),
         I('Document Types', 'document-types'),
         I('Project Structure', 'project-structure'),
         I('Estimate Signature', 'estimate-signature'),

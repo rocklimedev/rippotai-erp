@@ -38,6 +38,7 @@ export function comparisonTrades(snapshot) {
                   id: item.id,
                   description: item.description,
                   quantity: item.quantity ?? null,
+                  ...(item.unit ? { unit: item.unit } : {}),
                   rate: Number(rate),
                 },
               ];
@@ -61,6 +62,7 @@ export function sharedComparisonTrade(trade) {
       const base = JSON.stringify([
         item.description.trim().replace(/\s+/g, " ").toLowerCase(),
         item.quantity,
+        item.unit || "",
       ]);
       const occurrence = occurrences.get(base) || 0;
       occurrences.set(base, occurrence + 1);
@@ -74,6 +76,7 @@ export function sharedComparisonTrade(trade) {
           id,
           description: item.description,
           quantity: item.quantity,
+          ...(item.unit ? { unit: item.unit } : {}),
         });
       }
       aligned.push({ ...item, id: items[indices.get(key)].id });

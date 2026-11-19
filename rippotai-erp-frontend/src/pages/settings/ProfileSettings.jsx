@@ -1,26 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
-import { Camera, Save, Loader2, ShieldCheck } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { Camera, Save, Loader2, ShieldCheck } from 'lucide-react';
 
-import {
-  useUpdateProfileMutation,
-  useUploadAvatarMutation,
-} from "../../api/users/user.api";
+import { useUpdateProfileMutation, useUploadAvatarMutation } from '../../api/users/user.api';
 
 export default function ProfileSettings() {
   const { user, updateUser } = useAuth();
 
   const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation();
 
-  const [uploadAvatar, { isLoading: isUploadingAvatar }] =
-    useUploadAvatarMutation();
+  const [uploadAvatar, { isLoading: isUploadingAvatar }] = useUploadAvatarMutation();
 
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    job_title: user?.job_title || "",
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    job_title: user?.job_title || '',
   });
 
   // ------------------------------------------------------------
@@ -28,10 +24,10 @@ export default function ProfileSettings() {
   // ------------------------------------------------------------
   useEffect(() => {
     setFormData({
-      name: user?.name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      job_title: user?.job_title || "",
+      name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      job_title: user?.job_title || '',
     });
   }, [user?.id, user?.name, user?.email, user?.phone, user?.job_title]);
 
@@ -63,17 +59,12 @@ export default function ProfileSettings() {
     }
 
     const existingRole =
-      typeof user?.role === "string"
-        ? user.role
-        : user?.role?.name || user?.roleName || null;
+      typeof user?.role === 'string' ? user.role : user?.role?.name || user?.roleName || null;
 
     const updatedRole =
-      typeof updatedUser?.role === "string"
+      typeof updatedUser?.role === 'string'
         ? updatedUser.role
-        : updatedUser?.role?.name ||
-          updatedUser?.roleName ||
-          existingRole ||
-          null;
+        : updatedUser?.role?.name || updatedUser?.roleName || existingRole || null;
 
     return {
       // Keep everything already present on the authenticated user.
@@ -114,8 +105,7 @@ export default function ProfileSettings() {
 
       // Preserve admin flags if the profile endpoint
       // doesn't return them.
-      is_super_admin:
-        updatedUser?.is_super_admin ?? user?.is_super_admin ?? false,
+      is_super_admin: updatedUser?.is_super_admin ?? user?.is_super_admin ?? false,
 
       plan: updatedUser?.plan ?? user?.plan ?? null,
     };
@@ -147,17 +137,17 @@ export default function ProfileSettings() {
     // Validate file size.
     // ----------------------------------------------------------
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be 2MB or smaller");
-      e.target.value = "";
+      toast.error('Image must be 2MB or smaller');
+      e.target.value = '';
       return;
     }
 
     // ----------------------------------------------------------
     // Validate file type.
     // ----------------------------------------------------------
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file");
-      e.target.value = "";
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file');
+      e.target.value = '';
       return;
     }
 
@@ -198,20 +188,16 @@ export default function ProfileSettings() {
 
       updateUser?.(normalizedUser);
 
-      toast.success("Profile picture updated");
+      toast.success('Profile picture updated');
     } catch (err) {
       setAvatarPreview(null);
 
-      toast.error(
-        err?.data?.message ||
-          err?.message ||
-          "Failed to upload profile picture",
-      );
+      toast.error(err?.data?.message || err?.message || 'Failed to upload profile picture');
 
-      console.error("Avatar upload error:", err);
+      console.error('Avatar upload error:', err);
     } finally {
       // Allow selecting the same file again.
-      e.target.value = "";
+      e.target.value = '';
     }
   };
 
@@ -220,7 +206,7 @@ export default function ProfileSettings() {
   // ------------------------------------------------------------
   const handleProfileSave = async () => {
     if (!user?.id) {
-      toast.error("User session not found");
+      toast.error('User session not found');
       return;
     }
 
@@ -240,15 +226,15 @@ export default function ProfileSettings() {
 
       updateUser?.(normalizedUser);
 
-      toast.success(updated.pending_email
-        ? `Verification sent to ${updated.pending_email}. Your current email stays active until confirmed.`
-        : "Profile updated successfully");
-    } catch (err) {
-      toast.error(
-        err?.data?.message || err?.message || "Failed to update profile",
+      toast.success(
+        updated.pending_email
+          ? `Verification sent to ${updated.pending_email}. Your current email stays active until confirmed.`
+          : 'Profile updated successfully',
       );
+    } catch (err) {
+      toast.error(err?.data?.message || err?.message || 'Failed to update profile');
 
-      console.error("Profile update error:", err);
+      console.error('Profile update error:', err);
     }
   };
 
@@ -269,13 +255,11 @@ export default function ProfileSettings() {
   //   { name: "ADMIN" }
   // ------------------------------------------------------------
   const roleName =
-    typeof user?.role === "string"
+    typeof user?.role === 'string'
       ? user.role
-      : user?.role?.name || user?.roleName || "No role assigned";
+      : user?.role?.name || user?.roleName || 'No role assigned';
 
-  const displayRole = roleName
-    ? roleName.replace(/_/g, " ")
-    : "No role assigned";
+  const displayRole = roleName ? roleName.replace(/_/g, ' ') : 'No role assigned';
 
   return (
     <div>
@@ -283,10 +267,7 @@ export default function ProfileSettings() {
       {/* PAGE TITLE */}
       {/* ------------------------------------------------------ */}
 
-      <h2
-        className="text-xl font-semibold mb-6"
-        style={{ color: "var(--ink-green)" }}
-      >
+      <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--ink-green)' }}>
         Profile Information
       </h2>
 
@@ -299,21 +280,21 @@ export default function ProfileSettings() {
           <div
             className="w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-semibold overflow-hidden border-4 border-white shadow"
             style={{
-              background: "var(--ink-green)",
-              color: "#fff",
+              background: 'var(--ink-green)',
+              color: '#fff',
             }}
           >
             {avatarSrc ? (
               <img
                 src={avatarSrc}
-                alt={user?.name || "Profile"}
+                alt={user?.name || 'Profile'}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.currentTarget.style.display = "none";
+                  e.currentTarget.style.display = 'none';
                 }}
               />
             ) : (
-              (user?.name?.charAt(0) || "?").toUpperCase()
+              (user?.name?.charAt(0) || '?').toUpperCase()
             )}
 
             {isUploadingAvatar && (
@@ -331,7 +312,7 @@ export default function ProfileSettings() {
             <Camera
               size={18}
               style={{
-                color: "var(--ink-green)",
+                color: 'var(--ink-green)',
               }}
             />
           </label>
@@ -349,9 +330,7 @@ export default function ProfileSettings() {
         <div>
           <p className="font-medium text-[#1F453B]">Profile Picture</p>
 
-          <p className="text-sm text-[#6B7B7C]">
-            JPG, PNG or GIF • Maximum 2MB
-          </p>
+          <p className="text-sm text-[#6B7B7C]">JPG, PNG or GIF • Maximum 2MB</p>
         </div>
       </div>
 
@@ -362,9 +341,7 @@ export default function ProfileSettings() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Full Name */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-[#1F453B]">
-            Full Name
-          </label>
+          <label className="block text-sm font-medium mb-2 text-[#1F453B]">Full Name</label>
 
           <input
             name="name"
@@ -376,9 +353,7 @@ export default function ProfileSettings() {
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-[#1F453B]">
-            Email Address
-          </label>
+          <label className="block text-sm font-medium mb-2 text-[#1F453B]">Email Address</label>
 
           <input
             name="email"
@@ -391,9 +366,7 @@ export default function ProfileSettings() {
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-[#1F453B]">
-            Phone Number
-          </label>
+          <label className="block text-sm font-medium mb-2 text-[#1F453B]">Phone Number</label>
 
           <input
             name="phone"
@@ -405,9 +378,7 @@ export default function ProfileSettings() {
 
         {/* Job Title */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-[#1F453B]">
-            Job Title
-          </label>
+          <label className="block text-sm font-medium mb-2 text-[#1F453B]">Job Title</label>
 
           <input
             name="job_title"
@@ -422,9 +393,7 @@ export default function ProfileSettings() {
         {/* ---------------------------------------------------- */}
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-[#1F453B]">
-            Role
-          </label>
+          <label className="block text-sm font-medium mb-2 text-[#1F453B]">Role</label>
 
           <div className="w-full bg-[#F3F5F4] border border-[rgba(31,69,59,0.12)] rounded-xl px-4 py-3 text-[15px] text-[#4B5A56] flex items-center gap-2 cursor-not-allowed select-none">
             <ShieldCheck size={16} className="text-[#6B7B7C] shrink-0" />

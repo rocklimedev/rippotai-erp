@@ -1,10 +1,10 @@
 // Roles & permissions: one role at a time, apps as collapsible rows, each
 // with a named access level; expand an app to set each document / part.
-import { appConfirm } from "@/lib/app-dialog";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { ChevronRight, Lock, Plus, ShieldCheck, Trash2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { appConfirm } from '@/lib/app-dialog';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { ChevronRight, Lock, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import {
   useGetRolesQuery,
   useCreateRoleMutation,
@@ -12,12 +12,35 @@ import {
   useGetRoleAccessCatalogueQuery,
   useGetRoleAccessQuery,
   useSetRoleAccessMutation,
-} from "../../api/users/rbac.api";
-import { Page, PageHeader, Card, Button, EmptyState, Field, TextInput, Pill } from "@/components/inos";
-import { ACCESS_LEVELS, hasPermission } from "@/lib/permissions";
-import { AdminAccessDenied, AdminModal, ModalActions, adminCrumbs, humanize, plural } from "./_admin-ui";
+} from '../../api/users/rbac.api';
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  EmptyState,
+  Field,
+  TextInput,
+  Pill,
+} from '@/components/inos';
+import { ACCESS_LEVELS, hasPermission } from '@/lib/permissions';
+import {
+  AdminAccessDenied,
+  AdminModal,
+  ModalActions,
+  adminCrumbs,
+  humanize,
+  plural,
+} from './_admin-ui';
 
-const LEVEL_TONE = { none: "mute", view: "info", edit: "lilac", create: "brand", full: "ok", mixed: "warn" };
+const LEVEL_TONE = {
+  none: 'mute',
+  view: 'info',
+  edit: 'lilac',
+  create: 'brand',
+  full: 'ok',
+  mixed: 'warn',
+};
 const LEVEL_LABEL = Object.fromEntries(ACCESS_LEVELS.map((l) => [l.key, l.label]));
 
 function LevelSelect({ value, onChange, available, disabled, label, testId }) {
@@ -32,7 +55,7 @@ function LevelSelect({ value, onChange, available, disabled, label, testId }) {
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
     >
-      {value === "mixed" && (
+      {value === 'mixed' && (
         <option value="mixed" disabled>
           Custom mix
         </option>
@@ -49,7 +72,7 @@ function LevelSelect({ value, onChange, available, disabled, label, testId }) {
 function Legend() {
   return (
     <div className="rp-legend" aria-label="Access levels">
-      {ACCESS_LEVELS.filter((l) => l.key !== "none").map((l, i) => (
+      {ACCESS_LEVELS.filter((l) => l.key !== 'none').map((l, i) => (
         <div key={l.key} className="rp-legend__item">
           <Pill tone={LEVEL_TONE[l.key]} size="sm">
             {i + 1}. {l.label}
@@ -63,17 +86,21 @@ function Legend() {
 
 export default function RolesPermissions() {
   const { user } = useAuth();
-  const canRead = hasPermission(user, "role-permissions", "read");
-  const canAssign = hasPermission(user, "role-permissions", "assign");
+  const canRead = hasPermission(user, 'role-permissions', 'read');
+  const canAssign = hasPermission(user, 'role-permissions', 'assign');
 
-  const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(undefined, { skip: !canRead });
+  const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(undefined, {
+    skip: !canRead,
+  });
   const { data: catalogue } = useGetRoleAccessCatalogueQuery(undefined, { skip: !canRead });
   const [pickedRoleId, setSelectedRoleId] = useState(null);
-  const [roleSearch, setRoleSearch] = useState("");
+  const [roleSearch, setRoleSearch] = useState('');
   const [open, setOpen] = useState({});
   const [busyKey, setBusyKey] = useState(null);
 
-  const selectedRoleId = roles.some((r) => r.id === pickedRoleId) ? pickedRoleId : roles[0]?.id ?? null;
+  const selectedRoleId = roles.some((r) => r.id === pickedRoleId)
+    ? pickedRoleId
+    : (roles[0]?.id ?? null);
 
   const { data: access, isFetching: loadingAccess } = useGetRoleAccessQuery(selectedRoleId, {
     skip: !canRead || !selectedRoleId,
@@ -81,14 +108,25 @@ export default function RolesPermissions() {
   const [setRoleAccess] = useSetRoleAccessMutation();
   const [createRole, { isLoading: creatingRole }] = useCreateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
-  const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleName, setNewRoleName] = useState('');
   const [newRoleOpen, setNewRoleOpen] = useState(false);
-  const [newRoleError, setNewRoleError] = useState("");
+  const [newRoleError, setNewRoleError] = useState('');
 
-  const accessByApp = useMemo(() => Object.fromEntries((access?.apps || []).map((a) => [a.code, a])), [access]);
+  const accessByApp = useMemo(
+    () => Object.fromEntries((access?.apps || []).map((a) => [a.code, a])),
+    [access],
+  );
 
-  const q = roleSearch.toLowerCase().replace(/[_:-]+/g, " ").trim();
-  const filteredRoles = roles.filter((r) => `${r.name} ${r.description || ""}`.toLowerCase().replace(/[_:-]+/g, " ").includes(q));
+  const q = roleSearch
+    .toLowerCase()
+    .replace(/[_:-]+/g, ' ')
+    .trim();
+  const filteredRoles = roles.filter((r) =>
+    `${r.name} ${r.description || ''}`
+      .toLowerCase()
+      .replace(/[_:-]+/g, ' ')
+      .includes(q),
+  );
   const selectedRole = roles.find((r) => r.id === selectedRoleId);
   const isProtected = Boolean(access?.protected);
 
@@ -97,7 +135,7 @@ export default function RolesPermissions() {
     try {
       const res = await setRoleAccess({ roleId: selectedRoleId, ...body }).unwrap();
       const changed = (res?.added || 0) + (res?.removed || 0);
-      toast.success(changed ? label : "Already set — nothing changed");
+      toast.success(changed ? label : 'Already set — nothing changed');
     } catch (e) {
       const d = e?.data;
       toast.error(d?.message?.message || d?.message || d?.detail || "Couldn't update access");
@@ -107,32 +145,38 @@ export default function RolesPermissions() {
   };
 
   const setApp = (app, level) =>
-    save(app.code, { apps: { [app.code]: level } }, `${app.name}: ${LEVEL_LABEL[level]} for every document`);
-  const setPart = (part, level) => save(part.key, { parts: { [part.key]: level } }, `${part.name}: ${LEVEL_LABEL[level]}`);
+    save(
+      app.code,
+      { apps: { [app.code]: level } },
+      `${app.name}: ${LEVEL_LABEL[level]} for every document`,
+    );
+  const setPart = (part, level) =>
+    save(part.key, { parts: { [part.key]: level } }, `${part.name}: ${LEVEL_LABEL[level]}`);
 
   const handleCreateRole = async (e) => {
     e.preventDefault();
-    if (!newRoleName.trim()) return setNewRoleError("Give the role a name.");
+    if (!newRoleName.trim()) return setNewRoleError('Give the role a name.');
     try {
       const data = await createRole({ name: newRoleName.trim() }).unwrap();
       toast.success(`Role "${data.name || newRoleName}" created`);
-      setRoleSearch("");
-      setNewRoleName("");
+      setRoleSearch('');
+      setNewRoleName('');
       setNewRoleOpen(false);
       setSelectedRoleId(data.id);
     } catch (err) {
-      toast.error(err?.data?.message || err?.data?.detail || "Failed to create role");
+      toast.error(err?.data?.message || err?.data?.detail || 'Failed to create role');
     }
   };
 
   const handleDeleteRole = async (role) => {
-    if (!(await appConfirm(`Delete role "${humanize(role.name)}"? People in it lose all access.`))) return;
+    if (!(await appConfirm(`Delete role "${humanize(role.name)}"? People in it lose all access.`)))
+      return;
     try {
       await deleteRole(role.id).unwrap();
       toast.success(`Role "${humanize(role.name)}" deleted`);
       setSelectedRoleId(null);
     } catch (err) {
-      toast.error(err?.data?.message || err?.data?.detail || "Failed to delete role");
+      toast.error(err?.data?.message || err?.data?.detail || 'Failed to delete role');
     }
   };
 
@@ -142,12 +186,17 @@ export default function RolesPermissions() {
     <Page>
       <style>{CSS}</style>
       <PageHeader
-        crumbs={adminCrumbs("Roles & permissions")}
+        crumbs={adminCrumbs('Roles & permissions')}
         title="Roles & permissions"
         subtitle="For each role, choose how much it can do in every app — and, if needed, in each document inside it."
         actions={
           canAssign && (
-            <Button variant="primary" icon={Plus} onClick={() => setNewRoleOpen(true)} data-testid="new-role-btn">
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setNewRoleOpen(true)}
+              data-testid="new-role-btn"
+            >
               New role
             </Button>
           )
@@ -155,22 +204,37 @@ export default function RolesPermissions() {
       />
 
       <div className="adm-split">
-        <Card title="Roles" subtitle={roles.length ? plural(roles.length, "role") : undefined} flush className="adm-sticky adm-roles-sidebar">
+        <Card
+          title="Roles"
+          subtitle={roles.length ? plural(roles.length, 'role') : undefined}
+          flush
+          className="adm-sticky adm-roles-sidebar"
+        >
           <div className="adm-roles-search">
             <Field label="Search roles" htmlFor="roles-search">
-              <TextInput id="roles-search" type="search" placeholder="Search roles…" value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} />
+              <TextInput
+                id="roles-search"
+                type="search"
+                placeholder="Search roles…"
+                value={roleSearch}
+                onChange={(e) => setRoleSearch(e.target.value)}
+              />
             </Field>
           </div>
           {loadingRoles && roles.length === 0 ? (
             <div className="adm-list">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="adm-list__item">
-                  <div className="adm-skel" style={{ width: "70%" }} />
+                  <div className="adm-skel" style={{ width: '70%' }} />
                 </div>
               ))}
             </div>
           ) : roles.length === 0 ? (
-            <EmptyState icon={ShieldCheck} title="No roles yet" text="Create a role to start granting access." />
+            <EmptyState
+              icon={ShieldCheck}
+              title="No roles yet"
+              text="Create a role to start granting access."
+            />
           ) : (
             <div className="adm-list adm-roles-list" role="listbox" aria-label="Roles">
               {filteredRoles.length === 0 && (
@@ -193,11 +257,11 @@ export default function RolesPermissions() {
                     <ShieldCheck aria-hidden />
                   </span>
                   <span style={{ minWidth: 0, flex: 1 }}>
-                    <span className="adm-list__name" style={{ display: "block" }}>
+                    <span className="adm-list__name" style={{ display: 'block' }}>
                       {humanize(r.name)}
                     </span>
-                    <span className="adm-list__sub" style={{ display: "block" }}>
-                      {r.description || (r.scope === "PROJECT" ? "Project role" : "Custom role")}
+                    <span className="adm-list__sub" style={{ display: 'block' }}>
+                      {r.description || (r.scope === 'PROJECT' ? 'Project role' : 'Custom role')}
                     </span>
                   </span>
                 </button>
@@ -208,22 +272,38 @@ export default function RolesPermissions() {
 
         {!selectedRole ? (
           <Card>
-            <EmptyState icon={ShieldCheck} title="Select a role" text="Pick a role on the left to set what it can do." />
+            <EmptyState
+              icon={ShieldCheck}
+              title="Select a role"
+              text="Pick a role on the left to set what it can do."
+            />
           </Card>
         ) : (
-          <div style={{ display: "grid", gap: 16, minWidth: 0 }}>
+          <div style={{ display: 'grid', gap: 16, minWidth: 0 }}>
             <Card
               title={humanize(selectedRole.name)}
-              subtitle={selectedRole.description || "Set an access level per app. Expand an app to fine-tune individual documents."}
+              subtitle={
+                selectedRole.description ||
+                'Set an access level per app. Expand an app to fine-tune individual documents.'
+              }
               actions={
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   {isProtected && (
-                    <Pill tone="brand" title="Administrators always keep full access to users, roles and permissions">
+                    <Pill
+                      tone="brand"
+                      title="Administrators always keep full access to users, roles and permissions"
+                    >
                       <Lock size={12} aria-hidden /> Administrator
                     </Pill>
                   )}
                   {canAssign && !isProtected && (
-                    <Button size="sm" variant="ghost" icon={Trash2} onClick={() => handleDeleteRole(selectedRole)} data-testid="delete-role-btn">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon={Trash2}
+                      onClick={() => handleDeleteRole(selectedRole)}
+                      data-testid="delete-role-btn"
+                    >
                       Delete role
                     </Button>
                   )}
@@ -234,7 +314,11 @@ export default function RolesPermissions() {
             </Card>
 
             <Card flush>
-              <div className="rp-matrix" aria-label="App access" aria-busy={loadingAccess || undefined}>
+              <div
+                className="rp-matrix"
+                aria-label="App access"
+                aria-busy={loadingAccess || undefined}
+              >
                 <div className="rp-head">
                   <span>App / document</span>
                   <span>Access level</span>
@@ -253,18 +337,23 @@ export default function RolesPermissions() {
                           onClick={() => setOpen((o) => ({ ...o, [app.code]: !expanded }))}
                           data-testid={`rp-toggle-${app.code}`}
                         >
-                          <ChevronRight size={16} className={expanded ? "rp-chev rp-chev--open" : "rp-chev"} aria-hidden />
+                          <ChevronRight
+                            size={16}
+                            className={expanded ? 'rp-chev rp-chev--open' : 'rp-chev'}
+                            aria-hidden
+                          />
                           <span className="rp-name">
                             <strong>{app.name}</strong>
                             <span className="rp-sub">
-                              {app.description} · {plural(meaningful.length, "document/part", "documents/parts")}
+                              {app.description} ·{' '}
+                              {plural(meaningful.length, 'document/part', 'documents/parts')}
                             </span>
                           </span>
                         </button>
                         <LevelSelect
                           label={`${app.name} access level`}
                           testId={`rp-level-${app.code}`}
-                          value={a?.level || "none"}
+                          value={a?.level || 'none'}
                           disabled={!canAssign || !a || busyKey === app.code}
                           onChange={(lvl) => setApp(app, lvl)}
                         />
@@ -274,27 +363,45 @@ export default function RolesPermissions() {
                           {meaningful.map((part) => {
                             const pa = a?.parts.find((x) => x.key === part.key);
                             return (
-                              <div key={part.key} className="rp-row rp-row--part" data-testid={`rp-part-${part.key}`}>
+                              <div
+                                key={part.key}
+                                className="rp-row rp-row--part"
+                                data-testid={`rp-part-${part.key}`}
+                              >
                                 <span className="rp-name">
                                   <span>
                                     {part.name}
-                                    {part.kind === "document" && <span className="rp-tag">Document</span>}
+                                    {part.kind === 'document' && (
+                                      <span className="rp-tag">Document</span>
+                                    )}
                                     {pa?.custom && (
-                                      <span className="rp-tag rp-tag--warn" title={`Granted individually: ${(pa?.granted || []).join(", ")}`}>
+                                      <span
+                                        className="rp-tag rp-tag--warn"
+                                        title={`Granted individually: ${(pa?.granted || []).join(', ')}`}
+                                      >
                                         Custom
                                       </span>
                                     )}
                                   </span>
-                                  <span className="rp-sub" title={part.permissions.map((p) => p.name).join(", ")}>
-                                    {part.description || plural(part.permissions.length, "permission")}
+                                  <span
+                                    className="rp-sub"
+                                    title={part.permissions.map((p) => p.name).join(', ')}
+                                  >
+                                    {part.description ||
+                                      plural(part.permissions.length, 'permission')}
                                   </span>
                                 </span>
                                 <LevelSelect
                                   label={`${part.name} access level`}
                                   testId={`rp-level-${part.key}`}
-                                  value={pa?.level || "none"}
+                                  value={pa?.level || 'none'}
                                   available={pa?.available}
-                                  disabled={!canAssign || !pa || busyKey === part.key || busyKey === app.code}
+                                  disabled={
+                                    !canAssign ||
+                                    !pa ||
+                                    busyKey === part.key ||
+                                    busyKey === app.code
+                                  }
                                   onChange={(lvl) => setPart(part, lvl)}
                                 />
                               </div>
@@ -317,23 +424,36 @@ export default function RolesPermissions() {
         onSubmit={handleCreateRole}
         onClose={() => {
           setNewRoleOpen(false);
-          setNewRoleError("");
+          setNewRoleError('');
         }}
         busy={creatingRole}
         icon={ShieldCheck}
         title="New role"
         subtitle="Create the role first — then choose its access levels."
         width={460}
-        footer={<ModalActions onCancel={() => setNewRoleOpen(false)} submitting={creatingRole} submittingLabel="Creating…" submitLabel="Create role" />}
+        footer={
+          <ModalActions
+            onCancel={() => setNewRoleOpen(false)}
+            submitting={creatingRole}
+            submittingLabel="Creating…"
+            submitLabel="Create role"
+          />
+        }
       >
-        <Field label="Role name" required htmlFor="nr-name" error={newRoleError} hint="Short and descriptive, e.g. the job people in it do.">
+        <Field
+          label="Role name"
+          required
+          htmlFor="nr-name"
+          error={newRoleError}
+          hint="Short and descriptive, e.g. the job people in it do."
+        >
           <TextInput
             id="nr-name"
             autoFocus
             value={newRoleName}
             onChange={(e) => {
               setNewRoleName(e.target.value);
-              setNewRoleError("");
+              setNewRoleError('');
             }}
             placeholder="e.g. Site Supervisor"
           />

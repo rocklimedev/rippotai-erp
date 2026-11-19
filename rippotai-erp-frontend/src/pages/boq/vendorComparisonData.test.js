@@ -220,8 +220,11 @@ test('shared comparison rows align old quotes without losing rates or notes', as
   assert.equal(trade.vendors[1].items[0].id, trade.items[0].id);
   assert.equal(trade.vendors[0].items[2].rate, null);
   assert.equal(trade.vendors[1].notes, 'B notes');
-  const edited = withComparisonItems(trade, trade.items.map((i, index) => index === 0 ? { ...i, description: 'Floor tiles', quantity: 3 } : i));
+  const edited = withComparisonItems(trade, trade.items.map((i, index) => index === 0 ? { ...i, description: 'Floor tiles', quantity: 3, unit: 'sqm' } : i));
   assert.ok(edited.vendors.every((v) => v.items[0].description === 'Floor tiles' && v.items[0].quantity === 3));
+  const [reopened] = comparisonTrades(JSON.parse(JSON.stringify({ schema_version: 2, trades: [edited] })));
+  assert.equal(reopened.items[0].unit, 'sqm');
+  assert.ok(reopened.vendors.every((vendor) => vendor.items[0].unit === 'sqm'));
   assert.deepEqual(edited.vendors.map((v) => v.items[0].rate), [100, 120]);
   assert.deepEqual(edited.vendors.map(quoteTotal), [350, 390]);
   const removed = withComparisonItems(edited, edited.items.slice(1));

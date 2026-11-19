@@ -18,70 +18,70 @@ import { SiteVisitLog } from './site-visit-log.model';
 import { ArchitectVisitStage } from './architect-visit-stage.model';
 
 /**
- * One dated visit allocation. Architect stage metadata is fixed from the
- * schedule and copied into the event. Nullable dates/stages preserve legacy rows.
+ * One dated visit allocation. Architect stage metadata is copied from the
+ * saved stage into the event. Nullable dates/stages preserve legacy rows.
  */
 @Table({ tableName: 'visit_assignments', timestamps: true })
 export class VisitAssignment extends Model<VisitAssignment> {
   @ForeignKey(() => ArchitectVisitStage)
   @Column({ type: DataType.CHAR(36), allowNull: true })
-  stageId: string | null;
+  declare stageId: string | null;
 
   @BelongsTo(() => ArchitectVisitStage)
-  stage: ArchitectVisitStage;
+  declare stage: ArchitectVisitStage;
 
   @Column({ type: DataType.DATEONLY, allowNull: true })
-  scheduledDate: string | null;
+  declare scheduledDate: string | null;
 
   @Column({ type: DataType.STRING(255), allowNull: true })
-  stageName: string | null;
+  declare stageName: string | null;
 
   @Column({ type: DataType.TEXT, allowNull: true })
-  checksPurpose: string | null;
+  declare checksPurpose: string | null;
 
   @Column({ type: DataType.STRING(40), allowNull: true })
-  visitType: string | null;
+  declare visitType: string | null;
 
   @Column({ type: DataType.TEXT, allowNull: true })
-  purpose: string | null;
+  declare purpose: string | null;
 
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
-  projectId: string;
+  declare projectId: string;
 
   @BelongsTo(() => Project, { constraints: false })
-  project: Project;
+  declare project: Project;
 
   @Column({
     type: DataType.ENUM(...Object.values(VisitorType)),
     allowNull: false,
   })
-  visitorType: VisitorType;
+  declare visitorType: VisitorType;
 
   @ForeignKey(() => Team)
   @Column({ type: DataType.INTEGER, allowNull: true })
-  teamId: number | null; // internal team responsible, if applicable (e.g. Supervisor, Architect)
+  declare teamId: number | null; // internal team responsible, if applicable (e.g. Supervisor, Architect)
 
   @BelongsTo(() => Team)
-  team: Team;
+  declare team: Team;
 
   @Column({ type: DataType.STRING(150), allowNull: true })
-  externalPartyName: string | null; // vendor/contractor/client name, if not an internal team
+  declare externalPartyName: string | null; // vendor/contractor/client name, if not an internal team
 
   @Column({
     type: DataType.ENUM(...Object.values(VisitFrequency)),
     allowNull: true,
   })
-  frequency: VisitFrequency | null; // legacy recurrence only
+  declare frequency: VisitFrequency | null; // legacy recurrence only
 
   /** Historical recurrence metadata; new allocations always store null. */
   @Column({ type: DataType.JSON, allowNull: true })
-  scheduleDays: number[] | null;
+  declare scheduleDays: number[] | null;
 
   @Default(true)
   @Column({ type: DataType.BOOLEAN })
-  isActive: boolean;
+  declare isActive: boolean;
 
   @HasMany(() => SiteVisitLog)
-  visitLogs: SiteVisitLog[];
+  declare visitLogs: SiteVisitLog[];
 }

@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, ClipboardList, RefreshCw } from "lucide-react";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, ClipboardList, RefreshCw } from 'lucide-react';
 
-import { useGetDailySiteReportsByProjectQuery } from "../../api/site-ops/site-ops.api";
+import { useGetDailySiteReportsByProjectQuery } from '../../api/site-ops/site-ops.api';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import {
   Table,
@@ -17,18 +17,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 export default function DailyReportsListPage() {
-  const [projectId, setProjectId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [projectId, setProjectId] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [queryId, setQueryId] = useState(null);
 
-  const { data: projectsResponse, isLoading: projectsLoading } =
-    useGetProjectsQuery({
-      includeArchived: false,
-    });
+  const { data: projectsResponse, isLoading: projectsLoading } = useGetProjectsQuery({
+    includeArchived: false,
+  });
 
   const projects = Array.isArray(projectsResponse)
     ? projectsResponse
@@ -70,12 +69,8 @@ export default function DailyReportsListPage() {
                 onClick={() => refetch()}
                 disabled={isFetching}
               >
-                <RefreshCw
-                  className={`h-4 w-4 mr-1.5 ${
-                    isFetching ? "animate-spin" : ""
-                  }`}
-                />
-                Refresh{" "}
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+                Refresh{' '}
               </Button>
             )}
 
@@ -104,16 +99,12 @@ export default function DailyReportsListPage() {
               }}
               disabled={projectsLoading}
             >
-              <option value="">
-                {projectsLoading ? "Loading projects..." : "Select project"}
-              </option>
+              <option value="">{projectsLoading ? 'Loading projects...' : 'Select project'}</option>
 
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
-                  {project.name ||
-                    project.projectName ||
-                    `Project #${project.id}`}
-                  {project.code ? ` (${project.code})` : ""}
+                  {project.name || project.projectName || `Project #${project.id}`}
+                  {project.code ? ` (${project.code})` : ''}
                 </option>
               ))}
             </select>
@@ -143,11 +134,7 @@ export default function DailyReportsListPage() {
             />
           </div>
 
-          <Button
-            className="bc-btn-primary h-10"
-            onClick={load}
-            disabled={!projectId}
-          >
+          <Button className="bc-btn-primary h-10" onClick={load} disabled={!projectId}>
             Load reports
           </Button>
         </div>
@@ -174,56 +161,39 @@ export default function DailyReportsListPage() {
                     <div className="bc-empty-state">
                       <ClipboardList className="h-10 w-10 mx-auto mb-3 text-[var(--sage)]" />
 
-                      <p className="text-[var(--muted)]">
-                        Select a project to load daily reports.
-                      </p>
+                      <p className="text-[var(--muted)]">Select a project to load daily reports.</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-12 text-[var(--muted)]"
-                  >
+                  <TableCell colSpan={6} className="text-center py-12 text-[var(--muted)]">
                     Loading…
                   </TableCell>
                 </TableRow>
               ) : reports.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-12 text-[var(--muted)]"
-                  >
+                  <TableCell colSpan={6} className="text-center py-12 text-[var(--muted)]">
                     No reports found.
                   </TableCell>
                 </TableRow>
               ) : (
                 reports.map((r) => (
-                  <TableRow
-                    key={r.id}
-                    className="hover:bg-[var(--mist-soft)]/60"
-                  >
+                  <TableRow key={r.id} className="hover:bg-[var(--mist-soft)]/60">
                     <TableCell className="nowrap font-medium">
-                      {r.reportDate
-                        ? new Date(r.reportDate).toLocaleDateString()
-                        : "—"}
+                      {r.reportDate ? new Date(r.reportDate).toLocaleDateString() : '—'}
                     </TableCell>
 
-                    <TableCell>{r.weatherCondition || "—"}</TableCell>
+                    <TableCell>{r.weatherCondition || '—'}</TableCell>
 
                     <TableCell className="max-w-[280px]">
-                      <span className="line-clamp-2">
-                        {r.workCompleted || "—"}
-                      </span>
+                      <span className="line-clamp-2">{r.workCompleted || '—'}</span>
                     </TableCell>
 
-                    <TableCell>{r.reportedBy || "—"}</TableCell>
+                    <TableCell>{r.reportedBy || '—'}</TableCell>
 
                     <TableCell>
-                      {r.sharedAt
-                        ? new Date(r.sharedAt).toLocaleDateString()
-                        : "—"}
+                      {r.sharedAt ? new Date(r.sharedAt).toLocaleDateString() : '—'}
                     </TableCell>
 
                     <TableCell className="actions">

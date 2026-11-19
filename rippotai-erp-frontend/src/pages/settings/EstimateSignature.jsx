@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
-import api from "@/lib/api";
-import { ImageUp, PenLine, RefreshCw, X } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import api from '@/lib/api';
+import { ImageUp, PenLine, RefreshCw, X } from 'lucide-react';
 import {
   Page,
   PageHeader,
@@ -13,10 +13,10 @@ import {
   Field,
   TextInput,
   Pill,
-} from "@/components/inos";
-import { useLazyMeQuery } from "../../api/auth/auth.api";
-import { useUploadSignatureMutation } from "../../api/users/user-signatures.api";
-import { AdminAccessDenied, adminCrumbs } from "./_admin-ui";
+} from '@/components/inos';
+import { useLazyMeQuery } from '../../api/auth/auth.api';
+import { useUploadSignatureMutation } from '../../api/users/user-signatures.api';
+import { AdminAccessDenied, adminCrumbs } from './_admin-ui';
 
 export default function EstimateSignature() {
   const { user } = useAuth();
@@ -28,10 +28,10 @@ export default function EstimateSignature() {
   const [me, setMe] = useState(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
-  const [sigName, setSigName] = useState("");
+  const [sigName, setSigName] = useState('');
   const [currentSig, setCurrentSig] = useState({
-    url: "",
-    name: "",
+    url: '',
+    name: '',
   });
 
   const [sigPreview, setSigPreview] = useState(null);
@@ -49,18 +49,16 @@ export default function EstimateSignature() {
 
         setMe(currentUser);
 
-        setSigName(
-          currentUser?.estimate_signature_name || currentUser?.name || "",
-        );
+        setSigName(currentUser?.estimate_signature_name || currentUser?.name || '');
 
         setCurrentSig({
-          url: currentUser?.estimate_signature_url || "",
-          name: currentUser?.estimate_signature_name || "",
+          url: currentUser?.estimate_signature_url || '',
+          name: currentUser?.estimate_signature_name || '',
         });
       })
       .catch(() => {
         setLoadFailed(true);
-        toast.error("Failed to load user information.");
+        toast.error('Failed to load user information.');
       });
   }, [user, fetchMe]);
 
@@ -71,7 +69,7 @@ export default function EstimateSignature() {
       reader.onload = () =>
         resolve({
           mime: file.type,
-          b64: String(reader.result).split(",")[1] || "",
+          b64: String(reader.result).split(',')[1] || '',
         });
 
       reader.onerror = reject;
@@ -84,7 +82,7 @@ export default function EstimateSignature() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Maximum file size is 2 MB.");
+      toast.error('Maximum file size is 2 MB.');
       return;
     }
 
@@ -97,7 +95,7 @@ export default function EstimateSignature() {
     };
 
     reader.readAsDataURL(file);
-    e.target.value = "";
+    e.target.value = '';
   };
 
   const clearPick = () => {
@@ -107,7 +105,7 @@ export default function EstimateSignature() {
 
   const saveSignature = async () => {
     if (!sigFile) {
-      toast.error("Please choose a signature image.");
+      toast.error('Please choose a signature image.');
       return;
     }
 
@@ -120,7 +118,7 @@ export default function EstimateSignature() {
         file: sigFile,
       }).unwrap();
 
-      toast.success("Signature saved successfully.");
+      toast.success('Signature saved successfully.');
 
       setCurrentSig({
         url: data?.signature_url || data?.signatureUrl || data?.url,
@@ -131,19 +129,17 @@ export default function EstimateSignature() {
       setSigFile(null);
     } catch (error) {
       toast.error(
-        error?.data?.message ||
-          error?.response?.data?.detail ||
-          "Unable to save signature.",
+        error?.data?.message || error?.response?.data?.detail || 'Unable to save signature.',
       );
     } finally {
       setSigSaving(false);
     }
   };
 
-  const isAdmin = ["ADMIN", "SUPERADMIN"].includes(user?.role);
+  const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
   const header = (
     <PageHeader
-      crumbs={adminCrumbs("Estimate signature")}
+      crumbs={adminCrumbs('Estimate signature')}
       title="Estimate signature"
       subtitle="The signature and name printed on every estimate you approve."
     />
@@ -161,22 +157,15 @@ export default function EstimateSignature() {
               title="Couldn't load your account"
               text="We need your profile to show the current signature. Refresh to try again."
               action={
-                <Button
-                  variant="soft"
-                  icon={RefreshCw}
-                  onClick={() => window.location.reload()}
-                >
+                <Button variant="soft" icon={RefreshCw} onClick={() => window.location.reload()}>
                   Refresh
                 </Button>
               }
             />
           ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              <div className="adm-skel" style={{ width: "40%" }} />
-              <div
-                className="adm-skel"
-                style={{ height: 120, borderRadius: 12 }}
-              />
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div className="adm-skel" style={{ width: '40%' }} />
+              <div className="adm-skel" style={{ height: 120, borderRadius: 12 }} />
             </div>
           )}
         </Card>
@@ -191,7 +180,7 @@ export default function EstimateSignature() {
         title="Admins only"
         text="The estimate approval signature can only be managed by administrators."
         action={
-          <Button variant="soft" onClick={() => nav("/dashboard")}>
+          <Button variant="soft" onClick={() => nav('/dashboard')}>
             Back to dashboard
           </Button>
         }
@@ -205,48 +194,39 @@ export default function EstimateSignature() {
 
       <Card
         title="Current signature"
-        subtitle={currentSig.url ? "Shown on approved estimates." : undefined}
-        actions={
-          currentSig.url ? (
-            <Pill tone="ok">In use</Pill>
-          ) : (
-            <Pill tone="warn">Not set</Pill>
-          )
-        }
+        subtitle={currentSig.url ? 'Shown on approved estimates.' : undefined}
+        actions={currentSig.url ? <Pill tone="ok">In use</Pill> : <Pill tone="warn">Not set</Pill>}
       >
         {currentSig.url ? (
-          <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: 'grid', gap: 10 }}>
             <div className="adm-sig">
               <img src={currentSig.url} alt="Current signature" />
             </div>
-            <div className="adm-cell-title">
-              {currentSig.name || me?.name || "—"}
-            </div>
+            <div className="adm-cell-title">{currentSig.name || me?.name || '—'}</div>
           </div>
         ) : (
           <div
             className="adm-sig"
             style={{
-              borderStyle: "dashed",
+              borderStyle: 'dashed',
               minHeight: 96,
               gap: 6,
-              textAlign: "center",
+              textAlign: 'center',
             }}
           >
-            <PenLine size={20} style={{ color: "var(--text-3)" }} aria-hidden />
+            <PenLine size={20} style={{ color: 'var(--text-3)' }} aria-hidden />
             <span className="adm-cell-sub" style={{ marginTop: 0 }}>
-              No signature yet — upload one below and approved estimates will
-              carry it.
+              No signature yet — upload one below and approved estimates will carry it.
             </span>
           </div>
         )}
       </Card>
 
       <Card
-        title={currentSig.url ? "Replace signature" : "Upload signature"}
+        title={currentSig.url ? 'Replace signature' : 'Upload signature'}
         subtitle="PNG or JPG, up to 2 MB. A transparent PNG looks best."
       >
-        <div style={{ display: "grid", gap: 18 }}>
+        <div style={{ display: 'grid', gap: 18 }}>
           <Field
             label="Name under the signature"
             htmlFor="sig-name"
@@ -262,27 +242,22 @@ export default function EstimateSignature() {
 
           <Field label="Signature image" required>
             {sigPreview ? (
-              <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ display: 'grid', gap: 8 }}>
                 <div className="adm-sig">
                   <img src={sigPreview} alt="New signature preview" />
                 </div>
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     gap: 8,
                   }}
                 >
                   <span className="adm-cell-sub" style={{ marginTop: 0 }}>
                     {sigFile?.name}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon={X}
-                    onClick={clearPick}
-                  >
+                  <Button variant="ghost" size="sm" icon={X} onClick={clearPick}>
                     Remove
                   </Button>
                 </div>
@@ -299,7 +274,7 @@ export default function EstimateSignature() {
                   accept="image/png,image/jpeg"
                   className="sr-only"
                   style={{
-                    position: "absolute",
+                    position: 'absolute',
                     width: 1,
                     height: 1,
                     opacity: 0,
@@ -312,10 +287,10 @@ export default function EstimateSignature() {
 
           <div
             style={{
-              display: "flex",
-              justifyContent: "flex-end",
+              display: 'flex',
+              justifyContent: 'flex-end',
               gap: 8,
-              borderTop: "1px solid var(--line)",
+              borderTop: '1px solid var(--line)',
               paddingTop: 16,
             }}
           >
@@ -324,12 +299,8 @@ export default function EstimateSignature() {
                 Cancel
               </Button>
             )}
-            <Button
-              variant="primary"
-              onClick={saveSignature}
-              disabled={!sigFile || sigSaving}
-            >
-              {sigSaving ? "Saving…" : "Save signature"}
+            <Button variant="primary" onClick={saveSignature} disabled={!sigFile || sigSaving}>
+              {sigSaving ? 'Saving…' : 'Save signature'}
             </Button>
           </div>
         </div>

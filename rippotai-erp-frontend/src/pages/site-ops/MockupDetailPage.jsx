@@ -1,25 +1,22 @@
-import { useParams } from "react-router-dom";
-import { useState } from "react";
-import {
-  useGetMockupByIdQuery,
-  useReviewMockupMutation,
-} from "../../api/site-ops/site-ops.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { StatusBadge } from "@/components/site-ops/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useGetMockupByIdQuery, useReviewMockupMutation } from '../../api/site-ops/site-ops.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { StatusBadge } from '@/components/site-ops/StatusBadge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
+} from '@/components/ui/select';
+import { toast } from 'sonner';
 
-const REVIEW_STATUSES = ["UNDER_REVIEW", "APPROVED", "REJECTED"];
+const REVIEW_STATUSES = ['UNDER_REVIEW', 'APPROVED', 'REJECTED'];
 
 export default function MockupDetailPage() {
   const { id } = useParams();
@@ -32,13 +29,13 @@ export default function MockupDetailPage() {
     skip: !mockupId,
   });
   const [review, { isLoading: reviewing }] = useReviewMockupMutation();
-  const [status, setStatus] = useState("UNDER_REVIEW");
-  const [reviewedBy, setReviewedBy] = useState("");
-  const [reviewNotes, setReviewNotes] = useState("");
+  const [status, setStatus] = useState('UNDER_REVIEW');
+  const [reviewedBy, setReviewedBy] = useState('');
+  const [reviewNotes, setReviewNotes] = useState('');
 
   const handleReview = async () => {
     if (!reviewedBy.trim()) {
-      toast.error("Reviewer name is required");
+      toast.error('Reviewer name is required');
       return;
     }
     try {
@@ -48,16 +45,14 @@ export default function MockupDetailPage() {
         reviewedBy,
         reviewNotes: reviewNotes || undefined,
       }).unwrap();
-      toast.success("Review submitted");
+      toast.success('Review submitted');
     } catch (e) {
-      toast.error(e?.data?.message || "Review failed");
+      toast.error(e?.data?.message || 'Review failed');
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="bg-page min-h-full p-6 text-[var(--muted)]">Loading…</div>
-    );
+    return <div className="bg-page min-h-full p-6 text-[var(--muted)]">Loading…</div>;
   }
 
   if (error || !mockup) {
@@ -68,8 +63,7 @@ export default function MockupDetailPage() {
     );
   }
 
-  const canReview =
-    mockup.status === "PROPOSED" || mockup.status === "UNDER_REVIEW";
+  const canReview = mockup.status === 'PROPOSED' || mockup.status === 'UNDER_REVIEW';
 
   return (
     <div className="bg-page min-h-full p-6">
@@ -85,21 +79,15 @@ export default function MockupDetailPage() {
           <dl className="grid gap-3 text-sm">
             <div>
               <dt className="text-[var(--muted)]">Finish type</dt>
-              <dd className="font-medium text-[var(--ink-green)]">
-                {mockup.finishType || "—"}
-              </dd>
+              <dd className="font-medium text-[var(--ink-green)]">{mockup.finishType || '—'}</dd>
             </div>
             <div>
               <dt className="text-[var(--muted)]">Location</dt>
-              <dd className="font-medium text-[var(--ink-green)]">
-                {mockup.location || "—"}
-              </dd>
+              <dd className="font-medium text-[var(--ink-green)]">{mockup.location || '—'}</dd>
             </div>
             <div>
               <dt className="text-[var(--muted)]">Proposed by</dt>
-              <dd className="font-medium text-[var(--ink-green)]">
-                {mockup.proposedBy}
-              </dd>
+              <dd className="font-medium text-[var(--ink-green)]">{mockup.proposedBy}</dd>
             </div>
             {mockup.description && (
               <div>
@@ -159,12 +147,8 @@ export default function MockupDetailPage() {
                 onChange={(e) => setReviewNotes(e.target.value)}
               />
             </div>
-            <Button
-              className="bc-btn-primary"
-              onClick={handleReview}
-              disabled={reviewing}
-            >
-              {reviewing ? "Submitting…" : "Submit review"}
+            <Button className="bc-btn-primary" onClick={handleReview} disabled={reviewing}>
+              {reviewing ? 'Submitting…' : 'Submit review'}
             </Button>
           </div>
         )}

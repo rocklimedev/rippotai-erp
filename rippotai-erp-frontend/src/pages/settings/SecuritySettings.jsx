@@ -1,18 +1,10 @@
-import React, { useState } from "react";
-import {
-  Shield,
-  KeyRound,
-  Smartphone,
-  Bell,
-  Laptop,
-  LogOut,
-  Lock,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router-dom";
-import ChangePasswordModal from "../../components/users/ChangePasswordModal";
+import React, { useState } from 'react';
+import { Shield, KeyRound, Smartphone, Bell, Laptop, LogOut, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Link } from 'react-router-dom';
+import ChangePasswordModal from '../../components/users/ChangePasswordModal';
 export default function SecuritySettings() {
   const [settings, setSettings] = useState({
     twoFactor: false,
@@ -32,7 +24,7 @@ export default function SecuritySettings() {
     <div className="flex items-center justify-between py-4">
       <div className="flex gap-3">
         <div className="w-10 h-10 rounded-lg bg-[#EDF4F2] flex items-center justify-center">
-          <Icon size={18} style={{ color: "var(--ink-green)" }} />
+          <Icon size={18} style={{ color: 'var(--ink-green)' }} />
         </div>
 
         <div>
@@ -50,16 +42,13 @@ export default function SecuritySettings() {
       <div className="max-w-4xl space-y-8">
         {/* Heading */}
         <div>
-          <h2
-            className="text-2xl font-semibold"
-            style={{ color: "var(--ink-green)" }}
-          >
+          <h2 className="text-2xl font-semibold" style={{ color: 'var(--ink-green)' }}>
             Security Settings
           </h2>
 
           <p className="text-[#6B7B7C] mt-2">
-            Protect your account by managing passwords, authentication,
-            sessions, and security notifications.
+            Protect your account by managing passwords, authentication, sessions, and security
+            notifications.
           </p>
         </div>
 
@@ -76,16 +65,14 @@ export default function SecuritySettings() {
             <div>
               <p className="font-medium">Password</p>
 
-              <p className="text-sm text-[#6B7B7C]">
-                Last changed 30 days ago.
-              </p>
+              <p className="text-sm text-[#6B7B7C]">Last changed 30 days ago.</p>
             </div>
 
             <div className="flex items-center gap-4">
               <Link
                 to="/forgot-password"
                 className="text-sm font-medium hover:underline"
-                style={{ color: "var(--ink-green)" }}
+                style={{ color: 'var(--ink-green)' }}
               >
                 Forgot password?
               </Link>
@@ -99,10 +86,7 @@ export default function SecuritySettings() {
         </div>
       </div>
 
-      <ChangePasswordModal
-        open={openPasswordModal}
-        onOpenChange={setOpenPasswordModal}
-      />
+      <ChangePasswordModal open={openPasswordModal} onOpenChange={setOpenPasswordModal} />
     </>
   );
 }

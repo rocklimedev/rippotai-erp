@@ -1,56 +1,55 @@
-import ArchitectVisitScheduleList from "@/pages/doc-lists/ArchitectVisitScheduleList";
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import VisitStageActions from './VisitStageActions';
+import ArchitectVisitScheduleList from '@/pages/doc-lists/ArchitectVisitScheduleList';
+import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   useSiteProjects,
   useProjectParam,
   ProjectPicker,
   rowProjectName,
   useTradeTeams,
-} from "./siteProjects";
+} from './siteProjects';
 import {
   useGetVisitAssignmentsQuery,
   useCreateVisitAssignmentMutation,
   useUpdateVisitAssignmentMutation,
   useDeactivateVisitAssignmentMutation,
-} from "@/api/procuerment/site-ops.api";
-import { useDownloadVisitScheduleMutation, useGetVisitStagesQuery } from "@/api/site-ops/site-ops.api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/api/procuerment/site-ops.api';
+import {
+  useDownloadVisitScheduleMutation,
+  useGetVisitStagesQuery,
+} from '@/api/site-ops/site-ops.api';
+import { useGetUsersQuery } from '@/api/users/user.api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 const initial = () => ({
-  projectId: "",
-  visitorType: "ARCHITECT",
-  stageId: "",
-  scheduledDate: "",
-  teamId: "",
-  externalPartyName: "",
-  purpose: "",
+  projectId: '',
+  visitorType: 'ARCHITECT',
+  stageId: '',
+  scheduledDate: '',
+  teamId: '',
+  externalPartyName: '',
+  visitorUserId: '',
+  purpose: '',
 });
-const types = [
-  "ARCHITECT",
-  "SUPERVISOR",
-  "VENDOR",
-  "CONTRACTOR",
-  "CLIENT",
-  "OTHER",
-];
+const types = ['ARCHITECT', 'SUPERVISOR', 'VENDOR', 'CONTRACTOR', 'CLIENT', 'OTHER'];
 const message = (e) =>
   Array.isArray(e?.data?.message)
-    ? e.data.message.join(", ")
-    : e?.data?.message || "Unable to save allocation";
+    ? e.data.message.join(', ')
+    : e?.data?.message || 'Unable to save allocation';
 // Without a project the page is the Architect Site Visit Schedule list.
 export default function VisitAssignmentsPage() {
   const [params] = useSearchParams();
-  if (!params.get("project") && !params.get("new")) return <ArchitectVisitScheduleList />;
+  if (!params.get('project') && !params.get('new')) return <ArchitectVisitScheduleList />;
   return <VisitAssignmentsEditor />;
 }
 
@@ -60,21 +59,22 @@ function VisitAssignmentsEditor() {
   const { projects, nameOf } = useSiteProjects();
   const teams = useTradeTeams();
   const { data, isLoading, error } = useGetVisitAssignmentsQuery({ projectId });
-  const { data: stageData, isLoading: loadingStages } =
-    useGetVisitStagesQuery();
+  const { data: stageData, isLoading: loadingStages } = useGetVisitStagesQuery();
   const stages = Array.isArray(stageData) ? stageData : stageData?.data || [];
   const [create, { isLoading: creating }] = useCreateVisitAssignmentMutation();
   const [update, { isLoading: updating }] = useUpdateVisitAssignmentMutation();
   const [deactivate] = useDeactivateVisitAssignmentMutation();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const { data: usersData, isLoading: loadingUsers, isError: usersError, refetch: refetchUsers } = useGetUsersQuery({ is_active: true }, { skip: !open });
+  const users = (Array.isArray(usersData) ? usersData : usersData?.data || []).filter((user) => user.name && user.is_active !== false && user.is_active !== 0 && !user.deleted_at && !user.is_deleted).slice().sort((a, b) => a.name.localeCompare(b.name));
   const [form, setForm] = useState(initial);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("active");
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('active');
   const assignments = Array.isArray(data) ? data : data?.data || [];
   const rows = assignments.filter(
     (a) =>
-      (status === "all" || Boolean(a.isActive) === (status === "active")) &&
+      (status === 'all' || Boolean(a.isActive) === (status === 'active')) &&
       [
         rowProjectName(a, nameOf),
         a.stageName,
@@ -84,7 +84,7 @@ function VisitAssignmentsEditor() {
         a.visitorType,
       ]
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
@@ -97,31 +97,35 @@ function VisitAssignmentsEditor() {
         ? {
             ...initial(),
             ...a,
-            teamId: a.teamId ? String(a.teamId) : "",
-            externalPartyName: a.externalPartyName || "",
-            purpose: a.purpose || "",
+            teamId: a.teamId ? String(a.teamId) : '',
+            externalPartyName: a.externalPartyName || '',
+            purpose: a.purpose || '',
           }
-        : { ...initial(), projectId: projectId || "" },
+        : { ...initial(), projectId: projectId || '' },
     );
     setOpen(true);
   };
   const save = async (e) => {
     e.preventDefault();
+    const visitor = users.find((user) => user.id === form.visitorUserId);
+    if (!form.teamId && !visitor && !(editing && form.externalPartyName === editing.externalPartyName && !form.visitorUserId)) {
+      toast.error('Select an allocated visitor');
+      return;
+    }
     const body = {
       projectId: form.projectId,
       visitorType: form.visitorType,
       scheduledDate: form.scheduledDate,
-      stageId: form.visitorType === "ARCHITECT" ? form.stageId : undefined,
+      stageId: form.visitorType === 'ARCHITECT' ? form.stageId : undefined,
       teamId: form.teamId ? Number(form.teamId) : null,
-      externalPartyName: form.externalPartyName.trim() || null,
-      purpose:
-        form.visitorType === "ARCHITECT" ? undefined : form.purpose.trim(),
+      externalPartyName: form.teamId ? null : visitor?.name || form.externalPartyName.trim() || null,
+      purpose: form.visitorType === 'ARCHITECT' ? undefined : form.purpose.trim(),
     };
     try {
       if (editing) await update({ id: editing.id, ...body }).unwrap();
       else await create(body).unwrap();
       setOpen(false);
-      toast.success(editing ? "Visit allocation updated" : "Visit allocated");
+      toast.success(editing ? 'Visit allocation updated' : 'Visit allocated');
     } catch (e) {
       toast.error(message(e));
     }
@@ -132,23 +136,22 @@ function VisitAssignmentsEditor() {
         <div>
           <h1 className="text-2xl font-semibold">Visit Assignments</h1>
           <p className="text-sm text-muted-foreground">
-            Allocate a dated site visit. Architect stages and checks follow the
-            site visit schedule.
+            Allocate a dated site visit. Architect stages and checks follow the site visit schedule.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" disabled={exportingSchedule} onClick={() => downloadSchedule(projectId || undefined)}>
-            {exportingSchedule ? "Preparing Excel…" : "Visit schedule (Excel)"}
+          <Button
+            variant="outline"
+            disabled={exportingSchedule}
+            onClick={() => downloadSchedule(projectId || undefined)}
+          >
+            {exportingSchedule ? 'Preparing Excel…' : 'Visit schedule (Excel)'}
           </Button>
           <Button onClick={() => start()}>Allocate visit</Button>
         </div>
       </div>
       <div className="flex flex-wrap gap-3">
-        <ProjectPicker
-          projects={projects}
-          value={projectId}
-          onChange={setProjectId}
-        />
+        <ProjectPicker projects={projects} value={projectId} onChange={setProjectId} />
         <Input
           className="max-w-xs"
           value={search}
@@ -176,13 +179,13 @@ function VisitAssignmentsEditor() {
             <thead className="bg-muted">
               <tr>
                 {[
-                  "Project",
-                  "Visitor",
-                  "Date",
-                  "Stage / Purpose",
-                  "Visit type",
-                  "Status",
-                  "Actions",
+                  'Project',
+                  'Visitor',
+                  'Date',
+                  'Stage / Purpose',
+                  'Visit type',
+                  'Status',
+                  'Actions',
                 ].map((h) => (
                   <th className="p-3" key={h}>
                     {h}
@@ -195,29 +198,20 @@ function VisitAssignmentsEditor() {
                 <tr className="border-t" key={a.id}>
                   <td className="p-3">{rowProjectName(a, nameOf)}</td>
                   <td className="p-3">
-                    {a.externalPartyName ||
-                      a.team?.name ||
-                      `Team ${a.teamId || "—"}`}
-                    <div className="text-xs text-muted-foreground">
-                      {a.visitorType}
-                    </div>
+                    {a.externalPartyName || a.team?.name || `Team ${a.teamId || '—'}`}
+                    <div className="text-xs text-muted-foreground">{a.visitorType}</div>
                   </td>
-                  <td className="p-3">
-                    {a.scheduledDate || "Legacy recurrence"}
-                  </td>
+                  <td className="p-3">{a.scheduledDate || 'Legacy recurrence'}</td>
                   <td className="max-w-md p-3">
-                    {a.stageName || a.purpose || "Requires event allocation"}
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {a.checksPurpose}
-                    </p>
+                    {a.stageName || a.purpose || 'Requires event allocation'}
+                    <p className="mt-1 text-xs text-muted-foreground">{a.checksPurpose}</p>
                   </td>
-                  <td className="p-3">{a.visitType || "—"}</td>
+                  <td className="p-3">{a.visitType || '—'}</td>
                   <td className="p-3">
-                    {a.visitLogs?.[0]?.status ||
-                      (a.isActive ? "Allocated" : "Inactive")}
+                    {a.visitLogs?.[0]?.status || (a.isActive ? 'Allocated' : 'Inactive')}
                   </td>
                   <td className="space-x-2 whitespace-nowrap p-3">
-                    {a.isActive && a.visitLogs?.[0]?.status !== "COMPLETED" && (
+                    {a.isActive && a.visitLogs?.[0]?.status !== 'COMPLETED' && (
                       <>
                         <Button
                           variant="outline"
@@ -233,7 +227,7 @@ function VisitAssignmentsEditor() {
                           onClick={async () => {
                             try {
                               await deactivate(a.id).unwrap();
-                              toast.success("Allocation cancelled");
+                              toast.success('Allocation cancelled');
                             } catch (e) {
                               toast.error(message(e));
                             }
@@ -275,13 +269,11 @@ function VisitAssignmentsEditor() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editing ? "Edit visit allocation" : "Allocate visit"}
-            </DialogTitle>
+            <DialogTitle>{editing ? 'Edit visit allocation' : 'Allocate visit'}</DialogTitle>
             <DialogDescription>
               {editing
-                ? "Project, visitor type and stage are locked. Logged events cannot be edited."
-                : "Choose the stage the architect is coming to inspect, then allocate the visitor and date."}
+                ? 'Project, visitor type and stage are locked. Logged events cannot be edited.'
+                : 'Choose the stage the architect is coming to inspect, then allocate the visitor and date.'}
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={save}>
@@ -293,7 +285,7 @@ function VisitAssignmentsEditor() {
                 disabled={!!editing}
                 className="w-full rounded border p-2"
                 value={form.projectId}
-                onChange={(e) => change("projectId", e.target.value)}
+                onChange={(e) => change('projectId', e.target.value)}
               >
                 <option value="">Select project</option>
                 {projects.map((p) => (
@@ -314,8 +306,8 @@ function VisitAssignmentsEditor() {
                   setForm((f) => ({
                     ...f,
                     visitorType: e.target.value,
-                    stageId: "",
-                    purpose: "",
+                    stageId: '',
+                    purpose: '',
                   }))
                 }
               >
@@ -324,7 +316,7 @@ function VisitAssignmentsEditor() {
                 ))}
               </select>
             </div>
-            {form.visitorType === "ARCHITECT" ? (
+            {form.visitorType === 'ARCHITECT' ? (
               <div>
                 <Label htmlFor="allocation-stage">Visit stage</Label>
                 <select
@@ -332,8 +324,8 @@ function VisitAssignmentsEditor() {
                   required
                   disabled={!!editing || loadingStages}
                   className="w-full rounded border p-2"
-                  value={form.stageId || ""}
-                  onChange={(e) => change("stageId", e.target.value)}
+                  value={form.stageId || ''}
+                  onChange={(e) => change('stageId', e.target.value)}
                 >
                   <option value="">Select purpose / stage</option>
                   {stages.map((s) => (
@@ -342,16 +334,13 @@ function VisitAssignmentsEditor() {
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-sm">
-                  {editing?.checksPurpose || selected?.checks_purpose}
-                </p>
+                <VisitStageActions selected={selected} onSelect={(id) => change('stageId', id)} disabled={!!editing || loadingStages || creating || updating} />
+                <p className="mt-2 text-sm">{editing?.checksPurpose || selected?.checks_purpose}</p>
                 <p className="text-sm text-muted-foreground">
                   {editing?.visitType || selected?.visit_type}
                 </p>
                 {selected?.remarks && (
-                  <p className="text-sm text-muted-foreground">
-                    {selected.remarks}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{selected.remarks}</p>
                 )}
               </div>
             ) : (
@@ -362,7 +351,7 @@ function VisitAssignmentsEditor() {
                   required
                   maxLength={250}
                   value={form.purpose}
-                  onChange={(e) => change("purpose", e.target.value)}
+                  onChange={(e) => change('purpose', e.target.value)}
                 />
               </div>
             )}
@@ -372,8 +361,8 @@ function VisitAssignmentsEditor() {
                 id="allocation-date"
                 type="date"
                 required
-                value={form.scheduledDate || ""}
-                onChange={(e) => change("scheduledDate", e.target.value)}
+                value={form.scheduledDate || ''}
+                onChange={(e) => change('scheduledDate', e.target.value)}
               />
             </div>
             <div>
@@ -386,11 +375,12 @@ function VisitAssignmentsEditor() {
                   setForm((f) => ({
                     ...f,
                     teamId: e.target.value,
-                    externalPartyName: "",
+                    visitorUserId: '',
+                    externalPartyName: '',
                   }))
                 }
               >
-                <option value="">Named visitor instead</option>
+                <option value="">Select a user instead</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -400,23 +390,24 @@ function VisitAssignmentsEditor() {
             </div>
             {!form.teamId && (
               <div>
-                <Label htmlFor="allocation-visitor">
-                  Allocated visitor name
-                </Label>
-                <Input
+                <Label htmlFor="allocation-visitor">Allocated visitor name</Label>
+                <select
                   id="allocation-visitor"
                   required
-                  maxLength={150}
-                  value={form.externalPartyName}
-                  onChange={(e) => change("externalPartyName", e.target.value)}
-                />
+                  className="w-full rounded border p-2"
+                  disabled={loadingUsers || usersError}
+                  value={form.visitorUserId || (form.externalPartyName ? 'existing-visitor' : '')}
+                  onChange={(e) => setForm((f) => ({ ...f, visitorUserId: e.target.value, externalPartyName: '' }))}
+                >
+                  <option value="">{loadingUsers ? 'Loading users…' : 'Select user'}</option>
+                  {form.externalPartyName && !form.visitorUserId && <option value="existing-visitor">{form.externalPartyName} (current visitor)</option>}
+                  {users.map((user) => <option key={user.id} value={user.id}>{user.name}{user.email ? ` (${user.email})` : ''}</option>)}
+                </select>
+                {usersError ? <p role="alert" className="mt-1 text-sm text-destructive">Unable to load users. <button type="button" className="underline" onClick={refetchUsers}>Retry</button></p> : !loadingUsers && !users.length && <p className="mt-1 text-sm text-muted-foreground">No active users available.</p>}
               </div>
             )}
-            <Button
-              type="submit"
-              disabled={creating || updating || loadingStages}
-            >
-              {creating || updating ? "Saving…" : "Save allocation"}
+            <Button type="submit" disabled={creating || updating || loadingStages || (!form.teamId && (loadingUsers || usersError))}>
+              {creating || updating ? 'Saving…' : 'Save allocation'}
             </Button>
           </form>
         </DialogContent>

@@ -23,6 +23,10 @@ export const procurementQuotationApi = baseApi.injectEndpoints({
     getProcurementQuotationVersion: builder.query({
       query: ({ id, version }) => `/procurement-quotations/${id}/versions/${version}`,
     }),
+    createProcurementQuotation: builder.mutation({
+      query: (body) => ({ url: "/procurement-quotations", method: "POST", body }),
+      invalidatesTags: [TAG],
+    }),
     createQuotationFromComparison: builder.mutation({
       query: (body) => ({ url: "/procurement-quotations/from-comparison", method: "POST", body }),
       invalidatesTags: [TAG],
@@ -55,6 +59,7 @@ export const {
   useGetProcurementQuotationVersionQuery,
   useLazyGetProcurementQuotationVersionQuery,
   useCreateQuotationFromComparisonMutation,
+  useCreateProcurementQuotationMutation,
   useUpdateProcurementQuotationMutation,
   useSetProcurementQuotationStatusMutation,
   useRaiseQuotationOrderMutation,

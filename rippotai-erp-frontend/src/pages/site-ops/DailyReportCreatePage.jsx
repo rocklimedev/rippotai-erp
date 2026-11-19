@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { useCreateDailySiteReportMutation } from "../../api/site-ops/site-ops.api";
+import { useCreateDailySiteReportMutation } from '../../api/site-ops/site-ops.api';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from '../../context/AuthContext';
 
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 import {
   Select,
@@ -19,19 +19,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
-import { toast } from "sonner";
+import { toast } from 'sonner';
 
-const WEATHER = [
-  "CLEAR",
-  "CLOUDY",
-  "RAIN",
-  "HEAVY_RAIN",
-  "STORM",
-  "EXTREME_HEAT",
-  "OTHER",
-];
+const WEATHER = ['CLEAR', 'CLOUDY', 'RAIN', 'HEAVY_RAIN', 'STORM', 'EXTREME_HEAT', 'OTHER'];
 
 export default function DailyReportCreatePage() {
   const navigate = useNavigate();
@@ -40,22 +32,21 @@ export default function DailyReportCreatePage() {
 
   const [createReport, { isLoading }] = useCreateDailySiteReportMutation();
 
-  const { data: projectsResponse, isLoading: projectsLoading } =
-    useGetProjectsQuery({
-      includeArchived: false,
-    });
+  const { data: projectsResponse, isLoading: projectsLoading } = useGetProjectsQuery({
+    includeArchived: false,
+  });
 
   const projects = Array.isArray(projectsResponse)
     ? projectsResponse
     : projectsResponse?.data || [];
 
   const [form, setForm] = useState({
-    projectId: "",
+    projectId: '',
     reportDate: new Date().toISOString().slice(0, 10),
-    weatherCondition: "",
-    weatherNotes: "",
-    workCompleted: "",
-    issues: "",
+    weatherCondition: '',
+    weatherNotes: '',
+    workCompleted: '',
+    issues: '',
   });
 
   const set = (key, value) =>
@@ -64,12 +55,7 @@ export default function DailyReportCreatePage() {
       [key]: value,
     }));
 
-  const reportedBy =
-    user?.name ||
-    user?.fullName ||
-    user?.displayName ||
-    user?.email ||
-    "Unknown";
+  const reportedBy = user?.name || user?.fullName || user?.displayName || user?.email || 'Unknown';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +63,7 @@ export default function DailyReportCreatePage() {
     const projectId = Number(form.projectId);
 
     if (!projectId || !form.reportDate || !form.workCompleted) {
-      toast.error("Fill required fields");
+      toast.error('Fill required fields');
       return;
     }
 
@@ -92,17 +78,17 @@ export default function DailyReportCreatePage() {
         reportedBy,
       }).unwrap();
 
-      toast.success("Report created");
+      toast.success('Report created');
 
       navigate(`/site-ops/daily-reports/${result.id}`);
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to create report");
+      toast.error(err?.data?.message || 'Failed to create report');
     }
   };
 
   return (
     <div className="bg-page min-h-full p-6">
-      {" "}
+      {' '}
       <PageHeader
         title="New Daily Site Report"
         description="Log today's site activity, weather and issues."
@@ -116,14 +102,12 @@ export default function DailyReportCreatePage() {
 
             <Select
               value={form.projectId}
-              onValueChange={(value) => set("projectId", value)}
+              onValueChange={(value) => set('projectId', value)}
               disabled={projectsLoading}
             >
               <SelectTrigger className="bc-input">
                 <SelectValue
-                  placeholder={
-                    projectsLoading ? "Loading projects..." : "Select project"
-                  }
+                  placeholder={projectsLoading ? 'Loading projects...' : 'Select project'}
                 />
               </SelectTrigger>
 
@@ -135,10 +119,8 @@ export default function DailyReportCreatePage() {
                 ) : (
                   projects.map((project) => (
                     <SelectItem key={project.id} value={String(project.id)}>
-                      {project.name ||
-                        project.projectName ||
-                        `Project #${project.id}`}
-                      {project.code ? ` (${project.code})` : ""}
+                      {project.name || project.projectName || `Project #${project.id}`}
+                      {project.code ? ` (${project.code})` : ''}
                     </SelectItem>
                   ))
                 )}
@@ -154,7 +136,7 @@ export default function DailyReportCreatePage() {
               type="date"
               className="bc-input"
               value={form.reportDate}
-              onChange={(e) => set("reportDate", e.target.value)}
+              onChange={(e) => set('reportDate', e.target.value)}
               required
             />
           </div>
@@ -164,10 +146,8 @@ export default function DailyReportCreatePage() {
             <Label>Weather</Label>
 
             <Select
-              value={form.weatherCondition || "none"}
-              onValueChange={(v) =>
-                set("weatherCondition", v === "none" ? "" : v)
-              }
+              value={form.weatherCondition || 'none'}
+              onValueChange={(v) => set('weatherCondition', v === 'none' ? '' : v)}
             >
               <SelectTrigger className="bc-input">
                 <SelectValue placeholder="Select" />
@@ -193,7 +173,7 @@ export default function DailyReportCreatePage() {
           <Input
             className="bc-input"
             value={form.weatherNotes}
-            onChange={(e) => set("weatherNotes", e.target.value)}
+            onChange={(e) => set('weatherNotes', e.target.value)}
           />
         </div>
 
@@ -204,7 +184,7 @@ export default function DailyReportCreatePage() {
           <Textarea
             className="bc-input min-h-[100px]"
             value={form.workCompleted}
-            onChange={(e) => set("workCompleted", e.target.value)}
+            onChange={(e) => set('workCompleted', e.target.value)}
             required
           />
         </div>
@@ -216,25 +196,21 @@ export default function DailyReportCreatePage() {
           <Textarea
             className="bc-input"
             value={form.issues}
-            onChange={(e) => set("issues", e.target.value)}
+            onChange={(e) => set('issues', e.target.value)}
           />
         </div>
 
         {/* Actions */}
         <div className="flex gap-3">
-          <Button
-            type="submit"
-            className="bc-btn-primary"
-            disabled={isLoading || projectsLoading}
-          >
-            {isLoading ? "Saving…" : "Create report"}
+          <Button type="submit" className="bc-btn-primary" disabled={isLoading || projectsLoading}>
+            {isLoading ? 'Saving…' : 'Create report'}
           </Button>
 
           <Button
             type="button"
             variant="outline"
             className="bc-btn-secondary"
-            onClick={() => navigate("/site-ops/daily-reports")}
+            onClick={() => navigate('/site-ops/daily-reports')}
           >
             Cancel
           </Button>

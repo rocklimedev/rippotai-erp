@@ -1,18 +1,18 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, Layers, RefreshCw } from "lucide-react";
-import { useGetMockupsByProjectQuery } from "../../api/site-ops/site-ops.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { StatusBadge } from "@/components/site-ops/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, Layers, RefreshCw } from 'lucide-react';
+import { useGetMockupsByProjectQuery } from '../../api/site-ops/site-ops.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { StatusBadge } from '@/components/site-ops/StatusBadge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -20,19 +20,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
-const STATUS_OPTIONS = [
-  "all",
-  "PROPOSED",
-  "UNDER_REVIEW",
-  "APPROVED",
-  "REJECTED",
-];
+const STATUS_OPTIONS = ['all', 'PROPOSED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
 
 export default function MockupsListPage() {
-  const [projectId, setProjectId] = useState("");
-  const [status, setStatus] = useState("all");
+  const [projectId, setProjectId] = useState('');
+  const [status, setStatus] = useState('all');
   const [queryId, setQueryId] = useState(null);
 
   const {
@@ -43,7 +37,7 @@ export default function MockupsListPage() {
   } = useGetMockupsByProjectQuery(
     {
       projectId: queryId,
-      status: status === "all" ? undefined : status,
+      status: status === 'all' ? undefined : status,
     },
     { skip: !queryId },
   );
@@ -69,9 +63,7 @@ export default function MockupsListPage() {
                 onClick={() => refetch()}
                 disabled={isFetching}
               >
-                <RefreshCw
-                  className={`h-4 w-4 mr-1.5 ${isFetching ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             )}
@@ -105,7 +97,7 @@ export default function MockupsListPage() {
               <SelectContent>
                 {STATUS_OPTIONS.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {s === "all" ? "All" : s}
+                    {s === 'all' ? 'All' : s}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -135,42 +127,28 @@ export default function MockupsListPage() {
                   <TableCell colSpan={5} className="text-center py-12">
                     <div className="bc-empty-state">
                       <Layers className="h-10 w-10 mx-auto mb-3 text-[var(--sage)]" />
-                      <p className="text-[var(--muted)]">
-                        Enter a project ID to load mockups.
-                      </p>
+                      <p className="text-[var(--muted)]">Enter a project ID to load mockups.</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-12 text-[var(--muted)]"
-                  >
+                  <TableCell colSpan={5} className="text-center py-12 text-[var(--muted)]">
                     Loading…
                   </TableCell>
                 </TableRow>
               ) : mockups.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-12 text-[var(--muted)]"
-                  >
+                  <TableCell colSpan={5} className="text-center py-12 text-[var(--muted)]">
                     No mockups found.
                   </TableCell>
                 </TableRow>
               ) : (
                 mockups.map((m) => (
-                  <TableRow
-                    key={m.id}
-                    className="hover:bg-[var(--mist-soft)]/60"
-                  >
-                    <TableCell className="font-medium text-[var(--ink-green)]">
-                      {m.name}
-                    </TableCell>
+                  <TableRow key={m.id} className="hover:bg-[var(--mist-soft)]/60">
+                    <TableCell className="font-medium text-[var(--ink-green)]">{m.name}</TableCell>
                     <TableCell>
-                      {[m.finishType, m.location].filter(Boolean).join(" · ") ||
-                        "—"}
+                      {[m.finishType, m.location].filter(Boolean).join(' · ') || '—'}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={m.status} />

@@ -1,17 +1,17 @@
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import { Fragment, useState, useEffect, useMemo } from "react";
-import DeleteChecklist from "./DeleteChecklist";
-import { checklistWithDrafts } from "./checklist-export-data";
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import { Fragment, useState, useEffect, useMemo } from 'react';
+import DeleteChecklist from './DeleteChecklist';
+import { checklistWithDrafts } from './checklist-export-data';
 import {
   PrintBlankChecklist,
   PrintChecklistButton,
   PrintTemplateButton,
-} from "@/components/site-ops/ChecklistPrint";
-import { Link, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+} from '@/components/site-ops/ChecklistPrint';
+import { Link, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 import {
   useGetProjectQualityChecksQuery,
   useUpsertQualityCheckMutation,
@@ -26,25 +26,25 @@ import {
   useCompleteQualityChecklistMutation,
   useLazyExportQualityChecklistJsonQuery,
   useLazyExportProjectQualityWorkbookJsonQuery,
-} from "../../api/site-ops/site-ops.api";
+} from '../../api/site-ops/site-ops.api';
 
 const PHASES = [
-  ["BEFORE_EXECUTION", "Before Execution"],
-  ["DURING_EXECUTION", "During Execution"],
-  ["AFTER_EXECUTION", "After Execution"],
+  ['BEFORE_EXECUTION', 'Before Execution'],
+  ['DURING_EXECUTION', 'During Execution'],
+  ['AFTER_EXECUTION', 'After Execution'],
 ];
 const STATUSES = {
-  NOT_STARTED: "Not started",
-  IN_PROGRESS: "In progress",
-  COMPLETED: "Completed",
-  ACCEPTED: "Accepted",
-  REJECTED: "Rejected",
-  DEFERRED: "Deferred",
+  NOT_STARTED: 'Not started',
+  IN_PROGRESS: 'In progress',
+  COMPLETED: 'Completed',
+  ACCEPTED: 'Accepted',
+  REJECTED: 'Rejected',
+  DEFERRED: 'Deferred',
 };
-const OVERVIEW_STATUSES = ["Pending", "Passed", "Failed", "N/A"];
+const OVERVIEW_STATUSES = ['Pending', 'Passed', 'Failed', 'N/A'];
 
 const message = (error) =>
-  String(error?.data?.message || error?.error || error?.message || "Request failed");
+  String(error?.data?.message || error?.error || error?.message || 'Request failed');
 const array = (response) =>
   Array.isArray(response)
     ? response
@@ -54,27 +54,27 @@ const array = (response) =>
 
 /** Map API status (PASSED, Failed, etc.) to the option labels used in the UI */
 function normalizeOverviewStatus(status) {
-  if (status == null || status === "") return "Pending";
-  const key = String(status).trim().toUpperCase().replace(/\s+/g, " ");
-  if (key === "N/A" || key === "NA" || key === "NOT APPLICABLE") return "N/A";
-  if (key === "PASSED" || key === "PASS") return "Passed";
-  if (key === "FAILED" || key === "FAIL") return "Failed";
-  if (key === "PENDING") return "Pending";
+  if (status == null || status === '') return 'Pending';
+  const key = String(status).trim().toUpperCase().replace(/\s+/g, ' ');
+  if (key === 'N/A' || key === 'NA' || key === 'NOT APPLICABLE') return 'N/A';
+  if (key === 'PASSED' || key === 'PASS') return 'Passed';
+  if (key === 'FAILED' || key === 'FAIL') return 'Failed';
+  if (key === 'PENDING') return 'Pending';
   if (OVERVIEW_STATUSES.includes(status)) return status;
-  return "Pending";
+  return 'Pending';
 }
 
 function dateInput(value) {
-  if (!value) return "";
+  if (!value) return '';
   const date = new Date(value);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export default function QualityChecksPage() {
   const [params, setParams] = useSearchParams();
-  const projectId = params.get("projectId") || "";
-  const checklistId = params.get("checklistId") || "";
-  const recordInfo = useRecordInfo("checklist", checklistId);
+  const projectId = params.get('projectId') || '';
+  const checklistId = params.get('checklistId') || '';
+  const recordInfo = useRecordInfo('checklist', checklistId);
   const {
     data: response,
     isLoading,
@@ -85,10 +85,7 @@ export default function QualityChecksPage() {
   const project = projects.find((project) => project.id === projectId);
   return (
     <div className="bg-page min-h-full p-4 sm:p-6 space-y-5">
-      <Link
-        className="bc-btn-secondary inline-flex"
-        to="/site-operations/checklists"
-      >
+      <Link className="bc-btn-secondary inline-flex" to="/site-operations/checklists">
         ← Checklists list
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -97,7 +94,9 @@ export default function QualityChecksPage() {
           <h1 className="text-2xl font-semibold text-[var(--ink-green)]">
             Quality checklist workspace
           </h1>
-          {checklistId && recordInfo && <p className="text-[13px] text-[var(--muted)] mt-1">{recordInfo}</p>}
+          {checklistId && recordInfo && (
+            <p className="text-[13px] text-[var(--muted)] mt-1">{recordInfo}</p>
+          )}
         </div>
         <div className="w-full sm:w-80">
           <label htmlFor="quality-project" className="block text-sm mb-1">
@@ -110,18 +109,14 @@ export default function QualityChecksPage() {
             disabled={isLoading}
             onChange={(event) => {
               const next = new URLSearchParams(params);
-              next.delete("checklistId");
-              if (event.target.value) next.set("projectId", event.target.value);
-              else next.delete("projectId");
+              next.delete('checklistId');
+              if (event.target.value) next.set('projectId', event.target.value);
+              else next.delete('projectId');
               setParams(next);
             }}
           >
-            <option value="">
-              {isLoading ? "Loading projects…" : "Select a project"}
-            </option>
-            {projectId && !project && (
-              <option value={projectId}>{projectId}</option>
-            )}
+            <option value="">{isLoading ? 'Loading projects…' : 'Select a project'}</option>
+            {projectId && !project && <option value={projectId}>{projectId}</option>}
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name || project.project_name}
@@ -141,7 +136,7 @@ export default function QualityChecksPage() {
           key={projectId}
           projectId={projectId}
           projectName={project?.name || projectId}
-          initialId={params.get("checklistId")}
+          initialId={params.get('checklistId')}
         />
       ) : (
         <div className="bc-card p-10 text-center text-[var(--muted)]">
@@ -154,9 +149,9 @@ export default function QualityChecksPage() {
 }
 
 function QualityProject({ projectId, projectName, initialId }) {
-  const [activeId, setActiveId] = useState(initialId || "");
+  const [activeId, setActiveId] = useState(initialId || '');
   useEffect(() => {
-    setActiveId(initialId || "");
+    setActiveId(initialId || '');
   }, [initialId]);
   const [showCreate, setShowCreate] = useState(false);
   const [page, setPage] = useState(1);
@@ -166,16 +161,14 @@ function QualityProject({ projectId, projectName, initialId }) {
     error: overviewError,
     refetch: refreshOverview,
   } = useGetProjectQualityChecksQuery({ project_id: projectId });
-  const { data: templates = [], error: templateError } =
-    useGetQualityChecklistTemplatesQuery();
+  const { data: templates = [], error: templateError } = useGetQualityChecklistTemplatesQuery();
   const {
     currentData: list,
     isFetching,
     error,
     refetch,
   } = useGetQualityChecklistsByProjectQuery({ projectId, page, limit: 12 });
-  const [exportJson, { isFetching: exporting }] =
-    useLazyExportProjectQualityWorkbookJsonQuery();
+  const [exportJson, { isFetching: exporting }] = useLazyExportProjectQualityWorkbookJsonQuery();
   return (
     <>
       <div className="flex flex-wrap justify-between items-center gap-3">
@@ -188,23 +181,16 @@ function QualityProject({ projectId, projectName, initialId }) {
             onClick={async () => {
               try {
                 const data = await exportJson(projectId, false).unwrap();
-                const { downloadQualityWorkbook } =
-                  await import("./qualityChecklistExcel");
-                await downloadQualityWorkbook(
-                  data,
-                  `Quality checks - ${projectName}`,
-                );
+                const { downloadQualityWorkbook } = await import('./qualityChecklistExcel');
+                await downloadQualityWorkbook(data, `Quality checks - ${projectName}`);
               } catch (error) {
                 toast.error(message(error));
               }
             }}
           >
-            {exporting ? "Preparing Excel…" : "Download project Excel"}
+            {exporting ? 'Preparing Excel…' : 'Download project Excel'}
           </button>
-          <button
-            className="bc-btn-primary"
-            onClick={() => setShowCreate(true)}
-          >
+          <button className="bc-btn-primary" onClick={() => setShowCreate(true)}>
             New checklist
           </button>
         </div>
@@ -227,7 +213,7 @@ function QualityProject({ projectId, projectName, initialId }) {
           id={activeId}
           projectId={projectId}
           projectName={projectName}
-          onBack={() => setActiveId("")}
+          onBack={() => setActiveId('')}
         />
       ) : (
         <>
@@ -258,12 +244,10 @@ function QualityProject({ projectId, projectName, initialId }) {
                     key={checklist.id}
                     onClick={() => setActiveId(checklist.id)}
                   >
-                    <h3 className="font-semibold">
-                      {checklist.checklist_name}
-                    </h3>
+                    <h3 className="font-semibold">{checklist.checklist_name}</h3>
                     <p className="text-sm text-[var(--muted)] mt-1">
-                      {checklist.checklist_items?.length || 0} checkpoints ·{" "}
-                      {checklist.status.replaceAll("_", " ")} ·{" "}
+                      {checklist.checklist_items?.length || 0} checkpoints ·{' '}
+                      {checklist.status.replaceAll('_', ' ')} ·{' '}
                       {Number(checklist.completion_percentage)}% inspected
                     </p>
                     {checklist.description && (
@@ -301,13 +285,7 @@ function QualityProject({ projectId, projectName, initialId }) {
   );
 }
 
-function OverviewTable({
-  overview,
-  overviewLoading,
-  overviewError,
-  refreshOverview,
-  projectId,
-}) {
+function OverviewTable({ overview, overviewLoading, overviewError, refreshOverview, projectId }) {
   const heads = useMemo(
     () =>
       overview
@@ -324,7 +302,7 @@ function OverviewTable({
     for (const head of heads) {
       next[head.item_id] = {
         status: normalizeOverviewStatus(head.status),
-        remarks: head.remarks ?? "",
+        remarks: head.remarks ?? '',
       };
     }
     setDrafts(next);
@@ -336,7 +314,7 @@ function OverviewTable({
         const d = drafts[head.item_id];
         if (!d) return false;
         const serverStatus = normalizeOverviewStatus(head.status);
-        const serverRemarks = head.remarks ?? "";
+        const serverRemarks = head.remarks ?? '';
         return d.status !== serverStatus || d.remarks !== serverRemarks;
       })
       .map((head) => head.item_id);
@@ -364,7 +342,7 @@ function OverviewTable({
       );
       toast.success(
         dirtyIds.length === 1
-          ? "Work-head result saved"
+          ? 'Work-head result saved'
           : `${dirtyIds.length} work-head results saved`,
       );
       await refreshOverview();
@@ -403,7 +381,7 @@ function OverviewTable({
                 {heads.map((head) => {
                   const draft = drafts[head.item_id] || {
                     status: normalizeOverviewStatus(head.status),
-                    remarks: head.remarks ?? "",
+                    remarks: head.remarks ?? '',
                   };
                   return (
                     <tr key={head.item_id} className="border-t">
@@ -415,11 +393,7 @@ function OverviewTable({
                           className="bc-input"
                           value={draft.status}
                           onChange={(event) =>
-                            updateDraft(
-                              head.item_id,
-                              "status",
-                              event.target.value,
-                            )
+                            updateDraft(head.item_id, 'status', event.target.value)
                           }
                         >
                           {OVERVIEW_STATUSES.map((value) => (
@@ -436,11 +410,7 @@ function OverviewTable({
                           rows={2}
                           value={draft.remarks}
                           onChange={(event) =>
-                            updateDraft(
-                              head.item_id,
-                              "remarks",
-                              event.target.value,
-                            )
+                            updateDraft(head.item_id, 'remarks', event.target.value)
                           }
                         />
                       </td>
@@ -451,8 +421,7 @@ function OverviewTable({
             </table>
             {!heads.length && (
               <p className="p-4 text-[var(--muted)]">
-                Template work heads are not available. Apply the quality
-                template migration.
+                Template work heads are not available. Apply the quality template migration.
               </p>
             )}
           </div>
@@ -464,10 +433,10 @@ function OverviewTable({
                 onClick={saveAll}
               >
                 {isLoading
-                  ? "Saving…"
+                  ? 'Saving…'
                   : dirtyIds.length
                     ? `Save all (${dirtyIds.length})`
-                    : "Save all"}
+                    : 'Save all'}
               </button>
             </div>
           )}
@@ -477,26 +446,16 @@ function OverviewTable({
   );
 }
 
-function CreateChecklist({
-  projectId,
-  templates,
-  templateError,
-  onClose,
-  onCreated,
-}) {
-  const [workHead, setWorkHead] = useState("");
-  const [description, setDescription] = useState("");
-  const [name, setName] = useState("");
-  const [createTemplate, templateState] =
-    useCreateQualityChecklistFromTemplateMutation();
+function CreateChecklist({ projectId, templates, templateError, onClose, onCreated }) {
+  const [workHead, setWorkHead] = useState('');
+  const [description, setDescription] = useState('');
+  const [name, setName] = useState('');
+  const [createTemplate, templateState] = useCreateQualityChecklistFromTemplateMutation();
   const [createCustom, customState] = useCreateQualityChecklistMutation();
-  const selected = templates.find(
-    (template) => template.work_head === workHead,
-  );
-  const { currentData: preview, isFetching } =
-    useGetQualityChecklistTemplateQuery(workHead, {
-      skip: !selected?.has_template,
-    });
+  const selected = templates.find((template) => template.work_head === workHead);
+  const { currentData: preview, isFetching } = useGetQualityChecklistTemplateQuery(workHead, {
+    skip: !selected?.has_template,
+  });
   const busy = templateState.isLoading || customState.isLoading;
   return (
     <section className="bc-card p-4 space-y-3">
@@ -508,8 +467,7 @@ function CreateChecklist({
       </div>
       {templateError && (
         <p role="alert" className="text-red-600">
-          Could not load templates. Check that the template migration has been
-          applied.
+          Could not load templates. Check that the template migration has been applied.
         </p>
       )}
       <form
@@ -525,7 +483,7 @@ function CreateChecklist({
                   ...(workHead ? { work_head: workHead } : {}),
                   checklist_name: name.trim() || selected?.label,
                 }).unwrap();
-            toast.success("Checklist created");
+            toast.success('Checklist created');
             onCreated(checklist.id);
           } catch (error) {
             toast.error(message(error));
@@ -552,8 +510,8 @@ function CreateChecklist({
           <>
             <p className="text-sm text-[var(--muted)]">
               {selected
-                ? "The supplied workbook has no detailed sheet for this head. Add your own checkpoints after creating it."
-                : "Add project-specific checkpoints after creating this checklist."}
+                ? 'The supplied workbook has no detailed sheet for this head. Add your own checkpoints after creating it.'
+                : 'Add project-specific checkpoints after creating this checklist.'}
             </p>
             <label className="block text-sm">
               Checklist name
@@ -561,7 +519,7 @@ function CreateChecklist({
                 className="bc-input mt-1 w-full"
                 maxLength={255}
                 value={name}
-                placeholder={selected?.label || "Checklist name"}
+                placeholder={selected?.label || 'Checklist name'}
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
@@ -596,15 +554,12 @@ function CreateChecklist({
         {selected?.has_template && (
           <PrintTemplateButton workHead={workHead} className="bc-btn-secondary mr-2" />
         )}
-        <button
-          className="bc-btn-primary"
-          disabled={busy || (!selected && !name.trim())}
-        >
+        <button className="bc-btn-primary" disabled={busy || (!selected && !name.trim())}>
           {busy
-            ? "Creating…"
+            ? 'Creating…'
             : selected?.has_template
-              ? "Create from template"
-              : "Create checklist"}
+              ? 'Create from template'
+              : 'Create checklist'}
         </button>
       </form>
     </section>
@@ -612,12 +567,7 @@ function CreateChecklist({
 }
 
 function ChecklistDetail({ id, projectId, projectName, onBack }) {
-  const {
-    currentData: checklist,
-    isLoading,
-    error,
-    refetch,
-  } = useGetQualityChecklistByIdQuery(id);
+  const { currentData: checklist, isLoading, error, refetch } = useGetQualityChecklistByIdQuery(id);
   const [complete, completeState] = useCompleteQualityChecklistMutation();
   const [exportJson, exportState] = useLazyExportQualityChecklistJsonQuery();
   const [showAdd, setShowAdd] = useState(false);
@@ -632,15 +582,11 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
     const next = {};
     for (const item of checklist.checklist_items || []) {
       const initialAcceptance =
-        item.is_accepted === true
-          ? "yes"
-          : item.is_accepted === false
-            ? "no"
-            : "";
+        item.is_accepted === true ? 'yes' : item.is_accepted === false ? 'no' : '';
       next[item.id] = {
         accepted: initialAcceptance,
         status: item.status,
-        remarks: item.remarks || "",
+        remarks: item.remarks || '',
         date: dateInput(item.inspection_date),
       };
     }
@@ -653,15 +599,11 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
         const d = drafts[item.id];
         if (!d) return false;
         const initialAcceptance =
-          item.is_accepted === true
-            ? "yes"
-            : item.is_accepted === false
-              ? "no"
-              : "";
+          item.is_accepted === true ? 'yes' : item.is_accepted === false ? 'no' : '';
         return (
           d.accepted !== initialAcceptance ||
           d.status !== item.status ||
-          d.remarks !== (item.remarks || "") ||
+          d.remarks !== (item.remarks || '') ||
           d.date !== dateInput(item.inspection_date)
         );
       })
@@ -684,19 +626,14 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
           return updateItem({
             id: itemId,
             status: d.status,
-            is_accepted:
-              d.accepted === "yes" ? true : d.accepted === "no" ? false : null,
+            is_accepted: d.accepted === 'yes' ? true : d.accepted === 'no' ? false : null,
             remarks: d.remarks,
-            inspection_date: d.date
-              ? new Date(`${d.date}T00:00:00`).toISOString()
-              : null,
+            inspection_date: d.date ? new Date(`${d.date}T00:00:00`).toISOString() : null,
           }).unwrap();
         }),
       );
       toast.success(
-        dirtyIds.length === 1
-          ? "Checkpoint saved"
-          : `${dirtyIds.length} checkpoints saved`,
+        dirtyIds.length === 1 ? 'Checkpoint saved' : `${dirtyIds.length} checkpoints saved`,
       );
       await refetch();
     } catch (error) {
@@ -719,7 +656,7 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
   if (checklist.project_id !== projectId)
     return (
       <div role="alert">
-        This checklist belongs to a different project.{" "}
+        This checklist belongs to a different project.{' '}
         <button onClick={onBack}>Back to project</button>
       </div>
     );
@@ -732,22 +669,20 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
           <button className="text-sm underline" onClick={onBack}>
             ← Project checklists
           </button>
-          <h2 className="text-xl font-semibold mt-2">
-            {checklist.checklist_name}
-          </h2>
+          <h2 className="text-xl font-semibold mt-2">{checklist.checklist_name}</h2>
           <p className="text-sm text-[var(--muted)]">{checklist.description}</p>
           <p className="text-sm mt-1">
-            {items.length} checkpoints · {accepted} accepted ·{" "}
-            {Number(checklist.completion_percentage)}% inspected ·{" "}
-            {checklist.status.replaceAll("_", " ")}
+            {items.length} checkpoints · {accepted} accepted ·{' '}
+            {Number(checklist.completion_percentage)}% inspected ·{' '}
+            {checklist.status.replaceAll('_', ' ')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-start">
-          <PrintChecklistButton checklist={checklistWithDrafts(checklist, drafts)} projectName={projectName} />
-          <button
-            className="bc-btn-secondary"
-            onClick={() => setShowAdd(!showAdd)}
-          >
+          <PrintChecklistButton
+            checklist={checklistWithDrafts(checklist, drafts)}
+            projectName={projectName}
+          />
+          <button className="bc-btn-secondary" onClick={() => setShowAdd(!showAdd)}>
             Add checkpoint
           </button>
           <button
@@ -756,18 +691,20 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
             onClick={async () => {
               try {
                 const data = await exportJson(id, false).unwrap();
-                const { downloadQualityWorkbook } =
-                  await import("./qualityChecklistExcel");
-                await downloadQualityWorkbook({
-                  ...data,
-                  items: checklistWithDrafts(checklist, drafts).checklist_items,
-                }, checklist.checklist_name);
+                const { downloadQualityWorkbook } = await import('./qualityChecklistExcel');
+                await downloadQualityWorkbook(
+                  {
+                    ...data,
+                    items: checklistWithDrafts(checklist, drafts).checklist_items,
+                  },
+                  checklist.checklist_name,
+                );
               } catch (error) {
                 toast.error(message(error));
               }
             }}
           >
-            {exportState.isFetching ? "Preparing Excel…" : "Download Excel"}
+            {exportState.isFetching ? 'Preparing Excel…' : 'Download Excel'}
           </button>
           <button
             className="bc-btn-primary"
@@ -775,12 +712,12 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
               !items.length ||
               accepted !== items.length ||
               completeState.isLoading ||
-              checklist.status === "PASSED"
+              checklist.status === 'PASSED'
             }
             onClick={async () => {
               try {
                 await complete(id).unwrap();
-                toast.success("Checklist passed");
+                toast.success('Checklist passed');
               } catch (error) {
                 toast.error(message(error));
               }
@@ -794,9 +731,7 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
       {showAdd && (
         <AddCheckpoint
           checklistId={id}
-          nextSerial={
-            Math.max(0, ...items.map((item) => item.serial_number)) + 1
-          }
+          nextSerial={Math.max(0, ...items.map((item) => item.serial_number)) + 1}
           onClose={() => setShowAdd(false)}
         />
       )}
@@ -828,12 +763,12 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                       const draft = drafts[item.id] || {
                         accepted:
                           item.is_accepted === true
-                            ? "yes"
+                            ? 'yes'
                             : item.is_accepted === false
-                              ? "no"
-                              : "",
+                              ? 'no'
+                              : '',
                         status: item.status,
-                        remarks: item.remarks || "",
+                        remarks: item.remarks || '',
                         date: dateInput(item.inspection_date),
                       };
                       return (
@@ -850,11 +785,11 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                                 updateDraft(item.id, {
                                   accepted: next,
                                   status:
-                                    next === "yes"
-                                      ? "ACCEPTED"
-                                      : next === "no"
-                                        ? "REJECTED"
-                                        : "NOT_STARTED",
+                                    next === 'yes'
+                                      ? 'ACCEPTED'
+                                      : next === 'no'
+                                        ? 'REJECTED'
+                                        : 'NOT_STARTED',
                                 });
                               }}
                             >
@@ -871,24 +806,18 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                               onChange={(event) => {
                                 const next = event.target.value;
                                 const patch = { status: next };
-                                if (next !== "COMPLETED") {
+                                if (next !== 'COMPLETED') {
                                   patch.accepted =
-                                    next === "ACCEPTED"
-                                      ? "yes"
-                                      : next === "REJECTED"
-                                        ? "no"
-                                        : "";
+                                    next === 'ACCEPTED' ? 'yes' : next === 'REJECTED' ? 'no' : '';
                                 }
                                 updateDraft(item.id, patch);
                               }}
                             >
-                              {Object.entries(STATUSES).map(
-                                ([value, label]) => (
-                                  <option key={value} value={value}>
-                                    {label}
-                                  </option>
-                                ),
-                              )}
+                              {Object.entries(STATUSES).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
                             </select>
                           </td>
                           <td className="p-3">
@@ -923,10 +852,7 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                     })}
                   {!items.some((item) => item.phase === phase) && (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="p-3 text-sm text-[var(--muted)]"
-                      >
+                      <td colSpan={6} className="p-3 text-sm text-[var(--muted)]">
                         No checkpoints in this phase.
                       </td>
                     </tr>
@@ -944,10 +870,10 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
               onClick={saveAll}
             >
               {updateState.isLoading
-                ? "Saving…"
+                ? 'Saving…'
                 : dirtyIds.length
                   ? `Save all (${dirtyIds.length})`
-                  : "Save all"}
+                  : 'Save all'}
             </button>
           </div>
         )}
@@ -957,8 +883,8 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
 }
 
 function AddCheckpoint({ checklistId, nextSerial, onClose }) {
-  const [name, setName] = useState("");
-  const [phase, setPhase] = useState("BEFORE_EXECUTION");
+  const [name, setName] = useState('');
+  const [phase, setPhase] = useState('BEFORE_EXECUTION');
   const [add, { isLoading }] = useAddQualityChecklistItemMutation();
   return (
     <form
@@ -973,7 +899,7 @@ function AddCheckpoint({ checklistId, nextSerial, onClose }) {
             phase,
           }).unwrap();
           onClose();
-          toast.success("Checkpoint added");
+          toast.success('Checkpoint added');
         } catch (error) {
           toast.error(message(error));
         }
@@ -1003,7 +929,7 @@ function AddCheckpoint({ checklistId, nextSerial, onClose }) {
         </select>
       </label>
       <button className="bc-btn-primary" disabled={isLoading || !name.trim()}>
-        {isLoading ? "Adding…" : "Add"}
+        {isLoading ? 'Adding…' : 'Add'}
       </button>
       <button type="button" className="bc-btn-secondary" onClick={onClose}>
         Cancel

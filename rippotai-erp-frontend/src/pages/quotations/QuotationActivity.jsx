@@ -1,13 +1,13 @@
-import React, { useState } from "react";
-import { useGetActivityLogByEntityLabelQuery } from "../../api/engagement/activity-logs.api";
+import React, { useState } from 'react';
+import { useGetActivityLogByEntityLabelQuery } from '../../api/engagement/activity-logs.api';
 /* ============ Leads Activity ============ */
 
 export function QuotationsActivity() {
   const [filters, setFilters] = useState({
-    user: "",
-    action: "",
-    date_from: "",
-    date_to: "",
+    user: '',
+    action: '',
+    date_from: '',
+    date_to: '',
   });
 
   const { data: rows = [], isLoading } = useGetActivityLogByEntityLabelQuery({
@@ -33,16 +33,16 @@ export function QuotationsActivity() {
     createdAt: r.createdAt,
 
     // user who performed action
-    user: r.lead?.owner || "System",
+    user: r.lead?.owner || 'System',
 
     // extract action
-    action: r.text?.split(" ").slice(0, 3).join(" "),
+    action: r.text?.split(' ').slice(0, 3).join(' '),
 
     // lead name
-    target: r.lead?.name || "-",
+    target: r.lead?.name || '-',
 
     // complete message
-    details: r.text || "-",
+    details: r.text || '-',
 
     stage: r.lead?.stage,
   }));
@@ -61,8 +61,8 @@ export function QuotationsActivity() {
         <h1 className="text-[34px] font-bold text-[#333333]">Activity</h1>
 
         <p className="text-[13.5px] text-[#6B7B7C] mt-1">
-          Every change made inside the Leads module — notes, stage changes,
-          follow-ups, proposals and updates.
+          Every change made inside the Leads module — notes, stage changes, follow-ups, proposals
+          and updates.
         </p>
       </div>
 
@@ -136,10 +136,10 @@ export function QuotationsActivity() {
             className="text-[12px] text-[#7A2E1A] font-semibold"
             onClick={() =>
               setFilters({
-                user: "",
-                action: "",
-                date_from: "",
-                date_to: "",
+                user: '',
+                action: '',
+                date_from: '',
+                date_to: '',
               })
             }
           >
@@ -177,10 +177,7 @@ export function QuotationsActivity() {
 
             {!isLoading && activities.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-10 text-center text-[#6B7B7C]"
-                >
+                <td colSpan={5} className="px-4 py-10 text-center text-[#6B7B7C]">
                   No activity yet.
                 </td>
               </tr>
@@ -189,12 +186,12 @@ export function QuotationsActivity() {
             {activities.map((r) => (
               <tr key={r.id} className="border-b border-[#EAEEF0]">
                 <td className="px-4 py-3 text-[12.5px]">
-                  {new Date(r.createdAt).toLocaleString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
+                  {new Date(r.createdAt).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </td>
 

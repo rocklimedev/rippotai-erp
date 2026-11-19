@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { Plus, UserPlus, Tag, Flag, ArrowDown, ArrowUp, AlertTriangle, Minus } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Plus, UserPlus, Tag, Flag, ArrowDown, ArrowUp, AlertTriangle, Minus } from 'lucide-react';
 
 import {
   Page,
@@ -13,28 +13,31 @@ import {
   SelectInput,
   TextArea,
   ChoiceGroup,
-} from "@/components/inos";
-import { Skeleton } from "@/components/projects/_projects-ui";
+} from '@/components/inos';
+import { Skeleton } from '@/components/projects/_projects-ui';
 
 import {
   useCreateProjectMutation,
   useGetProjectByIdQuery,
   useUpdateProjectMutation,
-} from "../../api/projects/project.api";
+} from '../../api/projects/project.api';
 
-import { useGetProjectTypesQuery, useCreateProjectTypeMutation } from "../../api/projects/project-type.api";
+import {
+  useGetProjectTypesQuery,
+  useCreateProjectTypeMutation,
+} from '../../api/projects/project-type.api';
 
-import { useGetClientsQuery, useCreateClientMutation } from "../../api/projects/client.api";
+import { useGetClientsQuery, useCreateClientMutation } from '../../api/projects/client.api';
 
 // ============================================================
 // CONSTANTS
 // ============================================================
 
 const PRIORITY_OPTIONS = [
-  { label: "Low", value: "LOW", icon: ArrowDown },
-  { label: "Medium", value: "MEDIUM", icon: Minus },
-  { label: "High", value: "HIGH", icon: ArrowUp },
-  { label: "Critical", value: "CRITICAL", icon: AlertTriangle },
+  { label: 'Low', value: 'LOW', icon: ArrowDown },
+  { label: 'Medium', value: 'MEDIUM', icon: Minus },
+  { label: 'High', value: 'HIGH', icon: ArrowUp },
+  { label: 'Critical', value: 'CRITICAL', icon: AlertTriangle },
 ];
 
 // ============================================================
@@ -42,9 +45,9 @@ const PRIORITY_OPTIONS = [
 // ============================================================
 
 const toDateInputValue = (value) => {
-  if (!value) return "";
+  if (!value) return '';
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
+  if (Number.isNaN(d.getTime())) return '';
   return d.toISOString().slice(0, 10);
 };
 
@@ -62,13 +65,13 @@ export default function ProjectNew() {
 
   // ------------------------------------------------------------ form
   const [form, setForm] = useState({
-    name: "",
-    client_id: searchParams.get("client_id") || "", // prefilled from Client detail → New project
-    project_type_id: "",
-    site_location: "",
-    priority: "MEDIUM",
-    expected_completion_date: "",
-    description: "",
+    name: '',
+    client_id: searchParams.get('client_id') || '', // prefilled from Client detail → New project
+    project_type_id: '',
+    site_location: '',
+    priority: 'MEDIUM',
+    expected_completion_date: '',
+    description: '',
   });
   const [errors, setErrors] = useState({});
   const [hydrated, setHydrated] = useState(false);
@@ -80,12 +83,12 @@ export default function ProjectNew() {
 
   // ------------------------------------------------------------ inline "add" panels
   const [showAddType, setShowAddType] = useState(false);
-  const [newTypeName, setNewTypeName] = useState("");
+  const [newTypeName, setNewTypeName] = useState('');
 
   const [showAddClient, setShowAddClient] = useState(false);
-  const [newClientName, setNewClientName] = useState("");
-  const [newClientEmail, setNewClientEmail] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
 
   // ------------------------------------------------------------ data
   const {
@@ -94,8 +97,16 @@ export default function ProjectNew() {
     isError: projectError,
   } = useGetProjectByIdQuery(projectId, { skip: !isEdit });
 
-  const { data: types = [], isFetching: typesLoading, isError: typesError } = useGetProjectTypesQuery();
-  const { data: clients = [], isFetching: clientsLoading, isError: clientsError } = useGetClientsQuery();
+  const {
+    data: types = [],
+    isFetching: typesLoading,
+    isError: typesError,
+  } = useGetProjectTypesQuery();
+  const {
+    data: clients = [],
+    isFetching: clientsLoading,
+    isError: clientsError,
+  } = useGetClientsQuery();
 
   const [createProjectType, { isLoading: creatingType }] = useCreateProjectTypeMutation();
   const [createClient, { isLoading: creatingClient }] = useCreateClientMutation();
@@ -105,26 +116,26 @@ export default function ProjectNew() {
   const busy = isEdit ? updatingProject : creatingProject;
 
   useEffect(() => {
-    if (projectError) toast.error("Failed to load project");
+    if (projectError) toast.error('Failed to load project');
   }, [projectError]);
   useEffect(() => {
-    if (typesError) toast.error("Failed to load project types");
+    if (typesError) toast.error('Failed to load project types');
   }, [typesError]);
   useEffect(() => {
-    if (clientsError) toast.error("Failed to load clients");
+    if (clientsError) toast.error('Failed to load clients');
   }, [clientsError]);
 
   // ------------------------------------------------------------ hydrate edit form
   useEffect(() => {
     if (!isEdit || !project || hydrated) return;
     setForm({
-      name: project.name || "",
-      client_id: project.client_id || project.client?.id || "",
-      project_type_id: project.project_type_id || project.project_type?.id || "",
-      site_location: project.site_location || "",
-      priority: project.priority || "MEDIUM",
+      name: project.name || '',
+      client_id: project.client_id || project.client?.id || '',
+      project_type_id: project.project_type_id || project.project_type?.id || '',
+      site_location: project.site_location || '',
+      priority: project.priority || 'MEDIUM',
       expected_completion_date: toDateInputValue(project.expected_completion_date),
-      description: project.description || "",
+      description: project.description || '',
     });
     setHydrated(true);
   }, [isEdit, project, hydrated]);
@@ -140,24 +151,24 @@ export default function ProjectNew() {
   // ------------------------------------------------------------ add project type
   const saveNewType = async () => {
     if (!newTypeName.trim()) {
-      toast.error("Name required");
+      toast.error('Name required');
       return;
     }
     try {
       const data = await createProjectType({ name: newTypeName.trim() }).unwrap();
       toast.success(`Project type "${data.name}" added`);
       setShowAddType(false);
-      setNewTypeName("");
+      setNewTypeName('');
       setForm((f) => ({ ...f, project_type_id: data.id }));
     } catch (e) {
-      toast.error(e?.data?.detail || e?.data?.message || "Failed to add project type");
+      toast.error(e?.data?.detail || e?.data?.message || 'Failed to add project type');
     }
   };
 
   // ------------------------------------------------------------ add client
   const saveNewClient = async () => {
     if (!newClientName.trim()) {
-      toast.error("Name required");
+      toast.error('Name required');
       return;
     }
     try {
@@ -168,21 +179,24 @@ export default function ProjectNew() {
       }).unwrap();
       toast.success(`Client "${data.name}" added`);
       setShowAddClient(false);
-      setNewClientName("");
-      setNewClientEmail("");
-      setNewClientPhone("");
+      setNewClientName('');
+      setNewClientEmail('');
+      setNewClientPhone('');
       setForm((f) => ({ ...f, client_id: data.id }));
     } catch (e) {
-      toast.error(e?.data?.detail || e?.data?.message || "Failed to add client");
+      toast.error(e?.data?.detail || e?.data?.message || 'Failed to add client');
     }
   };
 
   // ------------------------------------------------------------ validation
-  const validate = (keys = ["name", "site_location"]) => {
+  const validate = (keys = ['name', 'site_location']) => {
     const next = { ...errors };
-    if (keys.includes("name")) next.name = form.name.trim() ? undefined : "Give the project a name.";
-    if (keys.includes("site_location"))
-      next.site_location = form.site_location.trim() ? undefined : "Where is the site? A locality and city is enough.";
+    if (keys.includes('name'))
+      next.name = form.name.trim() ? undefined : 'Give the project a name.';
+    if (keys.includes('site_location'))
+      next.site_location = form.site_location.trim()
+        ? undefined
+        : 'Where is the site? A locality and city is enough.';
     setErrors(next);
     return next;
   };
@@ -191,8 +205,8 @@ export default function ProjectNew() {
   const submit = async (event) => {
     event?.preventDefault?.();
     const v = validate();
-    if (v.name) return toast.error("Name required");
-    if (v.site_location) return toast.error("Location required");
+    if (v.name) return toast.error('Name required');
+    if (v.site_location) return toast.error('Location required');
 
     const payload = {
       name: form.name.trim(),
@@ -200,33 +214,38 @@ export default function ProjectNew() {
       priority: form.priority,
       ...(form.client_id ? { client_id: form.client_id } : {}),
       ...(form.project_type_id ? { project_type_id: form.project_type_id } : {}),
-      ...(form.expected_completion_date ? { expected_completion_date: form.expected_completion_date } : {}),
+      ...(form.expected_completion_date
+        ? { expected_completion_date: form.expected_completion_date }
+        : {}),
       ...(form.description.trim() || isEdit ? { description: form.description.trim() } : {}),
     };
 
     try {
       if (isEdit) {
         const data = await updateProject({ id: projectId, ...payload }).unwrap();
-        toast.success("Project updated");
+        toast.success('Project updated');
         nav(`/projects/${data?.id || projectId}`);
       } else {
         const data = await createProject(payload).unwrap();
-        toast.success("Project created");
+        toast.success('Project created');
         nav(`/projects/${data.id}`);
       }
     } catch (e) {
       const messages = e?.data?.message;
-      toast.error(Array.isArray(messages) ? messages[0] : messages || e?.data?.detail || "Failed");
+      toast.error(Array.isArray(messages) ? messages[0] : messages || e?.data?.detail || 'Failed');
     }
   };
 
-  const backTarget = isEdit ? `/projects/${projectId}` : "/projects";
+  const backTarget = isEdit ? `/projects/${projectId}` : '/projects';
 
   // ------------------------------------------------------------ loading (edit)
   if (isEdit && projectLoading && !hydrated) {
     return (
       <Page width="form">
-        <PageHeader crumbs={[{ label: "Projects", to: "/projects" }, { label: "Edit" }]} title="Edit project" />
+        <PageHeader
+          crumbs={[{ label: 'Projects', to: '/projects' }, { label: 'Edit' }]}
+          title="Edit project"
+        />
         <Skeleton height={220} />
         <Skeleton height={160} />
       </Page>
@@ -242,30 +261,41 @@ export default function ProjectNew() {
         crumbs={
           isEdit
             ? [
-                { label: "Projects", to: "/projects" },
-                { label: project?.name || "Project", to: backTarget },
-                { label: "Edit" },
+                { label: 'Projects', to: '/projects' },
+                { label: project?.name || 'Project', to: backTarget },
+                { label: 'Edit' },
               ]
-            : [{ label: "Projects", to: "/projects" }, { label: "New project" }]
+            : [{ label: 'Projects', to: '/projects' }, { label: 'New project' }]
         }
-        title={isEdit ? "Edit project" : "New project"}
+        title={isEdit ? 'Edit project' : 'New project'}
         subtitle={
           isEdit
-            ? "Update the basics — phases, documents and team stay as they are."
-            : "Two fields are required: a name and the site location. Everything else can be added later."
+            ? 'Update the basics — phases, documents and team stay as they are.'
+            : 'Two fields are required: a name and the site location. Everything else can be added later.'
         }
       />
 
       <form className="inos-form" onSubmit={submit} noValidate>
         {/* 1 — Basics */}
-        <FormSection step={1} title="Basics" description="What the project is called and where the site is.">
-          <Field label="Project name" required full htmlFor="pj-name" error={errors.name} hint="Usually the client or building name.">
+        <FormSection
+          step={1}
+          title="Basics"
+          description="What the project is called and where the site is."
+        >
+          <Field
+            label="Project name"
+            required
+            full
+            htmlFor="pj-name"
+            error={errors.name}
+            hint="Usually the client or building name."
+          >
             <TextInput
               id="pj-name"
               autoFocus={!isEdit}
               value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-              onBlur={() => form.name && validate(["name"])}
+              onChange={(e) => set('name', e.target.value)}
+              onBlur={() => form.name && validate(['name'])}
               placeholder="e.g. Malhotra Residence, Golf Links"
               invalid={Boolean(errors.name)}
               data-testid="new-name"
@@ -276,8 +306,8 @@ export default function ProjectNew() {
             <TextInput
               id="pj-site"
               value={form.site_location}
-              onChange={(e) => set("site_location", e.target.value)}
-              onBlur={() => form.site_location && validate(["site_location"])}
+              onChange={(e) => set('site_location', e.target.value)}
+              onBlur={() => form.site_location && validate(['site_location'])}
               placeholder="e.g. Sector 42, Gurugram"
               invalid={Boolean(errors.site_location)}
               data-testid="new-site-location"
@@ -287,13 +317,15 @@ export default function ProjectNew() {
           <Field
             label="Project type"
             htmlFor="pj-type"
-            hint={types.length ? undefined : typesLoading ? "Loading types…" : "No types yet — add one."}
+            hint={
+              types.length ? undefined : typesLoading ? 'Loading types…' : 'No types yet — add one.'
+            }
           >
             <div className="pj-input-row">
               <SelectInput
                 id="pj-type"
                 value={form.project_type_id}
-                onChange={(e) => set("project_type_id", e.target.value)}
+                onChange={(e) => set('project_type_id', e.target.value)}
                 disabled={typesLoading}
                 data-testid="project-type-select"
               >
@@ -336,13 +368,18 @@ export default function ProjectNew() {
                   aria-label="New project type name"
                   data-testid="new-type-name"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === 'Enter') {
                       e.preventDefault();
                       saveNewType();
                     }
                   }}
                 />
-                <Button variant="primary" onClick={saveNewType} loading={creatingType} data-testid="new-type-save">
+                <Button
+                  variant="primary"
+                  onClick={saveNewType}
+                  loading={creatingType}
+                  data-testid="new-type-save"
+                >
                   Add type
                 </Button>
               </div>
@@ -352,7 +389,11 @@ export default function ProjectNew() {
         </FormSection>
 
         {/* 2 — Client */}
-        <FormSection step={2} title="Client" description="Pick an existing client, or add a new one without leaving this page.">
+        <FormSection
+          step={2}
+          title="Client"
+          description="Pick an existing client, or add a new one without leaving this page."
+        >
           <Field
             label="Client"
             optional
@@ -360,19 +401,27 @@ export default function ProjectNew() {
             htmlFor="pj-client"
             hint={
               selectedClient
-                ? [selectedClient.contact_person, selectedClient.email, selectedClient.phone].filter(Boolean).join(" · ") || undefined
-                : "You can link a client later."
+                ? [selectedClient.contact_person, selectedClient.email, selectedClient.phone]
+                    .filter(Boolean)
+                    .join(' · ') || undefined
+                : 'You can link a client later.'
             }
           >
             <div className="pj-input-row">
               <SelectInput
                 id="pj-client"
                 value={form.client_id}
-                onChange={(e) => set("client_id", e.target.value)}
+                onChange={(e) => set('client_id', e.target.value)}
                 disabled={clientsLoading}
                 data-testid="client-select"
               >
-                <option value="">{clientsLoading ? "Loading…" : clients.length ? "Select a client" : "No clients yet"}</option>
+                <option value="">
+                  {clientsLoading
+                    ? 'Loading…'
+                    : clients.length
+                      ? 'Select a client'
+                      : 'No clients yet'}
+                </option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -410,7 +459,7 @@ export default function ProjectNew() {
                     placeholder="e.g. Apex Buildcon Pvt Ltd"
                     data-testid="new-client-name"
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === 'Enter') {
                         e.preventDefault();
                         saveNewClient();
                       }
@@ -418,14 +467,29 @@ export default function ProjectNew() {
                   />
                 </Field>
                 <Field label="Email" optional>
-                  <TextInput type="email" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} placeholder="name@company.com" />
+                  <TextInput
+                    type="email"
+                    value={newClientEmail}
+                    onChange={(e) => setNewClientEmail(e.target.value)}
+                    placeholder="name@company.com"
+                  />
                 </Field>
                 <Field label="Phone" optional>
-                  <TextInput type="tel" value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="+91 98100 00000" />
+                  <TextInput
+                    type="tel"
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value)}
+                    placeholder="+91 98100 00000"
+                  />
                 </Field>
               </div>
               <div>
-                <Button variant="primary" onClick={saveNewClient} loading={creatingClient} data-testid="new-client-save">
+                <Button
+                  variant="primary"
+                  onClick={saveNewClient}
+                  loading={creatingClient}
+                  data-testid="new-client-save"
+                >
                   Add client
                 </Button>
               </div>
@@ -434,20 +498,34 @@ export default function ProjectNew() {
         </FormSection>
 
         {/* 3 — Details */}
-        <FormSection step={3} title="Details" description="Priority, target date and a short brief. All optional.">
+        <FormSection
+          step={3}
+          title="Details"
+          description="Priority, target date and a short brief. All optional."
+        >
           <Field label="Priority" full>
             <div data-testid="new-priority">
-              <ChoiceGroup name="Priority" value={form.priority} onChange={(v) => set("priority", v)} options={PRIORITY_OPTIONS} />
+              <ChoiceGroup
+                name="Priority"
+                value={form.priority}
+                onChange={(v) => set('priority', v)}
+                options={PRIORITY_OPTIONS}
+              />
             </div>
           </Field>
 
-          <Field label="Expected completion" optional htmlFor="pj-ecd" hint="Used for the ECD on the projects list.">
+          <Field
+            label="Expected completion"
+            optional
+            htmlFor="pj-ecd"
+            hint="Used for the ECD on the projects list."
+          >
             <TextInput
               id="pj-ecd"
               type="date"
               min={isEdit ? undefined : todayInput()}
               value={form.expected_completion_date}
-              onChange={(e) => set("expected_completion_date", e.target.value)}
+              onChange={(e) => set('expected_completion_date', e.target.value)}
               data-testid="new-expected-completion"
             />
           </Field>
@@ -457,7 +535,7 @@ export default function ProjectNew() {
               id="pj-desc"
               rows={3}
               value={form.description}
-              onChange={(e) => set("description", e.target.value)}
+              onChange={(e) => set('description', e.target.value)}
               placeholder="e.g. 4BHK residence — full interiors, landscaping and façade refresh"
             />
           </Field>
@@ -465,15 +543,26 @@ export default function ProjectNew() {
 
         <div className="inos-form-actions">
           <span className="inos-form-actions__note">
-            <Flag size={13} style={{ display: "inline", verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
-            {isEdit ? "Changes apply immediately to the project workspace." : "Phases and document checklists appear in the project workspace."}
+            <Flag
+              size={13}
+              style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }}
+              aria-hidden
+            />
+            {isEdit
+              ? 'Changes apply immediately to the project workspace.'
+              : 'Phases and document checklists appear in the project workspace.'}
           </span>
           <div className="inos-form-actions__buttons">
             <Button variant="ghost" onClick={() => nav(backTarget)}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" loading={busy} data-testid="btn-create-project-confirm">
-              {isEdit ? "Save changes" : "Create project"}
+            <Button
+              variant="primary"
+              type="submit"
+              loading={busy}
+              data-testid="btn-create-project-confirm"
+            >
+              {isEdit ? 'Save changes' : 'Create project'}
             </Button>
           </div>
         </div>

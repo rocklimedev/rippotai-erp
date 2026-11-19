@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useProposeMockupMutation } from "../../api/site-ops/site-ops.api";
-import { PageHeader } from "@/components/site-ops/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useProposeMockupMutation } from '../../api/site-ops/site-ops.api';
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 
 export default function MockupCreatePage() {
   const navigate = useNavigate();
   const [propose, { isLoading }] = useProposeMockupMutation();
   const [form, setForm] = useState({
-    projectId: "",
-    stepId: "",
-    name: "",
-    finishType: "",
-    location: "",
-    description: "",
-    proposedBy: "",
+    projectId: '',
+    stepId: '',
+    name: '',
+    finishType: '',
+    location: '',
+    description: '',
+    proposedBy: '',
   });
 
   const set = (key, value) => setForm((p) => ({ ...p, [key]: value }));
@@ -27,7 +27,7 @@ export default function MockupCreatePage() {
     e.preventDefault();
     const projectId = Number(form.projectId);
     if (!projectId || !form.name || !form.proposedBy) {
-      toast.error("Project, name and proposed by are required");
+      toast.error('Project, name and proposed by are required');
       return;
     }
     try {
@@ -40,10 +40,10 @@ export default function MockupCreatePage() {
         description: form.description || undefined,
         proposedBy: form.proposedBy,
       }).unwrap();
-      toast.success("Mockup proposed");
+      toast.success('Mockup proposed');
       navigate(`/site-ops/mockups/${result.id}`);
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to propose mockup");
+      toast.error(err?.data?.message || 'Failed to propose mockup');
     }
   };
 
@@ -63,7 +63,7 @@ export default function MockupCreatePage() {
               type="number"
               className="bc-input"
               value={form.projectId}
-              onChange={(e) => set("projectId", e.target.value)}
+              onChange={(e) => set('projectId', e.target.value)}
               required
             />
           </div>
@@ -73,7 +73,7 @@ export default function MockupCreatePage() {
               type="number"
               className="bc-input"
               value={form.stepId}
-              onChange={(e) => set("stepId", e.target.value)}
+              onChange={(e) => set('stepId', e.target.value)}
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -81,7 +81,7 @@ export default function MockupCreatePage() {
             <Input
               className="bc-input"
               value={form.name}
-              onChange={(e) => set("name", e.target.value)}
+              onChange={(e) => set('name', e.target.value)}
               required
             />
           </div>
@@ -90,7 +90,7 @@ export default function MockupCreatePage() {
             <Input
               className="bc-input"
               value={form.finishType}
-              onChange={(e) => set("finishType", e.target.value)}
+              onChange={(e) => set('finishType', e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -98,7 +98,7 @@ export default function MockupCreatePage() {
             <Input
               className="bc-input"
               value={form.location}
-              onChange={(e) => set("location", e.target.value)}
+              onChange={(e) => set('location', e.target.value)}
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -106,7 +106,7 @@ export default function MockupCreatePage() {
             <Input
               className="bc-input"
               value={form.proposedBy}
-              onChange={(e) => set("proposedBy", e.target.value)}
+              onChange={(e) => set('proposedBy', e.target.value)}
               required
             />
           </div>
@@ -117,19 +117,19 @@ export default function MockupCreatePage() {
           <Textarea
             className="bc-input"
             value={form.description}
-            onChange={(e) => set("description", e.target.value)}
+            onChange={(e) => set('description', e.target.value)}
           />
         </div>
 
         <div className="flex gap-3">
           <Button type="submit" className="bc-btn-primary" disabled={isLoading}>
-            {isLoading ? "Submitting…" : "Propose"}
+            {isLoading ? 'Submitting…' : 'Propose'}
           </Button>
           <Button
             type="button"
             variant="outline"
             className="bc-btn-secondary"
-            onClick={() => navigate("/site-ops/mockups")}
+            onClick={() => navigate('/site-ops/mockups')}
           >
             Cancel
           </Button>

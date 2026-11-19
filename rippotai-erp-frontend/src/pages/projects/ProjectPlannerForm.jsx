@@ -1,19 +1,19 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { ArrowLeft, PlayCircle, Plus, Trash2 } from "lucide-react";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { ArrowLeft, PlayCircle, Plus, Trash2 } from 'lucide-react';
 
-import { Shell, Card, Input } from "../../hooks/shared";
+import { Shell, Card, Input } from '../../hooks/shared';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 import {
   useListProjectFloorsQuery,
   useCreateProjectFloorMutation,
   useDeleteProjectFloorMutation,
   useListPlannerTemplatesQuery,
   useClonePlannerTemplatesMutation,
-} from "../../api/documents/project-planner.api";
+} from '../../api/documents/project-planner.api';
 
 // ============================================================
 // MODULES
@@ -21,8 +21,8 @@ import {
 // ============================================================
 
 const PLANNER_MODULES = [
-  { value: "CONSULTANCY", label: "Consultancy" },
-  { value: "PMC", label: "PMC" },
+  { value: 'CONSULTANCY', label: 'Consultancy' },
+  { value: 'PMC', label: 'PMC' },
 ];
 
 // ============================================================
@@ -36,16 +36,14 @@ export function ProjectPlannerForm() {
   // Reached two ways: from inside a project (projectId is in the route
   // already) or from the global planner list ("/planner/create"), in
   // which case the project has to be chosen here first.
-  const [selectedProjectId, setSelectedProjectId] = useState(
-    projectIdParam || "",
-  );
+  const [selectedProjectId, setSelectedProjectId] = useState(projectIdParam || '');
 
   const projectId = projectIdParam || selectedProjectId;
   const needsProjectSelection = !projectIdParam;
 
   const [module, setModule] = useState(moduleParam || PLANNER_MODULES[0].value);
-  const [newFloorName, setNewFloorName] = useState("");
-  const [newFloorNumber, setNewFloorNumber] = useState("");
+  const [newFloorName, setNewFloorName] = useState('');
+  const [newFloorNumber, setNewFloorNumber] = useState('');
 
   // ============================================================
   // API
@@ -55,26 +53,24 @@ export function ProjectPlannerForm() {
     skip: !needsProjectSelection,
   });
 
-  const { data: floors, isFetching: isLoadingFloors } =
-    useListProjectFloorsQuery(projectId, { skip: !projectId });
+  const { data: floors, isFetching: isLoadingFloors } = useListProjectFloorsQuery(projectId, {
+    skip: !projectId,
+  });
 
-  const [createFloor, { isLoading: isCreatingFloor }] =
-    useCreateProjectFloorMutation();
+  const [createFloor, { isLoading: isCreatingFloor }] = useCreateProjectFloorMutation();
 
   const [deleteFloor] = useDeleteProjectFloorMutation();
 
-  const { data: templates, isFetching: isLoadingTemplates } =
-    useListPlannerTemplatesQuery(module, { skip: !module });
+  const { data: templates, isFetching: isLoadingTemplates } = useListPlannerTemplatesQuery(module, {
+    skip: !module,
+  });
 
-  const [cloneTemplates, { isLoading: isInitializing }] =
-    useClonePlannerTemplatesMutation();
+  const [cloneTemplates, { isLoading: isInitializing }] = useClonePlannerTemplatesMutation();
 
   const floorList = useMemo(
     () =>
       Array.isArray(floors)
-        ? [...floors].sort(
-            (a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0),
-          )
+        ? [...floors].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
         : [],
     [floors],
   );
@@ -101,12 +97,12 @@ export function ProjectPlannerForm() {
 
   const handleAddFloor = async () => {
     if (!projectId) {
-      toast.error("Select a project first");
+      toast.error('Select a project first');
       return;
     }
 
     if (!newFloorName.trim() || !newFloorNumber) {
-      toast.error("Enter both a floor number and a floor name");
+      toast.error('Enter both a floor number and a floor name');
       return;
     }
 
@@ -118,14 +114,12 @@ export function ProjectPlannerForm() {
         sort_order: floorList.length,
       }).unwrap();
 
-      toast.success("Floor added");
+      toast.success('Floor added');
 
-      setNewFloorName("");
-      setNewFloorNumber("");
+      setNewFloorName('');
+      setNewFloorNumber('');
     } catch (error) {
-      toast.error(
-        error?.data?.message || error?.message || "Failed to add floor",
-      );
+      toast.error(error?.data?.message || error?.message || 'Failed to add floor');
     }
   };
 
@@ -141,11 +135,9 @@ export function ProjectPlannerForm() {
     try {
       await deleteFloor({ projectId, floorId: floor.id }).unwrap();
 
-      toast.success("Floor removed");
+      toast.success('Floor removed');
     } catch (error) {
-      toast.error(
-        error?.data?.message || error?.message || "Failed to remove floor",
-      );
+      toast.error(error?.data?.message || error?.message || 'Failed to remove floor');
     }
   };
 
@@ -155,17 +147,17 @@ export function ProjectPlannerForm() {
 
   const handleInitialize = async () => {
     if (!projectId) {
-      toast.error("Select a project first");
+      toast.error('Select a project first');
       return;
     }
 
     if (!module) {
-      toast.error("Select a module first");
+      toast.error('Select a module first');
       return;
     }
 
     if (floorList.length === 0) {
-      toast.error("Add at least one floor before initializing the checklist");
+      toast.error('Add at least one floor before initializing the checklist');
       return;
     }
 
@@ -176,11 +168,7 @@ export function ProjectPlannerForm() {
 
       navigate(`/projects/${projectId}/planner/${module}`);
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Failed to initialize the checklist",
-      );
+      toast.error(error?.data?.message || error?.message || 'Failed to initialize the checklist');
     }
   };
 
@@ -196,7 +184,7 @@ export function ProjectPlannerForm() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => navigate("/planner")}
+            onClick={() => navigate('/planner')}
             className="h-10 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-[13px] font-semibold text-[var(--text)] inline-flex items-center gap-1.5"
           >
             <ArrowLeft size={14} />
@@ -210,7 +198,7 @@ export function ProjectPlannerForm() {
             className="h-10 px-4 rounded-lg bg-[var(--brand)] text-white text-[14px] font-semibold inline-flex items-center gap-2 disabled:opacity-60"
           >
             <PlayCircle size={15} />
-            {isInitializing ? "Initializing..." : "Initialize Checklist"}
+            {isInitializing ? 'Initializing...' : 'Initialize Checklist'}
           </button>
         </div>
       }
@@ -278,8 +266,8 @@ export function ProjectPlannerForm() {
           </div>
 
           <p className="text-xs text-[var(--text-2)] mb-4">
-            Floors are shared across all modules for this project — progress is
-            tracked per floor, per task.
+            Floors are shared across all modules for this project — progress is tracked per floor,
+            per task.
           </p>
 
           {!projectId ? (
@@ -352,13 +340,11 @@ export function ProjectPlannerForm() {
         ====================================================== */}
 
         <Card>
-          <h3 className="font-semibold text-[var(--text)] mb-1">
-            Templates to Clone
-          </h3>
+          <h3 className="font-semibold text-[var(--text)] mb-1">Templates to Clone</h3>
 
           <p className="text-xs text-[var(--text-2)] mb-4">
-            These master checklist items will be copied into this project when
-            you initialize {selectedModuleLabel}.
+            These master checklist items will be copied into this project when you initialize{' '}
+            {selectedModuleLabel}.
           </p>
 
           {isLoadingTemplates ? (
@@ -366,16 +352,14 @@ export function ProjectPlannerForm() {
           ) : templateSummary.total === 0 ? (
             <div className="rounded-lg border border-dashed border-[var(--line-strong)] p-6 text-center">
               <p className="text-sm text-[var(--text-3)]">
-                No master templates exist for {selectedModuleLabel} yet. Add
-                templates before initializing this checklist.
+                No master templates exist for {selectedModuleLabel} yet. Add templates before
+                initializing this checklist.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg border border-[var(--line)] p-3">
-                <p className="text-xs uppercase tracking-wide text-[var(--text-3)]">
-                  Work Items
-                </p>
+                <p className="text-xs uppercase tracking-wide text-[var(--text-3)]">Work Items</p>
 
                 <p className="mt-1 text-xl font-semibold text-[var(--text)]">
                   {templateSummary.workCount}

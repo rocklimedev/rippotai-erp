@@ -3,7 +3,6 @@ import {
   VisitorType,
   VisitStatus,
 } from '../../common/enums/site-operations.enums';
-import { ARCHITECT_VISIT_STAGES } from './constants/architect-visit-stages.constant';
 
 describe('visit event allocations', () => {
   const transaction = { LOCK: { UPDATE: 'UPDATE' } };
@@ -37,7 +36,9 @@ describe('visit event allocations', () => {
         id: 'stage',
         visit_no: 6,
         is_active: true,
-        stage: 'Tampered name',
+        stage: 'Custom stage',
+        checks_purpose: 'Custom checks',
+        visit_type: 'Mandatory',
       }),
     };
     const project: any = {
@@ -67,13 +68,13 @@ describe('visit event allocations', () => {
     scheduledDate: '2026-10-10',
     loggedBy: 'Admin',
   };
-  it('copies the Excel stage and purpose rather than accepting edited master values', async () => {
+  it('snapshots saved master values for future allocations', async () => {
     const { service, allocations } = setup();
     await service.createAssignment(dto);
     expect(allocations.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        stageName: ARCHITECT_VISIT_STAGES[5].stage,
-        checksPurpose: ARCHITECT_VISIT_STAGES[5].checks_purpose,
+        stageName: 'Custom stage',
+        checksPurpose: 'Custom checks',
         frequency: null,
         scheduleDays: null,
       }),
@@ -94,17 +95,13 @@ describe('visit event allocations', () => {
       service.createAssignment({ ...dto, teamId: 1 }),
     ).rejects.toThrow('Allocate either');
   });
-  it('excludes snag closure and unknown stages', async () => {
+  it('accepts custom active stages and rejects deleted or missing stages', async () => {
     const { service, stages } = setup();
-    for (const visit_no of [20, 99]) {
-      stages.findByPk.mockResolvedValue({
-        id: 'stage',
-        visit_no,
-        is_active: true,
-      });
-      await expect(service.createAssignment(dto)).rejects.toThrow(
-        'standard active',
-      );
+    stages.findByPk.mockResolvedValue({ id: 'stage', visit_no: 99, is_active: true, stage: 'Custom', checks_purpose: 'Checks', visit_type: 'Mandatory' });
+    await expect(service.createAssignment(dto)).resolves.toBeDefined();
+    for (const stage of [null, { id: 'stage', is_active: false }]) {
+      stages.findByPk.mockResolvedValue(stage);
+      await expect(service.createAssignment(dto)).rejects.toThrow('active architect visit stage');
     }
   });
   it('locks allocation stage and project', async () => {

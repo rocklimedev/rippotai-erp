@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   CheckCircle2,
   XCircle,
@@ -11,21 +11,15 @@ import {
   Clock3,
   ChevronDown,
   Loader2,
-} from "lucide-react";
+} from 'lucide-react';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
 
-import { Input } from "@/components/ui/input";
+import { Input } from '@/components/ui/input';
 
 import {
   Select,
@@ -33,7 +27,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 import {
   Table,
@@ -42,18 +36,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-import { useGetQcHandoffStatusQuery } from "@/api/procuerment/site-ops.api";
-import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from "./siteProjects";
+import { useGetQcHandoffStatusQuery } from '@/api/procuerment/site-ops.api';
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from './siteProjects';
 
 /**
  * PAGE 7 — QC HANDOFF STATUS
@@ -68,27 +58,27 @@ import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from 
 
 const statusConfig = {
   PASS: {
-    label: "Cleared",
+    label: 'Cleared',
     icon: CheckCircle2,
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   },
 
   FAIL: {
-    label: "Failed",
+    label: 'Failed',
     icon: XCircle,
-    className: "border-red-200 bg-red-50 text-red-700",
+    className: 'border-red-200 bg-red-50 text-red-700',
   },
 
   REWORK: {
-    label: "Rework Required",
+    label: 'Rework Required',
     icon: AlertTriangle,
-    className: "border-amber-200 bg-amber-50 text-amber-700",
+    className: 'border-amber-200 bg-amber-50 text-amber-700',
   },
 
   PENDING: {
-    label: "Pending QC",
+    label: 'Pending QC',
     icon: Clock3,
-    className: "border-slate-200 bg-slate-50 text-slate-600",
+    className: 'border-slate-200 bg-slate-50 text-slate-600',
   },
 };
 
@@ -98,23 +88,14 @@ function StatusBadge({ status }) {
   const Icon = config.icon;
 
   return (
-    <Badge
-      variant="outline"
-      className={`gap-1.5 rounded-full px-3 py-1 ${config.className}`}
-    >
+    <Badge variant="outline" className={`gap-1.5 rounded-full px-3 py-1 ${config.className}`}>
       <Icon className="h-3.5 w-3.5" />
       {config.label}
     </Badge>
   );
 }
 
-function SummaryCard({
-  title,
-  value,
-  description,
-  icon: Icon,
-  className = "",
-}) {
+function SummaryCard({ title, value, description, icon: Icon, className = '' }) {
   return (
     <Card className={className}>
       <CardContent className="p-5">
@@ -122,15 +103,9 @@ function SummaryCard({
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
 
-            <p className="mt-2 text-3xl font-semibold tracking-tight">
-              {value}
-            </p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
 
-            {description && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {description}
-              </p>
-            )}
+            {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
           </div>
 
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F453B]/10">
@@ -145,12 +120,12 @@ function SummaryCard({
 export default function QcHandoffStatus() {
   const [projectId, setProjectId] = useProjectParam();
   const { projects, nameOf } = useSiteProjects();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [expandedRows, setExpandedRows] = useState({});
 
   // GET /site-ops/qc/handoff-status?projectId= — every project when none is picked
-  const selectedProjectId = projectId || "ALL";
+  const selectedProjectId = projectId || 'ALL';
 
   const { data, isLoading, isFetching, refetch } = useGetQcHandoffStatusQuery(
     projectId || undefined,
@@ -205,16 +180,14 @@ export default function QcHandoffStatus() {
         row.result,
       ]
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
         .toLowerCase();
 
       const matchesSearch = !term || searchableText.includes(term);
 
-      const rowStatus =
-        row.status || row.result || (row.isClear ? "PASS" : "PENDING");
+      const rowStatus = row.status || row.result || (row.isClear ? 'PASS' : 'PENDING');
 
-      const matchesStatus =
-        statusFilter === "ALL" || rowStatus === statusFilter;
+      const matchesStatus = statusFilter === 'ALL' || rowStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -225,19 +198,15 @@ export default function QcHandoffStatus() {
 
     const cleared = rows.filter(
       (row) =>
-        row.status === "PASS" ||
-        row.result === "PASS" ||
+        row.status === 'PASS' ||
+        row.result === 'PASS' ||
         row.isClear === true ||
         row.handoffClear === true,
     ).length;
 
-    const failed = rows.filter(
-      (row) => row.status === "FAIL" || row.result === "FAIL",
-    ).length;
+    const failed = rows.filter((row) => row.status === 'FAIL' || row.result === 'FAIL').length;
 
-    const rework = rows.filter(
-      (row) => row.status === "REWORK" || row.result === "REWORK",
-    ).length;
+    const rework = rows.filter((row) => row.status === 'REWORK' || row.result === 'REWORK').length;
 
     const pending = Math.max(0, total - cleared - failed - rework);
 
@@ -262,14 +231,13 @@ export default function QcHandoffStatus() {
     if (row.result) return row.result;
 
     if (row.isClear === true || row.handoffClear === true) {
-      return "PASS";
+      return 'PASS';
     }
 
-    return "PENDING";
+    return 'PENDING';
   };
 
-  const getRowId = (row, index) =>
-    row.id || `${row.stepId || row.phaseId || "row"}-${index}`;
+  const getRowId = (row, index) => row.id || `${row.stepId || row.phaseId || 'row'}-${index}`;
 
   return (
     <div className="min-h-screen bg-[#F8FAF9]">
@@ -295,8 +263,7 @@ export default function QcHandoffStatus() {
               </h1>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                See which phases and trades are cleared to hand work over to the
-                next trade.
+                See which phases and trades are cleared to hand work over to the next trade.
               </p>
             </div>
           </div>
@@ -325,9 +292,7 @@ export default function QcHandoffStatus() {
           <CardContent className="p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
               <div className="w-full lg:max-w-md">
-                <label className="mb-2 block text-sm font-medium">
-                  Project
-                </label>
+                <label className="mb-2 block text-sm font-medium">Project</label>
 
                 <ProjectPicker value={projectId} onChange={setProjectId} projects={projects} />
               </div>
@@ -336,9 +301,7 @@ export default function QcHandoffStatus() {
                 <Alert className="border-amber-200 bg-amber-50 lg:flex-1">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
 
-                  <AlertTitle className="text-amber-800">
-                    Select a project
-                  </AlertTitle>
+                  <AlertTitle className="text-amber-800">Select a project</AlertTitle>
 
                   <AlertDescription className="text-amber-700">
                     Choose a project to view its current QC handoff status.
@@ -403,9 +366,7 @@ export default function QcHandoffStatus() {
                 <div>
                   <CardTitle>Handoff Overview</CardTitle>
 
-                  <CardDescription>
-                    Latest QC result for each phase and trade.
-                  </CardDescription>
+                  <CardDescription>Latest QC result for each phase and trade.</CardDescription>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -459,9 +420,9 @@ export default function QcHandoffStatus() {
                   <h3 className="font-medium">No handoff records found</h3>
 
                   <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                    {search || statusFilter !== "ALL"
-                      ? "Try changing your search or status filter."
-                      : "There are no QC handoff records for this project yet."}
+                    {search || statusFilter !== 'ALL'
+                      ? 'Try changing your search or status filter.'
+                      : 'There are no QC handoff records for this project yet.'}
                   </p>
                 </div>
               ) : (
@@ -497,37 +458,33 @@ export default function QcHandoffStatus() {
                           row.stepName ||
                           row.phaseName ||
                           row.step?.name ||
-                          `Step ${row.stepId || "-"}`;
+                          `Step ${row.stepId || '-'}`;
 
                         const tradeName =
                           row.tradeName ||
                           row.tradeTeamName ||
                           row.teamName ||
                           row.tradeTeam?.name ||
-                          `Team ${row.tradeTeamId || "-"}`;
+                          `Team ${row.tradeTeamId || '-'}`;
 
-                        const checkedBy =
-                          row.checkedBy || row.latestSignOff?.checkedBy || "-";
+                        const checkedBy = row.checkedBy || row.latestSignOff?.checkedBy || '-';
 
-                        const checkedAt =
-                          row.checkedAt || row.latestSignOff?.checkedAt;
+                        const checkedAt = row.checkedAt || row.latestSignOff?.checkedAt;
 
                         const attempt =
-                          row.attemptNumber ||
-                          row.latestSignOff?.attemptNumber ||
-                          "-";
+                          row.attemptNumber || row.latestSignOff?.attemptNumber || '-';
 
                         return (
                           <React.Fragment key={id}>
                             <TableRow
                               className={
-                                status === "PASS"
-                                  ? "bg-emerald-50/20"
-                                  : status === "FAIL"
-                                    ? "bg-red-50/20"
-                                    : status === "REWORK"
-                                      ? "bg-amber-50/20"
-                                      : ""
+                                status === 'PASS'
+                                  ? 'bg-emerald-50/20'
+                                  : status === 'FAIL'
+                                    ? 'bg-red-50/20'
+                                    : status === 'REWORK'
+                                      ? 'bg-amber-50/20'
+                                      : ''
                               }
                             >
                               <TableCell>
@@ -539,7 +496,7 @@ export default function QcHandoffStatus() {
                                 >
                                   <ChevronDown
                                     className={`h-4 w-4 transition-transform ${
-                                      isExpanded ? "rotate-180" : ""
+                                      isExpanded ? 'rotate-180' : ''
                                     }`}
                                   />
                                 </Button>
@@ -579,23 +536,19 @@ export default function QcHandoffStatus() {
 
                               <TableCell>
                                 <span className="text-sm text-muted-foreground">
-                                  {checkedAt
-                                    ? new Date(checkedAt).toLocaleString()
-                                    : "-"}
+                                  {checkedAt ? new Date(checkedAt).toLocaleString() : '-'}
                                 </span>
                               </TableCell>
 
                               <TableCell className="text-right">
-                                {status === "PASS" ? (
+                                {status === 'PASS' ? (
                                   <div className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
                                     <CheckCircle2 className="h-4 w-4" />
                                     Ready
                                     <ArrowRight className="h-4 w-4" />
                                   </div>
                                 ) : (
-                                  <span className="text-sm text-muted-foreground">
-                                    Blocked
-                                  </span>
+                                  <span className="text-sm text-muted-foreground">Blocked</span>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -606,10 +559,7 @@ export default function QcHandoffStatus() {
 
                             {isExpanded && (
                               <TableRow>
-                                <TableCell
-                                  colSpan={8}
-                                  className="bg-muted/20 p-0"
-                                >
+                                <TableCell colSpan={8} className="bg-muted/20 p-0">
                                   <div className="grid gap-6 p-6 lg:grid-cols-3">
                                     <div>
                                       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -629,7 +579,7 @@ export default function QcHandoffStatus() {
                                       <p className="mt-2 text-sm font-medium">
                                         {row.nextTradeName ||
                                           row.nextTeamName ||
-                                          "Next trade not specified"}
+                                          'Next trade not specified'}
                                       </p>
                                     </div>
 
@@ -640,14 +590,12 @@ export default function QcHandoffStatus() {
 
                                       <p
                                         className={`mt-2 text-sm font-medium ${
-                                          status === "PASS"
-                                            ? "text-emerald-700"
-                                            : "text-red-700"
+                                          status === 'PASS' ? 'text-emerald-700' : 'text-red-700'
                                         }`}
                                       >
-                                        {status === "PASS"
-                                          ? "Work can be handed off."
-                                          : "Handoff is currently blocked."}
+                                        {status === 'PASS'
+                                          ? 'Work can be handed off.'
+                                          : 'Handoff is currently blocked.'}
                                       </p>
                                     </div>
 
@@ -659,7 +607,7 @@ export default function QcHandoffStatus() {
                                       <div className="mt-2 rounded-lg border bg-background p-4 text-sm text-muted-foreground">
                                         {row.notes ||
                                           row.latestSignOff?.notes ||
-                                          "No QC notes recorded."}
+                                          'No QC notes recorded.'}
                                       </div>
                                     </div>
                                   </div>
@@ -688,9 +636,9 @@ export default function QcHandoffStatus() {
             <AlertTitle className="text-[#1F453B]">Handoff rule</AlertTitle>
 
             <AlertDescription className="text-[#52635B]">
-              A trade is considered cleared only when its latest QC sign-off is
-              marked <strong>PASS</strong>. Failed or rework results keep the
-              handoff blocked until another QC check passes.
+              A trade is considered cleared only when its latest QC sign-off is marked{' '}
+              <strong>PASS</strong>. Failed or rework results keep the handoff blocked until another
+              QC check passes.
             </AlertDescription>
           </Alert>
         )}

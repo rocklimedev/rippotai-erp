@@ -1,10 +1,10 @@
-import { CalendarRange } from "lucide-react";
-import DocumentListPage from "@/components/doc-list/DocumentListPage";
-import { useGetDocRowsQuery } from "@/api/doc-flow/doc-flow.api";
-import { useDeletePlannerMutation } from "../../api/documents/project-planner.api";
+import { CalendarRange } from 'lucide-react';
+import DocumentListPage from '@/components/doc-list/DocumentListPage';
+import { useGetDocRowsQuery } from '@/api/doc-flow/doc-flow.api';
+import { useDeletePlannerMutation } from '../../api/documents/project-planner.api';
 
 export default function ProjectPlannerList() {
-  const { data: rows = [], isLoading, error, refetch } = useGetDocRowsQuery("project-planner");
+  const { data: rows = [], isLoading, error, refetch } = useGetDocRowsQuery('project-planner');
   const [deletePlanner] = useDeletePlannerMutation();
   return (
     <DocumentListPage
@@ -16,7 +16,7 @@ export default function ProjectPlannerList() {
       error={error}
       getRow={(r) => ({
         id: r.id,
-        name: r.name || "Project Planner",
+        name: r.name || 'Project Planner',
         projectId: r.project_id,
         updatedAt: r.updated_at,
       })}
