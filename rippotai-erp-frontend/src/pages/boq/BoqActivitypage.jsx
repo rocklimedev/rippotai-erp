@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useGetActivityQuery } from "../../api/boq/boq.api";
+import React, { useState } from 'react';
+import { useGetActivityQuery } from '../../api/boq/boq.api';
 
 /* ============ BOQ Activity ============ */
 
 export function BoqActivityPage() {
   const [filters, setFilters] = useState({
-    user: "",
-    action: "",
-    date_from: "",
-    date_to: "",
+    user: '',
+    action: '',
+    date_from: '',
+    date_to: '',
   });
 
   const { data: rows = [], isLoading } = useGetActivityQuery({
@@ -32,8 +32,8 @@ export function BoqActivityPage() {
         <h1 className="text-[34px] font-bold text-[#333333]">Activity</h1>
 
         <p className="text-[13.5px] text-[#6B7B7C] mt-1">
-          Every change made inside the BOQ module — creations, edits, approvals,
-          item moves, rate changes.
+          Every change made inside the BOQ module — creations, edits, approvals, item moves, rate
+          changes.
         </p>
       </div>
 
@@ -104,10 +104,10 @@ export function BoqActivityPage() {
           <button
             onClick={() =>
               setFilters({
-                user: "",
-                action: "",
-                date_from: "",
-                date_to: "",
+                user: '',
+                action: '',
+                date_from: '',
+                date_to: '',
               })
             }
             className="text-[12px] text-[#7A2E1A] font-semibold"
@@ -140,10 +140,7 @@ export function BoqActivityPage() {
 
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-10 text-center text-[#6B7B7C]"
-                >
+                <td colSpan={5} className="px-4 py-10 text-center text-[#6B7B7C]">
                   No activity yet.
                 </td>
               </tr>
@@ -152,12 +149,12 @@ export function BoqActivityPage() {
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-[#EAEEF0]">
                 <td className="px-4 py-3 text-[12.5px]">
-                  {new Date(r.at).toLocaleString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
+                  {new Date(r.at).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </td>
 

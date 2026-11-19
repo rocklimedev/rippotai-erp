@@ -139,12 +139,14 @@ try {
     html.includes("₹251"),
     "Vendor totals must be recalculated from restored quotes",
   );
+  assert.match(html, /<tr class="vc-grand"><td[^>]*>Total amount<\/td><td[^>]*>₹251<\/td>/);
+  assert.doesNotMatch(html, /GST/);
   assert.ok(
     !html.includes("Original BOQ") && !html.includes("Changed source"),
     "Workspace must not show a BOQ reference",
   );
   assert.equal((html.match(/aria-label="Item description 1"/g) || []).length, 1, "Item description is entered once for all vendors");
-  assert.match(html, /<select[^>]*aria-label="Unit 1"[^>]*>[\s\S]*?<option value="sqm" selected="">sqm<\/option><option value="kg">kg<\/option><\/select>/, "The unit dropdown preserves a saved legacy unit and offers catalogue units");
+  assert.match(html, /<select[^>]*aria-label="Unit 1"[^>]*>[\s\S]*?<option value="sqm" selected="">sqm<\/option><option value="kg">kg<\/option><option value="Lump">Lump sum<\/option><\/select>/, "The unit dropdown offers catalogue units and lump sums and preserves older saved units");
   const list = render(
     "/procurement/vendors/rate-comparison",
     List,
@@ -175,6 +177,7 @@ try {
                 id: "line-2",
                 description: "Independent scope",
                 quantity: null,
+                unit: "Lump",
                 rate: 1200,
               },
             ],
@@ -208,8 +211,12 @@ try {
   const fourSnapshot = structuredClone(newSnapshot); fourSnapshot.trades[0].vendor_column_count = 4;
   store.dispatch(baseApi.util.upsertQueryEntries([{ endpointName: 'getRateComparison', arg: 'sheet-1', value: { ...sheet, snapshot: fourSnapshot } }]));
   const four = render('/procurement/vendors/rate-comparison/sheet-1/edit?trade=trade-2', Workspace, '/procurement/vendors/rate-comparison/:id/edit');
-  assert.ok(four.includes('Select vendor 4') && four.includes('vc-item-col') && four.includes('Number of vendors'), 'Trade comparison supports four grouped vendor columns');
+  assert.ok(four.includes('Vendor 4') && four.includes('vc-item-col') && four.includes('Number of vendors'), 'Trade comparison supports four grouped vendor columns');
+  assert.match(four, /\+ Add vendor[\s\S]*Select vendor to add[\s\S]*\+ Add item[\s\S]*trade-comparison-table/);
+  assert.doesNotMatch(four.match(/<table[\s\S]*?<\/table>/)[0], /\+ Add vendor|Enter custom vendor/);
   assert.equal((four.match(/aria-label="Item description 1"/g) || []).length, 1);
+  assert.match(four, /<input[^>]*aria-label="Quantity 1"[^>]*disabled=""/);
+  assert.match(four, /<option value="Lump" selected="">Lump sum<\/option>/);
   const fresh = render(
     "/procurement/vendors/rate-comparison/new?tab=comparison",
     Workspace,

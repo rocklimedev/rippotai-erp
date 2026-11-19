@@ -1,7 +1,7 @@
-import { Fragment, useEffect, useRef, useState } from "react";
-import "./vendorComparisonWorkspace.css";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { Fragment, useEffect, useRef, useState } from 'react';
+import './vendorComparisonWorkspace.css';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   Page,
   PageHeader,
@@ -13,12 +13,12 @@ import {
   SelectInput,
   TextArea,
   Pill,
-} from "@/components/inos";
-import vendorComparisonTemplate from "@/assets/xlsx-templates/vendor-comparison-v2.xlsx?url";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
-import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
-import { useGetUnitsQuery } from "../../api/meta/unit.api";
-import { UNITS } from "../../hooks/constants";
+} from '@/components/inos';
+import vendorComparisonTemplate from '@/assets/xlsx-templates/vendor-comparison-v2.xlsx?url';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
+import { useGetVendorsQuery } from '../../api/vendors/vendor.api';
+import { useGetUnitsQuery } from '../../api/meta/unit.api';
+import { UNITS } from '../../hooks/constants';
 import {
   useGetRateComparisonQuery,
   useCreateRateComparisonMutation,
@@ -26,15 +26,15 @@ import {
   useGetVendorTradesQuery,
   useCreateVendorTradeMutation,
   useLazyGetRateComparisonsQuery,
-} from "../../api/procuerment/vendor-rate-comparison.api";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import DeleteRateComparison from "@/components/materials/DeleteRateComparison";
-import { usePermission } from "@/hooks/use-permission";
-import { useCreateQuotationFromComparisonMutation } from "@/api/procuerment/procurement-quotation.api";
-import { appConfirm, appPrompt } from "@/lib/app-dialog";
-import { downloadXlsx } from "@/lib/xlsxTemplate";
-import { buildVendorComparisonWorkbook } from "./vendorComparisonExcel";
+} from '../../api/procuerment/vendor-rate-comparison.api';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import DeleteRateComparison from '@/components/materials/DeleteRateComparison';
+import { usePermission } from '@/hooks/use-permission';
+import { useCreateQuotationFromComparisonMutation } from '@/api/procuerment/procurement-quotation.api';
+import { appConfirm, appPrompt } from '@/lib/app-dialog';
+import { downloadXlsx } from '@/lib/xlsxTemplate';
+import { buildVendorComparisonWorkbook } from './vendorComparisonExcel';
 import {
   comparisonTrades,
   withComparisonItems,
@@ -43,22 +43,22 @@ import {
   completeQuote,
   quoteAmount,
   quoteTotal,
-} from "./vendorComparisonData";
+} from './vendorComparisonData';
 
-const basePath = "/procurement/vendors/rate-comparison";
+const basePath = '/procurement/vendors/rate-comparison';
+const LUMP_SUM_UNIT = 'Lump';
 const uid = () => crypto.randomUUID();
-const GST_RATE = 0.18;
-const cx = (...classes) => classes.filter(Boolean).join(" ");
-const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+const cx = (...classes) => classes.filter(Boolean).join(' ');
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 const money = (n) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(n);
 const num = (n) =>
-  new Intl.NumberFormat("en-IN", {
+  new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(n);
@@ -72,9 +72,7 @@ const compactMoney = (n) => {
 };
 const list = (response) => {
   const data = response?.data?.data ?? response?.data ?? response;
-  return Array.isArray(data)
-    ? data
-    : data?.items || data?.projects || data?.vendors || [];
+  return Array.isArray(data) ? data : data?.items || data?.projects || data?.vendors || [];
 };
 
 export default function VendorRateComparison() {
@@ -89,8 +87,7 @@ export default function VendorRateComparison() {
       <Page>
         <PageHeader title="Vendor Comparison" />
         <p role="alert">
-          Could not load comparison.{" "}
-          <button onClick={query.refetch}>Retry</button>
+          Could not load comparison. <button onClick={query.refetch}>Retry</button>
         </p>
       </Page>
     );
@@ -107,19 +104,19 @@ export default function VendorRateComparison() {
         <PageHeader title="Vendor Comparison" />
         {catalogueQuery.isError ? (
           <p role="alert">
-            Could not load vendor trades.{" "}
+            Could not load vendor trades.{' '}
             <Button variant="secondary" onClick={catalogueQuery.refetch}>
               Retry
             </Button>
           </p>
         ) : (
-          "Loading vendor trades…"
+          'Loading vendor trades…'
         )}
       </Page>
     );
   return (
     <Workspace
-      key={id || "new"}
+      key={id || 'new'}
       initialSheet={id ? query.currentData : null}
       catalogue={list(catalogueQuery.data)}
       catalogueError={catalogueQuery.isError}
@@ -128,20 +125,13 @@ export default function VendorRateComparison() {
   );
 }
 
-function Workspace({
-  initialSheet,
-  catalogue,
-  catalogueError,
-  retryCatalogue,
-}) {
+function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [title, setTitle] = useState(initialSheet?.title || "");
-  const [projectId, setProjectId] = useState(initialSheet?.project_id || "");
-  const [checkedProjectId, setCheckedProjectId] = useState(
-    initialSheet?.project_id || "",
-  );
-  const [projectLookupError, setProjectLookupError] = useState("");
+  const [title, setTitle] = useState(initialSheet?.title || '');
+  const [projectId, setProjectId] = useState(initialSheet?.project_id || '');
+  const [checkedProjectId, setCheckedProjectId] = useState(initialSheet?.project_id || '');
+  const [projectLookupError, setProjectLookupError] = useState('');
   const [checkingProject, setCheckingProject] = useState(false);
   const projectLookupSequence = useRef(0);
   useEffect(
@@ -154,14 +144,12 @@ function Workspace({
   const selectProject = async (nextId) => {
     const sequence = ++projectLookupSequence.current;
     setProjectId(nextId);
-    setCheckedProjectId("");
-    setProjectLookupError("");
+    setCheckedProjectId('');
+    setProjectLookupError('');
     setCheckingProject(Boolean(nextId));
     if (!nextId) return;
     try {
-      const comparisons = list(
-        await fetchProjectComparisons(nextId, false).unwrap(),
-      );
+      const comparisons = list(await fetchProjectComparisons(nextId, false).unwrap());
       if (sequence !== projectLookupSequence.current) return;
       if (comparisons.length) {
         navigate(`${basePath}/${comparisons[0].id}/edit`, { replace: true });
@@ -170,38 +158,33 @@ function Workspace({
       setCheckedProjectId(nextId);
     } catch {
       if (sequence === projectLookupSequence.current)
-        setProjectLookupError(
-          "Could not check this project for an existing vendor comparison.",
-        );
+        setProjectLookupError('Could not check this project for an existing vendor comparison.');
     } finally {
       if (sequence === projectLookupSequence.current) setCheckingProject(false);
     }
   };
-  const [notes, setNotes] = useState(initialSheet?.notes || "");
+  const [notes, setNotes] = useState(initialSheet?.notes || '');
   const [trades, setTrades] = useState(() =>
-    initialSheet
-      ? comparisonTrades(initialSheet.snapshot)
-      : createDefaultTrades(catalogue),
+    initialSheet ? comparisonTrades(initialSheet.snapshot) : createDefaultTrades(catalogue),
   );
   const [activeId, setActiveId] = useState(() =>
-    trades.some((t) => t.id === searchParams.get("trade"))
-      ? searchParams.get("trade")
-      : trades[0]?.id || "",
+    trades.some((t) => t.id === searchParams.get('trade'))
+      ? searchParams.get('trade')
+      : trades[0]?.id || '',
   );
-  const requestedTab = searchParams.get("tab");
+  const requestedTab = searchParams.get('tab');
   const [workspaceTab, setWorkspaceTab] = useState(() => {
-    if (requestedTab === "history") return "history";
-    if (requestedTab === "comparison" || searchParams.has("trade"))
-      return "comparison";
-    return "overview";
+    if (requestedTab === 'history') return 'history';
+    if (requestedTab === 'comparison' || searchParams.has('trade')) return 'comparison';
+    return 'overview';
   });
-  const [tradeSearch, setTradeSearch] = useState("");
-  const [tradeFilter, setTradeFilter] = useState("all");
+  const [tradeSearch, setTradeSearch] = useState('');
+  const [tradeFilter, setTradeFilter] = useState('all');
   const tradeStrip = useRef(null);
   const [editingSlot, setEditingSlot] = useState(null);
   const openTrade = (id) => {
     setActiveId(id);
-    setWorkspaceTab("comparison");
+    setWorkspaceTab('comparison');
   };
   useEffect(() => {
     const strip = tradeStrip.current;
@@ -209,63 +192,55 @@ function Workspace({
     if (!selected) return;
     const viewport = strip.getBoundingClientRect();
     const trade = selected.getBoundingClientRect();
-    if (trade.left < viewport.left)
-      strip.scrollBy({ left: trade.left - viewport.left });
-    else if (trade.right > viewport.right)
-      strip.scrollBy({ left: trade.right - viewport.right });
+    if (trade.left < viewport.left) strip.scrollBy({ left: trade.left - viewport.left });
+    else if (trade.right > viewport.right) strip.scrollBy({ left: trade.right - viewport.right });
   }, [activeId, workspaceTab, tradeFilter, tradeSearch]);
   const [revision, setRevision] = useState(initialSheet?.revision || 1);
-  const [saved, setSaved] = useState(() =>
-    JSON.stringify({ title, projectId, notes, trades }),
-  );
+  const [saved, setSaved] = useState(() => JSON.stringify({ title, projectId, notes, trades }));
   const [exporting, setExporting] = useState(false);
   const projects = useGetProjectsQuery();
-  const vendors = useGetVendorsQuery({ status: "ACTIVE" });
+  const vendors = useGetVendorsQuery({ status: 'ACTIVE' });
   const { data: units } = useGetUnitsQuery();
-  const unitOptions = units?.length ? units.map(({ code }) => code) : UNITS;
+  const unitOptions = new Set([
+    ...(units?.length ? units.map(({ code }) => code) : UNITS),
+    LUMP_SUM_UNIT,
+  ]);
   const [create, creating] = useCreateRateComparisonMutation();
   const [update, updating] = useUpdateRateComparisonMutation();
   const saving = creating.isLoading || updating.isLoading;
-  const canCreateQuotation = usePermission("procurement-quotations", "create");
-  const canCreateTrade = usePermission("vendor-rate-comparisons", "create");
+  const canCreateQuotation = usePermission('procurement-quotations', 'create');
+  const canCreateTrade = usePermission('vendor-rate-comparisons', 'create');
   const [createTrade, creatingTrade] = useCreateVendorTradeMutation();
-  const [createQuotation, quotationStatus] =
-    useCreateQuotationFromComparisonMutation();
+  const [createQuotation, quotationStatus] = useCreateQuotationFromComparisonMutation();
   const state = JSON.stringify({ title, projectId, notes, trades });
   const dirty = state !== saved;
   useEffect(() => {
     const warn = (event) => {
       if (dirty) {
         event.preventDefault();
-        event.returnValue = "";
+        event.returnValue = '';
       }
     };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
   const active = trades.find((trade) => trade.id === activeId);
   const editTrade = (id, patch) =>
-    setTrades((old) =>
-      old.map((trade) => (trade.id === id ? { ...trade, ...patch } : trade)),
-    );
+    setTrades((old) => old.map((trade) => (trade.id === id ? { ...trade, ...patch } : trade)));
   const editVendor = (id, patch) =>
     editTrade(active.id, {
-      vendors: active.vendors.map((v) =>
-        v.id === id ? { ...v, ...patch } : v,
-      ),
+      vendors: active.vendors.map((v) => (v.id === id ? { ...v, ...patch } : v)),
     });
   const editSharedItem = (id, patch) =>
     editTrade(
       active.id,
       withComparisonItems(
         active,
-        active.items.map((item) =>
-          item.id === id ? { ...item, ...patch } : item,
-        ),
+        active.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
       ),
     );
   const addSharedItem = () => {
-    const item = { id: uid(), description: "", quantity: null, unit: "" };
+    const item = { id: uid(), description: '', quantity: null, unit: '' };
     editTrade(active.id, withComparisonItems(active, [...active.items, item]));
   };
   const removeSharedItem = (id) =>
@@ -278,9 +253,7 @@ function Workspace({
     );
   const editRate = (vendor, id, rate) =>
     editVendor(vendor.id, {
-      items: vendor.items.map((item) =>
-        item.id === id ? { ...item, rate } : item,
-      ),
+      items: vendor.items.map((item) => (item.id === id ? { ...item, rate } : item)),
     });
   const addVendor = (value, slot) => {
     const source = list(vendors.data).find((v) => String(v.id) === value);
@@ -293,56 +266,44 @@ function Workspace({
           id,
           custom: !source,
           slot: slot ?? active.vendors.length,
-          name:
-            source?.name ||
-            source?.company_name ||
-            source?.business_name ||
-            "New vendor",
+          name: source?.name || source?.company_name || source?.business_name || 'New vendor',
           items: active.items.map((item) => ({ ...item, rate: null })),
         },
       ],
     });
   };
   const validate = () => {
-    if (
-      !initialSheet &&
-      (!projectId || checkedProjectId !== projectId || checkingProject)
-    )
-      return "Select a project and wait for its existing comparison check.";
-    if (!title.trim() || !projectId)
-      return "Enter a sheet name and select a project.";
+    if (!initialSheet && (!projectId || checkedProjectId !== projectId || checkingProject))
+      return 'Select a project and wait for its existing comparison check.';
+    if (!title.trim() || !projectId) return 'Enter a sheet name and select a project.';
     if (!trades.length || trades.some((t) => !t.name.trim()))
-      return "Enter a name for every trade.";
+      return 'Enter a name for every trade.';
     for (const trade of trades) {
       if (
         trade.items.some(
           (item) =>
             !item.description.trim() ||
-            (item.quantity !== null &&
-              (!Number.isFinite(item.quantity) || item.quantity < 0)),
+            (item.quantity !== null && (!Number.isFinite(item.quantity) || item.quantity < 0)),
         )
       )
-        return "Check shared item descriptions and quantities.";
+        return 'Check shared item descriptions and quantities.';
       for (const vendor of trade.vendors) {
-        if (!vendor.name.trim()) return "Enter a name for every vendor.";
+        if (!vendor.name.trim()) return 'Enter a name for every vendor.';
         if (
           vendor.items.some(
             (i) =>
               !i.description.trim() ||
-              (i.quantity !== null &&
-                (!Number.isFinite(i.quantity) || i.quantity < 0)) ||
+              (i.quantity !== null && (!Number.isFinite(i.quantity) || i.quantity < 0)) ||
               (i.rate !== null && !Number.isFinite(i.rate)),
           )
         )
-          return "Check quote descriptions, quantities and rates.";
+          return 'Check quote descriptions, quantities and rates.';
       }
       if (
         trade.finalised_vendor_id &&
-        !completeQuote(
-          trade.vendors.find((v) => v.id === trade.finalised_vendor_id),
-        )
+        !completeQuote(trade.vendors.find((v) => v.id === trade.finalised_vendor_id))
       )
-        return "Complete the selected vendor quote before finalising.";
+        return 'Complete the selected vendor quote before finalising.';
     }
     return null;
   };
@@ -357,33 +318,22 @@ function Workspace({
     };
     try {
       const result = await (
-        initialSheet
-          ? update({ id: initialSheet.id, revision, ...body })
-          : create(body)
+        initialSheet ? update({ id: initialSheet.id, revision, ...body }) : create(body)
       ).unwrap();
       setRevision(result.revision);
       setSaved(state);
-      toast.success("Vendor comparison saved");
-      if (!initialSheet)
-        navigate(`${basePath}/${result.id}/edit`, { replace: true });
+      toast.success('Vendor comparison saved');
+      if (!initialSheet) navigate(`${basePath}/${result.id}/edit`, { replace: true });
       return result;
     } catch (error) {
-      if (
-        !initialSheet &&
-        error?.status === 409 &&
-        error?.data?.comparison_id
-      ) {
-        toast.info(
-          "This project already has a vendor comparison. Opening its saved data.",
-        );
+      if (!initialSheet && error?.status === 409 && error?.data?.comparison_id) {
+        toast.info('This project already has a vendor comparison. Opening its saved data.');
         navigate(`${basePath}/${error.data.comparison_id}/edit`, {
           replace: true,
         });
         return;
       }
-      toast.error(
-        [error?.data?.message || "Could not save comparison"].flat().join(". "),
-      );
+      toast.error([error?.data?.message || 'Could not save comparison'].flat().join('. '));
     }
   };
   const makeQuotation = async (vendorId) => {
@@ -396,7 +346,7 @@ function Workspace({
       }).unwrap();
       navigate(`/procurement/quotations/${quotation.id}`);
     } catch (error) {
-      toast.error(error?.data?.message || "Could not create quotation");
+      toast.error(error?.data?.message || 'Could not create quotation');
     }
   };
   const exportExcel = async () => {
@@ -404,9 +354,7 @@ function Workspace({
     if (error) return toast.error(error);
     setExporting(true);
     try {
-      const project =
-        list(projects.data).find((p) => p.id === projectId) ||
-        initialSheet?.project;
+      const project = list(projects.data).find((p) => p.id === projectId) || initialSheet?.project;
       downloadXlsx(
         await buildVendorComparisonWorkbook(vendorComparisonTemplate, {
           title,
@@ -414,24 +362,20 @@ function Workspace({
           notes,
           trades,
         }),
-        `${title.replace(/[^a-z0-9_-]/gi, "_")}.xlsx`,
+        `${title.replace(/[^a-z0-9_-]/gi, '_')}.xlsx`,
       );
     } catch {
-      toast.error("Could not export comparison");
+      toast.error('Could not export comparison');
     } finally {
       setExporting(false);
     }
   };
   const total = trades.reduce(
     (sum, t) =>
-      sum +
-      quoteTotal(
-        t.vendors.find((v) => v.id === t.finalised_vendor_id) || { items: [] },
-      ),
+      sum + quoteTotal(t.vendors.find((v) => v.id === t.finalised_vendor_id) || { items: [] }),
     0,
   );
-  const completeTotals =
-    active?.vendors.filter(completeQuote).map(quoteTotal) || [];
+  const completeTotals = active?.vendors.filter(completeQuote).map(quoteTotal) || [];
   const lowest = completeTotals.length ? Math.min(...completeTotals) : null;
   const vendorColumnCount = Math.min(
     4,
@@ -441,28 +385,20 @@ function Workspace({
     ),
   );
   const resizeVendorColumns = async (count) => {
-    const removed = active.vendors.filter(
-      (v, index) => (v.slot ?? index) >= count,
-    );
-    if (
-      removed.length &&
-      !(await appConfirm("Remove the extra vendor columns and their quotes?"))
-    )
+    const removed = active.vendors.filter((v, index) => (v.slot ?? index) >= count);
+    if (removed.length && !(await appConfirm('Remove the extra vendor columns and their quotes?')))
       return;
     editTrade(active.id, {
       vendor_column_count: count,
       vendors: active.vendors.filter((v) => !removed.includes(v)),
-      finalised_vendor_id: removed.some(
-        (v) => v.id === active.finalised_vendor_id,
-      )
-        ? ""
+      finalised_vendor_id: removed.some((v) => v.id === active.finalised_vendor_id)
+        ? ''
         : active.finalised_vendor_id,
     });
   };
   const directory = list(vendors.data);
   const availableTrades = catalogue.filter(
-    (record) =>
-      !trades.some((t) => tradeNameKey(t.name) === tradeNameKey(record.name)),
+    (record) => !trades.some((t) => tradeNameKey(t.name) === tradeNameKey(record.name)),
   );
   const addTrade = (id) => {
     const record = availableTrades.find((t) => t.id === id);
@@ -472,14 +408,14 @@ function Workspace({
       name: record.name,
       items: [],
       vendors: [],
-      finalised_vendor_id: "",
+      finalised_vendor_id: '',
     };
     setTrades([...trades, trade]);
     openTrade(trade.id);
   };
   const createNewTrade = async () => {
     const name = await appPrompt(
-      "New vendor trade name. This will be added to the shared catalogue and this comparison sheet.",
+      'New vendor trade name. This will be added to the shared catalogue and this comparison sheet.',
     );
     if (name === null || name === false || !String(name).trim()) return;
     try {
@@ -491,42 +427,32 @@ function Workspace({
           name: record.name,
           items: [],
           vendors: [],
-          finalised_vendor_id: "",
+          finalised_vendor_id: '',
         },
       ]);
       openTrade(record.id);
-      toast.success("Vendor trade created and added to this sheet");
+      toast.success('Vendor trade created and added to this sheet');
     } catch (error) {
-      toast.error(
-        [error?.data?.message || "Could not create trade"].flat().join(". "),
-      );
+      toast.error([error?.data?.message || 'Could not create trade'].flat().join('. '));
     }
   };
   const selectVendor = (current, value, slot) => {
     const source = directory.find((v) => String(v.id) === value);
-    if (
-      !source ||
-      active.vendors.some(
-        (v) => v.id === String(source.id) && v.id !== current?.id,
-      )
-    )
+    if (!source || active.vendors.some((v) => v.id === String(source.id) && v.id !== current?.id))
       return;
     const next = {
       slot,
       id: String(source.id),
       name: source.name || source.company_name || source.business_name,
-      notes: current?.notes || "",
-      items:
-        current?.items || active.items.map((item) => ({ ...item, rate: null })),
+      notes: current?.notes || '',
+      items: current?.items || active.items.map((item) => ({ ...item, rate: null })),
     };
     editTrade(active.id, {
       vendors: current
         ? active.vendors.map((v) => (v.id === current.id ? next : v))
         : [...active.vendors, next],
       finalised_vendor_id:
-        current?.id === active.finalised_vendor_id
-          ? ""
-          : active.finalised_vendor_id,
+        current?.id === active.finalised_vendor_id ? '' : active.finalised_vendor_id,
     });
   };
   const removeTrade = async (trade) => {
@@ -537,8 +463,7 @@ function Workspace({
     )
       return;
     setTrades((current) => current.filter((t) => t.id !== trade.id));
-    if (activeId === trade.id)
-      setActiveId(trades.find((t) => t.id !== trade.id)?.id || "");
+    if (activeId === trade.id) setActiveId(trades.find((t) => t.id !== trade.id)?.id || '');
   };
   const tradeActions = (
     <>
@@ -563,7 +488,7 @@ function Workspace({
           disabled={creatingTrade.isLoading || catalogueError}
           onClick={createNewTrade}
         >
-          {creatingTrade.isLoading ? "Creating…" : "+ Create trade"}
+          {creatingTrade.isLoading ? 'Creating…' : '+ Create trade'}
         </Button>
       )}
     </>
@@ -577,41 +502,13 @@ function Workspace({
     (trade) => !trade.finalised_vendor_id && trade.vendors.length,
   ).length;
   const notStartedCount = pendingCount - inProgressCount;
-  const vendorCount = new Set(
-    trades.flatMap((trade) => trade.vendors.map((vendor) => vendor.id)),
-  ).size;
-  const tradesWithVendors = trades.filter((trade) => trade.vendors.length);
-  const vendorsPerTrade = tradesWithVendors.length
-    ? Math.round(
-        (tradesWithVendors.reduce(
-          (sum, trade) => sum + trade.vendors.length,
-          0,
-        ) /
-          tradesWithVendors.length) *
-          10,
-      ) / 10
-    : 0;
-  const savingsRows = finalisedTrades.flatMap((trade) => {
-    const picked = trade.vendors.find(
-      (vendor) => vendor.id === trade.finalised_vendor_id,
-    );
-    const complete = trade.vendors.filter(completeQuote);
-    if (!completeQuote(picked) || !complete.length) return [];
-    const highest = Math.max(...complete.map(quoteTotal));
-    return [{ saving: highest - quoteTotal(picked), highest }];
-  });
-  const savings = savingsRows.reduce((sum, row) => sum + row.saving, 0);
-  const highestTotal = savingsRows.reduce((sum, row) => sum + row.highest, 0);
-  const savingsPct = highestTotal > 0 ? (savings / highestTotal) * 100 : null;
   const quotationVendors = [
     ...new Map(
       finalisedTrades.flatMap((trade) =>
         trade.vendors
           .filter(
             (vendor) =>
-              vendor.id === trade.finalised_vendor_id &&
-              !vendor.custom &&
-              completeQuote(vendor),
+              vendor.id === trade.finalised_vendor_id && !vendor.custom && completeQuote(vendor),
           )
           .map((vendor) => [vendor.id, vendor]),
       ),
@@ -623,45 +520,36 @@ function Workspace({
   const matchingTrades = trades.filter(
     (trade) =>
       trade.name.toLowerCase().includes(tradeSearch.trim().toLowerCase()) &&
-      (tradeFilter === "all" ||
-        Boolean(trade.finalised_vendor_id) === (tradeFilter === "finalised")),
+      (tradeFilter === 'all' ||
+        Boolean(trade.finalised_vendor_id) === (tradeFilter === 'finalised')),
   );
   const vendorAt = (slot) =>
     active?.vendors.find((vendor, index) => (vendor.slot ?? index) === slot);
   const slots = Array.from({ length: vendorColumnCount }, (_, slot) => slot);
-  const hasAddColumn = vendorColumnCount < 4;
-  const totalColumns = 4 + vendorColumnCount * 2 + (hasAddColumn ? 1 : 0) + 1;
+  const nextVendorSlot = [0, 1, 2, 3].find((slot) => !vendorAt(slot));
+  const totalColumns = 5 + vendorColumnCount * 2;
   // Explicit column widths (see vendorComparisonWorkspace.css); the table's
   // min-width is their sum so columns keep their size and the wrapper scrolls.
-  const tableMinWidth =
-    40 +
-    220 +
-    72 +
-    64 +
-    vendorColumnCount * 212 +
-    (hasAddColumn ? 128 : 0) +
-    40;
+  const tableMinWidth = 40 + 220 + 72 + 100 + vendorColumnCount * 212 + 40;
   const saveState = dirty
-    ? "Unsaved changes. Save to keep them."
+    ? 'Unsaved changes. Save to keep them.'
     : initialSheet
-      ? "All changes saved"
-      : "Not saved yet";
+      ? 'All changes saved'
+      : 'Not saved yet';
   const removeVendor = async (vendor) => {
-    if (!(await appConfirm("Remove this vendor and its rates?"))) return;
+    if (!(await appConfirm('Remove this vendor and its rates?'))) return;
     setEditingSlot(null);
     editTrade(active.id, {
       vendors: active.vendors.filter((v) => v.id !== vendor.id),
       finalised_vendor_id:
-        active.finalised_vendor_id === vendor.id
-          ? ""
-          : active.finalised_vendor_id,
+        active.finalised_vendor_id === vendor.id ? '' : active.finalised_vendor_id,
     });
   };
 
   return (
     <Page className="vendor-comparison-workspace">
       <PageHeader
-        title={title || "Vendor Comparison Workspace"}
+        title={title || 'Vendor Comparison Workspace'}
         info={
           <span className="vc-meta">
             {projectName && (
@@ -672,12 +560,8 @@ function Workspace({
             <Pill tone="mute" dot={false}>
               v{revision}
             </Pill>
-            <Pill tone={dirty ? "warn" : initialSheet ? "ok" : "info"}>
-              {dirty
-                ? "Unsaved changes"
-                : initialSheet
-                  ? "Saved"
-                  : "New comparison"}
+            <Pill tone={dirty ? 'warn' : initialSheet ? 'ok' : 'info'}>
+              {dirty ? 'Unsaved changes' : initialSheet ? 'Saved' : 'New comparison'}
             </Pill>
           </span>
         }
@@ -686,8 +570,7 @@ function Workspace({
             <Button
               variant="ghost"
               onClick={async () => {
-                if (!dirty || (await appConfirm("Discard unsaved changes?")))
-                  navigate(basePath);
+                if (!dirty || (await appConfirm('Discard unsaved changes?'))) navigate(basePath);
               }}
             >
               Back
@@ -695,13 +578,11 @@ function Workspace({
             <Button
               variant="secondary"
               disabled={
-                exporting ||
-                checkingProject ||
-                (!initialSheet && checkedProjectId !== projectId)
+                exporting || checkingProject || (!initialSheet && checkedProjectId !== projectId)
               }
               onClick={exportExcel}
             >
-              {exporting ? "Exporting…" : "Export Excel"}
+              {exporting ? 'Exporting…' : 'Export Excel'}
             </Button>
             {canCreateQuotation && quotationVendors.length > 0 && (
               <details className="vc-menu">
@@ -724,25 +605,19 @@ function Workspace({
               disabled={
                 saving ||
                 checkingProject ||
-                (!initialSheet &&
-                  (!projectId || checkedProjectId !== projectId))
+                (!initialSheet && (!projectId || checkedProjectId !== projectId))
               }
               onClick={save}
             >
-              {saving ? "Saving…" : "Save comparison"}
+              {saving ? 'Saving…' : 'Save comparison'}
             </Button>
             {initialSheet && (
-              <DeleteRateComparison
-                sheet={initialSheet}
-                onDeleted={() => navigate(basePath)}
-              />
+              <DeleteRateComparison sheet={initialSheet} onDeleted={() => navigate(basePath)} />
             )}
           </>
         }
       />
-      {initialSheet && (
-        <RecordContext type="vendor-comparison" id={initialSheet.id} />
-      )}
+      {initialSheet && <RecordContext type="vendor-comparison" id={initialSheet.id} />}
       <div className="vc-summary">
         <Card className="vc-sheet-card">
           <div className="vc-sheet-fields">
@@ -750,11 +625,7 @@ function Workspace({
               label="Sheet name"
               required
               htmlFor="comparison-title"
-              hint={
-                initialSheet
-                  ? "Saved comparison names cannot be changed."
-                  : undefined
-              }
+              hint={initialSheet ? 'Saved comparison names cannot be changed.' : undefined}
             >
               <TextInput
                 id="comparison-title"
@@ -772,12 +643,9 @@ function Workspace({
                 onChange={(e) => selectProject(e.target.value)}
                 placeholder="Select project"
               >
-                {initialSheet?.project &&
-                  !list(projects.data).some((p) => p.id === projectId) && (
-                    <option value={projectId}>
-                      {initialSheet.project.name}
-                    </option>
-                  )}
+                {initialSheet?.project && !list(projects.data).some((p) => p.id === projectId) && (
+                  <option value={projectId}>{initialSheet.project.name}</option>
+                )}
                 {list(projects.data).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -793,7 +661,7 @@ function Workspace({
           )}
           {projectLookupError && (
             <p role="alert">
-              {projectLookupError}{" "}
+              {projectLookupError}{' '}
               <Button variant="ghost" onClick={() => selectProject(projectId)}>
                 Retry
               </Button>
@@ -801,7 +669,7 @@ function Workspace({
           )}
           {projects.isError && (
             <p role="alert">
-              Could not load projects.{" "}
+              Could not load projects.{' '}
               <Button variant="ghost" onClick={projects.refetch}>
                 Retry
               </Button>
@@ -822,38 +690,21 @@ function Workspace({
           <strong>{money(total)}</strong>
           <small>Across {finalisedTrades.length} trades</small>
         </Card>
-        <Card className="vc-stat">
-          <span>Savings vs highest</span>
-          <strong>{money(savings)}</strong>
-          <small>
-            {savingsPct === null
-              ? "On finalised trades"
-              : `${savingsPct.toFixed(1)}% lower than the highest quotes`}
-          </small>
-        </Card>
-        <Card className="vc-stat">
-          <span>Vendors compared</span>
-          <strong>{vendorCount}</strong>
-          <small>{vendorsPerTrade} per trade on average</small>
-        </Card>
       </div>
       <Tabs
         value={workspaceTab}
         onChange={setWorkspaceTab}
         options={[
-          { value: "overview", label: "Overview" },
-          { value: "comparison", label: "Vendor Comparison Sheet" },
-          { value: "history", label: "Version History" },
+          { value: 'overview', label: 'Overview' },
+          { value: 'comparison', label: 'Vendor Comparison Sheet' },
+          { value: 'history', label: 'Version History' },
         ]}
       />
-      {workspaceTab === "overview" && (
+      {workspaceTab === 'overview' && (
         <Card title="Comparison summary" flush>
           <div role="tabpanel" aria-label="Overview">
             <div className="inos-table-wrap">
-              <table
-                className="inos-table vc-overview-table"
-                aria-label="Finalised vendor summary"
-              >
+              <table className="inos-table vc-overview-table" aria-label="Finalised vendor summary">
                 <thead>
                   <tr>
                     <th scope="col">S.No</th>
@@ -871,9 +722,7 @@ function Workspace({
                     </tr>
                   )}
                   {trades.map((trade, index) => {
-                    const vendor = trade.vendors.find(
-                      ({ id }) => id === trade.finalised_vendor_id,
-                    );
+                    const vendor = trade.vendors.find(({ id }) => id === trade.finalised_vendor_id);
                     return (
                       <tr key={trade.id}>
                         <td>{index + 1}</td>
@@ -886,7 +735,7 @@ function Workspace({
                             {trade.name}
                           </button>
                         </td>
-                        <td>{vendor?.name || "Pending"}</td>
+                        <td>{vendor?.name || 'Pending'}</td>
                         <td className="text-right whitespace-nowrap">
                           {money(vendor ? quoteTotal(vendor) : 0)}
                         </td>
@@ -906,8 +755,7 @@ function Workspace({
             </div>
             <div className="vc-overview-notes">
               <p className="inos-hint">
-                {pendingCount} {pendingCount === 1 ? "trade" : "trades"} pending
-                selection
+                {pendingCount} {pendingCount === 1 ? 'trade' : 'trades'} pending selection
               </p>
               <Field label="Comparison notes" htmlFor="vc-overview-notes">
                 <TextArea
@@ -922,12 +770,8 @@ function Workspace({
           </div>
         </Card>
       )}
-      {workspaceTab === "comparison" && (
-        <div
-          className="vc-layout"
-          role="tabpanel"
-          aria-label="Vendor Comparison Sheet"
-        >
+      {workspaceTab === 'comparison' && (
+        <div className="vc-layout" role="tabpanel" aria-label="Vendor Comparison Sheet">
           <Card className="vc-trades">
             <div className="vc-trades-heading">
               <h2>
@@ -945,7 +789,7 @@ function Workspace({
             </div>
             {catalogueError && (
               <p role="alert">
-                Trade catalogue unavailable.{" "}
+                Trade catalogue unavailable.{' '}
                 <Button variant="ghost" onClick={retryCatalogue}>
                   Retry
                 </Button>
@@ -960,9 +804,9 @@ function Workspace({
             />
             <div className="vc-filters" aria-label="Filter trades" role="group">
               {[
-                ["all", `All ${trades.length}`],
-                ["pending", `Pending ${pendingCount}`],
-                ["finalised", `Finalised ${finalisedTrades.length}`],
+                ['all', `All ${trades.length}`],
+                ['pending', `Pending ${pendingCount}`],
+                ['finalised', `Finalised ${finalisedTrades.length}`],
               ].map(([filter, label]) => (
                 <button
                   key={filter}
@@ -975,24 +819,22 @@ function Workspace({
               ))}
             </div>
             <div ref={tradeStrip} className="vc-trade-list" aria-label="Trades">
-              {!matchingTrades.length && (
-                <p className="inos-hint">No matching trades.</p>
-              )}
+              {!matchingTrades.length && <p className="inos-hint">No matching trades.</p>}
               {matchingTrades.map((trade) => {
                 const picked = trade.vendors.find(
                   (vendor) => vendor.id === trade.finalised_vendor_id,
                 );
                 const status = picked
-                  ? "Finalised"
+                  ? 'Finalised'
                   : trade.vendors.length
-                    ? "Pending"
-                    : "No vendors yet";
+                    ? 'Pending'
+                    : 'No vendors yet';
                 return (
                   <button
                     key={trade.id}
                     type="button"
                     className="vc-trade"
-                    aria-current={trade.id === activeId ? "true" : undefined}
+                    aria-current={trade.id === activeId ? 'true' : undefined}
                     onClick={() => openTrade(trade.id)}
                   >
                     <span
@@ -1003,16 +845,16 @@ function Workspace({
                       title={status}
                     />
                     <span className="vc-trade-name">
-                      <strong>{trade.name || "Unnamed trade"}</strong>
+                      <strong>{trade.name || 'Unnamed trade'}</strong>
                       <small>
                         {picked?.name ||
                           (trade.vendors.length
-                            ? `${plural(trade.vendors.length, "vendor")} · ${plural(trade.items.length, "item")}`
+                            ? `${plural(trade.vendors.length, 'vendor')} · ${plural(trade.items.length, 'item')}`
                             : status)}
                       </small>
                     </span>
                     <span className="vc-trade-amount">
-                      {picked ? compactMoney(quoteTotal(picked)) : "—"}
+                      {picked ? compactMoney(quoteTotal(picked)) : '—'}
                     </span>
                   </button>
                 );
@@ -1023,8 +865,7 @@ function Workspace({
             {!active && (
               <Card title="No trades in this sheet">
                 <p className="inos-hint">
-                  Add an existing trade or create a new trade to start comparing
-                  vendors.
+                  Add an existing trade or create a new trade to start comparing vendors.
                 </p>
               </Card>
             )}
@@ -1032,23 +873,56 @@ function Workspace({
               <Card flush className="vc-sheet">
                 <div className="vc-toolbar">
                   <h2>{active.name}</h2>
-                  <Pill tone={active.finalised_vendor_id ? "ok" : "warn"}>
-                    {active.finalised_vendor_id
-                      ? "Finalised"
-                      : "Pending decision"}
+                  <Pill tone={active.finalised_vendor_id ? 'ok' : 'warn'}>
+                    {active.finalised_vendor_id ? 'Finalised' : 'Pending decision'}
                   </Pill>
                   <span className="vc-count">
-                    {plural(active.items.length, "item")} ·{" "}
-                    {plural(active.vendors.length, "vendor")}
+                    {plural(active.items.length, 'item')} ·{' '}
+                    {plural(active.vendors.length, 'vendor')}
                   </span>
                   <div className="vc-toolbar-actions">
-                    <Button
-                      variant="secondary"
-                      disabled={!hasAddColumn}
-                      onClick={() => resizeVendorColumns(vendorColumnCount + 1)}
-                    >
-                      + Add vendor
-                    </Button>
+                    {nextVendorSlot === undefined ? (
+                      <Button variant="secondary" disabled>
+                        + Add vendor
+                      </Button>
+                    ) : (
+                      <details key={active.id} className="vc-menu">
+                        <summary>+ Add vendor</summary>
+                        <div className="vc-menu-content">
+                          <SelectInput
+                            aria-label="Select vendor to add"
+                            value=""
+                            placeholder="Select vendor"
+                            onChange={(event) => {
+                              if (!event.target.value) return;
+                              addVendor(event.target.value, nextVendorSlot);
+                              event.currentTarget.closest('details').open = false;
+                            }}
+                          >
+                            {directory
+                              .filter(
+                                (vendor) =>
+                                  !active.vendors.some(({ id }) => id === String(vendor.id)),
+                              )
+                              .map((vendor) => (
+                                <option key={vendor.id} value={vendor.id}>
+                                  {vendor.name || vendor.company_name || vendor.business_name}
+                                </option>
+                              ))}
+                          </SelectInput>
+                          <Button
+                            variant="ghost"
+                            onClick={(event) => {
+                              addVendor('', nextVendorSlot);
+                              setEditingSlot(nextVendorSlot);
+                              event.currentTarget.closest('details').open = false;
+                            }}
+                          >
+                            Enter custom vendor
+                          </Button>
+                        </div>
+                      </details>
+                    )}
                     <Button variant="secondary" onClick={addSharedItem}>
                       + Add item
                     </Button>
@@ -1059,9 +933,7 @@ function Workspace({
                           <SelectInput
                             aria-label="Number of vendors"
                             value={vendorColumnCount}
-                            onChange={(event) =>
-                              resizeVendorColumns(Number(event.target.value))
-                            }
+                            onChange={(event) => resizeVendorColumns(Number(event.target.value))}
                           >
                             {[1, 2, 3, 4].map((count) => (
                               <option key={count} value={count}>
@@ -1075,40 +947,31 @@ function Workspace({
                   </div>
                 </div>
                 <p className="vc-hint">
-                  Lowest rate in each row is marked green · Leave quantity blank
-                  for lump sums · Totals update automatically
+                  Lowest rate in each row is marked green · Leave quantity blank for lump sums or
+                  select Lump sum as the unit · Totals update automatically
                 </p>
                 {vendors.isError && (
                   <p role="alert" className="vc-hint">
-                    Vendor directory unavailable.{" "}
+                    Vendor directory unavailable.{' '}
                     <Button variant="ghost" onClick={vendors.refetch}>
                       Retry
                     </Button>
                   </p>
                 )}
-                <div
-                  className="inos-table-wrap vc-table-wrap"
-                  data-testid="trade-comparison-table"
-                >
-                  <table
-                    className="vc-table"
-                    style={{ minWidth: tableMinWidth }}
-                  >
+                <div className="inos-table-wrap vc-table-wrap" data-testid="trade-comparison-table">
+                  <table className="vc-table" style={{ minWidth: tableMinWidth }}>
                     <thead>
                       <tr>
                         <th colSpan={4} className="vc-hint-th">
-                          Pick a vendor to finalise. The finalised column is
-                          highlighted and can be turned into a quotation.
+                          Pick a vendor to finalise. The finalised column is highlighted and can be
+                          turned into a quotation.
                         </th>
                         {slots.map((slot) => {
                           const vendor = vendorAt(slot);
                           const picked =
-                            Boolean(vendor) &&
-                            active.finalised_vendor_id === vendor.id;
+                            Boolean(vendor) && active.finalised_vendor_id === vendor.id;
                           const complete = completeQuote(vendor);
-                          const difference = complete
-                            ? quoteTotal(vendor) - lowest
-                            : null;
+                          const difference = complete ? quoteTotal(vendor) - lowest : null;
                           const percent =
                             difference !== null && lowest > 0
                               ? ((difference / lowest) * 100).toFixed(1)
@@ -1119,61 +982,42 @@ function Workspace({
                               key={slot}
                               colSpan={2}
                               scope="colgroup"
-                              className={cx("vc-vh", picked && "is-finalised")}
+                              className={cx('vc-vh', picked && 'is-finalised')}
                             >
                               {vendor ? (
                                 <div className="vc-vh-body">
                                   <div className="vc-vh-name-row">
-                                    <span
-                                      className="vc-vh-name"
-                                      title={vendor.name}
-                                    >
+                                    <span className="vc-vh-name" title={vendor.name}>
                                       {vendor.name || `Vendor ${slot + 1}`}
                                     </span>
-                                    {picked && (
-                                      <span className="vc-badge">
-                                        Finalised
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="vc-vh-total">
-                                    {money(quoteTotal(vendor))}
+                                    {picked && <span className="vc-badge">Finalised</span>}
                                   </div>
                                   <div
                                     className={cx(
-                                      "vc-vh-delta",
-                                      difference === 0 && "is-lowest",
-                                      difference > 0 && "is-higher",
+                                      'vc-vh-delta',
+                                      difference === 0 && 'is-lowest',
+                                      difference > 0 && 'is-higher',
                                     )}
                                   >
                                     {difference === null
-                                      ? "Incomplete quote"
+                                      ? 'Incomplete quote'
                                       : difference === 0
-                                        ? "Lowest"
+                                        ? 'Lowest'
                                         : `+${money(difference)}${
-                                            percent !== null
-                                              ? ` · ${percent}%`
-                                              : ""
+                                            percent !== null ? ` · ${percent}%` : ''
                                           }`}
                                   </div>
                                   <Button
                                     variant="secondary"
-                                    className={cx(
-                                      "vc-finalise",
-                                      picked && "is-on",
-                                    )}
+                                    className={cx('vc-finalise', picked && 'is-on')}
                                     disabled={!picked && !complete}
                                     onClick={() =>
                                       editTrade(active.id, {
-                                        finalised_vendor_id: picked
-                                          ? ""
-                                          : vendor.id,
+                                        finalised_vendor_id: picked ? '' : vendor.id,
                                       })
                                     }
                                   >
-                                    {picked
-                                      ? "✓ Finalised vendor"
-                                      : "Finalise this vendor"}
+                                    {picked ? '✓ Finalised vendor' : 'Finalise this vendor'}
                                   </Button>
                                   {picked && (
                                     <button
@@ -1181,7 +1025,7 @@ function Workspace({
                                       className="vc-link"
                                       onClick={() =>
                                         editTrade(active.id, {
-                                          finalised_vendor_id: "",
+                                          finalised_vendor_id: '',
                                         })
                                       }
                                     >
@@ -1192,50 +1036,37 @@ function Workspace({
                                     type="button"
                                     className="vc-link"
                                     aria-expanded={editing}
-                                    onClick={() =>
-                                      setEditingSlot(editing ? null : slot)
-                                    }
+                                    onClick={() => setEditingSlot(editing ? null : slot)}
                                   >
-                                    {editing ? "Done editing" : "Edit vendor"}
+                                    {editing ? 'Done editing' : 'Edit vendor'}
                                   </button>
                                   {editing && (
                                     <div className="vc-vendor-edit">
                                       <Field label="Vendor">
                                         <SelectInput
                                           aria-label={`Select vendor ${slot + 1}`}
-                                          value={vendor.custom ? "" : vendor.id}
+                                          value={vendor.custom ? '' : vendor.id}
                                           placeholder="Custom vendor"
                                           onChange={(e) =>
-                                            selectVendor(
-                                              vendor,
-                                              e.target.value,
-                                              slot,
-                                            )
+                                            selectVendor(vendor, e.target.value, slot)
                                           }
                                         >
                                           {vendor &&
                                             !vendor.custom &&
-                                            !directory.some(
-                                              (v) => String(v.id) === vendor.id,
-                                            ) && (
-                                              <option value={vendor.id}>
-                                                {vendor.name}
-                                              </option>
+                                            !directory.some((v) => String(v.id) === vendor.id) && (
+                                              <option value={vendor.id}>{vendor.name}</option>
                                             )}
                                           {directory
                                             .filter(
                                               (v) =>
                                                 !active.vendors.some(
                                                   (a) =>
-                                                    a.id === String(v.id) &&
-                                                    a.id !== vendor?.id,
+                                                    a.id === String(v.id) && a.id !== vendor?.id,
                                                 ),
                                             )
                                             .map((v) => (
                                               <option key={v.id} value={v.id}>
-                                                {v.name ||
-                                                  v.company_name ||
-                                                  v.business_name}
+                                                {v.name || v.company_name || v.business_name}
                                               </option>
                                             ))}
                                         </SelectInput>
@@ -1263,59 +1094,12 @@ function Workspace({
                                 </div>
                               ) : (
                                 <div className="vc-vh-body vc-vh-empty">
-                                  <span className="vc-vh-empty-title">
-                                    Vendor {slot + 1}
-                                  </span>
-                                  <SelectInput
-                                    aria-label={`Select vendor ${slot + 1}`}
-                                    value=""
-                                    placeholder="Select vendor"
-                                    onChange={(e) =>
-                                      selectVendor(
-                                        undefined,
-                                        e.target.value,
-                                        slot,
-                                      )
-                                    }
-                                  >
-                                    {directory
-                                      .filter(
-                                        (v) =>
-                                          !active.vendors.some(
-                                            (a) => a.id === String(v.id),
-                                          ),
-                                      )
-                                      .map((v) => (
-                                        <option key={v.id} value={v.id}>
-                                          {v.name ||
-                                            v.company_name ||
-                                            v.business_name}
-                                        </option>
-                                      ))}
-                                  </SelectInput>
-                                  <Button
-                                    variant="ghost"
-                                    onClick={() => addVendor("", slot)}
-                                  >
-                                    Enter custom vendor
-                                  </Button>
+                                  <span className="vc-vh-empty-title">Vendor {slot + 1}</span>
                                 </div>
                               )}
                             </th>
                           );
                         })}
-                        {hasAddColumn && (
-                          <th rowSpan={2} className="vc-add-th" scope="col">
-                            <Button
-                              variant="ghost"
-                              onClick={() =>
-                                resizeVendorColumns(vendorColumnCount + 1)
-                              }
-                            >
-                              + Add vendor
-                            </Button>
-                          </th>
-                        )}
                         <th rowSpan={2} aria-label="Item actions" />
                       </tr>
                       <tr>
@@ -1347,11 +1131,7 @@ function Workspace({
                       {active.items.map((item, index) => {
                         const rates = active.vendors.flatMap((vendor) =>
                           vendor.items
-                            .filter(
-                              (line) =>
-                                line.id === item.id &&
-                                Number.isFinite(line.rate),
-                            )
+                            .filter((line) => line.id === item.id && Number.isFinite(line.rate))
                             .map((line) => line.rate),
                         );
                         const lowRate = Math.min(...rates);
@@ -1381,13 +1161,11 @@ function Workspace({
                                 min="0"
                                 step="any"
                                 placeholder="—"
-                                value={item.quantity ?? ""}
+                                disabled={item.unit === LUMP_SUM_UNIT && item.quantity === null}
+                                value={item.quantity ?? ''}
                                 onChange={(e) =>
                                   editSharedItem(item.id, {
-                                    quantity:
-                                      e.target.value === ""
-                                        ? null
-                                        : Number(e.target.value),
+                                    quantity: e.target.value === '' ? null : Number(e.target.value),
                                   })
                                 }
                               />
@@ -1397,50 +1175,40 @@ function Workspace({
                                 className="vc-cell-input vc-unit-select"
                                 aria-label={`Unit ${index + 1}`}
                                 placeholder="—"
-                                value={item.unit ?? ""}
-                                onChange={(e) =>
+                                value={item.unit ?? ''}
+                                onChange={(e) => {
+                                  const unit = e.target.value;
                                   editSharedItem(item.id, {
-                                    unit: e.target.value,
-                                  })
-                                }
+                                    unit,
+                                    ...(unit === LUMP_SUM_UNIT ? { quantity: null } : {}),
+                                  });
+                                }}
                               >
-                                {item.unit &&
-                                  !unitOptions.includes(item.unit) && (
-                                    <option value={item.unit}>
-                                      {item.unit}
-                                    </option>
-                                  )}
-                                {unitOptions.map((unit) => (
+                                {item.unit && !unitOptions.has(item.unit) && (
+                                  <option value={item.unit}>{item.unit}</option>
+                                )}
+                                {Array.from(unitOptions, (unit) => (
                                   <option key={unit} value={unit}>
-                                    {unit}
+                                    {unit === LUMP_SUM_UNIT ? 'Lump sum' : unit}
                                   </option>
                                 ))}
                               </SelectInput>
                             </td>
                             {slots.map((slot) => {
                               const vendor = vendorAt(slot);
-                              const quote = vendor?.items.find(
-                                (line) => line.id === item.id,
-                              );
+                              const quote = vendor?.items.find((line) => line.id === item.id);
                               const isFinal =
-                                Boolean(vendor) &&
-                                active.finalised_vendor_id === vendor.id;
+                                Boolean(vendor) && active.finalised_vendor_id === vendor.id;
                               const tone =
                                 spread && quote?.rate === lowRate
-                                  ? "vc-low-rate"
+                                  ? 'vc-low-rate'
                                   : spread && quote?.rate === highRate
-                                    ? "vc-high-rate"
-                                    : "";
+                                    ? 'vc-high-rate'
+                                    : '';
                               const amount = quote ? quoteAmount(quote) : null;
                               return (
                                 <Fragment key={slot}>
-                                  <td
-                                    className={cx(
-                                      "vc-rate",
-                                      isFinal && "vc-col-final",
-                                      tone,
-                                    )}
-                                  >
+                                  <td className={cx('vc-rate', isFinal && 'vc-col-final', tone)}>
                                     <TextInput
                                       className="vc-cell-input vc-num"
                                       aria-label={`Rate ${index + 1} for ${vendor?.name || `Vendor ${slot + 1}`}`}
@@ -1448,32 +1216,22 @@ function Workspace({
                                       step="any"
                                       placeholder="—"
                                       disabled={!vendor}
-                                      value={quote?.rate ?? ""}
+                                      value={quote?.rate ?? ''}
                                       onChange={(e) =>
                                         editRate(
                                           vendor,
                                           item.id,
-                                          e.target.value === ""
-                                            ? null
-                                            : Number(e.target.value),
+                                          e.target.value === '' ? null : Number(e.target.value),
                                         )
                                       }
                                     />
                                   </td>
-                                  <td
-                                    className={cx(
-                                      "vc-amt",
-                                      isFinal && "vc-col-final",
-                                    )}
-                                  >
-                                    {amount === null ? "—" : num(amount)}
+                                  <td className={cx('vc-amt', isFinal && 'vc-col-final')}>
+                                    {amount === null ? '—' : num(amount)}
                                   </td>
                                 </Fragment>
                               );
                             })}
-                            {hasAddColumn && (
-                              <td className="vc-add-col" aria-hidden />
-                            )}
                             <td className="vc-act">
                               <Button
                                 variant="ghost"
@@ -1495,71 +1253,16 @@ function Workspace({
                       </tr>
                     </tbody>
                     <tfoot>
-                      <tr className="vc-sub">
-                        <td colSpan={4}>Subtotal</td>
-                        {slots.map((slot) => {
-                          const vendor = vendorAt(slot);
-                          const isFinal =
-                            Boolean(vendor) &&
-                            active.finalised_vendor_id === vendor.id;
-                          return (
-                            <td
-                              key={slot}
-                              colSpan={2}
-                              className={cx(
-                                "vc-tot",
-                                isFinal && "vc-col-final",
-                              )}
-                            >
-                              {vendor ? money(quoteTotal(vendor)) : "—"}
-                            </td>
-                          );
-                        })}
-                        {hasAddColumn && (
-                          <td className="vc-add-col" aria-hidden />
-                        )}
-                        <td />
-                      </tr>
-                      <tr className="vc-gst">
-                        <td colSpan={4}>GST {Math.round(GST_RATE * 100)}%</td>
-                        {slots.map((slot) => {
-                          const vendor = vendorAt(slot);
-                          const isFinal =
-                            Boolean(vendor) &&
-                            active.finalised_vendor_id === vendor.id;
-                          return (
-                            <td
-                              key={slot}
-                              colSpan={2}
-                              className={cx(
-                                "vc-tot",
-                                isFinal && "vc-col-final",
-                              )}
-                            >
-                              {vendor
-                                ? money(quoteTotal(vendor) * GST_RATE)
-                                : "—"}
-                            </td>
-                          );
-                        })}
-                        {hasAddColumn && (
-                          <td className="vc-add-col" aria-hidden />
-                        )}
-                        <td />
-                      </tr>
                       <tr className="vc-grand">
-                        <td colSpan={4}>Grand total (incl. GST)</td>
+                        <td colSpan={4}>Total amount</td>
                         {slots.map((slot) => {
                           const vendor = vendorAt(slot);
                           return (
                             <td key={slot} colSpan={2}>
-                              {vendor
-                                ? money(quoteTotal(vendor) * (1 + GST_RATE))
-                                : "—"}
+                              {vendor ? money(quoteTotal(vendor)) : '—'}
                             </td>
                           );
                         })}
-                        {hasAddColumn && <td />}
                         <td />
                       </tr>
                       <tr className="vc-notes-row">
@@ -1574,8 +1277,8 @@ function Workspace({
                                 rows={2}
                                 maxLength={10000}
                                 disabled={!vendor}
-                                placeholder={vendor ? "Add note…" : ""}
-                                value={vendor?.notes || ""}
+                                placeholder={vendor ? 'Add note…' : ''}
+                                value={vendor?.notes || ''}
                                 onChange={(e) =>
                                   editVendor(vendor.id, {
                                     notes: e.target.value,
@@ -1585,9 +1288,6 @@ function Workspace({
                             </td>
                           );
                         })}
-                        {hasAddColumn && (
-                          <td className="vc-add-col" aria-hidden />
-                        )}
                         <td />
                       </tr>
                     </tfoot>
@@ -1610,13 +1310,8 @@ function Workspace({
                     >
                       Previous trade
                     </Button>
-                    <Button
-                      disabled={!nextTrade}
-                      onClick={() => openTrade(nextTrade.id)}
-                    >
-                      {nextTrade
-                        ? `Next trade: ${nextTrade.name} →`
-                        : "Next trade"}
+                    <Button disabled={!nextTrade} onClick={() => openTrade(nextTrade.id)}>
+                      {nextTrade ? `Next trade: ${nextTrade.name} →` : 'Next trade'}
                     </Button>
                   </div>
                 </div>
@@ -1625,7 +1320,7 @@ function Workspace({
           </div>
         </div>
       )}
-      {workspaceTab === "history" && (
+      {workspaceTab === 'history' && (
         <div role="tabpanel" aria-label="Version History">
           {initialSheet ? (
             <VersionHistory
@@ -1636,8 +1331,7 @@ function Workspace({
           ) : (
             <Card title="Version & approval history">
               <p className="inos-hint">
-                Save this vendor comparison to start its version and approval
-                history.
+                Save this vendor comparison to start its version and approval history.
               </p>
             </Card>
           )}

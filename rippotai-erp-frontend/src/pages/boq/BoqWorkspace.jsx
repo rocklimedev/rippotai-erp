@@ -1,12 +1,15 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import BoqDocument, { BOQ_VARIANTS, boqFileName } from "@/components/commerce-documents/BoqDocument";
-import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { getBoqAccess } from "@/lib/boq-access";
-import { toast } from "sonner";
-import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import BoqDocument, {
+  BOQ_VARIANTS,
+  boqFileName,
+} from '@/components/commerce-documents/BoqDocument';
+import { downloadWhenReady, OFFSCREEN_STYLE } from '@/components/print-document/commerce';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { getBoqAccess } from '@/lib/boq-access';
+import { toast } from 'sonner';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import {
   ArrowLeft,
   Plus,
@@ -21,7 +24,7 @@ import {
   AlertCircle,
   Eye,
   Lock,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -29,15 +32,15 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { arrayMove } from "@dnd-kit/sortable";
+} from '@/components/ui/dropdown-menu';
+import { arrayMove } from '@dnd-kit/sortable';
 
 import {
   useGetBoqByIdQuery,
@@ -59,19 +62,19 @@ import {
   useCreateBoqNewVersionMutation,
   useExportBoqExcelMutation,
   useApplyBoqTermsMutation,
-} from "../../api/boq/boq.api";
-import { isBoqDisabled } from "../../hooks/constants";
-import { useCreateDocumentMutation } from "../../api/documents/document.api";
-import { SaveChip } from "../../components/boqs/StatusIndicators";
-import { LockedEditModal } from "../../components/boqs/LockedEditModal";
-import { AddCategoryPanel } from "../../components/boqs/AddCategoryPanel";
-import { ItemDetailDrawer } from "../../components/boqs/ItemDetailDrawer";
-import { CategoryBlock } from "../../components/boqs/CategoryBlock";
-import { AddItemPicker } from "../../components/boqs/AddItemPicker";
-import { BulkActionBar } from "../../components/boqs/BulkActionBar";
-import { BoqSummaryHeader } from "../../components/boqs/BoqSummaryHeader";
-import { CostSummaryPanel } from "../../components/boqs/CostSummaryPanel";
-import { PreExportChecklistModal } from "../../components/boqs/PreExportCheckModal";
+} from '../../api/boq/boq.api';
+import { isBoqDisabled } from '../../hooks/constants';
+import { useCreateDocumentMutation } from '../../api/documents/document.api';
+import { SaveChip } from '../../components/boqs/StatusIndicators';
+import { LockedEditModal } from '../../components/boqs/LockedEditModal';
+import { AddCategoryPanel } from '../../components/boqs/AddCategoryPanel';
+import { ItemDetailDrawer } from '../../components/boqs/ItemDetailDrawer';
+import { CategoryBlock } from '../../components/boqs/CategoryBlock';
+import { AddItemPicker } from '../../components/boqs/AddItemPicker';
+import { BulkActionBar } from '../../components/boqs/BulkActionBar';
+import { BoqSummaryHeader } from '../../components/boqs/BoqSummaryHeader';
+import { CostSummaryPanel } from '../../components/boqs/CostSummaryPanel';
+import { PreExportChecklistModal } from '../../components/boqs/PreExportCheckModal';
 
 export default function BoqWorkspace() {
   const { id } = useParams();
@@ -96,24 +99,22 @@ export default function BoqWorkspace() {
   const [createDocument] = useCreateDocumentMutation();
   const [attaching, setAttaching] = useState(false);
   const [duplicateVersion] = useDuplicateBoqVersionMutation();
-  const [createNewVersion, { isLoading: creatingVersion }] =
-    useCreateBoqNewVersionMutation();
+  const [createNewVersion, { isLoading: creatingVersion }] = useCreateBoqNewVersionMutation();
   const [exportExcel] = useExportBoqExcelMutation();
   // PDF copies are rendered with the shared print kit (off-screen) and captured page by page.
   const pdfRef = useRef(null);
   const [pdfVariant, setPdfVariant] = useState(null);
-  const [applyBoqTerms, { isLoading: applyingTerms }] =
-    useApplyBoqTermsMutation();
+  const [applyBoqTerms, { isLoading: applyingTerms }] = useApplyBoqTermsMutation();
 
-  const [saveState, setSaveState] = useState("idle");
+  const [saveState, setSaveState] = useState('idle');
   const [addCatOpen, setAddCatOpen] = useState(false);
   const [customCatOpen, setCustomCatOpen] = useState(false);
-  const [customCatName, setCustomCatName] = useState("");
+  const [customCatName, setCustomCatName] = useState('');
   const [detailItem, setDetailItem] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [dupOpen, setDupOpen] = useState(false);
-  const [dupReason, setDupReason] = useState("Revision");
-  const [dupNote, setDupNote] = useState("");
+  const [dupReason, setDupReason] = useState('Revision');
+  const [dupNote, setDupNote] = useState('');
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [preExportVariant, setPreExportVariant] = useState(null);
   const [lockedOpen, setLockedOpen] = useState(false);
@@ -124,19 +125,19 @@ export default function BoqWorkspace() {
   const onLockedEdit = useCallback(() => setLockedOpen(true), []);
 
   const withSaveChip = async (promise) => {
-    setSaveState("saving");
+    setSaveState('saving');
     try {
       const result = await promise;
-      setSaveState("saved");
-      setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 1500);
+      setSaveState('saved');
+      setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500);
       return result;
     } catch (e) {
       if (e?.status === 423 || e?.originalStatus === 423) {
-        toast.error("This BOQ is locked. Duplicate to edit.");
+        toast.error('This BOQ is locked. Duplicate to edit.');
       } else {
-        toast.error("Save failed");
+        toast.error('Save failed');
       }
-      setSaveState("error");
+      setSaveState('error');
       return undefined;
     }
   };
@@ -154,7 +155,7 @@ export default function BoqWorkspace() {
       applyBoqTerms({ id, terms_template_id: termsTemplateId, version })
         .unwrap()
         .then((updated) => {
-          toast.success("Terms applied");
+          toast.success('Terms applied');
           return updated;
         }),
     );
@@ -164,59 +165,53 @@ export default function BoqWorkspace() {
   const handleAddMisc = async (payload) => {
     try {
       await withSaveChip(addMiscellaneous({ boqId: id, ...payload }).unwrap());
-      toast.success("Miscellaneous entry added");
+      toast.success('Miscellaneous entry added');
     } catch {
-      toast.error("Failed to add entry");
+      toast.error('Failed to add entry');
     }
   };
 
   const handleUpdateMisc = async (miscId, payload) => {
     try {
-      await withSaveChip(
-        updateMiscellaneous({ boqId: id, miscId, ...payload }).unwrap(),
-      );
-      toast.success("Miscellaneous entry updated");
+      await withSaveChip(updateMiscellaneous({ boqId: id, miscId, ...payload }).unwrap());
+      toast.success('Miscellaneous entry updated');
     } catch {
-      toast.error("Failed to update entry");
+      toast.error('Failed to update entry');
     }
   };
 
   const handleDeleteMisc = async (miscId) => {
     try {
       await withSaveChip(deleteMiscellaneous({ boqId: id, miscId }).unwrap());
-      toast.success("Miscellaneous entry removed");
+      toast.success('Miscellaneous entry removed');
     } catch {
-      toast.error("Failed to remove entry");
+      toast.error('Failed to remove entry');
     }
   };
 
   const toggleHide = async (itemId, hide) => {
     try {
       await updateItem({ boqId: id, itemId, hidden: hide }).unwrap();
-      toast.success(hide ? "Row hidden from client copy" : "Row visible again");
+      toast.success(hide ? 'Row hidden from client copy' : 'Row visible again');
     } catch {
-      toast.error("Update failed");
+      toast.error('Update failed');
     }
   };
 
   const createNewVersionFromLock = async () => {
     try {
       const data = await createNewVersion({ id }).unwrap();
-      toast.success(`Created ${data.boq_number || "new version"}`);
+      toast.success(`Created ${data.boq_number || 'new version'}`);
       setLockedOpen(false);
       nav(`/ledger/boq/${data.id}`);
     } catch {
-      toast.error("Failed to create new version");
+      toast.error('Failed to create new version');
     }
   };
 
   const handleAddItem = (cid) => setPickerFor({ cid });
 
-  const addItemFromPicker = async ({
-    payload,
-    targetCategoryId,
-    newCategoryName,
-  }) => {
+  const addItemFromPicker = async ({ payload, targetCategoryId, newCategoryName }) => {
     if (!pickerFor) return;
     try {
       let cid = targetCategoryId || pickerFor.cid;
@@ -226,14 +221,12 @@ export default function BoqWorkspace() {
           name: newCategoryName,
           include_items: false,
         }).unwrap();
-        const cat = (created.categories || []).find(
-          (c) => c.name === newCategoryName,
-        );
-        if (!cat) throw new Error("Category creation failed");
+        const cat = (created.categories || []).find((c) => c.name === newCategoryName);
+        if (!cat) throw new Error('Category creation failed');
         cid = cat.id;
       }
       await addItem({ boqId: id, categoryId: cid, ...payload }).unwrap();
-      toast.success("Item added");
+      toast.success('Item added');
       setPickerFor(null);
     } catch (error) {
       throw error;
@@ -245,9 +238,9 @@ export default function BoqWorkspace() {
     if (!item) return;
     try {
       await deleteItem({ boqId: id, itemId }).unwrap();
-      toast("Item deleted", {
+      toast('Item deleted', {
         action: {
-          label: "Undo",
+          label: 'Undo',
           onClick: async () => {
             try {
               await addItem({
@@ -263,16 +256,16 @@ export default function BoqWorkspace() {
                 detail: item.detail,
                 amount: item.amount,
               }).unwrap();
-              toast.success("Restored");
+              toast.success('Restored');
             } catch {
-              toast.error("Undo failed");
+              toast.error('Undo failed');
             }
           },
         },
         duration: 5000,
       });
     } catch {
-      toast.error("Delete failed");
+      toast.error('Delete failed');
     }
   };
 
@@ -283,7 +276,7 @@ export default function BoqWorkspace() {
       await addItem({
         boqId: id,
         categoryId: item.category_id,
-        description: item.description + " (copy)",
+        description: item.description + ' (copy)',
         location: item.location,
         unit: item.unit,
         quantity: item.quantity,
@@ -294,7 +287,7 @@ export default function BoqWorkspace() {
         amount: item.amount,
       }).unwrap();
     } catch {
-      toast.error("Duplicate failed");
+      toast.error('Duplicate failed');
     }
   };
 
@@ -302,17 +295,17 @@ export default function BoqWorkspace() {
     try {
       await reorderItems({ boqId: id, categoryId: cid, orderedIds }).unwrap();
     } catch {
-      toast.error("Reorder failed");
+      toast.error('Reorder failed');
     }
   };
 
   const handleDeleteCategory = async (cid) => {
-    if (!(await appConfirm("Delete this category and all its items?"))) return;
+    if (!(await appConfirm('Delete this category and all its items?'))) return;
     try {
       await deleteCategory({ boqId: id, categoryId: cid }).unwrap();
-      toast.success("Category removed");
+      toast.success('Category removed');
     } catch {
-      toast.error("Delete failed");
+      toast.error('Delete failed');
     }
   };
 
@@ -320,11 +313,11 @@ export default function BoqWorkspace() {
     if (!customCatName.trim()) return;
     try {
       await addCategory({ boqId: id, name: customCatName }).unwrap();
-      toast.success("Category added");
+      toast.success('Category added');
       setCustomCatOpen(false);
-      setCustomCatName("");
+      setCustomCatName('');
     } catch {
-      toast.error("Failed");
+      toast.error('Failed');
     }
   };
 
@@ -338,9 +331,9 @@ export default function BoqWorkspace() {
         value,
       }).unwrap();
       setSelectedIds(new Set());
-      toast.success(op === "delete" ? "Deleted" : "Updated");
+      toast.success(op === 'delete' ? 'Deleted' : 'Updated');
     } catch {
-      toast.error("Bulk action failed");
+      toast.error('Bulk action failed');
     }
   };
 
@@ -355,17 +348,17 @@ export default function BoqWorkspace() {
       setDupOpen(false);
       nav(`/ledger/boq/${data.id}`);
     } catch {
-      toast.error("Duplicate failed");
+      toast.error('Duplicate failed');
     }
   };
 
   const handleSubmitForApproval = async () => {
     if (!canSubmit) return;
     try {
-      await submitForApproval({ id, note: "Please review" }).unwrap();
-      toast.success("Submitted for approval");
+      await submitForApproval({ id, note: 'Please review' }).unwrap();
+      toast.success('Submitted for approval');
     } catch {
-      toast.error("Submit failed");
+      toast.error('Submit failed');
     }
   };
 
@@ -375,43 +368,48 @@ export default function BoqWorkspace() {
     if (!canApprove) return;
     let approved;
     try {
-      approved = await approveBoq({ id, remarks: "Approved" }).unwrap();
+      approved = await approveBoq({ id, remarks: 'Approved' }).unwrap();
       setApprovalOpen(false);
     } catch (e) {
-      toast.error(e?.data?.message || "Approve failed");
+      toast.error(e?.data?.message || 'Approve failed');
       return;
     }
     const tid = `boq-approve-${Date.now()}`;
-    toast.loading("BOQ approved and locked — attaching the PDF to Documents…", { id: tid });
+    toast.loading('BOQ approved and locked — attaching the PDF to Documents…', { id: tid });
     setAttaching(true);
     try {
       const doc = approved && approved.id ? { ...boq, ...approved } : boq;
-      setPdfVariant("client");
-      const fileName = boqFileName(doc, "client");
+      setPdfVariant('client');
+      const fileName = boqFileName(doc, 'client');
       const blob = await downloadWhenReady(() => pdfRef.current, fileName, {
-        title: `BOQ — ${doc?.project?.name || doc?.title || ""}`,
-        output: "blob",
+        title: `BOQ — ${doc?.project?.name || doc?.title || ''}`,
+        output: 'blob',
       });
       const projectId = doc?.project_id || doc?.project?.id;
-      if (!blob || !projectId) throw new Error("No PDF or project");
+      if (!blob || !projectId) throw new Error('No PDF or project');
       await createDocument({
         data: {
           projectId,
-          title: `BOQ ${doc.boq_number || ""} v${doc.version || 1} — approved`.replace(/\s+/g, " ").trim(),
-          category: "Approvals",
-          status: "approved",
-          visibility: "external",
-          docType: "generated",
+          title: `BOQ ${doc.boq_number || ''} v${doc.version || 1} — approved`
+            .replace(/\s+/g, ' ')
+            .trim(),
+          category: 'Approvals',
+          status: 'approved',
+          visibility: 'external',
+          docType: 'generated',
           docNo: doc.boq_number,
           documentDate: new Date().toISOString().slice(0, 10),
-          remarks: "Client copy generated on approval",
+          remarks: 'Client copy generated on approval',
         },
-        file: new File([blob], fileName, { type: "application/pdf" }),
+        file: new File([blob], fileName, { type: 'application/pdf' }),
       }).unwrap();
-      toast.success("BOQ approved — PDF attached to Documents › Approvals", { id: tid });
+      toast.success('BOQ approved — PDF attached to Documents › Approvals', { id: tid });
     } catch (e) {
-      console.error("Attach approved BOQ PDF failed", e);
-      toast.error("BOQ approved, but the PDF couldn't be attached. Download it from Export instead.", { id: tid });
+      console.error('Attach approved BOQ PDF failed', e);
+      toast.error(
+        "BOQ approved, but the PDF couldn't be attached. Download it from Export instead.",
+        { id: tid },
+      );
     } finally {
       setPdfVariant(null);
       setAttaching(false);
@@ -424,24 +422,26 @@ export default function BoqWorkspace() {
         boqId: id,
         filename: `${boq?.boq_number || `BOQ-V${boq?.version || 1}`}.xlsx`,
       }).unwrap();
-      toast.success("Excel downloaded");
+      toast.success('Excel downloaded');
     } catch {
-      toast.error("Export failed");
+      toast.error('Export failed');
     }
   };
 
   const doExportPdf = async (variant) => {
     const id_ = `boq-pdf-${Date.now()}`;
     setPdfVariant(variant);
-    toast.loading("Preparing the BOQ…", { id: id_ });
+    toast.loading('Preparing the BOQ…', { id: id_ });
     try {
       await downloadWhenReady(() => pdfRef.current, boqFileName(boq, variant), {
-        title: `BOQ — ${boq?.project?.name || boq?.title || ""} (${BOQ_VARIANTS[variant] || variant})`,
+        title: `BOQ — ${boq?.project?.name || boq?.title || ''} (${BOQ_VARIANTS[variant] || variant})`,
       });
-      toast.success(`BOQ (${(BOQ_VARIANTS[variant] || variant).toLowerCase()}) downloaded`, { id: id_ });
+      toast.success(`BOQ (${(BOQ_VARIANTS[variant] || variant).toLowerCase()}) downloaded`, {
+        id: id_,
+      });
       setPreExportVariant(null);
     } catch (e) {
-      console.error("BOQ PDF failed", e);
+      console.error('BOQ PDF failed', e);
       toast.error("Couldn't create the PDF. Try again.", { id: id_ });
     } finally {
       setPdfVariant(null);
@@ -452,18 +452,16 @@ export default function BoqWorkspace() {
   useEffect(() => {
     const onKey = (e) => {
       if (!isOwner) return;
-      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(
-        document.activeElement?.tagName,
-      );
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        toast.success("All changes are auto-saved");
+        toast.success('All changes are auto-saved');
       }
-      if (e.key === "Delete" && !isInput && selectedIds.size > 0) {
+      if (e.key === 'Delete' && !isInput && selectedIds.size > 0) {
         e.preventDefault();
-        handleBulkAction("delete");
+        handleBulkAction('delete');
       }
-      if (e.key === "Escape" && selectedIds.size > 0) {
+      if (e.key === 'Escape' && selectedIds.size > 0) {
         e.preventDefault();
         setSelectedIds(new Set());
       }
@@ -476,16 +474,16 @@ export default function BoqWorkspace() {
         t.closest('[data-testid="boq-main-table"]') ||
         t.closest('[data-testid="bulk-action-bar"]') ||
         t.closest('[role="menu"]') ||
-        t.closest("[data-radix-popper-content-wrapper]")
+        t.closest('[data-radix-popper-content-wrapper]')
       )
         return;
       setSelectedIds(new Set());
     };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("click", onClick);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('click', onClick);
     return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("click", onClick);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('click', onClick);
     };
     // eslint-disable-next-line
   }, [selectedIds, isOwner]);
@@ -500,16 +498,12 @@ export default function BoqWorkspace() {
     );
   }
 
-  const existingCategories = new Set(
-    boq.categories.map((c) => c.name.toLowerCase().trim()),
-  );
+  const existingCategories = new Set(boq.categories.map((c) => c.name.toLowerCase().trim()));
   const attentionCount = boq.items.filter(
-    (i) => !i.unit || (i.calc_type !== "L" && (!i.quantity || !i.rate)),
+    (i) => !i.unit || (i.calc_type !== 'L' && (!i.quantity || !i.rate)),
   ).length;
   const itemsByCat = (cid) =>
-    boq.items
-      .filter((i) => i.category_id === cid)
-      .sort((a, b) => a.order - b.order);
+    boq.items.filter((i) => i.category_id === cid).sort((a, b) => a.order - b.order);
 
   const onSelectItem = (iid, checked) =>
     setSelectedIds((s) => {
@@ -529,7 +523,7 @@ export default function BoqWorkspace() {
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#B5C4B6]">
         <div className="h-14 px-4 lg:px-8 flex items-center gap-3">
           <button
-            onClick={() => nav("/ledger/boq/all")}
+            onClick={() => nav('/ledger/boq/all')}
             className="flex items-center gap-2 text-[13px] text-[#6B7B7C] hover:text-[#333333]"
             data-testid="back-to-boq-dashboard"
           >
@@ -552,13 +546,15 @@ export default function BoqWorkspace() {
                 <Lock size={12} /> Locked
               </span>
             )}
-            {isOwner && <button
-              onClick={() => setDupOpen(true)}
-              className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
-              data-testid="duplicate-version-btn"
-            >
-              <Copy size={13} /> Duplicate Version
-            </button>}
+            {isOwner && (
+              <button
+                onClick={() => setDupOpen(true)}
+                className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
+                data-testid="duplicate-version-btn"
+              >
+                <Copy size={13} /> Duplicate Version
+              </button>
+            )}
             <button
               onClick={() => nav(`/ledger/boq/${id}/versions`)}
               className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
@@ -566,7 +562,7 @@ export default function BoqWorkspace() {
               <GitBranch size={13} /> Versions
             </button>
             <button
-              onClick={() => setPreExportVariant("client")}
+              onClick={() => setPreExportVariant('client')}
               className="h-9 px-3 rounded-lg bg-[#1F453B] hover:opacity-90 text-white text-[12.5px] font-semibold flex items-center gap-1.5"
               data-testid="download-boq-btn"
               title="Download BOQ (PDF)"
@@ -598,38 +594,36 @@ export default function BoqWorkspace() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem
-                  onClick={() => nav(`/ledger/boq/${id}/preview`)}
-                >
+                <DropdownMenuItem onClick={() => nav(`/ledger/boq/${id}/preview`)}>
                   <Eye size={13} className="mr-2" /> Preview BOQ
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportExcel}>
-                  Export Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPreExportVariant("internal")}>
+                <DropdownMenuItem onClick={handleExportExcel}>Export Excel</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreExportVariant('internal')}>
                   Download internal copy (PDF)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPreExportVariant("quantity_only")}>
+                <DropdownMenuItem onClick={() => setPreExportVariant('quantity_only')}>
                   Download quantity-only copy (PDF)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPreExportVariant("vendor_enquiry")}>
+                <DropdownMenuItem onClick={() => setPreExportVariant('vendor_enquiry')}>
                   Download vendor enquiry (PDF)
                 </DropdownMenuItem>
-                {isOwner && <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-[#333333]"
-                  onClick={async () => {
-                    if ((await appConfirm("Archive this BOQ?"))) {
-                      await deleteBoq(id).unwrap();
-                      toast.success("Archived");
-                      nav("/boq");
-                    }
-                  }}
-                >
-                  Archive / Delete Draft
-                </DropdownMenuItem>
-                </>}
+                {isOwner && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-[#333333]"
+                      onClick={async () => {
+                        if (await appConfirm('Archive this BOQ?')) {
+                          await deleteBoq(id).unwrap();
+                          toast.success('Archived');
+                          nav('/boq');
+                        }
+                      }}
+                    >
+                      Archive / Delete Draft
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -637,293 +631,290 @@ export default function BoqWorkspace() {
       </header>
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {isOwner ? <>
-        <BoqSummaryHeader boq={boq} disabled={disabled} />
+        {isOwner ? (
+          <>
+            <BoqSummaryHeader boq={boq} disabled={disabled} />
 
-        <section className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => (disabled ? onLockedEdit() : setAddCatOpen(true))}
-            className="h-10 px-4 rounded-xl border-2 border-[#1F453B] text-[#333333] hover:bg-[#EAEEF0] text-[13px] font-semibold flex items-center gap-2"
-            data-testid="add-category-btn"
-          >
-            <Plus size={15} /> Add Category
-          </button>
-          <button
-            onClick={() => (disabled ? onLockedEdit() : setCustomCatOpen(true))}
-            className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
-            data-testid="add-custom-category-btn"
-          >
-            <Plus size={14} /> Custom Category
-          </button>
-          <div className="text-[12px] text-[#B5C4B6] hidden md:block">
-            Pick a category — its standard items, units and rates are added
-            automatically.
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-            {attentionCount > 0 && (
-              <span className="text-[11.5px] font-semibold text-[#333333] bg-[#EAEEF0] px-2.5 py-1 rounded-full flex items-center gap-1">
-                <AlertCircle size={11} /> {attentionCount} require attention
-              </span>
+            <section className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => (disabled ? onLockedEdit() : setAddCatOpen(true))}
+                className="h-10 px-4 rounded-xl border-2 border-[#1F453B] text-[#333333] hover:bg-[#EAEEF0] text-[13px] font-semibold flex items-center gap-2"
+                data-testid="add-category-btn"
+              >
+                <Plus size={15} /> Add Category
+              </button>
+              <button
+                onClick={() => (disabled ? onLockedEdit() : setCustomCatOpen(true))}
+                className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
+                data-testid="add-custom-category-btn"
+              >
+                <Plus size={14} /> Custom Category
+              </button>
+              <div className="text-[12px] text-[#B5C4B6] hidden md:block">
+                Pick a category — its standard items, units and rates are added automatically.
+              </div>
+              <div className="ml-auto flex items-center gap-3">
+                {attentionCount > 0 && (
+                  <span className="text-[11.5px] font-semibold text-[#333333] bg-[#EAEEF0] px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <AlertCircle size={11} /> {attentionCount} require attention
+                  </span>
+                )}
+                <span className="text-[12px] text-[#6B7B7C]">
+                  {boq.categories.length} categories · {boq.items.length} line items
+                </span>
+              </div>
+            </section>
+
+            {boq.categories.length === 0 ? (
+              <section className="bc-card p-14 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-[#EAEEF0] flex items-center justify-center mx-auto mb-4">
+                  <Sparkles size={22} className="text-[#333333]" />
+                </div>
+                <h2 className="text-[18px] font-bold text-[#333333]">Start building your BOQ</h2>
+                <p className="text-[13px] text-[#6B7B7C] mt-1 mb-5">
+                  Choose a predefined category to automatically add its standard items, units and
+                  rates.
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => setAddCatOpen(true)}
+                    className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold"
+                    data-testid="empty-add-category"
+                  >
+                    Add First Category
+                  </button>
+                  <button
+                    onClick={() => setCustomCatOpen(true)}
+                    className="h-10 px-4 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C]"
+                  >
+                    Create Custom Category
+                  </button>
+                </div>
+              </section>
+            ) : (
+              <section className="bc-card overflow-hidden" data-testid="boq-main-table">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[13px]">
+                    <thead className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#EAEEF0] border-b border-[#B5C4B6] sticky top-0">
+                      <tr>
+                        <th className="p-2 w-11"></th>
+                        <th className="p-2 text-center w-11 whitespace-nowrap">S. No.</th>
+                        <th className="p-2 text-left">Description</th>
+                        <th className="p-2 text-left w-[120px]">Notes</th>
+                        <th className="p-2 text-left w-[120px]">Location</th>
+                        <th className="p-2 text-left w-[92px]">Unit</th>
+                        <th className="p-2 text-right w-[80px]">Quantity</th>
+                        <th className="p-2 text-right w-[100px]">Rate</th>
+                        <th className="p-2 text-center w-[70px]">Type</th>
+                        <th className="p-2 text-right w-[120px]">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {boq.categories?.map((cat, index) => (
+                        <CategoryBlock
+                          key={cat.id}
+                          cat={{
+                            ...cat,
+                            code: String(index + 1).padStart(2, '0'),
+                            subtotal: cat.subtotal || 0,
+                          }}
+                          items={cat.items || []}
+                          disabled={disabled}
+                          selectedIds={selectedIds}
+                          onSelectItem={onSelectItem}
+                          onSelectCategory={onSelectCategory}
+                          onPatchItem={patchItem}
+                          onDeleteItem={handleDeleteItem}
+                          onDuplicateItem={handleDuplicateItem}
+                          onOpenDetail={setDetailItem}
+                          onAddItem={handleAddItem}
+                          onDeleteCat={handleDeleteCategory}
+                          onReorderItems={handleReorderItems}
+                          onToggleHide={toggleHide}
+                          onLockedEdit={onLockedEdit}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             )}
-            <span className="text-[12px] text-[#6B7B7C]">
-              {boq.categories.length} categories · {boq.items.length} line items
-            </span>
-          </div>
-        </section>
 
-        {boq.categories.length === 0 ? (
-          <section className="bc-card p-14 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#EAEEF0] flex items-center justify-center mx-auto mb-4">
-              <Sparkles size={22} className="text-[#333333]" />
-            </div>
-            <h2 className="text-[18px] font-bold text-[#333333]">
-              Start building your BOQ
-            </h2>
-            <p className="text-[13px] text-[#6B7B7C] mt-1 mb-5">
-              Choose a predefined category to automatically add its standard
-              items, units and rates.
-            </p>
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => setAddCatOpen(true)}
-                className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold"
-                data-testid="empty-add-category"
-              >
-                Add First Category
-              </button>
-              <button
-                onClick={() => setCustomCatOpen(true)}
-                className="h-10 px-4 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C]"
-              >
-                Create Custom Category
-              </button>
-            </div>
-          </section>
+            <BulkActionBar
+              count={selectedIds.size}
+              onChangeUnit={(unit) => handleBulkAction('change_unit', unit)}
+              onDelete={() => handleBulkAction('delete')}
+              onDeselectAll={() => setSelectedIds(new Set())}
+            />
+
+            <CostSummaryPanel
+              boq={boq}
+              disabled={disabled}
+              onLockedEdit={onLockedEdit}
+              onSaveTerms={(terms_html) => withSaveChip(updateBoq({ id, terms_html }).unwrap())}
+              onSaveMiscPct={(misc_pct) => debouncedUpdateBoq({ misc_pct })}
+              onApplyTerms={handleApplyTerms}
+              applyingTerms={applyingTerms}
+              onAddMisc={handleAddMisc}
+              onUpdateMisc={handleUpdateMisc}
+              onDeleteMisc={handleDeleteMisc}
+            />
+          </>
         ) : (
-          <section
-            className="bc-card overflow-hidden"
-            data-testid="boq-main-table"
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#EAEEF0] border-b border-[#B5C4B6] sticky top-0">
-                  <tr>
-                    <th className="p-2 w-11"></th>
-                    <th className="p-2 text-center w-11 whitespace-nowrap">
-                      S. No.
-                    </th>
-                    <th className="p-2 text-left">Description</th>
-                    <th className="p-2 text-left w-[120px]">Notes</th>
-                    <th className="p-2 text-left w-[120px]">Location</th>
-                    <th className="p-2 text-left w-[92px]">Unit</th>
-                    <th className="p-2 text-right w-[80px]">Quantity</th>
-                    <th className="p-2 text-right w-[100px]">Rate</th>
-                    <th className="p-2 text-center w-[70px]">Type</th>
-                    <th className="p-2 text-right w-[120px]">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {boq.categories?.map((cat, index) => (
-                    <CategoryBlock
-                      key={cat.id}
-                      cat={{
-                        ...cat,
-                        code: String(index + 1).padStart(2, "0"),
-                        subtotal: cat.subtotal || 0,
-                      }}
-                      items={cat.items || []}
-                      disabled={disabled}
-                      selectedIds={selectedIds}
-                      onSelectItem={onSelectItem}
-                      onSelectCategory={onSelectCategory}
-                      onPatchItem={patchItem}
-                      onDeleteItem={handleDeleteItem}
-                      onDuplicateItem={handleDuplicateItem}
-                      onOpenDetail={setDetailItem}
-                      onAddItem={handleAddItem}
-                      onDeleteCat={handleDeleteCategory}
-                      onReorderItems={handleReorderItems}
-                      onToggleHide={toggleHide}
-                      onLockedEdit={onLockedEdit}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <>
+            <p className="text-[13px] text-[#6B7B7C]" data-testid="boq-read-only">
+              Read-only — only the BOQ owner can edit or perform workflow actions.
+            </p>
+            <BoqDocument boq={boq} variant="internal" />
+          </>
         )}
-
-        <BulkActionBar
-          count={selectedIds.size}
-          onChangeUnit={(unit) => handleBulkAction("change_unit", unit)}
-          onDelete={() => handleBulkAction("delete")}
-          onDeselectAll={() => setSelectedIds(new Set())}
-        />
-
-        <CostSummaryPanel
-          boq={boq}
-          disabled={disabled}
-          onLockedEdit={onLockedEdit}
-          onSaveTerms={(terms_html) => withSaveChip(updateBoq({ id, terms_html }).unwrap())}
-          onSaveMiscPct={(misc_pct) => debouncedUpdateBoq({ misc_pct })}
-          onApplyTerms={handleApplyTerms}
-          applyingTerms={applyingTerms}
-          onAddMisc={handleAddMisc}
-          onUpdateMisc={handleUpdateMisc}
-          onDeleteMisc={handleDeleteMisc}
-        />
-        </> : <>
-          <p className="text-[13px] text-[#6B7B7C]" data-testid="boq-read-only">
-            Read-only — only the BOQ owner can edit or perform workflow actions.
-          </p>
-          <BoqDocument boq={boq} variant="internal" />
-        </>}
       </main>
 
-      {isOwner && <>
-      <AddCategoryPanel
-        open={addCatOpen}
-        onClose={setAddCatOpen}
-        boqId={id}
-        existingCategories={existingCategories}
-        onAdded={() => setAddCatOpen(false)}
-      />
-      <Dialog open={customCatOpen} onOpenChange={setCustomCatOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Custom Category</DialogTitle>
-            <DialogDescription>
-              Add a category not in the catalog. You can add items to it
-              afterwards.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <input
-              className="bc-input"
-              placeholder="Category name (e.g. Landscape)"
-              value={customCatName}
-              onChange={(e) => setCustomCatName(e.target.value)}
-              data-testid="custom-cat-name"
-            />
-          </div>
-          <DialogFooter>
-            <button
-              onClick={() => setCustomCatOpen(false)}
-              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={addCustomCategory}
-              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
-              data-testid="custom-cat-submit"
-            >
-              Add Category
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {isOwner && (
+        <>
+          <AddCategoryPanel
+            open={addCatOpen}
+            onClose={setAddCatOpen}
+            boqId={id}
+            existingCategories={existingCategories}
+            onAdded={() => setAddCatOpen(false)}
+          />
+          <Dialog open={customCatOpen} onOpenChange={setCustomCatOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Custom Category</DialogTitle>
+                <DialogDescription>
+                  Add a category not in the catalog. You can add items to it afterwards.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <input
+                  className="bc-input"
+                  placeholder="Category name (e.g. Landscape)"
+                  value={customCatName}
+                  onChange={(e) => setCustomCatName(e.target.value)}
+                  data-testid="custom-cat-name"
+                />
+              </div>
+              <DialogFooter>
+                <button
+                  onClick={() => setCustomCatOpen(false)}
+                  className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addCustomCategory}
+                  className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
+                  data-testid="custom-cat-submit"
+                >
+                  Add Category
+                </button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-      <ItemDetailDrawer
-        open={!!detailItem}
-        onClose={() => setDetailItem(null)}
-        item={detailItem}
-        disabled={disabled}
-        onPatch={(patch) => detailItem && patchItem(detailItem.id, patch)}
-      />
+          <ItemDetailDrawer
+            open={!!detailItem}
+            onClose={() => setDetailItem(null)}
+            item={detailItem}
+            disabled={disabled}
+            onPatch={(patch) => detailItem && patchItem(detailItem.id, patch)}
+          />
 
-      <Dialog open={dupOpen} onOpenChange={setDupOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Duplicate as new version</DialogTitle>
-            <DialogDescription>
-              Creates an editable copy. Current version stays intact.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
-                Reason
-              </label>
-              <select
-                className="bc-input mt-1"
-                value={dupReason}
-                onChange={(e) => setDupReason(e.target.value)}
-              >
-                <option>Revision</option>
-                <option>Client requested changes</option>
-                <option>Scope change</option>
-                <option>Rate update</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
-                Change Note
-              </label>
-              <textarea
-                className="bc-input mt-1 min-h-[80px]"
-                value={dupNote}
-                onChange={(e) => setDupNote(e.target.value)}
-                placeholder="What's changing in this version?"
-                data-testid="dup-note"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <button
-              onClick={() => setDupOpen(false)}
-              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDuplicateVersion}
-              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
-              data-testid="dup-submit"
-            >
-              Duplicate
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Dialog open={dupOpen} onOpenChange={setDupOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Duplicate as new version</DialogTitle>
+                <DialogDescription>
+                  Creates an editable copy. Current version stays intact.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
+                    Reason
+                  </label>
+                  <select
+                    className="bc-input mt-1"
+                    value={dupReason}
+                    onChange={(e) => setDupReason(e.target.value)}
+                  >
+                    <option>Revision</option>
+                    <option>Client requested changes</option>
+                    <option>Scope change</option>
+                    <option>Rate update</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
+                    Change Note
+                  </label>
+                  <textarea
+                    className="bc-input mt-1 min-h-[80px]"
+                    value={dupNote}
+                    onChange={(e) => setDupNote(e.target.value)}
+                    placeholder="What's changing in this version?"
+                    data-testid="dup-note"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <button
+                  onClick={() => setDupOpen(false)}
+                  className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDuplicateVersion}
+                  className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
+                  data-testid="dup-submit"
+                >
+                  Duplicate
+                </button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-      <Dialog open={canApprove && approvalOpen} onOpenChange={setApprovalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve BOQ</DialogTitle>
-            <DialogDescription>
-              Approving locks this version and attaches the client PDF to the
-              project's Documents (Approvals).
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <button
-              onClick={() => setApprovalOpen(false)}
-              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleApprove}
-              disabled={!canApprove || approving || attaching}
-              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-60"
-              data-testid="approve-confirm"
-            >
-              {approving ? "Approving…" : "Approve & Lock"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Dialog open={canApprove && approvalOpen} onOpenChange={setApprovalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Approve BOQ</DialogTitle>
+                <DialogDescription>
+                  Approving locks this version and attaches the client PDF to the project's
+                  Documents (Approvals).
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <button
+                  onClick={() => setApprovalOpen(false)}
+                  className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleApprove}
+                  disabled={!canApprove || approving || attaching}
+                  className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-60"
+                  data-testid="approve-confirm"
+                >
+                  {approving ? 'Approving…' : 'Approve & Lock'}
+                </button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-      <LockedEditModal
-        open={lockedOpen}
-        onOpenChange={setLockedOpen}
-        boqNumber={boq.boq_number}
-        version={boq.version}
-        busy={creatingVersion}
-        onCreateNewVersion={createNewVersionFromLock}
-      />
-      </>}
+          <LockedEditModal
+            open={lockedOpen}
+            onOpenChange={setLockedOpen}
+            boqNumber={boq.boq_number}
+            version={boq.version}
+            busy={creatingVersion}
+            onCreateNewVersion={createNewVersionFromLock}
+          />
+        </>
+      )}
 
       <PreExportChecklistModal
         boqId={id}
@@ -934,8 +925,19 @@ export default function BoqWorkspace() {
         busy={!!pdfVariant}
         preview={
           preExportVariant && boq ? (
-            <div style={{ width: 180, height: 255, overflow: "hidden", borderRadius: 6, boxShadow: "var(--shadow-sm)", background: "#fff" }}>
-              <div style={{ width: "210mm", transform: "scale(0.2268)", transformOrigin: "top left" }}>
+            <div
+              style={{
+                width: 180,
+                height: 255,
+                overflow: 'hidden',
+                borderRadius: 6,
+                boxShadow: 'var(--shadow-sm)',
+                background: '#fff',
+              }}
+            >
+              <div
+                style={{ width: '210mm', transform: 'scale(0.2268)', transformOrigin: 'top left' }}
+              >
                 <BoqDocument boq={boq} variant={preExportVariant} />
               </div>
             </div>
@@ -949,13 +951,15 @@ export default function BoqWorkspace() {
         </div>
       )}
 
-      {isOwner && <AddItemPicker
-        open={!!pickerFor}
-        defaultCategoryId={pickerFor?.cid}
-        categories={boq?.categories || []}
-        onClose={() => setPickerFor(null)}
-        onPick={addItemFromPicker}
-      />}
+      {isOwner && (
+        <AddItemPicker
+          open={!!pickerFor}
+          defaultCategoryId={pickerFor?.cid}
+          categories={boq?.categories || []}
+          onClose={() => setPickerFor(null)}
+          onPick={addItemFromPicker}
+        />
+      )}
     </div>
   );
 }
