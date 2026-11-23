@@ -221,6 +221,26 @@
   },
   {
     "module": "auth",
+    "controller": "ZohoEmailVerificationController",
+    "handler": "callback",
+    "method": "GET",
+    "path": "/auth/zoho-email/callback",
+    "permission": "auth:verify-email",
+    "public": true,
+    "file": "src/modules/auth/oauth/zoho-email-verification.controller.ts"
+  },
+  {
+    "module": "auth",
+    "controller": "ZohoEmailVerificationController",
+    "handler": "start",
+    "method": "GET",
+    "path": "/auth/zoho-email/start",
+    "permission": "auth:verify-email",
+    "public": true,
+    "file": "src/modules/auth/oauth/zoho-email-verification.controller.ts"
+  },
+  {
+    "module": "auth",
     "controller": "ZohoOAuthController",
     "handler": "authorizeUrl",
     "method": "GET",

@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 955 routes, 926 staff routes and 381 assignable staff capabilities.
+There are 957 routes, 926 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -83,6 +83,8 @@ There are 955 routes, 926 staff routes and 381 assignable staff capabilities.
 | auth | `GET /auth/microsoft/callback` | MicrosoftOAuthController.callback | `auth-microsoft:callback` | public |
 | auth | `DELETE /auth/microsoft` | MicrosoftOAuthController.disconnect | `auth-microsoft:delete` | staff |
 | auth | `GET /auth/microsoft/status` | MicrosoftOAuthController.status | `auth-microsoft:read` | staff |
+| auth | `GET /auth/zoho-email/callback` | ZohoEmailVerificationController.callback | `auth:verify-email` | public |
+| auth | `GET /auth/zoho-email/start` | ZohoEmailVerificationController.start | `auth:verify-email` | public |
 | auth | `GET /auth/zoho/authorize-url` | ZohoOAuthController.authorizeUrl | `auth-zoho:connect` | staff |
 | auth | `GET /auth/zoho/callback` | ZohoOAuthController.callback | `auth-zoho:callback` | public |
 | auth | `DELETE /auth/zoho` | ZohoOAuthController.disconnect | `auth-zoho:delete` | staff |
