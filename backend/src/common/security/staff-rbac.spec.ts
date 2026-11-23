@@ -48,7 +48,7 @@ it('keeps all route annotations, module catalogue, migration and documentation i
     expect(readFileSync(file, 'utf8')).toBe(content);
   expect(routes.length).toBeGreaterThan(900);
   // Includes the independently authenticated expiring-file capability endpoint.
-  expect(routes.filter((r) => r.public)).toHaveLength(17);
+  expect(routes.filter((r) => r.public)).toHaveLength(19);
   for (const [key, permission] of Object.entries(ACCOUNT_ROUTES)) {
     expect(
       routes.some(

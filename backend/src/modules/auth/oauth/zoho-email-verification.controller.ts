@@ -16,6 +16,7 @@ import {
 } from 'crypto';
 import type { Request, Response } from 'express';
 import { Public } from '@/common/decorator/public.decorator';
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { AuthThrottle } from '@/common/security/auth-throttle.decorator';
 import { EmailVerificationService } from '../email-verification.service';
 
@@ -85,6 +86,7 @@ export class ZohoEmailVerificationController {
     response.redirect(303, `${frontend}/verify-email?zoho=${status}`);
   }
 
+  @RequirePermission('auth:verify-email')
   @Public()
   @AuthThrottle()
   @Get('start')
@@ -118,6 +120,7 @@ export class ZohoEmailVerificationController {
     response.redirect(303, authorization.toString());
   }
 
+  @RequirePermission('auth:verify-email')
   @Public()
   @AuthThrottle()
   @Get('callback')
