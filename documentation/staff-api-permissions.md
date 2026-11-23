@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 953 routes, 924 staff routes and 381 assignable staff capabilities.
+There are 955 routes, 926 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -546,6 +546,7 @@ There are 953 routes, 924 staff routes and 381 assignable staff capabilities.
 | projects | `POST /projects/:projectId/locations` | ProjectPlannerController.createLocation | `project-planners:create` | staff |
 | projects | `POST /projects/:projectId/planners` | ProjectPlannerController.createPlanner | `project-planners:create` | staff |
 | projects | `POST /planners/:plannerId/items` | ProjectPlannerController.createPlannerItem | `project-planners:create` | staff |
+| projects | `POST /planner-phases` | ProjectPlannerController.createPlannerPhase | `project-planners:create` | staff |
 | projects | `POST /planners/:plannerId/procurement` | ProjectPlannerController.createProcurementItem | `project-planners:create` | staff |
 | projects | `DELETE /planners/:plannerId` | ProjectPlannerController.deletePlanner | `project-planners:delete` | staff |
 | projects | `DELETE /planner-items/:itemId` | ProjectPlannerController.deletePlannerItem | `project-planners:delete` | staff |
@@ -560,6 +561,7 @@ There are 953 routes, 924 staff routes and 381 assignable staff capabilities.
 | projects | `GET /projects/:projectId/planners/overview` | ProjectPlannerController.getProjectPlannerOverview | `project-planners:read` | staff |
 | projects | `GET /projects/:projectId/planners` | ProjectPlannerController.getProjectPlanners | `project-planners:read` | staff |
 | projects | `POST /projects/:projectId/planners/initialize` | ProjectPlannerController.initializeProjectPlanners | `project-planners:create` | staff |
+| projects | `GET /planner-phases` | ProjectPlannerController.listPlannerPhases | `project-planners:read` | staff |
 | projects | `DELETE /planner-items/:itemId/locations/:locationId` | ProjectPlannerController.removeLocationFromItem | `project-planners:delete` | staff |
 | projects | `PATCH /planner-item-locations/:itemLocationId` | ProjectPlannerController.updateItemLocation | `project-planners:update` | staff |
 | projects | `PATCH /locations/:locationId` | ProjectPlannerController.updateLocation | `project-planners:update` | staff |
