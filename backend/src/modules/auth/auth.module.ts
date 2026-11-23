@@ -8,6 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthTokensController } from './auth-tokens.controller';
 import { ZohoOAuthController } from './oauth/zoho-oauth.controller';
+import { ZohoEmailVerificationController } from './oauth/zoho-email-verification.controller';
 import { GoogleOAuthController } from './oauth/google-oauth.controller';
 import { MicrosoftOAuthController } from './oauth/microsoft-oauth.controller';
 
@@ -64,6 +65,7 @@ import { DistributedSecurityModule } from '@/common/security/distributed-securit
     AuthController,
     AuthTokensController,
     ZohoOAuthController,
+    ZohoEmailVerificationController,
     GoogleOAuthController,
     MicrosoftOAuthController,
   ],

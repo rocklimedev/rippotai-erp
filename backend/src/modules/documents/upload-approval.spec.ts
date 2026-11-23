@@ -34,9 +34,25 @@ describe('Uploaded evidence approval', () => {
 
   it('approves the latest file, completes its requirement and invalidates final checks', async () => {
     const { service, document, requirement } = documentSetup();
+    const currentVersion = { storageFilename: document.storageFilename, update: jest.fn() };
+    document.versions = [currentVersion];
+    document.status = 'draft';
     await service.approveUploaded('document');
     expect(document.status).toBe('approved');
+    expect(currentVersion.update).toHaveBeenCalledWith({ status: 'approved' });
     expect(requirement.update).toHaveBeenCalledWith({ isCompleted: true, completedAt: expect.any(Date) });
+    expect(service.gateEngine.invalidateReadinessCache).toHaveBeenCalledWith('project');
+  });
+
+  it('starts a new Pre Design version in draft and clears the previous approval', async () => {
+    const { service, document, requirement } = documentSetup();
+    document.status = 'approved';
+    document.documentType = { code: 'PRE_BUSINESS_PROPOSAL' };
+    service.versionModel = { count: jest.fn(async () => 0), create: jest.fn(async (record) => record) };
+    const version = await service.addVersion('document', {}, { originalname: 'new.pdf', mimetype: 'application/pdf', size: 10 });
+    expect(version.status).toBe('draft');
+    expect(document.status).toBe('draft');
+    expect(requirement.update).toHaveBeenCalledWith({ isCompleted: false, completedAt: null });
     expect(service.gateEngine.invalidateReadinessCache).toHaveBeenCalledWith('project');
   });
 

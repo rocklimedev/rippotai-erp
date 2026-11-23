@@ -14,6 +14,8 @@ const APPROVED_PUBLIC_ROUTES = [
   'GET auth/google/callback',
   'GET auth/microsoft/callback',
   'GET auth/zoho/callback',
+  'GET auth/zoho-email/start',
+  'GET auth/zoho-email/callback',
   'GET health/live',
   'GET public/client/:token',
   'GET public/client/:token/boq/:boqId',

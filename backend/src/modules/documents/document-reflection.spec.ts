@@ -69,6 +69,26 @@ describe('project upload reflection', () => {
     ).toBe('draft');
   });
 
+  it.each(['PRE_PITCH_PROPOSAL', 'PRE_BUSINESS_PROPOSAL', 'PRE_CONCEPT_DESIGN_01'])(
+    'starts %s uploads in draft even when automatic approval is configured',
+    async (code) => {
+      const requirement = { id: 'requirement', update: jest.fn() };
+      const service = new DocumentsService(
+        { create: async (record) => record } as any, {} as any, {} as any,
+        { uploadFile: async () => ({ filename: 'stored', url: '/file' }) } as any,
+        { findByPk: async () => ({ code, requiresApproval: false }) } as any,
+        { findOrCreate: async () => [requirement] } as any,
+        { invalidateReadinessCache: jest.fn() } as any,
+      );
+      const document = await service.create(
+        { title: 'Pre Design', projectId: 'project', documentTypeId: 'type' },
+        { originalname: 'new.pdf' } as any,
+      );
+      expect(document.status).toBe('draft');
+      expect(requirement.update).toHaveBeenCalledWith({ isCompleted: false, completedAt: null });
+    },
+  );
+
   it('uses the phase relationship ahead of stale legacy codes', () => {
     const phase = { id: 'phase', phase_code: 'BRIEF' };
     expect(
