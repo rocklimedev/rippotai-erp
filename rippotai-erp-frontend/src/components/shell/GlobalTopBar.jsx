@@ -1,4 +1,4 @@
-// Global top bar across every app page and Home: monogram + INOS, All Apps,
+// Global top bar across every app page and Home: Rippotai monogram and wordmark,
 // a wide search field, then approvals, chat, notifications and the user menu.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -123,14 +123,19 @@ export default function GlobalTopBar({ app = 'dashboard', onOpenMenu }) {
       <Link
         to="/dashboard"
         className="inos-topbar__brand"
-        title="INOS home"
+        title="Rippotai home"
+        aria-label="Rippotai home"
         data-testid="rippotai-logo"
       >
-        <img src={monogram} alt="Rippotai" />
-        <span>INOS</span>
+        <img className="inos-topbar__monogram" src={monogram} alt="" width={30} height={30} />
+        <img className="inos-topbar__wordmark" src={`${import.meta.env.BASE_URL}rippotai-wordmark.png`} alt="" width={1456} height={342} />
       </Link>
-      <span className="inos-topbar__sep" aria-hidden />
-      <AppSwitcher app={app} />
+      {app !== 'dashboard' && (
+        <>
+          <span className="inos-topbar__sep" aria-hidden />
+          <AppSwitcher app={app} />
+        </>
+      )}
       <div className="inos-topbar__search">
         <CommandShellSearch currentApp={app} />
       </div>

@@ -37,8 +37,8 @@
   color: var(--text); border: 1px solid var(--line); background: #fff;
 }
 .inos-topbar__brand { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-.inos-topbar__brand img { width: 30px; height: 30px; object-fit: contain; }
-.inos-topbar__brand span { font-weight: 800; letter-spacing: 0.16em; font-size: 15px; color: var(--brand); }
+.inos-topbar__monogram { width: 30px; height: 30px; object-fit: contain; }
+.inos-topbar__wordmark { width: 84px; height: auto; }
 .inos-topbar__sep { width: 1px; height: 24px; background: var(--line); flex: 0 0 auto; }
 .inos-topbar__apps {
   display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
@@ -142,9 +142,11 @@
 .inos-side__item:hover .inos-side__icon { color: var(--brand); }
 .inos-side__item.is-active .inos-side__icon { background: var(--brand-50); color: var(--brand); }
 .inos-side__section-mark {
-  display: flex; align-items: center; gap: 4px; margin: 12px 2px 4px;
-  color: var(--brand); cursor: default;
+  display: flex; align-items: center; gap: 4px; margin: 8px 0 4px;
+  width: 100%; min-height: 32px; padding: 0 4px; border-radius: 8px;
+  color: var(--brand); cursor: pointer;
 }
+.inos-side__section-mark:hover, .inos-side__section-mark:focus-visible { background: var(--surface-2); }
 .inos-side__section-mark::before, .inos-side__section-mark::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .inos-side__section-mark svg { flex: 0 0 auto; }
 
@@ -168,8 +170,7 @@
 .inos-side.is-collapsed .inos-side__head { flex-direction: column; }
 .inos-side.is-collapsed .inos-side__app { justify-content: center; padding: 4px 0; width: 100%; }
 .inos-side.is-collapsed .inos-side__item { padding: 1px 0; min-height: 36px; justify-content: center; }
-.inos-side.is-collapsed .inos-side__item:hover, .inos-side.is-collapsed .inos-side__item.is-active { background: none; }
-.inos-side.is-collapsed .inos-side__item.is-active { box-shadow: none; }
+.inos-side.is-collapsed .inos-side__item.is-active { background: none; box-shadow: none; }
 .inos-side.is-collapsed .inos-side__foot { padding: 8px; align-items: center; }
 .inos-side.is-collapsed .inos-side__shortcut { justify-content: center; padding: 6px; }
 
@@ -196,7 +197,7 @@
 @media (max-width: 767px) {
   :root { --topbar-h: 56px; }
   .inos-topbar { gap: 6px; padding: 0 10px; }
-  .inos-topbar__brand span, .inos-topbar__sep { display: none; }
+  .inos-topbar__wordmark, .inos-topbar__sep { display: none; }
   .inos-topbar__apps { width: 36px; padding: 0; justify-content: center; }
   .inos-topbar__apps span { display: none; }
   .inos-topbar__search { flex: 0 0 auto; }
