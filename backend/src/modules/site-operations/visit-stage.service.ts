@@ -9,7 +9,7 @@ import {
   CreateVisitStageDto,
   UpdateVisitStageDto,
 } from './dto/visit-stage.dto';
-import { UniqueConstraintError } from 'sequelize';
+import { ARCHITECT_VISIT_STAGES } from './constants/architect-visit-stages.constant';
 import { ArchitectSiteVisit } from './models/architect-site-visit.model';
 import { Project } from '../projects/models/projects.model';
 import { User } from '../users/models/user.model';
@@ -27,52 +27,42 @@ export class VisitStageService {
       where: includeInactive ? {} : { is_active: true },
       order: [['visit_no', 'ASC']],
     });
-    return rows.map((row) => row.toJSON());
+    return rows.flatMap((row) => {
+      const standard = ARCHITECT_VISIT_STAGES.find(
+        (s) => s.visit_no === row.visit_no && s.visit_no !== 20,
+      );
+      return standard ? [{ ...row.toJSON(), ...standard }] : [];
+    });
   }
 
   async findOne(id: string) {
     const row = await this.model.findByPk(id);
     if (!row) throw new NotFoundException('Visit stage not found');
-    return row;
-  }
-
-  private values(dto: UpdateVisitStageDto) {
-    const values = { ...dto };
-    for (const key of ['stage', 'checks_purpose'] as const) {
-      if (values[key] !== undefined) {
-        values[key] = values[key].trim();
-        if (!values[key]) throw new BadRequestException(key + ' is required');
-      }
-    }
-    return values;
+    const standard = ARCHITECT_VISIT_STAGES.find(
+      (s) => s.visit_no === row.visit_no && s.visit_no !== 20,
+    );
+    if (!standard)
+      throw new NotFoundException('Visit stage is unavailable for allocation');
+    return { ...row.toJSON(), ...standard };
   }
 
   async create(dto: CreateVisitStageDto) {
-    try {
-      return await this.model.create(this.values(dto) as any);
-    } catch (error) {
-      if (error instanceof UniqueConstraintError)
-        throw new BadRequestException('Visit number already exists');
-      throw error;
-    }
+    throw new BadRequestException(
+      'Architect visit stages are fixed by the site visit schedule',
+    );
   }
 
   async update(id: string, dto: UpdateVisitStageDto) {
-    const row = await this.findOne(id);
-    try {
-      return await row.update(this.values(dto));
-    } catch (error) {
-      if (error instanceof UniqueConstraintError)
-        throw new BadRequestException('Visit number already exists');
-      throw error;
-    }
+    throw new BadRequestException(
+      'Architect visit stages are fixed by the site visit schedule',
+    );
   }
 
-  /** Preserve referenced stages and historical allocation snapshots. */
+  /** Soft-disable instead of delete so historical visits keep their stage */
   async deactivate(id: string) {
-    const row = await this.findOne(id);
-    await row.update({ is_active: false });
-    return { success: true };
+    throw new BadRequestException(
+      'Architect visit stages are fixed by the site visit schedule',
+    );
   }
 
   /**

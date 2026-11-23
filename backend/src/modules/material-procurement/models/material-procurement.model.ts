@@ -30,6 +30,7 @@ export interface MaterialProcurementCreationAttributes {
   procurementNo: string;
   status?: MaterialProcurementStatus;
   remarks?: string | null;
+  sheets?: { name: string; type?: string | null }[] | null;
   createdById?: string | null;
 }
 
@@ -101,6 +102,13 @@ export class MaterialProcurement extends Model<
     allowNull: true,
   })
   declare remarks: string | null;
+
+  // Material-type sheets in display order: [{ name, type }].
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  declare sheets: { name: string; type?: string | null }[] | null;
 
   // ============================================================
   // CREATED BY

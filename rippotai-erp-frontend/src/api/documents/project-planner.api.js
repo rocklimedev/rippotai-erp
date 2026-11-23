@@ -1,4 +1,4 @@
-import { baseApi } from "../../store/baseApi";
+import { baseApi } from '../../store/baseApi';
 
 export const projectPlannerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -6,12 +6,12 @@ export const projectPlannerApi = baseApi.injectEndpoints({
       query: (projectId) => ({
         url: `/projects/${projectId}/planners/workbook.xlsx`,
         responseHandler: async (response) => {
-          if (!response.ok) return { message: "Workbook export failed" };
+          if (!response.ok) return { message: 'Workbook export failed' };
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
+          const link = document.createElement('a');
           link.href = url;
-          link.download = "project-planner.xlsx";
+          link.download = 'project-planner.xlsx';
           document.body.appendChild(link);
           link.click();
           link.remove();
@@ -29,12 +29,12 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     initializeProjectPlanners: builder.mutation({
       query: ({ projectId, data }) => ({
         url: `/projects/${projectId}/planners/initialize`,
-        method: "POST",
+        method: 'POST',
         body: data,
       }),
       invalidatesTags: (result, error, { projectId }) => [
-        { type: "ProjectPlanner", id: `PROJECT-${projectId}` },
-        { type: "ProjectPlanner", id: "LIST" },
+        { type: 'ProjectPlanner', id: `PROJECT-${projectId}` },
+        { type: 'ProjectPlanner', id: 'LIST' },
       ],
     }),
 
@@ -43,12 +43,12 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     createPlanner: builder.mutation({
       query: ({ projectId, data }) => ({
         url: `/projects/${projectId}/planners`,
-        method: "POST",
+        method: 'POST',
         body: data,
       }),
       invalidatesTags: (result, error, { projectId }) => [
-        { type: "ProjectPlanner", id: `PROJECT-${projectId}` },
-        { type: "ProjectPlanner", id: "LIST" },
+        { type: 'ProjectPlanner', id: `PROJECT-${projectId}` },
+        { type: 'ProjectPlanner', id: 'LIST' },
       ],
     }),
 
@@ -61,16 +61,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
 
         return [
           ...planners.map(({ id }) => ({
-            type: "ProjectPlanner",
+            type: 'ProjectPlanner',
             id,
           })),
           {
-            type: "ProjectPlanner",
+            type: 'ProjectPlanner',
             id: `PROJECT-${projectId}`,
           },
           {
-            type: "ProjectPlanner",
-            id: "LIST",
+            type: 'ProjectPlanner',
+            id: 'LIST',
           },
         ];
       },
@@ -82,11 +82,11 @@ export const projectPlannerApi = baseApi.injectEndpoints({
       query: (projectId) => `/projects/${projectId}/planners/overview`,
       providesTags: (result, error, projectId) => [
         {
-          type: "ProjectPlannerOverview",
+          type: 'ProjectPlannerOverview',
           id: projectId,
         },
         {
-          type: "ProjectPlanner",
+          type: 'ProjectPlanner',
           id: `PROJECT-${projectId}`,
         },
       ],
@@ -98,7 +98,7 @@ export const projectPlannerApi = baseApi.injectEndpoints({
       query: (plannerId) => `/planners/${plannerId}`,
       providesTags: (result, error, plannerId) => [
         {
-          type: "ProjectPlanner",
+          type: 'ProjectPlanner',
           id: plannerId,
         },
       ],
@@ -109,17 +109,17 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     updatePlanner: builder.mutation({
       query: ({ id, data }) => ({
         url: `/planners/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "ProjectPlanner",
+          type: 'ProjectPlanner',
           id,
         },
         {
-          type: "ProjectPlanner",
-          id: "LIST",
+          type: 'ProjectPlanner',
+          id: 'LIST',
         },
       ],
     }),
@@ -129,16 +129,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     deletePlanner: builder.mutation({
       query: (id) => ({
         url: `/planners/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
       invalidatesTags: (result, error, id) => [
         {
-          type: "ProjectPlanner",
+          type: 'ProjectPlanner',
           id,
         },
         {
-          type: "ProjectPlanner",
-          id: "LIST",
+          type: 'ProjectPlanner',
+          id: 'LIST',
         },
       ],
     }),
@@ -152,16 +152,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     generatePlannerFromTemplate: builder.mutation({
       query: ({ plannerId, data }) => ({
         url: `/planners/${plannerId}/generate-template`,
-        method: "POST",
+        method: 'POST',
         body: data,
       }),
       invalidatesTags: (result, error, { plannerId }) => [
         {
-          type: "ProjectPlanner",
+          type: 'ProjectPlanner',
           id: plannerId,
         },
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id: `PLANNER-${plannerId}`,
         },
       ],
@@ -176,17 +176,17 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     createLocation: builder.mutation({
       query: ({ projectId, data }) => ({
         url: `/projects/${projectId}/locations`,
-        method: "POST",
+        method: 'POST',
         body: data,
       }),
       invalidatesTags: (result, error, { projectId }) => [
         {
-          type: "ProjectLocation",
+          type: 'ProjectLocation',
           id: `PROJECT-${projectId}`,
         },
         {
-          type: "ProjectLocation",
-          id: "LIST",
+          type: 'ProjectLocation',
+          id: 'LIST',
         },
       ],
     }),
@@ -200,16 +200,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
 
         return [
           ...locations.map(({ id }) => ({
-            type: "ProjectLocation",
+            type: 'ProjectLocation',
             id,
           })),
           {
-            type: "ProjectLocation",
+            type: 'ProjectLocation',
             id: `PROJECT-${projectId}`,
           },
           {
-            type: "ProjectLocation",
-            id: "LIST",
+            type: 'ProjectLocation',
+            id: 'LIST',
           },
         ];
       },
@@ -220,17 +220,17 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     updateLocation: builder.mutation({
       query: ({ id, data }) => ({
         url: `/locations/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "ProjectLocation",
+          type: 'ProjectLocation',
           id,
         },
         {
-          type: "ProjectLocation",
-          id: "LIST",
+          type: 'ProjectLocation',
+          id: 'LIST',
         },
       ],
     }),
@@ -244,20 +244,20 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     createPlannerItem: builder.mutation({
       query: ({ plannerId, data }) => ({
         url: `/planners/${plannerId}/items`,
-        method: "POST",
+        method: 'POST',
         body: data,
       }),
       invalidatesTags: (result, error, { plannerId }) => [
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id: `PLANNER-${plannerId}`,
         },
         {
-          type: "PlannerItem",
-          id: "LIST",
+          type: 'PlannerItem',
+          id: 'LIST',
         },
         {
-          type: "ProjectPlanner",
+          type: 'ProjectPlanner',
           id: plannerId,
         },
       ],
@@ -277,16 +277,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
 
         return [
           ...items.map(({ id }) => ({
-            type: "PlannerItem",
+            type: 'PlannerItem',
             id,
           })),
           {
-            type: "PlannerItem",
+            type: 'PlannerItem',
             id: `PLANNER-${plannerId}`,
           },
           {
-            type: "PlannerItem",
-            id: "LIST",
+            type: 'PlannerItem',
+            id: 'LIST',
           },
         ];
       },
@@ -298,7 +298,7 @@ export const projectPlannerApi = baseApi.injectEndpoints({
       query: (itemId) => `/planner-items/${itemId}`,
       providesTags: (result, error, itemId) => [
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id: itemId,
         },
       ],
@@ -309,17 +309,17 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     updatePlannerItem: builder.mutation({
       query: ({ id, data }) => ({
         url: `/planner-items/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id,
         },
         {
-          type: "PlannerItem",
-          id: "LIST",
+          type: 'PlannerItem',
+          id: 'LIST',
         },
       ],
     }),
@@ -329,16 +329,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     deletePlannerItem: builder.mutation({
       query: (id) => ({
         url: `/planner-items/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
       invalidatesTags: (result, error, id) => [
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id,
         },
         {
-          type: "PlannerItem",
-          id: "LIST",
+          type: 'PlannerItem',
+          id: 'LIST',
         },
       ],
     }),
@@ -352,18 +352,18 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     attachPlannerLocations: builder.mutation({
       query: ({ itemId, location_ids }) => ({
         url: `/planner-items/${itemId}/locations`,
-        method: "POST",
+        method: 'POST',
         body: {
           location_ids,
         },
       }),
       invalidatesTags: (result, error, { itemId }) => [
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id: itemId,
         },
         {
-          type: "PlannerItemLocation",
+          type: 'PlannerItemLocation',
           id: `ITEM-${itemId}`,
         },
       ],
@@ -374,19 +374,19 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     removeLocationFromItem: builder.mutation({
       query: ({ itemId, locationId }) => ({
         url: `/planner-items/${itemId}/locations/${locationId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
       invalidatesTags: (result, error, { itemId, locationId }) => [
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id: itemId,
         },
         {
-          type: "PlannerItemLocation",
+          type: 'PlannerItemLocation',
           id: locationId,
         },
         {
-          type: "PlannerItemLocation",
+          type: 'PlannerItemLocation',
           id: `ITEM-${itemId}`,
         },
       ],
@@ -401,21 +401,21 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     updateItemLocation: builder.mutation({
       query: ({ id, data }) => ({
         url: `/planner-item-locations/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "PlannerItemLocation",
+          type: 'PlannerItemLocation',
           id,
         },
         {
-          type: "PlannerItem",
+          type: 'PlannerItem',
           id: result?.planner_item_id,
         },
         {
-          type: "PlannerItem",
-          id: "LIST",
+          type: 'PlannerItem',
+          id: 'LIST',
         },
       ],
     }),
@@ -424,25 +424,35 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     // VENDOR & PROCUREMENT
     // =========================================================
 
+    // Planner phases (Design = CONSULTANCY, Build = PMC)
+    listPlannerPhases: builder.query({
+      query: (module) => ({ url: `/planner-phases`, params: module ? { module } : undefined }),
+      providesTags: [{ type: 'ProjectPlanner', id: 'PHASES' }],
+    }),
+    createPlannerPhase: builder.mutation({
+      query: (data) => ({ url: `/planner-phases`, method: 'POST', body: data }),
+      invalidatesTags: [{ type: 'ProjectPlanner', id: 'PHASES' }],
+    }),
+
     // Create procurement item
     // POST /planners/:plannerId/procurement
     createProcurementItem: builder.mutation({
       query: ({ plannerId, data }) => ({
         url: `/planners/${plannerId}/procurement`,
-        method: "POST",
+        method: 'POST',
         body: data,
       }),
       invalidatesTags: (result, error, { plannerId }) => [
         {
-          type: "ProcurementItem",
+          type: 'ProcurementItem',
           id: `PLANNER-${plannerId}`,
         },
         {
-          type: "ProcurementItem",
-          id: "LIST",
+          type: 'ProcurementItem',
+          id: 'LIST',
         },
         {
-          type: "ProjectPlanner",
+          type: 'ProjectPlanner',
           id: plannerId,
         },
       ],
@@ -462,16 +472,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
 
         return [
           ...items.map(({ id }) => ({
-            type: "ProcurementItem",
+            type: 'ProcurementItem',
             id,
           })),
           {
-            type: "ProcurementItem",
+            type: 'ProcurementItem',
             id: `PLANNER-${plannerId}`,
           },
           {
-            type: "ProcurementItem",
-            id: "LIST",
+            type: 'ProcurementItem',
+            id: 'LIST',
           },
         ];
       },
@@ -482,17 +492,17 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     updateProcurementItem: builder.mutation({
       query: ({ id, data }) => ({
         url: `/procurement-items/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "ProcurementItem",
+          type: 'ProcurementItem',
           id,
         },
         {
-          type: "ProcurementItem",
-          id: "LIST",
+          type: 'ProcurementItem',
+          id: 'LIST',
         },
       ],
     }),
@@ -502,16 +512,16 @@ export const projectPlannerApi = baseApi.injectEndpoints({
     deleteProcurementItem: builder.mutation({
       query: (id) => ({
         url: `/procurement-items/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
       invalidatesTags: (result, error, id) => [
         {
-          type: "ProcurementItem",
+          type: 'ProcurementItem',
           id,
         },
         {
-          type: "ProcurementItem",
-          id: "LIST",
+          type: 'ProcurementItem',
+          id: 'LIST',
         },
       ],
     }),
@@ -521,6 +531,8 @@ export const projectPlannerApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useListPlannerPhasesQuery,
+  useCreatePlannerPhaseMutation,
   useDownloadPlannerWorkbookMutation,
   // Project planners
   useInitializeProjectPlannersMutation,

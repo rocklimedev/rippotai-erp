@@ -1,16 +1,16 @@
-import { useRef, useState } from "react";
-import { flushSync } from "react-dom";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import { useNavigate, useParams } from "react-router-dom";
-import { Ban, Check, ChevronDown, Download, Edit3, FileText, XCircle } from "lucide-react";
-import { toast } from "sonner";
+import React, { useRef, useState } from 'react';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Ban, Check, ChevronDown, Download, Edit3, FileText, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
-import { Page, PageHeader, Button, EmptyState, TextArea } from "@/components/inos";
-import { DocumentPreview, usePdfDownload } from "@/components/print-document";
-import PurchaseOrderDocument, { purchaseOrderFileName } from "@/components/commerce-documents/PurchaseOrderDocument";
+import { Page, PageHeader, Button, EmptyState, TextArea } from '@/components/inos';
+import { DocumentPreview, usePdfDownload } from '@/components/print-document';
+import PurchaseOrderDocument, {
+  purchaseOrderFileName,
+} from '@/components/commerce-documents/PurchaseOrderDocument';
 import {
   Dialog,
   DialogContent,
@@ -18,51 +18,61 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 import {
   useGetPurchaseOrderQuery,
   useUpdatePurchaseOrderMutation,
   useApprovePurchaseOrderMutation,
   useCancelPurchaseOrderMutation,
-} from "../../api/procuerment/purchase-order.api";
-import { useGetProjectByIdQuery } from "../../api/projects/project.api";
+} from '../../api/procuerment/purchase-order.api';
+import { useGetProjectByIdQuery } from '../../api/projects/project.api';
 
 const STATUS_OPTIONS = [
-  "DRAFT",
-  "PENDING_APPROVAL",
-  "APPROVED",
-  "REJECTED",
-  "SENT",
-  "PARTIALLY_RECEIVED",
-  "RECEIVED",
-  "CANCELLED",
+  'DRAFT',
+  'PENDING_APPROVAL',
+  'APPROVED',
+  'REJECTED',
+  'SENT',
+  'PARTIALLY_RECEIVED',
+  'RECEIVED',
+  'CANCELLED',
 ];
 
-const pretty = (s) => String(s || "").replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+const pretty = (s) =>
+  String(s || '')
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
 const errMsg = (e, fallback) => e?.data?.message || e?.message || fallback;
 
 // Purchase order viewer: the A4 pages the vendor receives, plus the approval actions.
 export default function PurchaseOrderView() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("preview");
-  const recordInfo = useRecordInfo("purchase-order", id);
+  const recordInfo = useRecordInfo('purchase-order', id);
   const nav = useNavigate();
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
 
   const [dialog, setDialog] = useState(null); // "APPROVE" | "REJECT" | "CANCEL"
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState('');
 
-  const { data: poResponse, isLoading, isError, refetch } = useGetPurchaseOrderQuery(id, { skip: !id });
+  const {
+    data: poResponse,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetPurchaseOrderQuery(id, { skip: !id });
   const po = poResponse?.data && !Array.isArray(poResponse.data) ? poResponse.data : poResponse;
-  const { data: projectResponse } = useGetProjectByIdQuery(po?.project_id, { skip: !po?.project_id });
+  const { data: projectResponse } = useGetProjectByIdQuery(po?.project_id, {
+    skip: !po?.project_id,
+  });
   const project = projectResponse?.data || projectResponse;
 
   const [updatePurchaseOrder, { isLoading: updating }] = useUpdatePurchaseOrderMutation();
@@ -70,15 +80,15 @@ export default function PurchaseOrderView() {
   const [cancelPurchaseOrder, { isLoading: cancelling }] = useCancelPurchaseOrderMutation();
   const busy = updating || approving || cancelling;
 
-  const status = String(po?.status || "DRAFT").toUpperCase();
-  const canApprove = ["DRAFT", "PENDING_APPROVAL", "REJECTED"].includes(status);
-  const canReject = ["DRAFT", "PENDING_APPROVAL"].includes(status);
-  const canCancel = !["CANCELLED", "RECEIVED"].includes(status);
+  const status = String(po?.status || 'DRAFT').toUpperCase();
+  const canApprove = ['DRAFT', 'PENDING_APPROVAL', 'REJECTED'].includes(status);
+  const canReject = ['DRAFT', 'PENDING_APPROVAL'].includes(status);
+  const canCancel = !['CANCELLED', 'RECEIVED'].includes(status);
 
   const closeDialog = () => {
     if (busy) return;
     setDialog(null);
-    setReason("");
+    setReason('');
   };
 
   const run = async (fn, ok, fail) => {
@@ -86,7 +96,7 @@ export default function PurchaseOrderView() {
       await fn();
       toast.success(ok);
       setDialog(null);
-      setReason("");
+      setReason('');
       refetch();
     } catch (e) {
       console.error(fail, e);
@@ -96,25 +106,44 @@ export default function PurchaseOrderView() {
 
   const setStatus = (next) =>
     next !== status &&
-    run(() => updatePurchaseOrder({ id: po.id, status: next }).unwrap(), `Status updated to ${pretty(next).toLowerCase()}.`, "Unable to update the status.");
+    run(
+      () => updatePurchaseOrder({ id: po.id, status: next }).unwrap(),
+      `Status updated to ${pretty(next).toLowerCase()}.`,
+      'Unable to update the status.',
+    );
 
   const confirmDialog = () => {
-    if (dialog === "APPROVE") return run(() => approvePurchaseOrder(po.id).unwrap(), "Purchase order approved.", "Unable to approve the purchase order.");
-    if (dialog === "REJECT") {
-      if (!reason.trim()) return toast.error("Please enter a rejection reason.");
+    if (dialog === 'APPROVE')
       return run(
-        () => updatePurchaseOrder({ id: po.id, status: "REJECTED", rejection_reason: reason.trim() }).unwrap(),
-        "Purchase order rejected.",
-        "Unable to reject the purchase order.",
+        () => approvePurchaseOrder(po.id).unwrap(),
+        'Purchase order approved.',
+        'Unable to approve the purchase order.',
+      );
+    if (dialog === 'REJECT') {
+      if (!reason.trim()) return toast.error('Please enter a rejection reason.');
+      return run(
+        () =>
+          updatePurchaseOrder({
+            id: po.id,
+            status: 'REJECTED',
+            rejection_reason: reason.trim(),
+          }).unwrap(),
+        'Purchase order rejected.',
+        'Unable to reject the purchase order.',
       );
     }
-    if (dialog === "CANCEL") return run(() => cancelPurchaseOrder(po.id).unwrap(), "Purchase order cancelled.", "Unable to cancel the purchase order.");
+    if (dialog === 'CANCEL')
+      return run(
+        () => cancelPurchaseOrder(po.id).unwrap(),
+        'Purchase order cancelled.',
+        'Unable to cancel the purchase order.',
+      );
   };
 
   const crumbs = [
-    { label: "Procurement", to: "/procurement" },
-    { label: "Purchase orders", to: "/procurement/purchase-orders" },
-    { label: po?.po_number || "Purchase order" },
+    { label: 'Procurement', to: '/procurement' },
+    { label: 'Purchase orders', to: '/procurement/purchase-orders' },
+    { label: po?.po_number || 'Purchase order' },
   ];
 
   if (isLoading) {
@@ -134,7 +163,11 @@ export default function PurchaseOrderView() {
             icon={FileText}
             title="Purchase order not found"
             text="It may have been deleted or is not available."
-            action={<Button variant="primary" onClick={() => nav("/procurement/purchase-orders")}>Back to purchase orders</Button>}
+            action={
+              <Button variant="primary" onClick={() => nav('/procurement/purchase-orders')}>
+                Back to purchase orders
+              </Button>
+            }
           />
         </div>
       </Page>
@@ -142,26 +175,48 @@ export default function PurchaseOrderView() {
   }
 
   const dialogCopy = {
-    APPROVE: { title: "Approve purchase order?", text: `${po.po_number} will be marked as approved and can be sent to the vendor.`, cta: "Approve" },
-    REJECT: { title: "Reject purchase order?", text: `Tell the team why ${po.po_number} is being rejected.`, cta: "Reject" },
-    CANCEL: { title: "Cancel purchase order?", text: `${po.po_number} will be cancelled. This cannot be undone.`, cta: "Cancel order" },
-  }[dialog || "APPROVE"];
+    APPROVE: {
+      title: 'Approve purchase order?',
+      text: `${po.po_number} will be marked as approved and can be sent to the vendor.`,
+      cta: 'Approve',
+    },
+    REJECT: {
+      title: 'Reject purchase order?',
+      text: `Tell the team why ${po.po_number} is being rejected.`,
+      cta: 'Reject',
+    },
+    CANCEL: {
+      title: 'Cancel purchase order?',
+      text: `${po.po_number} will be cancelled. This cannot be undone.`,
+      cta: 'Cancel order',
+    },
+  }[dialog || 'APPROVE'];
 
   return (
     <Page>
       <PageHeader
         info={recordInfo}
         crumbs={crumbs}
-        title={po.po_number || "Purchase order"}
+        title={po.po_number || 'Purchase order'}
         actions={
           <>
             {canCancel && (
-              <Button variant="ghost" icon={Ban} disabled={busy} onClick={() => setDialog("CANCEL")}>
+              <Button
+                variant="ghost"
+                icon={Ban}
+                disabled={busy}
+                onClick={() => setDialog('CANCEL')}
+              >
                 Cancel
               </Button>
             )}
             {canReject && (
-              <Button variant="ghost" icon={XCircle} disabled={busy} onClick={() => setDialog("REJECT")}>
+              <Button
+                variant="ghost"
+                icon={XCircle}
+                disabled={busy}
+                onClick={() => setDialog('REJECT')}
+              >
                 Reject
               </Button>
             )}
@@ -180,11 +235,21 @@ export default function PurchaseOrderView() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="secondary" icon={Edit3} disabled={busy} onClick={() => nav(`/procurement/purchase-orders/${po.id}/edit`)}>
+            <Button
+              variant="secondary"
+              icon={Edit3}
+              disabled={busy}
+              onClick={() => nav(`/procurement/purchase-orders/${po.id}/edit`)}
+            >
               Edit
             </Button>
             {canApprove && (
-              <Button variant="soft" icon={Check} disabled={busy} onClick={() => setDialog("APPROVE")}>
+              <Button
+                variant="soft"
+                icon={Check}
+                disabled={busy}
+                onClick={() => setDialog('APPROVE')}
+              >
                 Approve
               </Button>
             )}
@@ -192,10 +257,12 @@ export default function PurchaseOrderView() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() => {
-                flushSync(() => setActiveTab("preview"));
-                download(purchaseOrderFileName(po), { title: `Purchase Order ${po.po_number || ""}`, label: "purchase order" });
-              }}
+              onClick={() =>
+                download(purchaseOrderFileName(po), {
+                  title: `Purchase Order ${po.po_number || ''}`,
+                  label: 'purchase order',
+                })
+              }
             >
               Download PDF
             </Button>
@@ -204,20 +271,9 @@ export default function PurchaseOrderView() {
       />
       <RecordContext type="purchase-order" id={id} />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList aria-label="Purchase order views">
-          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
-        </TabsList>
-        <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
-          <DocumentPreview>
-            <PurchaseOrderDocument ref={docRef} po={po} project={project} />
-          </DocumentPreview>
-        </TabsContent>
-        <TabsContent value="history">
-          <VersionHistory type="purchase-order" id={id} />
-        </TabsContent>
-      </Tabs>
+      <DocumentPreview>
+        <PurchaseOrderDocument ref={docRef} po={po} project={project} />
+      </DocumentPreview>
 
       <Dialog open={!!dialog} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent className="sm:max-w-[440px]">
@@ -225,7 +281,7 @@ export default function PurchaseOrderView() {
             <DialogTitle>{dialogCopy.title}</DialogTitle>
             <DialogDescription>{dialogCopy.text}</DialogDescription>
           </DialogHeader>
-          {dialog === "REJECT" && (
+          {dialog === 'REJECT' && (
             <TextArea
               rows={4}
               autoFocus
@@ -239,12 +295,17 @@ export default function PurchaseOrderView() {
             <Button variant="ghost" onClick={closeDialog} disabled={busy}>
               Keep as is
             </Button>
-            <Button variant={dialog === "APPROVE" ? "primary" : "danger"} onClick={confirmDialog} loading={busy}>
+            <Button
+              variant={dialog === 'APPROVE' ? 'primary' : 'danger'}
+              onClick={confirmDialog}
+              loading={busy}
+            >
               {dialogCopy.cta}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <VersionHistory type="purchase-order" id={id} />
     </Page>
   );
 }

@@ -20,6 +20,7 @@ import {
 import { ArchitectVisitStage } from './models/architect-visit-stage.model';
 import { Project } from '../projects/models/projects.model';
 import { Team } from '../process-workflow/models/team.model';
+import { ARCHITECT_VISIT_STAGES } from './constants/architect-visit-stages.constant';
 
 @Injectable()
 export class SiteVisitService {
@@ -72,13 +73,20 @@ export class SiteVisitService {
       if (!dto.stageId)
         throw new BadRequestException('Select an architect visit stage');
       const stage = await this.stageModel.findByPk(dto.stageId);
-      if (!stage || !stage.is_active)
-        throw new BadRequestException('Select an active architect visit stage');
+      const standard =
+        stage &&
+        ARCHITECT_VISIT_STAGES.find(
+          (s) => s.visit_no === stage.visit_no && s.visit_no !== 20,
+        );
+      if (!standard || !stage.is_active)
+        throw new BadRequestException(
+          'Select a standard active architect visit stage',
+        );
       snapshot = {
         stageId: stage.id,
-        stageName: stage.stage,
-        checksPurpose: stage.checks_purpose,
-        visitType: stage.visit_type,
+        stageName: standard.stage,
+        checksPurpose: standard.checks_purpose,
+        visitType: standard.visit_type,
       };
     } else if (dto.stageId) {
       throw new BadRequestException(

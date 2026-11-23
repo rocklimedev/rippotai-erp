@@ -124,6 +124,23 @@ export class ProjectPlannerController {
    * - planner items
    * - locations
    */
+  /** Planner phases of one module (CONSULTANCY = Design, PMC = Build). */
+  @RequirePermission('project-planners:read')
+  @Get('planner-phases')
+  listPlannerPhases(@Query('module') module?: string) {
+    return this.projectPlannerService.listPlannerPhases(module);
+  }
+
+  /** Add a new phase to the Design (CONSULTANCY) or Build (PMC) planner. */
+  @RequirePermission('project-planners:create')
+  @Post('planner-phases')
+  createPlannerPhase(@Body() body: { module?: string; title?: string }) {
+    return this.projectPlannerService.createPlannerPhase(
+      body?.module,
+      body?.title,
+    );
+  }
+
   @RequirePermission('project-planners:read')
   @Get('projects/:projectId/planners/overview')
   getProjectPlannerOverview(

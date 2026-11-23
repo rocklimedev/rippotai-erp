@@ -1,22 +1,21 @@
-// Global top bar across every app page and Home: Rippotai wordmark, All Apps,
+// Global top bar across every app page and Home: monogram + INOS, All Apps,
 // a wide search field, then approvals, chat, notifications and the user menu.
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, LayoutGrid, Menu } from "lucide-react";
-import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
-import { APP_META, LANDING_ORDER } from "@/config/appNav";
-import { useAccess } from "@/hooks/use-permission";
-import { useAuth } from "@/context/AuthContext";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useMyApprovalsCount } from "@/api/doc-flow/approvals.api";
-import CommandShellSearch from "../search/CommandShellSearch";
-import NotificationsBell from "../dashboard/NotificationsBell";
-import CliqIcon from "../icons/ChatIcon";
-import { useCliqChat } from "../cliq/context";
-import UserMenu from "../users/UserMenu";
-import wordmark from "@/assets/brand/rippotai-wordmark.png";
-import monogram from "@/assets/brand/rippotai-monogram.png";
-import "./shell.css";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CheckCircle2, LayoutGrid, Menu } from 'lucide-react';
+import { MODULE_ICONS } from '@/components/icons/ModuleIcons';
+import { APP_META, LANDING_ORDER } from '@/config/appNav';
+import { useAccess } from '@/hooks/use-permission';
+import { useAuth } from '@/context/AuthContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useMyApprovalsCount } from '@/api/doc-flow/approvals.api';
+import CommandShellSearch from '../search/CommandShellSearch';
+import NotificationsBell from '../dashboard/NotificationsBell';
+import CliqIcon from '../icons/ChatIcon';
+import { useCliqChat } from '../cliq/context';
+import UserMenu from '../users/UserMenu';
+import monogram from '@/assets/brand/rippotai-monogram.png';
+import './shell.css';
 
 export function AppSwitcher({ app }) {
   const nav = useNavigate();
@@ -25,12 +24,24 @@ export function AppSwitcher({ app }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className="inos-topbar__apps" title="All apps" aria-label="All apps" data-testid="app-switcher-btn">
+        <button
+          type="button"
+          className="inos-topbar__apps"
+          title="All apps"
+          aria-label="All apps"
+          data-testid="app-switcher-btn"
+        >
           <LayoutGrid size={15} aria-hidden />
           <span>All Apps</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" sideOffset={8} className="w-[420px] max-w-[calc(100vw-24px)] inos-menu" style={{ padding: 10 }}>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={8}
+        className="w-[420px] max-w-[calc(100vw-24px)] inos-menu"
+        style={{ padding: 10 }}
+      >
         <div className="inos-menu__label">Apps</div>
         <div className="grid grid-cols-4 gap-1">
           {LANDING_ORDER.filter((k) => access.canOpenApp(k)).map((k) => {
@@ -45,7 +56,7 @@ export function AppSwitcher({ app }) {
                   setOpen(false);
                   nav(meta.base);
                 }}
-                className={`inos-side__app-tile ${k === app ? "is-active" : ""}`}
+                className={`inos-side__app-tile ${k === app ? 'is-active' : ''}`}
               >
                 <span className="inos-side__app-tile-icon">{Icon && <Icon />}</span>
                 <span>{meta.name}</span>
@@ -66,11 +77,14 @@ function ChatButton() {
       onClick={toggleChat}
       aria-label="Chat"
       aria-pressed={open}
-      title={cliqConnected ? "Chat" : "Chat (not connected)"}
+      title={cliqConnected ? 'Chat' : 'Chat (not connected)'}
       className="inos-topbar__tool"
     >
       <CliqIcon size={19} />
-      <span className="inos-topbar__dot" style={{ background: cliqConnected ? "var(--ok-dot)" : "var(--mute-dot)" }} />
+      <span
+        className="inos-topbar__dot"
+        style={{ background: cliqConnected ? 'var(--ok-dot)' : 'var(--mute-dot)' }}
+      />
     </button>
   );
 }
@@ -80,31 +94,43 @@ export function ApprovalsButton() {
   const count = useMyApprovalsCount(!user?.id);
   if (count == null) return null;
   return (
-    <Link to="/approvals" className="inos-topbar__tool" title={`My approvals (${count})`} aria-label={`My approvals: ${count} waiting`} data-testid="topbar-approvals">
+    <Link
+      to="/approvals"
+      className="inos-topbar__tool"
+      title={`My approvals (${count})`}
+      aria-label={`My approvals: ${count} waiting`}
+      data-testid="topbar-approvals"
+    >
       <CheckCircle2 size={19} aria-hidden />
-      {count > 0 && <span className="inos-topbar__badge">{count > 99 ? "99+" : count}</span>}
+      {count > 0 && <span className="inos-topbar__badge">{count > 99 ? '99+' : count}</span>}
     </Link>
   );
 }
 
-export default function GlobalTopBar({ app = "dashboard", onOpenMenu }) {
+export default function GlobalTopBar({ app = 'dashboard', onOpenMenu }) {
   return (
     <header className="inos-topbar" data-testid={`topheader-${app}`}>
       {onOpenMenu && (
-        <button type="button" className="inos-topbar__menu" onClick={onOpenMenu} aria-label="Open menu">
+        <button
+          type="button"
+          className="inos-topbar__menu"
+          onClick={onOpenMenu}
+          aria-label="Open menu"
+        >
           <Menu size={20} />
         </button>
       )}
-      <Link to="/dashboard" className="inos-topbar__brand" title="RIPPOTAI ARCHITECTURE home" aria-label="RIPPOTAI ARCHITECTURE home" data-testid="rippotai-logo">
-        <img src={monogram} alt="" />
-        <img className="inos-topbar__wordmark" src={wordmark} alt="RIPPOTAI" />
+      <Link
+        to="/dashboard"
+        className="inos-topbar__brand"
+        title="INOS home"
+        data-testid="rippotai-logo"
+      >
+        <img src={monogram} alt="Rippotai" />
+        <span>INOS</span>
       </Link>
-      {app !== "dashboard" && (
-        <>
-          <span className="inos-topbar__sep" aria-hidden />
-          <AppSwitcher app={app} />
-        </>
-      )}
+      <span className="inos-topbar__sep" aria-hidden />
+      <AppSwitcher app={app} />
       <div className="inos-topbar__search">
         <CommandShellSearch currentApp={app} />
       </div>

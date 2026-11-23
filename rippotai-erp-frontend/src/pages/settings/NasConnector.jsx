@@ -65,6 +65,11 @@ export default function NasConnector({ status }) {
         )}
         {!isError && !isFetching && data?.staging && (
           <>
+            <p>
+              CDN staging: {data.staging.status.replaceAll('_', ' ')}. Pending:{' '}
+              {data.staging.pendingUploads ?? 'Unknown'} uploads;{' '}
+              {data.staging.pendingDeletes ?? 'Unknown'} deletions.
+            </p>
             {data.staging.status === 'not_configured' && (
               <p>
                 Set NAS_CDN_STAGING_PATH to a private staging directory outside the public CDN

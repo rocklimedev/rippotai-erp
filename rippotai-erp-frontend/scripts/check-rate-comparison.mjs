@@ -158,8 +158,10 @@ try {
   );
 
   assert.ok(
-    !baseApi.endpoints.getBoqById,
-    "Workspace must not load BOQ API endpoints",
+    !Object.values(store.getState()[baseApi.reducerPath].queries).some(
+      ({ endpointName }) => /^getBoqs?/.test(endpointName),
+    ),
+    "Workspace must not query BOQs",
   );
   const newSnapshot = {
     schema_version: 2,

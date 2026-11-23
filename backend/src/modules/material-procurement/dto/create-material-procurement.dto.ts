@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -12,6 +13,21 @@ import {
 import { Type } from 'class-transformer';
 
 import { MaterialProcurementStatus } from '../models/material-procurement.model';
+
+// ============================================================
+// SHEET (material type tab)
+// ============================================================
+
+export class MaterialProcurementSheetDto {
+  @IsString()
+  @MaxLength(120)
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  type?: string;
+}
 
 // ============================================================
 // MATERIAL PROCUREMENT ITEM
@@ -44,6 +60,11 @@ export class CreateMaterialProcurementItemDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  sheetName?: string;
 
   // ----------------------------------------------------------
   // MEASUREMENTS
@@ -122,6 +143,16 @@ export class CreateMaterialProcurementDto {
   @IsOptional()
   @IsString()
   remarks?: string;
+
+  // ----------------------------------------------------------
+  // SHEETS (material types, in order)
+  // ----------------------------------------------------------
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MaterialProcurementSheetDto)
+  sheets?: MaterialProcurementSheetDto[];
 
   // ----------------------------------------------------------
   // ITEMS

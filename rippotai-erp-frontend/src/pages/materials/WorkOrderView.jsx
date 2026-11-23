@@ -1,10 +1,8 @@
-import { useRef, useState } from "react";
-import { flushSync } from "react-dom";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import { useNavigate, useParams } from "react-router-dom";
+import { useRef, useState } from 'react';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Pencil,
   MoreHorizontal,
@@ -19,22 +17,20 @@ import {
   LockKeyhole,
   Ban,
   ClipboardCheck,
-} from "lucide-react";
-import { toast } from "sonner";
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-import WorkOrderPrintDocument from "../../components/commerce-documents/WorkOrderPrintDocument";
-import { DocumentPreview } from "@/components/print-document";
-import { Page, PageHeader, EmptyState, Button as InosButton } from "@/components/inos";
-import { downloadWorkOrderPdf } from "../../components/work-orders/workOrderPdf";
-import {
-  getWorkOrderNumber,
-} from "../../components/work-orders/workOrderFormat";
+import WorkOrderPrintDocument from '../../components/commerce-documents/WorkOrderPrintDocument';
+import { DocumentPreview } from '@/components/print-document';
+import { Page, PageHeader, EmptyState, Button as InosButton } from '@/components/inos';
+import { downloadWorkOrderPdf } from '../../components/work-orders/workOrderPdf';
+import { getWorkOrderNumber } from '../../components/work-orders/workOrderFormat';
 
 import {
   useGetWorkOrderQuery,
   useDeleteWorkOrderMutation,
   useUpdateWorkOrderStatusMutation,
-} from "../../api/procuerment/work-order.api";
+} from '../../api/procuerment/work-order.api';
 
 // shadcn/ui
 
@@ -47,7 +43,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 import {
   DropdownMenu,
@@ -55,31 +51,31 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 const STATUS_STYLES = {
-  DRAFT: "border-slate-200 bg-slate-100 text-slate-700",
+  DRAFT: 'border-slate-200 bg-slate-100 text-slate-700',
 
-  PENDING_APPROVAL: "border-amber-200 bg-amber-50 text-amber-700",
+  PENDING_APPROVAL: 'border-amber-200 bg-amber-50 text-amber-700',
 
-  APPROVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  APPROVED: 'border-emerald-200 bg-emerald-50 text-emerald-700',
 
-  ISSUED: "border-[#C5D6CF] bg-[#E7EEEB] text-[#0D3D2F]",
+  ISSUED: 'border-[#C5D6CF] bg-[#E7EEEB] text-[#0D3D2F]',
 
-  ACKNOWLEDGED: "border-cyan-200 bg-cyan-50 text-cyan-700",
+  ACKNOWLEDGED: 'border-cyan-200 bg-cyan-50 text-cyan-700',
 
-  IN_PROGRESS: "border-violet-200 bg-violet-50 text-violet-700",
+  IN_PROGRESS: 'border-violet-200 bg-violet-50 text-violet-700',
 
-  COMPLETED: "border-green-200 bg-green-50 text-green-700",
+  COMPLETED: 'border-green-200 bg-green-50 text-green-700',
 
-  CANCELLED: "border-red-200 bg-red-50 text-red-700",
+  CANCELLED: 'border-red-200 bg-red-50 text-red-700',
 
-  CLOSED: "border-gray-200 bg-gray-100 text-gray-700",
+  CLOSED: 'border-gray-200 bg-gray-100 text-gray-700',
 };
 
 const formatStatus = (status) =>
-  String(status || "-")
-    .replaceAll("_", " ")
+  String(status || '-')
+    .replaceAll('_', ' ')
     .toLowerCase()
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
@@ -94,70 +90,68 @@ const formatStatus = (status) =>
  */
 const STATUS_ACTIONS = {
   DRAFT: {
-    nextStatus: "PENDING_APPROVAL",
-    label: "Submit for Approval",
+    nextStatus: 'PENDING_APPROVAL',
+    label: 'Submit for Approval',
     icon: Send,
-    description:
-      "Submit this work order for approval. It will move to Pending Approval.",
+    description: 'Submit this work order for approval. It will move to Pending Approval.',
   },
 
   PENDING_APPROVAL: {
-    nextStatus: "APPROVED",
-    label: "Approve Work Order",
+    nextStatus: 'APPROVED',
+    label: 'Approve Work Order',
     icon: CheckCircle2,
-    description: "Approve this work order and move it to the Approved status.",
+    description: 'Approve this work order and move it to the Approved status.',
   },
 
   APPROVED: {
-    nextStatus: "ISSUED",
-    label: "Issue Work Order",
+    nextStatus: 'ISSUED',
+    label: 'Issue Work Order',
     icon: Send,
-    description: "Issue this approved work order to the vendor.",
+    description: 'Issue this approved work order to the vendor.',
   },
 
   ISSUED: {
-    nextStatus: "ACKNOWLEDGED",
-    label: "Mark Acknowledged",
+    nextStatus: 'ACKNOWLEDGED',
+    label: 'Mark Acknowledged',
     icon: ClipboardCheck,
-    description: "Mark the work order as acknowledged by the vendor.",
+    description: 'Mark the work order as acknowledged by the vendor.',
   },
 
   ACKNOWLEDGED: {
-    nextStatus: "IN_PROGRESS",
-    label: "Start Work",
+    nextStatus: 'IN_PROGRESS',
+    label: 'Start Work',
     icon: Play,
-    description: "Mark the work order as currently in progress.",
+    description: 'Mark the work order as currently in progress.',
   },
 
   IN_PROGRESS: {
-    nextStatus: "COMPLETED",
-    label: "Mark Completed",
+    nextStatus: 'COMPLETED',
+    label: 'Mark Completed',
     icon: CircleCheck,
-    description: "Mark the work order as completed.",
+    description: 'Mark the work order as completed.',
   },
 
   COMPLETED: {
-    nextStatus: "CLOSED",
-    label: "Close Work Order",
+    nextStatus: 'CLOSED',
+    label: 'Close Work Order',
     icon: LockKeyhole,
-    description: "Close this completed work order.",
+    description: 'Close this completed work order.',
   },
 };
 
 const CANCELLABLE_STATUSES = [
-  "DRAFT",
-  "PENDING_APPROVAL",
-  "APPROVED",
-  "ISSUED",
-  "ACKNOWLEDGED",
-  "IN_PROGRESS",
+  'DRAFT',
+  'PENDING_APPROVAL',
+  'APPROVED',
+  'ISSUED',
+  'ACKNOWLEDGED',
+  'IN_PROGRESS',
 ];
 
 export default function WorkOrderView() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("preview");
-  const recordInfo = useRecordInfo("work-order", id);
+  const recordInfo = useRecordInfo('work-order', id);
 
   const documentRef = useRef(null);
 
@@ -175,15 +169,13 @@ export default function WorkOrderView() {
     skip: !id,
   });
 
-  const [deleteWorkOrder, { isLoading: isDeleting }] =
-    useDeleteWorkOrderMutation();
+  const [deleteWorkOrder, { isLoading: isDeleting }] = useDeleteWorkOrderMutation();
 
-  const [updateStatus, { isLoading: isUpdatingStatus }] =
-    useUpdateWorkOrderStatusMutation();
+  const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateWorkOrderStatusMutation();
 
   const workOrder = response?.data || response?.workOrder || response;
 
-  const status = workOrder?.status || "DRAFT";
+  const status = workOrder?.status || 'DRAFT';
 
   const statusAction = STATUS_ACTIONS[status];
 
@@ -191,28 +183,24 @@ export default function WorkOrderView() {
 
   const handleDownloadPdf = async () => {
     if (!documentRef.current || isGeneratingPdf) return;
-    flushSync(() => setActiveTab("preview"));
 
     try {
       setIsGeneratingPdf(true);
 
-      toast.loading("Preparing PDF...", {
-        id: "work-order-pdf",
+      toast.loading('Preparing PDF...', {
+        id: 'work-order-pdf',
       });
 
-      await downloadWorkOrderPdf(
-        documentRef.current,
-        getWorkOrderNumber(workOrder),
-      );
+      await downloadWorkOrderPdf(documentRef.current, getWorkOrderNumber(workOrder));
 
-      toast.success("PDF downloaded", {
-        id: "work-order-pdf",
+      toast.success('PDF downloaded', {
+        id: 'work-order-pdf',
       });
     } catch (error) {
       console.error(error);
 
-      toast.error("Unable to generate PDF. Please try again.", {
-        id: "work-order-pdf",
+      toast.error('Unable to generate PDF. Please try again.', {
+        id: 'work-order-pdf',
       });
     } finally {
       setIsGeneratingPdf(false);
@@ -238,28 +226,17 @@ export default function WorkOrderView() {
         status: statusDialog.nextStatus,
       }).unwrap();
 
-      toast.success(
-        `Work order marked ${formatStatus(statusDialog.nextStatus)}`,
-      );
+      toast.success(`Work order marked ${formatStatus(statusDialog.nextStatus)}`);
 
       setStatusDialog(null);
 
       refetch();
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to update work order status",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to update work order status');
     }
   };
 
-  const openStatusDialog = (
-    nextStatus,
-    label,
-    description,
-    destructive = false,
-  ) => {
+  const openStatusDialog = (nextStatus, label, description, destructive = false) => {
     setStatusDialog({
       nextStatus,
       label,
@@ -272,22 +249,20 @@ export default function WorkOrderView() {
     try {
       await deleteWorkOrder(id).unwrap();
 
-      toast.success("Work order deleted");
+      toast.success('Work order deleted');
 
       setDeleteDialogOpen(false);
 
-      navigate("/procurement/work-order/all");
+      navigate('/procurement/work-order/all');
     } catch (error) {
-      toast.error(
-        error?.data?.message || error?.message || "Unable to delete work order",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to delete work order');
     }
   };
 
   const crumbs = [
-    { label: "Procurement", to: "/procurement" },
-    { label: "Work orders", to: "/procurement/work-order/all" },
-    { label: workOrder ? getWorkOrderNumber(workOrder) : "Work order" },
+    { label: 'Procurement', to: '/procurement' },
+    { label: 'Work orders', to: '/procurement/work-order/all' },
+    { label: workOrder ? getWorkOrderNumber(workOrder) : 'Work order' },
   ];
 
   if (isLoading) {
@@ -322,20 +297,30 @@ export default function WorkOrderView() {
     <>
       <Page>
         <PageHeader
-        info={recordInfo}
+          info={recordInfo}
           crumbs={crumbs}
           title={getWorkOrderNumber(workOrder)}
           actions={
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <InosButton variant="ghost" icon={MoreHorizontal} disabled={isUpdatingStatus || isDeleting} aria-label="More actions" />
+                  <InosButton
+                    variant="ghost"
+                    icon={MoreHorizontal}
+                    disabled={isUpdatingStatus || isDeleting}
+                    aria-label="More actions"
+                  />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   {canCancel && (
                     <DropdownMenuItem
                       onSelect={() =>
-                        openStatusDialog("CANCELLED", "Cancel Work Order", "This will move the work order to Cancelled status.", true)
+                        openStatusDialog(
+                          'CANCELLED',
+                          'Cancel Work Order',
+                          'This will move the work order to Cancelled status.',
+                          true,
+                        )
                       }
                     >
                       <Ban className="mr-2 h-4 w-4" />
@@ -343,13 +328,20 @@ export default function WorkOrderView() {
                     </DropdownMenuItem>
                   )}
                   {canCancel && <DropdownMenuSeparator />}
-                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={() => setDeleteDialogOpen(true)}>
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onSelect={() => setDeleteDialogOpen(true)}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete work order
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <InosButton variant="secondary" icon={Pencil} onClick={() => navigate(`/procurement/work-order/${id}/edit`)}>
+              <InosButton
+                variant="secondary"
+                icon={Pencil}
+                onClick={() => navigate(`/procurement/work-order/${id}/edit`)}
+              >
                 Edit
               </InosButton>
               {statusAction && (
@@ -357,12 +349,23 @@ export default function WorkOrderView() {
                   variant="soft"
                   icon={statusAction.icon}
                   disabled={isUpdatingStatus}
-                  onClick={() => openStatusDialog(statusAction.nextStatus, statusAction.label, statusAction.description)}
+                  onClick={() =>
+                    openStatusDialog(
+                      statusAction.nextStatus,
+                      statusAction.label,
+                      statusAction.description,
+                    )
+                  }
                 >
                   {statusAction.label}
                 </InosButton>
               )}
-              <InosButton variant="primary" icon={Download} loading={isGeneratingPdf} onClick={handleDownloadPdf}>
+              <InosButton
+                variant="primary"
+                icon={Download}
+                loading={isGeneratingPdf}
+                onClick={handleDownloadPdf}
+              >
                 Download PDF
               </InosButton>
             </>
@@ -370,22 +373,12 @@ export default function WorkOrderView() {
         />
         <RecordContext type="work-order" id={id} />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList aria-label="Work order views">
-            <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-            <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
-          </TabsList>
-          <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
-            <DocumentPreview>
-              <div ref={documentRef}>
-                <WorkOrderPrintDocument workOrder={workOrder} />
-              </div>
-            </DocumentPreview>
-          </TabsContent>
-          <TabsContent value="history">
-            <VersionHistory type="work-order" id={id} />
-          </TabsContent>
-        </Tabs>
+        <DocumentPreview>
+          <div ref={documentRef}>
+            <WorkOrderPrintDocument workOrder={workOrder} />
+          </div>
+        </DocumentPreview>
+        <VersionHistory type="work-order" id={id} />
       </Page>
 
       {/* Status Confirmation */}
@@ -399,40 +392,32 @@ export default function WorkOrderView() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {statusDialog?.label || "Update Work Order"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{statusDialog?.label || 'Update Work Order'}</AlertDialogTitle>
 
             <AlertDialogDescription>
               {statusDialog?.description ||
-                "Are you sure you want to update this work order status?"}
+                'Are you sure you want to update this work order status?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isUpdatingStatus}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isUpdatingStatus}>Cancel</AlertDialogCancel>
 
             <AlertDialogAction
               disabled={isUpdatingStatus}
               className={
                 statusDialog?.destructive
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-[#1F453B] hover:bg-[#17382f]"
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-[#1F453B] hover:bg-[#17382f]'
               }
               onClick={async (event) => {
                 event.preventDefault();
                 await handleStatusUpdate();
               }}
             >
-              {isUpdatingStatus && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isUpdatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
-              {isUpdatingStatus
-                ? "Updating..."
-                : statusDialog?.label || "Confirm"}
+              {isUpdatingStatus ? 'Updating...' : statusDialog?.label || 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -452,10 +437,8 @@ export default function WorkOrderView() {
             <AlertDialogTitle>Delete Work Order?</AlertDialogTitle>
 
             <AlertDialogDescription>
-              This action cannot be undone. The work order{" "}
-              <span className="font-medium text-slate-900">
-                {getWorkOrderNumber(workOrder)}
-              </span>{" "}
+              This action cannot be undone. The work order{' '}
+              <span className="font-medium text-slate-900">{getWorkOrderNumber(workOrder)}</span>{' '}
               will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -473,7 +456,7 @@ export default function WorkOrderView() {
             >
               {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
-              {isDeleting ? "Deleting..." : "Delete Work Order"}
+              {isDeleting ? 'Deleting...' : 'Delete Work Order'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

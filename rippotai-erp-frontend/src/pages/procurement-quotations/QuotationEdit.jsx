@@ -19,10 +19,7 @@ import { lineAmount, quotationTotals } from '@/components/quotation-documents/qu
 import {
   useGetProcurementQuotationQuery,
   useUpdateProcurementQuotationMutation,
-  useCreateProcurementQuotationMutation,
 } from '@/api/procuerment/procurement-quotation.api';
-import { useGetProjectsQuery } from '@/api/projects/project.api';
-import { useGetVendorsQuery } from '@/api/vendors/vendor.api';
 
 const LIST = '/procurement/quotations';
 const money = (v) =>
@@ -75,29 +72,14 @@ function fromQuotation(q) {
   };
 }
 
-export default function QuotationEdit({ creating = false }) {
+export default function QuotationEdit() {
   const { id } = useParams();
   const nav = useNavigate();
   const { data: q, isLoading } = useGetProcurementQuotationQuery(id, {
-    skip: creating,
     refetchOnMountOrArgChange: true,
   });
   const [save, { isLoading: saving }] = useUpdateProcurementQuotationMutation();
-  const [create, { isLoading: creatingQuotation }] = useCreateProcurementQuotationMutation();
-  const projects = useGetProjectsQuery(undefined, { skip: !creating });
-  const vendors = useGetVendorsQuery({ status: 'ACTIVE' }, { skip: !creating });
-  const projectOptions = Array.isArray(projects.data) ? projects.data : (projects.data?.data ?? []);
-  const vendorOptions = Array.isArray(vendors.data) ? vendors.data : (vendors.data?.data ?? []);
-  const [edited, setForm] = useState(() =>
-    creating
-      ? {
-          ...fromQuotation({ vendor_kind: 'MATERIAL' }),
-          project_id: '',
-          vendor_id: '',
-          items: [blankLine()],
-        }
-      : null,
-  );
+  const [edited, setForm] = useState(null);
   // The saved quotation fills the form (refill); edits are kept locally until "Save as vN".
   const form = edited ?? (q ? fromQuotation(q) : null);
   const update = (fn) => setForm((prev) => fn(prev ?? fromQuotation(q)));
@@ -133,18 +115,15 @@ export default function QuotationEdit({ creating = false }) {
     }));
 
   const submit = async () => {
-    if (creating && (!form.project_id || !form.vendor_id)) {
-      toast.error('Select a project and vendor.');
-      return;
-    }
     const items = form.items.filter((l) => l.item_name.trim());
     if (!items.length) {
       toast.error('Add at least one line.');
       return;
     }
     try {
-      const saved = await (creating ? create : save)({
-        ...(!creating && { id, version: q.version }),
+      const saved = await save({
+        id,
+        version: q.version,
         ...form,
         valid_until: form.valid_until || undefined,
         quotation_date: form.quotation_date || undefined,
@@ -167,8 +146,8 @@ export default function QuotationEdit({ creating = false }) {
             remarks: p.remarks || undefined,
           })),
       }).unwrap();
-      toast.success(creating ? 'Quotation saved' : `Saved as version ${saved.version}`);
-      nav(`${LIST}/${saved.id || id}`);
+      toast.success(`Saved as version ${saved.version}`);
+      nav(`${LIST}/${id}`);
     } catch (e) {
       toast.error(e?.data?.message?.toString?.() || 'Could not save the quotation.');
     }
@@ -178,65 +157,14 @@ export default function QuotationEdit({ creating = false }) {
   return (
     <Page>
       <PageHeader
-        crumbs={
-          creating
-            ? [{ label: 'Quotation', to: LIST }, { label: 'Create' }]
-            : [
-                { label: 'Quotation', to: LIST },
-                { label: q.quotation_number, to: `${LIST}/${id}` },
-                { label: 'Edit' },
-              ]
-        }
-        title={creating ? 'Create quotation' : `Edit ${q.quotation_number}`}
+        crumbs={[
+          { label: 'Quotation', to: LIST },
+          { label: q.quotation_number, to: `${LIST}/${id}` },
+          { label: 'Edit' },
+        ]}
+        title={`Edit ${q.quotation_number}`}
       />
       <Card>
-        {creating && (
-          <FormSection title="Quotation details">
-            <Field label="Project">
-              <SelectInput
-                value={form.project_id}
-                onChange={(e) => {
-                  const project = projectOptions.find((p) => p.id === e.target.value);
-                  update((f) => ({
-                    ...f,
-                    project_id: e.target.value,
-                    project_name: project?.name || '',
-                  }));
-                }}
-              >
-                <option value="">Select project</option>
-                {projectOptions.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </SelectInput>
-            </Field>
-            <Field label="Vendor">
-              <SelectInput
-                value={form.vendor_id}
-                onChange={(e) => {
-                  const vendor = vendorOptions.find((v) => v.id === e.target.value);
-                  update((f) => ({
-                    ...f,
-                    vendor_id: e.target.value,
-                    vendor_name: vendor?.company_name || vendor?.name || '',
-                  }));
-                }}
-              >
-                <option value="">Select vendor</option>
-                {vendorOptions.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.company_name || v.name}
-                  </option>
-                ))}
-              </SelectInput>
-            </Field>
-            {(projects.error || vendors.error) && (
-              <p role="alert">Could not load projects or vendors. Please try again.</p>
-            )}
-          </FormSection>
-        )}
         <FormSection step={1} title="Vendor">
           <Field label="Vendor name">
             <TextInput value={form.vendor_name} onChange={set('vendor_name')} />
@@ -498,9 +426,9 @@ export default function QuotationEdit({ creating = false }) {
           </Field>
         </FormSection>
         <FormActions
-          onCancel={() => nav(creating ? LIST : `${LIST}/${id}`)}
-          submitLabel={creating ? 'Create quotation' : `Save as v${q.version + 1}`}
-          submitting={saving || creatingQuotation}
+          onCancel={() => nav(`${LIST}/${id}`)}
+          submitLabel={`Save as v${q.version + 1}`}
+          submitting={saving}
           onSubmit={submit}
         />
       </Card>

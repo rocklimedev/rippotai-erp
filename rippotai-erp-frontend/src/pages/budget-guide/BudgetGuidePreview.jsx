@@ -1,17 +1,17 @@
-import { forwardRef, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
-import { Download, Pencil } from "lucide-react";
-import { Button, Card, PageHeader } from "@/components/inos";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import { useAuth } from "@/context/AuthContext";
+import { forwardRef, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Download, Pencil } from 'lucide-react';
+import { Button, Card, PageHeader } from '@/components/inos';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import { useAuth } from '@/context/AuthContext';
 import {
   useGetBudgetGuideQuery,
   useTransferBudgetGuideMutation,
-} from "@/api/documents/budget-guides.api";
-import { useGetProjectsQuery } from "@/api/projects/project.api";
+} from '@/api/documents/budget-guides.api';
+import { useGetProjectsQuery } from '@/api/projects/project.api';
 import {
   PrintDocument,
   DocumentPreview,
@@ -19,15 +19,15 @@ import {
   fmtDate,
   usePdfDownload,
   pdfFileName,
-} from "@/components/print-document";
-import "./budget-guide.css";
-import "./budget-guide-document.css";
+} from '@/components/print-document';
+import './budget-guide.css';
+import './budget-guide-document.css';
 
 // Specification & Budget Guide — the user's SPECIFICATION & BUDGET GUIDE TEMPLATE.docx on the
 // Word family of the print kit: hairline page header, logo cover, overview with the tier table,
 // per tier "SPECIFICATION TIER …" + target budget band + cost distribution, its material rate
 // schedule, How We Price, What Happens Next. Content mirrors the guide editor field for field.
-const TIER_WORDS = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN"];
+const TIER_WORDS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN'];
 
 const Eyebrow = ({ children, style }) => (
   <div className="wd-sbg-eyebrow" style={style}>
@@ -46,16 +46,15 @@ function buildGuideSections(guide) {
   const calc = guide.calculation || {};
   const plans = calc.plans || [];
   const unit = guide.area_unit;
-  const perUnit = unit === "sq.ft." ? "sq. ft." : unit;
-  const sym = guide.currency === "INR" ? "₹" : `${guide.currency} `;
+  const perUnit = unit === 'sq.ft.' ? 'sq. ft.' : unit;
+  const sym = guide.currency === 'INR' ? '₹' : `${guide.currency} `;
   const money = (value) =>
-    `${sym}${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
-  const range = (low, high, open = false) =>
-    `${money(low)} – ${money(high)}${open ? "+" : ""}`;
+    `${sym}${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  const range = (low, high, open = false) => `${money(low)} – ${money(high)}${open ? '+' : ''}`;
   const t = (cols, template, items, extra = {}) => ({
     table: {
-      skin: "word",
-      className: "wd-table--open wd-sbg-t",
+      skin: 'word',
+      className: 'wd-table--open wd-sbg-t',
       allowSplit: true,
       cols,
       template,
@@ -67,46 +66,46 @@ function buildGuideSections(guide) {
 
   /* Overview */
   const facts = [
-    ["Date", fmtDate(guide.issue_date)],
-    ["Project", guide.project?.name],
-    ["Location", guide.location],
-    ["Prepared by", guide.prepared_by],
+    ['Date', fmtDate(guide.issue_date)],
+    ['Project', guide.project?.name],
+    ['Location', guide.location],
+    ['Prepared by', guide.prepared_by],
     [
-      "Built-up area",
+      'Built-up area',
       guide.built_up_area == null
-        ? ""
-        : `${Number(guide.built_up_area).toLocaleString("en-IN")} ${unit}`,
+        ? ''
+        : `${Number(guide.built_up_area).toLocaleString('en-IN')} ${unit}`,
     ],
-    ["Indicative rates valid until", fmtDate(calc.rates_valid_until)],
-    ["Revision", `${guide.revision}${guide.status === "draft" ? " · Draft for review" : ""}`],
+    ['Indicative rates valid until', fmtDate(calc.rates_valid_until)],
+    ['Revision', `${guide.revision}${guide.status === 'draft' ? ' · Draft for review' : ''}`],
   ];
   sections.push({
     unnumbered: true,
     blocks: [
       <div key="ov">
-        <Eyebrow style={{ letterSpacing: "4pt", marginBottom: "4mm" }}>
-          {(guide.project_type || "(PROJECT TYPE) CONSTRUCTION").toUpperCase()}
+        <Eyebrow style={{ letterSpacing: '4pt', marginBottom: '4mm' }}>
+          {(guide.project_type || '(PROJECT TYPE) CONSTRUCTION').toUpperCase()}
         </Eyebrow>
         <h1 className="wd-sbg-title">Specification &amp; Budget Guide</h1>
         {has(guide.title) && <p className="wd-sbg-guide">{guide.title}</p>}
         {has(guide.introduction) && <p className="wd-sbg-p">{guide.introduction}</p>}
         <p className="wd-sbg-p wd-sbg-p--valid">
-          This guide is valid for {guide.validity_months} months from the date of issue.
-          Indicative rates are subject to revision based on prevailing market conditions.
+          This guide is valid for {guide.validity_months} months from the date of issue. Indicative
+          rates are subject to revision based on prevailing market conditions.
         </p>
         <p className="wd-sbg-p">
-          We are open to working with new vendors who can offer better rates, reliable service,
-          and quality that meets our project standards.
+          We are open to working with new vendors who can offer better rates, reliable service, and
+          quality that meets our project standards.
         </p>
       </div>,
       t(
-        ["Tier", "Specification", `Indicative budget, per ${perUnit} built-up`],
-        "30mm 77.6mm 1fr",
+        ['Tier', 'Specification', `Indicative budget, per ${perUnit} built-up`],
+        '30mm 77.6mm 1fr',
         plans.map((plan, i) => ({
           key: plan.key,
           cells: [
-            { text: plan.name, className: i ? "wd-sbg-strong" : "" },
-            plan.specification || "To be specified",
+            { text: plan.name, className: i ? 'wd-sbg-strong' : '' },
+            plan.specification || 'To be specified',
             range(plan.rate_low, plan.rate_high, plan.upper_open),
           ],
         })),
@@ -114,7 +113,7 @@ function buildGuideSections(guide) {
       ),
       <div key="facts" className="wd-sbg-facts">
         {facts
-          .filter(([k, v]) => k === "Date" || has(v))
+          .filter(([k, v]) => k === 'Date' || has(v))
           .map(([k, v]) => (
             <div key={k}>
               {k}: <span>{v}</span>
@@ -125,7 +124,7 @@ function buildGuideSections(guide) {
   });
 
   plans.forEach((plan, index) => {
-    const dist = plan.costing_mode === "distribution";
+    const dist = plan.costing_mode === 'distribution';
     const withAmount = dist && guide.built_up_area != null;
     const blocks = [
       <div key="h">
@@ -140,36 +139,40 @@ function buildGuideSections(guide) {
             {range(plan.rate_low, plan.rate_high, plan.upper_open)} per {perUnit}
           </span>
           <span className="wd-sbg-target__n">
-            {dist ? "of built-up area" : "itemised from quantities and item rates"}
+            {dist ? 'of built-up area' : 'itemised from quantities and item rates'}
           </span>
         </div>
-        <Eyebrow style={{ margin: "6.4mm 0 2.2mm" }}>COST DISTRIBUTION</Eyebrow>
+        <Eyebrow style={{ margin: '6.4mm 0 2.2mm' }}>COST DISTRIBUTION</Eyebrow>
       </div>,
       t(
         [
-          "Head of cost",
-          "Share",
-          dist ? `Per ${perUnit} of built-up area` : "Item amount",
-          ...(withAmount ? ["Amount"] : []),
+          'Head of cost',
+          'Share',
+          dist ? `Per ${perUnit} of built-up area` : 'Item amount',
+          ...(withAmount ? ['Amount'] : []),
         ],
-        withAmount ? "56mm 22mm 1fr 1fr" : "68.8mm 30mm 1fr",
+        withAmount ? '56mm 22mm 1fr 1fr' : '68.8mm 30mm 1fr',
         [
           ...plan.cost_heads.map((head, h) => ({
             key: h,
             cells: [
               { text: head.name, sub: head.notes },
-              dist ? `${head.share_percent}%` : "—",
-              dist ? range(head.rate_low, head.rate_high) : range(head.items_total_low, head.items_total_high),
+              dist ? `${head.share_percent}%` : '—',
+              dist
+                ? range(head.rate_low, head.rate_high)
+                : range(head.items_total_low, head.items_total_high),
               ...(withAmount ? [range(head.amount_low, head.amount_high)] : []),
             ],
           })),
           {
-            key: "total",
-            variant: "total",
+            key: 'total',
+            variant: 'total',
             cells: [
-              "Total",
-              dist ? `${plan.share_total}%` : "—",
-              dist ? range(plan.rate_low, plan.rate_high, plan.upper_open) : range(plan.total_low, plan.total_high),
+              'Total',
+              dist ? `${plan.share_total}%` : '—',
+              dist
+                ? range(plan.rate_low, plan.rate_high, plan.upper_open)
+                : range(plan.total_low, plan.total_high),
               ...(withAmount ? [range(plan.total_low, plan.total_high, plan.upper_open)] : []),
             ],
           },
@@ -179,33 +182,46 @@ function buildGuideSections(guide) {
         .filter((head) => head.items.length)
         .map((head) =>
           t(
-            ["Item & specification", "Qty", "Unit", "Rate", "Amount"],
-            "1fr 14mm 16mm 32mm 34mm",
+            ['Item & specification', 'Qty', 'Unit', 'Rate', 'Amount'],
+            '1fr 14mm 16mm 32mm 34mm',
             [
               ...head.items.map((item, i) => ({
                 key: i,
                 cells: [
-                  { text: item.name, sub: [item.specification, item.notes].filter(has).join("\n") },
-                  String(item.quantity ?? ""),
+                  { text: item.name, sub: [item.specification, item.notes].filter(has).join('\n') },
+                  String(item.quantity ?? ''),
                   item.unit,
                   range(item.rate_low, item.rate_high),
                   range(item.amount_low, item.amount_high),
                 ],
               })),
               {
-                key: "sub",
-                variant: "total",
-                cells: ["Items subtotal", "", "", "", range(head.items_total_low, head.items_total_high)],
+                key: 'sub',
+                variant: 'total',
+                cells: [
+                  'Items subtotal',
+                  '',
+                  '',
+                  '',
+                  range(head.items_total_low, head.items_total_high),
+                ],
               },
             ],
-            { headNode: <Eyebrow style={{ margin: "6.4mm 0 2.2mm" }}>{`${head.name} — dedicated items`.toUpperCase()}</Eyebrow> },
+            {
+              headNode: (
+                <Eyebrow style={{ margin: '6.4mm 0 2.2mm' }}>
+                  {`${head.name} — dedicated items`.toUpperCase()}
+                </Eyebrow>
+              ),
+            },
           ),
         ),
     ];
     if (dist && plan.cost_heads.some((head) => head.items.length))
       blocks.push(
         <p key="dn" className="wd-sbg-small">
-          Dedicated item subtotals are shown separately. They are not added to the percentage distribution.
+          Dedicated item subtotals are shown separately. They are not added to the percentage
+          distribution.
         </p>,
       );
     sections.push({ unnumbered: true, blocks });
@@ -215,14 +231,17 @@ function buildGuideSections(guide) {
         <Heading key="h" eyebrow={plan.name.toUpperCase()} title="Material Rate Schedule" />,
         plan.materials.length ? (
           t(
-            ["Category", "Brand / Make", "Indicative rate"],
-            "37mm 72.3mm 1fr",
+            ['Category', 'Brand / Make', 'Indicative rate'],
+            '37mm 72.3mm 1fr',
             plan.materials.map((row, i) => ({
               key: i,
               cells: [
                 row.category,
-                { text: row.brand_make, sub: [row.specification, row.notes].filter(has).join("\n") },
-                `${range(row.rate_low, row.rate_high)}${has(row.unit) ? ` per ${row.unit === "sq.ft." ? "sq. ft." : row.unit}` : ""}${row.fitted ? ", fitted" : ""}`,
+                {
+                  text: row.brand_make,
+                  sub: [row.specification, row.notes].filter(has).join('\n'),
+                },
+                `${range(row.rate_low, row.rate_high)}${has(row.unit) ? ` per ${row.unit === 'sq.ft.' ? 'sq. ft.' : row.unit}` : ''}${row.fitted ? ', fitted' : ''}`,
               ],
             })),
           )
@@ -241,11 +260,11 @@ function buildGuideSections(guide) {
       blocks: [
         <Heading key="h" eyebrow="REFERENCE" title="How We Price" />,
         t(
-          ["Head", "Note"],
-          "50mm 1fr",
+          ['Head', 'Note'],
+          '50mm 1fr',
           guide.pricing_notes.map((note, i) => ({
             key: i,
-            cells: [{ text: note.heading, className: "wd-sbg-green" }, note.text],
+            cells: [{ text: note.heading, className: 'wd-sbg-green' }, note.text],
           })),
         ),
       ],
@@ -253,13 +272,13 @@ function buildGuideSections(guide) {
   sections.push({
     unnumbered: true,
     blocks: [
-      <div key="h" style={{ paddingTop: "13mm" }}>
+      <div key="h" style={{ paddingTop: '13mm' }}>
         <Heading eyebrow="NEXT STEPS" title="What Happens Next" />
       </div>,
       (guide.next_steps || []).length > 0 &&
         t(
-          ["Step", ""],
-          "50mm 1fr",
+          ['Step', ''],
+          '50mm 1fr',
           guide.next_steps.map((note, i) => ({
             key: i,
             cells: [
@@ -270,15 +289,15 @@ function buildGuideSections(guide) {
                     {note.heading}
                   </>
                 ),
-                className: "wd-sbg-green wd-sbg-step",
+                className: 'wd-sbg-green wd-sbg-step',
               },
-              { text: note.text, className: "wd-sbg-small" },
+              { text: note.text, className: 'wd-sbg-small' },
             ],
           })),
-          { className: "wd-table--open wd-sbg-t wd-sbg-steps", keepWhole: true },
+          { className: 'wd-table--open wd-sbg-t wd-sbg-steps', keepWhole: true },
         ),
-      <div key="q" style={{ marginTop: "14mm" }}>
-        <Eyebrow style={{ marginBottom: "2.6mm" }}>HOLDING ANOTHER QUOTATION?</Eyebrow>
+      <div key="q" style={{ marginTop: '14mm' }}>
+        <Eyebrow style={{ marginBottom: '2.6mm' }}>HOLDING ANOTHER QUOTATION?</Eyebrow>
         <p className="wd-sbg-p">
           Bring it. We will place our specification sheet beside it and identify, head by head,
           where the two differ. A lower headline rate is usually a different specification rather
@@ -291,7 +310,9 @@ function buildGuideSections(guide) {
           <p key="v" className="wd-sbg-closing">
             This guide is valid for {guide.validity_months} months from the date of issue.
             Indicative rates are subject to revision based on prevailing market conditions.
-            {guide.rate_validity_days ? ` Rates hold for ${guide.rate_validity_days} days from issue.` : ""}
+            {guide.rate_validity_days
+              ? ` Rates hold for ${guide.rate_validity_days} days from issue.`
+              : ''}
           </p>
         ),
       },
@@ -300,10 +321,7 @@ function buildGuideSections(guide) {
   return sections;
 }
 
-export const BudgetGuideDocument = forwardRef(function BudgetGuideDocument(
-  { guide },
-  ref,
-) {
+export const BudgetGuideDocument = forwardRef(function BudgetGuideDocument({ guide }, ref) {
   const sections = useMemo(() => buildGuideSections(guide), [guide]);
   return (
     <PrintDocument
@@ -311,13 +329,13 @@ export const BudgetGuideDocument = forwardRef(function BudgetGuideDocument(
       variant="word"
       className="wd-sbg"
       docType="Specification & Budget Guide"
-      footerLabel={"\u200b"}
+      footerLabel={'\u200b'}
       numbered={false}
       bodyHeight={252}
       title={guide.title}
       wordCover={{
-        title: "SPECIFICATION & BUDGET GUIDE",
-        className: "wd-sbg-cover",
+        title: 'SPECIFICATION & BUDGET GUIDE',
+        className: 'wd-sbg-cover',
         logoWidth: 39.5,
         logoTop: 117,
       }}
@@ -330,13 +348,13 @@ export default function BudgetGuidePreview() {
   const { id } = useParams(),
     navigate = useNavigate(),
     { user } = useAuth();
-  const recordInfo = useRecordInfo("budget-guide", id);
-  const canRead = user?.permissions?.includes("budget-guides:read");
+  const recordInfo = useRecordInfo('budget-guide', id);
+  const canRead = user?.permissions?.includes('budget-guides:read');
   const canCopy =
     canRead &&
-    user?.permissions?.includes("budget-guides:create") &&
-    user?.permissions?.includes("projects:read");
-  const [projectId, setProjectId] = useState("");
+    user?.permissions?.includes('budget-guides:create') &&
+    user?.permissions?.includes('projects:read');
+  const [projectId, setProjectId] = useState('');
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
   const [transfer, transferring] = useTransferBudgetGuideMutation();
@@ -344,59 +362,61 @@ export default function BudgetGuidePreview() {
   const projects = Array.isArray(projectQuery.data)
     ? projectQuery.data
     : projectQuery.data?.items || projectQuery.data?.data || [];
-  const { data, isLoading, isError, error, refetch } = useGetBudgetGuideQuery(
-    id,
-    { skip: !canRead },
-  );
+  const { data, isLoading, isError, error, refetch } = useGetBudgetGuideQuery(id, {
+    skip: !canRead,
+  });
   return (
     <div className="bg-preview-shell">
       <PageHeader
-        crumbs={[{ label: "Budget Guide", to: "/ledger/budget-guides/all" }, { label: data?.title || "Budget Guide" }]}
-        title={data?.title || "Budget Guide"}
+        crumbs={[
+          { label: 'Budget Guide', to: '/ledger/budget-guides/all' },
+          { label: data?.title || 'Budget Guide' },
+        ]}
+        title={data?.title || 'Budget Guide'}
         info={recordInfo}
         actions={
-      <>
-        {user?.permissions?.includes("budget-guides:update") && (
-          <Button
-            icon={Pencil}
-            onClick={() => navigate(`/ledger/budget-guides/${id}/edit`)}
-          >
-            Edit guide
-          </Button>
-        )}
-        <Button
-          variant="primary"
-          icon={Download}
-          disabled={!data}
-          loading={downloading}
-          onClick={() =>
-            download(
-              pdfFileName(
-                "Budget-Guide",
-                data?.project?.name || data?.title,
-                data?.revision || 1,
-              ),
-              {
-                title: `Budget Guide — ${data?.title || ""}`,
-                label: "budget guide",
-              },
-            )
-          }
-        >
-          Download PDF
-        </Button>
-      </>
+          <>
+            {user?.permissions?.includes('budget-guides:update') && (
+              <Button icon={Pencil} onClick={() => navigate(`/ledger/budget-guides/${id}/edit`)}>
+                Edit guide
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              icon={Download}
+              disabled={!data}
+              loading={downloading}
+              onClick={() =>
+                download(
+                  pdfFileName(
+                    'Budget-Guide',
+                    data?.project?.name || data?.title,
+                    data?.revision || 1,
+                  ),
+                  {
+                    title: `Budget Guide — ${data?.title || ''}`,
+                    label: 'budget guide',
+                  },
+                )
+              }
+            >
+              Download PDF
+            </Button>
+          </>
         }
       />
-      {canRead && <RecordContext type="budget-guide" id={id} />}
+      {canRead && (
+        <RecordContext
+          type="budget-guide"
+          id={id}
+          deleteArg={data ? { id, revision: data.revision } : undefined}
+        />
+      )}
       {data && canCopy && (
         <div className="bg-preview-actions">
           <details>
             <summary>Copy this guide to a project</summary>
-            <p>
-              The original remains unchanged; the project gets an independent
-              draft.
-            </p>
+            <p>The original remains unchanged; the project gets an independent draft.</p>
             <div className="bg-toolbar">
               <select
                 className="inos-input"
@@ -423,15 +443,13 @@ export default function BudgetGuidePreview() {
                         expected_revision: data.revision,
                       },
                     }).unwrap();
-                    toast.success("Project copy created");
-                    setProjectId("");
+                    toast.success('Project copy created');
+                    setProjectId('');
                     navigate(
-                      `/ledger/budget-guides/${copy.id}${user?.permissions?.includes("budget-guides:update") ? "/edit" : ""}`,
+                      `/ledger/budget-guides/${copy.id}${user?.permissions?.includes('budget-guides:update') ? '/edit' : ''}`,
                     );
                   } catch (e) {
-                    toast.error(
-                      e?.data?.message || "Could not create project copy",
-                    );
+                    toast.error(e?.data?.message || 'Could not create project copy');
                   }
                 }}
               >
@@ -440,8 +458,7 @@ export default function BudgetGuidePreview() {
             </div>
             {projectQuery.isError && (
               <p role="alert">
-                Could not load projects.{" "}
-                <Button onClick={projectQuery.refetch}>Retry</Button>
+                Could not load projects. <Button onClick={projectQuery.refetch}>Retry</Button>
               </p>
             )}
           </details>
@@ -454,7 +471,7 @@ export default function BudgetGuidePreview() {
       ) : isError ? (
         <Card>
           <p role="alert">
-            {error?.data?.message || "Could not load guide"}{" "}
+            {error?.data?.message || 'Could not load guide'}{' '}
             <Button onClick={refetch}>Retry</Button>
           </p>
         </Card>

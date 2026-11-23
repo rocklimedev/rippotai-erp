@@ -55,7 +55,12 @@ export function useUploadRows(cfg, projectId) {
     if (!types.length) return [];
     const src = asList(isDrawing ? drawingsQ.data : docsQ.data);
     return src
-      .filter((r) => typeIds.has(r.documentTypeId || r.document_type_id))
+      .filter((r) => {
+        const typeId = r.documentTypeId || r.document_type_id;
+        if (typeIds.has(typeId)) return true;
+        // Drawings saved under a custom name (no checklist type) belong to their phase's list.
+        return isDrawing && !!cfg.phaseCode && !typeId && (r.phaseCode || r.phase_code) === cfg.phaseCode;
+      })
       .filter((r) => !projectId || (r.projectId || r.project_id) === projectId)
       .map((r) => {
         const typeId = r.documentTypeId || r.document_type_id;
@@ -65,7 +70,7 @@ export function useUploadRows(cfg, projectId) {
           id: r.id,
           kind: isDrawing ? "drawing" : "document",
           typeId,
-          typeName: typeById[typeId]?.name || cfg.name,
+          typeName: typeById[typeId]?.name || (isDrawing && !typeId ? r.title : null) || cfg.name,
           title: isDrawing ? `${r.drawingNumber ? `${r.drawingNumber} · ` : ""}${r.title || ""}` : r.title,
           projectId: pid,
           projectName: byId[pid]?.name || r.project?.name || "—",
@@ -78,7 +83,7 @@ export function useUploadRows(cfg, projectId) {
         };
       })
       .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
-  }, [types, typeIds, typeById, isDrawing, docsQ.data, drawingsQ.data, projectId, byId, cfg.name]);
+  }, [types, typeIds, typeById, isDrawing, docsQ.data, drawingsQ.data, projectId, byId, cfg.name, cfg.phaseCode]);
 
   const q = isDrawing ? drawingsQ : docsQ;
   return { rows, types, isLoading: typesLoading || q.isLoading, isFetching: q.isFetching, refetch: q.refetch };

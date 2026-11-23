@@ -271,7 +271,7 @@ const ProjectPhases = () => {
                 normalizedPhases.map((item, index) => (
                   <tr key={item.id}>
                     <td>
-                      <span className="adm-num">{index + 1}</span>
+                      <span className="adm-num">{item.phase_number ?? index + 1}</span>
                     </td>
                     <td>
                       <div className="adm-cell-title">{phaseLabel(item)}</div>

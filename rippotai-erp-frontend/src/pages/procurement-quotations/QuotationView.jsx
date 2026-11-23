@@ -15,9 +15,8 @@ import {
   Wrench,
   XCircle,
 } from 'lucide-react';
-import { Button, Card, EmptyState, Page, PageHeader, Pill, Tabs } from '@/components/inos';
+import { Button, Card, EmptyState, Page, PageHeader, Pill } from '@/components/inos';
 import { DocumentPreview, usePdfDownload } from '@/components/print-document';
-import { OFFSCREEN_STYLE } from '@/components/print-document/commerce';
 import QuotationDocument from '@/components/commerce-documents/QuotationDocument';
 import {
   quotationFileName,
@@ -45,13 +44,6 @@ export default function QuotationView() {
   const recordInfo = useRecordInfo('quotation', id);
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();
-  const activeTab = params.get('tab') === 'history' ? 'history' : 'preview';
-  const changeTab = (tab) => {
-    const next = new URLSearchParams(params);
-    if (tab === 'preview') next.delete('tab');
-    else next.set('tab', tab);
-    setParams(next, { replace: true });
-  };
   const shownVersion = Number(params.get('version')) || null;
   const {
     data: q,
@@ -329,43 +321,24 @@ export default function QuotationView() {
         </div>
       </Card>
 
-      <Tabs
-        value={activeTab}
-        onChange={changeTab}
-        options={[
-          { value: 'preview', label: 'Preview' },
-          { value: 'history', label: 'Version History' },
-        ]}
-      />
-      <div
-        role="tabpanel"
-        aria-label="Preview"
-        aria-hidden={activeTab !== 'preview'}
-        style={activeTab === 'preview' ? undefined : OFFSCREEN_STYLE}
-      >
-        {model ? (
-          <DocumentPreview>
-            <QuotationDocument ref={docRef} model={model} />
-          </DocumentPreview>
-        ) : (
-          <Card>Loading version…</Card>
-        )}
-      </div>
-      {activeTab === 'history' && (
-        <div role="tabpanel" aria-label="Version History">
-          <VersionHistory
-            type="quotation"
-            id={id}
-            extraItems={(q.history || []).map((h) => ({
-              key: `qv:${h.version}`,
-              version: `v${h.version}`,
-              label: 'Saved',
-              at: h.created_at || h.createdAt,
-              href: `${LIST}/${id}?version=${h.version}`,
-            }))}
-          />
-        </div>
+      {model ? (
+        <DocumentPreview>
+          <QuotationDocument ref={docRef} model={model} />
+        </DocumentPreview>
+      ) : (
+        <Card>Loading version…</Card>
       )}
+      <VersionHistory
+        type="quotation"
+        id={id}
+        extraItems={(q.history || []).map((h) => ({
+          key: `qv:${h.version}`,
+          version: `v${h.version}`,
+          label: 'Saved',
+          at: h.created_at || h.createdAt,
+          href: `${LIST}/${id}?version=${h.version}`,
+        }))}
+      />
     </Page>
   );
 }

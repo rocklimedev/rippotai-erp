@@ -214,3 +214,28 @@
     break-inside: avoid;
   }
 }
+
+/* Date · Status (Completed / Due / Pending / Late) */
+.planner-sheet .planner-date { display: flex; flex-direction: column; gap: 2px; border-radius: 6px; padding: 2px 4px; }
+.planner-sheet .planner-date input { background: transparent; border: 0; width: 100%; font: inherit; color: inherit; }
+.planner-sheet .planner-date.is-late { background: #fbe3e1; color: #a32a20; font-weight: 700; }
+.planner-sheet .planner-date.is-done { background: #e3f1e8; color: #17603a; font-weight: 700; }
+.planner-sheet .planner-date small { font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .8; }
+.planner-sheet .planner-date__text { padding: 2px 0; }
+.planner-sheet .planner-state {
+  display: inline-flex; align-items: center; width: 100%; min-height: 30px; padding: 4px 8px;
+  border-radius: 999px; border: 1px solid transparent; font: inherit; font-size: 12px; font-weight: 700;
+  background: #f1f3f2; color: #4c5c56; cursor: pointer;
+}
+.planner-sheet span.planner-state { cursor: default; justify-content: center; }
+.planner-sheet .planner-state.is-completed { background: #e3f1e8; color: #17603a; }
+.planner-sheet .planner-state.is-late { background: #fbe3e1; color: #a32a20; }
+.planner-sheet .planner-state.is-due { background: #fdf2d9; color: #8a6420; }
+.planner-sheet .planner-state.is-pending { background: #f1f3f2; color: #4c5c56; }
+.planner-sheet tr.is-late-row td:first-child { box-shadow: inset 3px 0 0 #c0392b; }
+
+/* Add row form: one line on wide screens */
+.planner-add-row { display: grid; grid-template-columns: minmax(170px, 210px) repeat(2, minmax(160px, 1fr)) 150px minmax(140px, 1fr) auto; gap: 8px; align-items: center; }
+.planner-add-row > * { min-width: 0 !important; width: 100%; }
+.planner-add-row--remove { grid-template-columns: minmax(240px, 420px) auto; justify-content: start; }
+@media (max-width: 1100px) { .planner-add-row { grid-template-columns: 1fr 1fr; } }

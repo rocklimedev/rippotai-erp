@@ -1,16 +1,16 @@
-import { DocumentUpload } from "./documents/DocumentUpload";
-import DrawingUploadPage from "./design-studio/DrawingUploadPage";
-import EvidenceDrawer from "@/components/command-center/EvidenceDrawer";
-import { useDispatch } from "react-redux";
-import "./CommandCenter.css";
-import { downloadDocument } from "../hooks/shared";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { DocumentUpload } from './documents/DocumentUpload';
+import DrawingUploadPage from './design-studio/DrawingUploadPage';
+import EvidenceDrawer from '@/components/command-center/EvidenceDrawer';
+import { useDispatch } from 'react-redux';
+import './CommandCenter.css';
+import { downloadDocument } from '../hooks/shared';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { usePollingInterval, canBackgroundPoll } from '@/hooks/use-polling-interval';
-import GateChecklist from "@/components/command-center/GateChecklist";
-import AuthorityPanel from "@/components/command-center/AuthorityPanel";
-import { isSuperAuthority } from "@/components/command-center/authority";
-import { useEffect, useMemo, useState } from "react";
+import GateChecklist from '@/components/command-center/GateChecklist';
+import AuthorityPanel from '@/components/command-center/AuthorityPanel';
+import { isSuperAuthority } from '@/components/command-center/authority';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -34,7 +34,7 @@ import {
   ShieldCheck,
   UploadCloud,
   Users,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   Page,
@@ -49,13 +49,8 @@ import {
   Pill,
   EmptyState,
   Progress,
-} from "@/components/inos";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/inos';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // ------------------------------------------------------------
 // LIVE API — every number on screen comes from CommandCenterService
@@ -74,30 +69,35 @@ import {
   useGetCommandCenterTeamWorkloadQuery,
   useGetCommandCenterActivityQuery,
   useGetCommandCenterTasksQuery,
-} from "../api/projects/command-center.api";
+} from '../api/projects/command-center.api';
 
 // ------------------------------------------------------------
 // ROUTES — deep links into the canonical modules (unchanged)
 // ------------------------------------------------------------
 
 const ROUTES = {
-  projects: "/projects",
+  projects: '/projects',
   project: (id) => `/projects/${id}`,
-  boq: "/ledger/boq/all",
-  tasks: "/tasks/all",
+  boq: '/ledger/boq/all',
+  tasks: '/tasks/all',
   taskProject: (id) => `/tasks/all?project=${encodeURIComponent(id)}`,
-  documents: "/projects/documents/all",
-  documentsProject: (id) =>
-    `/projects/documents/all?project_id=${encodeURIComponent(id)}`,
-  procurement: "/procurement",
-  calendar: "/calendar",
+  documents: '/projects/documents/all',
+  documentsProject: (id) => `/projects/documents/all?project_id=${encodeURIComponent(id)}`,
+  procurement: '/procurement',
+  calendar: '/calendar',
 };
 
 const REFRESH_TAGS = [
-  "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases",
-  "CommandCenterActions", "CommandCenterDocuments", "CommandCenterTasks",
-  "CommandCenterCommercial", "CommandCenterTeamWorkload", "CommandCenterActivity",
-  "CommandCenterGates",
+  'CommandCenterKpis',
+  'CommandCenterPortfolio',
+  'CommandCenterProjectPhases',
+  'CommandCenterActions',
+  'CommandCenterDocuments',
+  'CommandCenterTasks',
+  'CommandCenterCommercial',
+  'CommandCenterTeamWorkload',
+  'CommandCenterActivity',
+  'CommandCenterGates',
 ];
 
 // The backend's team-workload rollup only returns { role, count }.
@@ -108,26 +108,29 @@ const PEOPLE_BY_ROLE = {};
 // HELPERS
 // ------------------------------------------------------------
 
-const cn = (...classes) => classes.filter(Boolean).join(" ");
+const cn = (...classes) => classes.filter(Boolean).join(' ');
 
 const formatINR = (value) => {
   const n = Number(value || 0);
   if (n >= 10000000) return `₹ ${(n / 10000000).toFixed(2)} Cr`;
   if (n >= 100000) return `₹ ${(n / 100000).toFixed(2)} L`;
-  return `₹ ${n.toLocaleString("en-IN")}`;
+  return `₹ ${n.toLocaleString('en-IN')}`;
 };
 
 // Backend enum values may arrive as "AWAITING_GATE", "Awaiting Gate",
 // "awaiting-gate"… normalise to one SCREAMING_SNAKE key.
 const normalizeKey = (v) =>
-  String(v ?? "")
+  String(v ?? '')
     .trim()
     .toUpperCase()
-    .replace(/[\s-]+/g, "_");
+    .replace(/[\s-]+/g, '_');
 
 const sentence = (v) => {
-  const s = String(v ?? "").replace(/_/g, " ").trim().toLowerCase();
-  return s ? s[0].toUpperCase() + s.slice(1) : "";
+  const s = String(v ?? '')
+    .replace(/_/g, ' ')
+    .trim()
+    .toLowerCase();
+  return s ? s[0].toUpperCase() + s.slice(1) : '';
 };
 
 function useDebouncedValue(value, delayMs = 300) {
@@ -140,11 +143,11 @@ function useDebouncedValue(value, delayMs = 300) {
 }
 
 function timeAgo(dateLike) {
-  if (!dateLike) return "";
+  if (!dateLike) return '';
   const then = new Date(dateLike).getTime();
-  if (Number.isNaN(then)) return "";
+  if (Number.isNaN(then)) return '';
   const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
-  if (diffSec < 60) return "just now";
+  if (diffSec < 60) return 'just now';
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) return `${diffMin}m ago`;
   const diffHr = Math.floor(diffMin / 60);
@@ -158,79 +161,78 @@ function timeAgo(dateLike) {
 function mapActivityLog(row) {
   const action = normalizeKey(row.action);
   const ICON_TYPE = {
-    FILE_UPLOADED: "DOC",
-    GATE_CLEARED: "GATE_APPROVED",
-    GATE_REOPENED: "GATE_APPROVED",
-    DOCUMENT_UPLOADED: "DOC",
-    DOCUMENT_APPROVED: "DOC",
-    DOCUMENT_REJECTED: "DOC",
-    TASK_COMPLETED: "TASK",
-    TASK_FAILED: "TASK",
-    GATE_APPROVED: "GATE_APPROVED",
-    GATE_OVERRIDDEN: "GATE_APPROVED",
+    FILE_UPLOADED: 'DOC',
+    GATE_CLEARED: 'GATE_APPROVED',
+    GATE_REOPENED: 'GATE_APPROVED',
+    DOCUMENT_UPLOADED: 'DOC',
+    DOCUMENT_APPROVED: 'DOC',
+    DOCUMENT_REJECTED: 'DOC',
+    TASK_COMPLETED: 'TASK',
+    TASK_FAILED: 'TASK',
+    GATE_APPROVED: 'GATE_APPROVED',
+    GATE_OVERRIDDEN: 'GATE_APPROVED',
   };
   const TITLE = {
-    FILE_UPLOADED:
-      row.changes?.status === "rejected"
-        ? "Document rejected"
-        : "Document updated",
-    GATE_CLEARED: "Gate cleared",
-    GATE_REOPENED: "Gate reopened",
-    DOCUMENT_UPLOADED: "Document uploaded",
-    DOCUMENT_APPROVED: "Document approved",
-    DOCUMENT_REJECTED: "Document rejected",
-    TASK_COMPLETED: "Task completed",
-    TASK_FAILED: "Task failed QC",
-    GATE_APPROVED: "Gate approved",
-    GATE_OVERRIDDEN: "Gate force-approved",
+    FILE_UPLOADED: row.changes?.status === 'rejected' ? 'Document rejected' : 'Document updated',
+    GATE_CLEARED: 'Gate cleared',
+    GATE_REOPENED: 'Gate reopened',
+    DOCUMENT_UPLOADED: 'Document uploaded',
+    DOCUMENT_APPROVED: 'Document approved',
+    DOCUMENT_REJECTED: 'Document rejected',
+    TASK_COMPLETED: 'Task completed',
+    TASK_FAILED: 'Task failed QC',
+    GATE_APPROVED: 'Gate approved',
+    GATE_OVERRIDDEN: 'Gate force-approved',
   };
   return {
-    type: ICON_TYPE[action] || (action.endsWith("_CREATED") ? "PROJECT_CREATED" : "SCAN"),
+    type: ICON_TYPE[action] || (action.endsWith('_CREATED') ? 'PROJECT_CREATED' : 'SCAN'),
     title: TITLE[action] || sentence(action),
-    detail: row.entity_label || row.user_email || "",
+    detail: row.entity_label || row.user_email || '',
     time: timeAgo(row.created_at),
   };
 }
 
 // Phase state -> pastel tone (drives stepper dots, pills and legend)
 const STATE_TONE = {
-  COMPLETE: "ok",
-  AWAITING_GATE: "info",
-  IN_PROGRESS: "brand",
-  STALLED: "peach",
-  QC_FAILED: "bad",
-  NOT_STARTED: "mute",
+  COMPLETE: 'ok',
+  AWAITING_GATE: 'info',
+  IN_PROGRESS: 'brand',
+  STALLED: 'peach',
+  QC_FAILED: 'bad',
+  NOT_STARTED: 'mute',
 };
-const stateTone = (state) => STATE_TONE[normalizeKey(state)] || "mute";
+const stateTone = (state) => STATE_TONE[normalizeKey(state)] || 'mute';
 const stateLabel = (state) => sentence(normalizeKey(state));
 
 const LEGEND = [
-  ["COMPLETE", "Gate cleared"],
-  ["AWAITING_GATE", "Awaiting approval"],
-  ["IN_PROGRESS", "In progress"],
-  ["STALLED", "Stalled"],
-  ["QC_FAILED", "QC failed"],
-  ["NOT_STARTED", "Not started"],
+  ['COMPLETE', 'Gate cleared'],
+  ['AWAITING_GATE', 'Awaiting approval'],
+  ['IN_PROGRESS', 'In progress'],
+  ['STALLED', 'Stalled'],
+  ['QC_FAILED', 'QC failed'],
+  ['NOT_STARTED', 'Not started'],
 ];
 
 const HEALTH_TONE = {
-  DANGER: "bad",
-  GATE: "info",
-  PROGRESS: "ok",
-  COMPLETE: "brand",
+  DANGER: 'bad',
+  GATE: 'info',
+  PROGRESS: 'ok',
+  COMPLETE: 'brand',
 };
-const healthTone = (key) => HEALTH_TONE[normalizeKey(key)] || "ok";
+const healthTone = (key) => HEALTH_TONE[normalizeKey(key)] || 'ok';
 
 // "01 BRIEF" -> "Brief", "A VENDOR TRADES" -> "A Vendor Trades"
 const phaseTitle = (name) => {
-  const raw = String(name ?? "").replace(/^\d+\s+/, "").trim();
-  if (!raw || raw !== raw.toUpperCase()) return raw || String(name ?? "");
+  const raw = String(name ?? '')
+    .replace(/^\d+\s+/, '')
+    .trim();
+  if (!raw || raw !== raw.toUpperCase()) return raw || String(name ?? '');
   return raw.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase());
 };
 const gateTitle = (code) => sentence(code);
 
-const isDone = (s) => s === "DONE" || s === "Done";
-const isFailed = (s) => s === "FAILED" || s === "Failed";
+const isDone = (s) => s === 'DONE' || s === 'Done';
+const isFailed = (s) => s === 'FAILED' || s === 'Failed';
 
 // ------------------------------------------------------------
 // SMALL UI PIECES (local to this module)
@@ -245,7 +247,7 @@ function Toast({ message }) {
   );
 }
 
-function LoadingRow({ label = "Loading…" }) {
+function LoadingRow({ label = 'Loading…' }) {
   return (
     <div className="cc-loading" role="status">
       <Loader2 className="cc-spin" aria-hidden />
@@ -259,7 +261,7 @@ function ErrorRow({ error, onRetry }) {
     <EmptyState
       icon={CloudOff}
       title="Couldn't load this data"
-      text={`The server didn't respond as expected${error?.status ? ` (HTTP ${error.status})` : ""}. Try again in a moment.`}
+      text={`The server didn't respond as expected${error?.status ? ` (HTTP ${error.status})` : ''}. Try again in a moment.`}
       action={
         onRetry && (
           <Button size="sm" icon={RefreshCw} onClick={onRetry}>
@@ -273,15 +275,17 @@ function ErrorRow({ error, onRetry }) {
 
 /** Clickable list row used across the tab panels. */
 function ListRow({ icon: Icon, tone, title, tag, sub, meta, right, onClick }) {
-  const Tag = onClick ? "button" : "div";
+  const Tag = onClick ? 'button' : 'div';
   return (
     <Tag
-      type={onClick ? "button" : undefined}
-      className={cn("cc-row", onClick && "cc-row--link")}
+      type={onClick ? 'button' : undefined}
+      className={cn('cc-row', onClick && 'cc-row--link')}
       onClick={onClick}
     >
       {Icon && (
-        <span className={cn("inos-icon-tile inos-icon-tile--sm", tone && `inos-icon-tile--${tone}`)}>
+        <span
+          className={cn('inos-icon-tile inos-icon-tile--sm', tone && `inos-icon-tile--${tone}`)}
+        >
           <Icon aria-hidden />
         </span>
       )}
@@ -302,10 +306,10 @@ function ListRow({ icon: Icon, tone, title, tag, sub, meta, right, onClick }) {
 /** Small figure block used inside cards (no nested cards). */
 function Figures({ items }) {
   return (
-    <div className="cc-figures" style={{ "--cols": items.length }}>
+    <div className="cc-figures" style={{ '--cols': items.length }}>
       {items.map(({ label, value, tone }) => (
         <div key={label} className="cc-figure">
-          <span className={cn("cc-figure__value tabular", tone && `cc-tone-${tone}`)}>{value}</span>
+          <span className={cn('cc-figure__value tabular', tone && `cc-tone-${tone}`)}>{value}</span>
           <span className="cc-figure__label">{label}</span>
         </div>
       ))}
@@ -324,14 +328,16 @@ function PhaseStepper({ phases, activeSeq }) {
         <span key={phase.id} className="cc-step">
           <span
             className={cn(
-              "cc-step__dot",
+              'cc-step__dot',
               `cc-dot--${stateTone(phase.state)}`,
-              phase.phaseNumber === activeSeq && "is-current",
+              phase.phaseNumber === activeSeq && 'is-current',
             )}
-            title={`${phase.phaseNumber}. ${phaseTitle(phase.name)} — ${stateLabel(phase.state)}${phase.gate?.code ? ` · Gate ${gateTitle(phase.gate.code)}` : ""}`}
+            title={`${phase.phaseNumber}. ${phaseTitle(phase.name)} — ${stateLabel(phase.state)}${phase.gate?.code ? ` · Gate ${gateTitle(phase.gate.code)}` : ''}`}
           />
           {index < phases.length - 1 && (
-            <span className={cn("cc-step__line", normalizeKey(phase.state) === "COMPLETE" && "is-done")} />
+            <span
+              className={cn('cc-step__line', normalizeKey(phase.state) === 'COMPLETE' && 'is-done')}
+            />
           )}
         </span>
       ))}
@@ -352,7 +358,16 @@ function PhaseLegend() {
   );
 }
 
-export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash, documentsOnly = false }) {
+export function PhaseDetailCard({
+  project,
+  phase,
+  canUpdateTasks,
+  onOpen,
+  onFlash,
+  documentsOnly = false,
+  filter = '',
+  title,
+}) {
   const {
     data: detail,
     isLoading,
@@ -364,8 +379,7 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
     { skip: !(project?.id || project?.code) || !phase?.id },
   );
 
-  const [completeTask, { isLoading: completingTask }] =
-    useCompleteCommandCenterTaskMutation();
+  const [completeTask, { isLoading: completingTask }] = useCompleteCommandCenterTaskMutation();
 
   const handleTaskStatus = async (taskDefinitionId, status) => {
     try {
@@ -380,45 +394,82 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
     }
   };
 
+  // Search: only this phase's documents whose name matches; hide the phase when none do.
+  const term = String(filter || '')
+    .trim()
+    .toLowerCase();
+  const docs = detail
+    ? term
+      ? detail.docs.filter((d) =>
+          String(d.name || '')
+            .toLowerCase()
+            .includes(term),
+        )
+      : detail.docs
+    : [];
+  if (term && (!detail || !docs.length)) return null;
+
   return (
     <div className="cc-phase-detail">
+      {title && <h3 className="cc-detail-head">{title}</h3>}
       {isLoading && <LoadingRow label="Loading documents and checks…" />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
 
       {detail && (
-        <div className="cc-detail-grid" style={documentsOnly ? { gridTemplateColumns: "1fr" } : undefined}>
+        <div
+          className="cc-detail-grid"
+          style={documentsOnly ? { gridTemplateColumns: '1fr' } : undefined}
+        >
           <div>
             <p className="cc-detail-head">
               <FileText aria-hidden /> Documents
             </p>
             <ul className="cc-checklist">
-              {detail.docs.map((d) => {
-                const ok = d.status === "UPLOADED" || d.status === "approved";
+              {docs.map((d) => {
+                const ok = d.status === 'UPLOADED' || d.status === 'approved';
                 return (
                   <li key={d.id}>
-                    <span className={cn("cc-bullet", ok ? "cc-dot--ok" : "cc-dot--mute")} />
+                    <span className={cn('cc-bullet', ok ? 'cc-dot--ok' : 'cc-dot--mute')} />
                     <span className="cc-checklist__name">
                       <span className="cc-truncate">{d.name}</span>
                       {!d.mandatory && <span className="cc-muted">optional</span>}
-                      {!ok && d.evidence?.recordId && d.evidence.source === "UPLOAD" && (
+                      {!ok && d.evidence?.recordId && d.evidence.source === 'UPLOAD' && (
                         <span className="cc-muted">{sentence(d.evidence.status)}</span>
                       )}
                     </span>
-                    {d.evidence?.source === "UPLOAD" && d.evidence.recordId && (
-                      <Button variant="ghost" size="sm" onClick={() => onOpen?.viewEvidence?.({
-                        targetType: d.targetType, documentTypeId: d.id, name: d.name,
-                        projectId: project.id, projectName: project.name, projectCode: project.code,
-                        phaseCode: phase.code, phaseName: phaseTitle(phase.name), role: d.role,
-                      })}>
-                        {d.evidence.status?.toLowerCase() === "approved" ? "View" : "View & approve"}
+                    {d.evidence?.source === 'UPLOAD' && d.evidence.recordId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          onOpen?.viewEvidence?.({
+                            targetType: d.targetType,
+                            documentTypeId: d.id,
+                            name: d.name,
+                            projectId: project.id,
+                            projectName: project.name,
+                            projectCode: project.code,
+                            phaseCode: phase.code,
+                            phaseName: phaseTitle(phase.name),
+                            role: d.role,
+                          })
+                        }
+                      >
+                        {d.evidence.status?.toLowerCase() === 'approved'
+                          ? 'View'
+                          : 'View & approve'}
                       </Button>
                     )}
-                    {d.evidence?.source === "UPLOAD" && d.evidence.recordId && (
-                      <Button variant="ghost" size="sm" onClick={() => downloadDocument(d.evidence.recordId)}>
+                    {d.evidence?.source === 'UPLOAD' && d.evidence.recordId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => downloadDocument(d.evidence.recordId)}
+                      >
                         Download
                       </Button>
                     )}
-                    {d.evidence?.source === "DATABASE" ? (
+                    {d.evidence?.source === 'DATABASE' ? (
                       <span className="cc-checklist__side">
                         <span className="cc-muted">
                           {d.evidence.sourceLabel} · {d.evidence.status}
@@ -428,21 +479,24 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
                           size="sm"
                           onClick={() => {
                             const url = d.evidence.actionUrl;
-                            if (url) onOpen?.navigate(`${url}${url.includes("?") ? "&" : "?"}project_id=${encodeURIComponent(project.id)}`);
+                            if (url)
+                              onOpen?.navigate(
+                                `${url}${url.includes('?') ? '&' : '?'}project_id=${encodeURIComponent(project.id)}`,
+                              );
                           }}
                           disabled={!d.evidence.actionUrl}
                         >
-                          {d.evidence.recordId ? "Open record" : "Create document"}
+                          {d.evidence.recordId ? 'Open record' : 'Create document'}
                         </Button>
                       </span>
-                    ) : d.status === "MISSING" ? (
+                    ) : d.status === 'MISSING' ? (
                       <Button
                         variant="soft"
                         size="sm"
                         icon={UploadCloud}
                         title={
-                          d.targetType === "DRAWING"
-                            ? "Upload drawings for this checklist item"
+                          d.targetType === 'DRAWING'
+                            ? 'Upload drawings for this checklist item'
                             : undefined
                         }
                         onClick={() =>
@@ -459,10 +513,16 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
                           })
                         }
                       >
-                        {d.targetType === "DRAWING" ? "Upload drawing" : d.evidence?.recordId ? "Replace upload" : "Upload"}
+                        {d.targetType === 'DRAWING'
+                          ? 'Upload drawing'
+                          : d.evidence?.recordId
+                            ? 'Replace upload'
+                            : 'Upload'}
                       </Button>
                     ) : (
-                      <Pill tone="ok" size="sm">{sentence(d.status)}</Pill>
+                      <Pill tone="ok" size="sm">
+                        {sentence(d.status)}
+                      </Pill>
                     )}
                   </li>
                 );
@@ -472,63 +532,74 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
               )}
             </ul>
           </div>
-          {!documentsOnly && <div>
-            <p className="cc-detail-head">
-              <ListChecks aria-hidden /> Execution and QC checks
-            </p>
-            <ul className="cc-checklist">
-              {detail.tasks.map((t) => (
-                <li key={t.id}>
-                  <span
-                    className={cn(
-                      "cc-bullet",
-                      isDone(t.status) ? "cc-dot--ok" : isFailed(t.status) ? "cc-dot--bad" : "cc-dot--mute",
-                    )}
-                  />
-                  <span className="cc-checklist__name">
-                    <span className="cc-truncate">{t.name}</span>
-                    {t.type === "QC" && <Pill tone="lilac" size="sm" dot={false}>QC</Pill>}
-                  </span>
-                  <span className="cc-checklist__side">
-                    <Pill
-                      size="sm"
-                      tone={isDone(t.status) ? "ok" : isFailed(t.status) ? "bad" : "warn"}
-                    >
-                      {sentence(t.status)}
-                    </Pill>
-                    {canUpdateTasks && !isDone(t.status) && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={completingTask}
-                          onClick={() => handleTaskStatus(t.id, "DONE")}
-                        >
-                          Mark done
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="cc-btn-bad"
-                          disabled={completingTask}
-                          onClick={() => handleTaskStatus(t.id, "FAILED")}
-                        >
-                          Fail
-                        </Button>
-                      </>
-                    )}
-                  </span>
-                </li>
-              ))}
-              {detail.tasks.length === 0 && (
-                <li className="cc-muted">No checks configured for this phase.</li>
-              )}
-            </ul>
-          </div>}
+          {!documentsOnly && (
+            <div>
+              <p className="cc-detail-head">
+                <ListChecks aria-hidden /> Execution and QC checks
+              </p>
+              <ul className="cc-checklist">
+                {detail.tasks.map((t) => (
+                  <li key={t.id}>
+                    <span
+                      className={cn(
+                        'cc-bullet',
+                        isDone(t.status)
+                          ? 'cc-dot--ok'
+                          : isFailed(t.status)
+                            ? 'cc-dot--bad'
+                            : 'cc-dot--mute',
+                      )}
+                    />
+                    <span className="cc-checklist__name">
+                      <span className="cc-truncate">{t.name}</span>
+                      {t.type === 'QC' && (
+                        <Pill tone="lilac" size="sm" dot={false}>
+                          QC
+                        </Pill>
+                      )}
+                    </span>
+                    <span className="cc-checklist__side">
+                      <Pill
+                        size="sm"
+                        tone={isDone(t.status) ? 'ok' : isFailed(t.status) ? 'bad' : 'warn'}
+                      >
+                        {sentence(t.status)}
+                      </Pill>
+                      {canUpdateTasks && !isDone(t.status) && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={completingTask}
+                            onClick={() => handleTaskStatus(t.id, 'DONE')}
+                          >
+                            Mark done
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="cc-btn-bad"
+                            disabled={completingTask}
+                            onClick={() => handleTaskStatus(t.id, 'FAILED')}
+                          >
+                            Fail
+                          </Button>
+                        </>
+                      )}
+                    </span>
+                  </li>
+                ))}
+                {detail.tasks.length === 0 && (
+                  <li className="cc-muted">No checks configured for this phase.</li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
-      {!documentsOnly && detail &&
+      {!documentsOnly &&
+        detail &&
         !isError &&
         (detail.gates?.length ? (
           detail.gates.map((gate) => (
@@ -540,9 +611,7 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
             />
           ))
         ) : (
-          <p className="cc-muted cc-gate-none">
-            No sign-off gate is configured for this phase.
-          </p>
+          <p className="cc-muted cc-gate-none">No sign-off gate is configured for this phase.</p>
         ))}
       <div className="cc-phase-detail__foot">
         <Button
@@ -590,10 +659,13 @@ function ProjectExecutionBoard({
       {rows.map((row) => {
         const isOpen = expanded === row.code;
         const activePhase = row.phases.find((phase) => phase.phaseNumber === row.currentPhaseSeq);
-        const selected = selectedPhases[row.code] === undefined ? activePhase?.id : selectedPhases[row.code];
-        const completed = row.phases.filter((phase) => normalizeKey(phase.state) === "COMPLETE").length;
+        const selected =
+          selectedPhases[row.code] === undefined ? activePhase?.id : selectedPhases[row.code];
+        const completed = row.phases.filter(
+          (phase) => normalizeKey(phase.state) === 'COMPLETE',
+        ).length;
         return (
-          <article className={cn("cc-project", isOpen && "is-open")} key={row.code}>
+          <article className={cn('cc-project', isOpen && 'is-open')} key={row.code}>
             <div className="cc-project__head">
               <button
                 type="button"
@@ -607,16 +679,18 @@ function ProjectExecutionBoard({
                   <span style={{ minWidth: 0 }}>
                     <span className="cc-project__name">{row.name}</span>
                     <span className="cc-project__meta">
-                      {row.location || "Location not set"}
-                      {row.lastActivity ? ` · ${timeAgo(row.lastActivity)}` : ""}
-                      {row.daysIdle > 0 ? ` · ${row.daysIdle}d idle` : ""}
+                      {row.location || 'Location not set'}
+                      {row.lastActivity ? ` · ${timeAgo(row.lastActivity)}` : ''}
+                      {row.daysIdle > 0 ? ` · ${row.daysIdle}d idle` : ''}
                     </span>
                   </span>
                 </span>
                 <span className="cc-project__phase">
                   <PhaseStepper phases={row.phases} activeSeq={row.currentPhaseSeq} />
                   <span className="cc-project__phase-label">
-                    {activePhase ? `Phase ${activePhase.phaseNumber} of ${row.phases.length} · ${phaseTitle(activePhase.name)}` : "Not started"}
+                    {activePhase
+                      ? `Phase ${activePhase.phaseNumber} of ${row.phases.length} · ${phaseTitle(activePhase.name)}`
+                      : 'Not started'}
                   </span>
                 </span>
                 <span className="cc-project__pct">
@@ -631,7 +705,12 @@ function ProjectExecutionBoard({
               </button>
               <div className="cc-project__links">
                 <Pill tone={healthTone(row.health?.key)}>{sentence(row.health?.label)}</Pill>
-                <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpenProject(row.id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconRight={ArrowRight}
+                  onClick={() => onOpenProject(row.id)}
+                >
                   Open
                 </Button>
               </div>
@@ -641,23 +720,35 @@ function ProjectExecutionBoard({
                 {row.phases.map((phase) => (
                   <div className="cc-phase" key={phase.id}>
                     <div className="cc-phase__row">
-                      <span className={cn("cc-phase__num tabular", `cc-num--${stateTone(phase.state)}`)}>
-                        {String(phase.phaseNumber).padStart(2, "0")}
+                      <span
+                        className={cn('cc-phase__num tabular', `cc-num--${stateTone(phase.state)}`)}
+                      >
+                        {String(phase.phaseNumber).padStart(2, '0')}
                       </span>
                       <div className="cc-phase__text">
                         <p className="cc-phase__name">{phaseTitle(phase.name)}</p>
                         <p className="cc-phase__meta">
-                          Docs {phase.docsDone}/{phase.docsTotal} · Checks {phase.tasksDone}/{phase.tasksTotal}
-                          {phase.gate?.code ? ` · Gate: ${gateTitle(phase.gate.code)}` : ""}
+                          Docs {phase.docsDone}/{phase.docsTotal} · Checks {phase.tasksDone}/
+                          {phase.tasksTotal}
+                          {phase.gate?.code ? ` · Gate: ${gateTitle(phase.gate.code)}` : ''}
                         </p>
                       </div>
                       <div className="cc-phase__progress">
-                        <Progress value={phase.pct} tone={["mute", "brand"].includes(stateTone(phase.state)) ? undefined : stateTone(phase.state)} />
+                        <Progress
+                          value={phase.pct}
+                          tone={
+                            ['mute', 'brand'].includes(stateTone(phase.state))
+                              ? undefined
+                              : stateTone(phase.state)
+                          }
+                        />
                         <span className="tabular">{phase.pct}%</span>
                       </div>
-                      <Pill tone={stateTone(phase.state)} size="sm">{stateLabel(phase.state)}</Pill>
+                      <Pill tone={stateTone(phase.state)} size="sm">
+                        {stateLabel(phase.state)}
+                      </Pill>
                       <Button
-                        variant={selected === phase.id ? "soft" : "secondary"}
+                        variant={selected === phase.id ? 'soft' : 'secondary'}
                         size="sm"
                         className="cc-phase__btn"
                         aria-expanded={selected === phase.id}
@@ -669,7 +760,7 @@ function ProjectExecutionBoard({
                           }))
                         }
                       >
-                        {selected === phase.id ? "Hide details" : "View details"}
+                        {selected === phase.id ? 'Hide details' : 'View details'}
                       </Button>
                     </div>
                     {selected === phase.id && (
@@ -699,8 +790,9 @@ function ProjectExecutionBoard({
 // ------------------------------------------------------------
 
 function ActionRequired({ onOpen }) {
-  const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterActionsQuery(undefined, { refetchOnMountOrArgChange: 60 });
+  const { data, isLoading, isError, error, refetch } = useGetCommandCenterActionsQuery(undefined, {
+    refetchOnMountOrArgChange: 60,
+  });
   const actions = data || [];
 
   // The service doesn't tag each item with a "kind" yet, so route
@@ -712,7 +804,11 @@ function ActionRequired({ onOpen }) {
       flush
       title="Action required"
       subtitle="Open mandatory items that are blocking a gate"
-      actions={!isLoading && !isError && actions.length > 0 && <Pill tone="bad">{actions.length} open</Pill>}
+      actions={
+        !isLoading &&
+        !isError &&
+        actions.length > 0 && <Pill tone="bad">{actions.length} open</Pill>
+      }
     >
       {isLoading && <LoadingRow />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
@@ -722,7 +818,7 @@ function ActionRequired({ onOpen }) {
             <ListRow
               key={i}
               icon={item.severe ? ShieldAlert : AlertCircle}
-              tone={item.severe ? "bad" : "warn"}
+              tone={item.severe ? 'bad' : 'warn'}
               title={item.title}
               sub={item.project}
               meta={item.meta}
@@ -748,8 +844,10 @@ function ActionRequired({ onOpen }) {
 // ------------------------------------------------------------
 
 function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
-  const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterDocumentsQuery(undefined, { refetchOnMountOrArgChange: 60 });
+  const { data, isLoading, isError, error, refetch } = useGetCommandCenterDocumentsQuery(
+    undefined,
+    { refetchOnMountOrArgChange: 60 },
+  );
   const docStats = data?.stats || { required: 0, uploaded: 0, missing: 0 };
   const missingDocs = data?.missingDocs || [];
 
@@ -759,16 +857,21 @@ function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
       title="Document control"
       subtitle="Mandatory evidence in open phases"
       actions={
-        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpen(ROUTES.documents)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          iconRight={ArrowRight}
+          onClick={() => onOpen(ROUTES.documents)}
+        >
           Open documents
         </Button>
       }
     >
       <Figures
         items={[
-          { label: "Required now", value: docStats.required },
-          { label: "Evidence satisfied", value: docStats.uploaded, tone: "ok" },
-          { label: "Missing", value: docStats.missing, tone: docStats.missing ? "bad" : undefined },
+          { label: 'Required now', value: docStats.required },
+          { label: 'Evidence satisfied', value: docStats.uploaded, tone: 'ok' },
+          { label: 'Missing', value: docStats.missing, tone: docStats.missing ? 'bad' : undefined },
         ]}
       />
 
@@ -784,13 +887,21 @@ function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
               <button
                 type="button"
                 className="cc-row__text cc-row__text--link"
-                onClick={() => doc.evidence?.source === "DATABASE"
-                  ? onOpen(doc.evidence.actionUrl || ROUTES.documentsProject(doc.projectId))
-                  : onViewEvidence({
-                    targetType: doc.targetType, documentTypeId: doc.id, name: doc.name,
-                    projectId: doc.projectId, projectName: doc.project, projectCode: doc.code,
-                    phaseCode: doc.phaseCode, phaseName: doc.phase, role: doc.role,
-                  })}
+                onClick={() =>
+                  doc.evidence?.source === 'DATABASE'
+                    ? onOpen(doc.evidence.actionUrl || ROUTES.documentsProject(doc.projectId))
+                    : onViewEvidence({
+                        targetType: doc.targetType,
+                        documentTypeId: doc.id,
+                        name: doc.name,
+                        projectId: doc.projectId,
+                        projectName: doc.project,
+                        projectCode: doc.code,
+                        phaseCode: doc.phaseCode,
+                        phaseName: doc.phase,
+                        role: doc.role,
+                      })
+                }
               >
                 <span className="cc-row__title">
                   <span className="cc-truncate">{doc.name}</span>
@@ -799,23 +910,41 @@ function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
                   {doc.project} · {doc.phase} · Owner {doc.role}
                 </span>
               </button>
-              <Pill tone="bad" size="sm">Missing</Pill>
-              {doc.evidence?.source === "UPLOAD" && doc.evidence.recordId && <Button variant="ghost" size="sm" onClick={() => onViewEvidence({
-                targetType: doc.targetType, documentTypeId: doc.id, name: doc.name,
-                projectId: doc.projectId, projectName: doc.project, projectCode: doc.code,
-                phaseCode: doc.phaseCode, phaseName: doc.phase, role: doc.role,
-              })}>{doc.evidence.status?.toLowerCase() === "approved" ? "View" : "View & approve"}</Button>}
+              <Pill tone="bad" size="sm">
+                Missing
+              </Pill>
+              {doc.evidence?.source === 'UPLOAD' && doc.evidence.recordId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    onViewEvidence({
+                      targetType: doc.targetType,
+                      documentTypeId: doc.id,
+                      name: doc.name,
+                      projectId: doc.projectId,
+                      projectName: doc.project,
+                      projectCode: doc.code,
+                      phaseCode: doc.phaseCode,
+                      phaseName: doc.phase,
+                      role: doc.role,
+                    })
+                  }
+                >
+                  {doc.evidence.status?.toLowerCase() === 'approved' ? 'View' : 'View & approve'}
+                </Button>
+              )}
               <Button
                 variant="soft"
                 size="sm"
-                icon={doc.evidence?.source === "DATABASE" ? ArrowRight : UploadCloud}
+                icon={doc.evidence?.source === 'DATABASE' ? ArrowRight : UploadCloud}
                 title={
-                  doc.targetType === "DRAWING"
-                    ? "Upload drawings for this checklist item"
+                  doc.targetType === 'DRAWING'
+                    ? 'Upload drawings for this checklist item'
                     : undefined
                 }
                 onClick={() =>
-                  doc.evidence?.source === "DATABASE"
+                  doc.evidence?.source === 'DATABASE'
                     ? onOpen(doc.evidence.actionUrl)
                     : onUploadDoc({
                         targetType: doc.targetType,
@@ -830,11 +959,11 @@ function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
                       })
                 }
               >
-                {doc.evidence?.source === "DATABASE"
-                  ? "Open source"
-                  : doc.targetType === "DRAWING"
-                    ? "Upload drawing"
-                    : "Upload"}
+                {doc.evidence?.source === 'DATABASE'
+                  ? 'Open source'
+                  : doc.targetType === 'DRAWING'
+                    ? 'Upload drawing'
+                    : 'Upload'}
               </Button>
             </div>
           ))}
@@ -856,8 +985,9 @@ function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
 // ------------------------------------------------------------
 
 function TaskQCPanel({ onOpen }) {
-  const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterTasksQuery(undefined, { refetchOnMountOrArgChange: 60 });
+  const { data, isLoading, isError, error, refetch } = useGetCommandCenterTasksQuery(undefined, {
+    refetchOnMountOrArgChange: 60,
+  });
   const openTasks = data || [];
 
   return (
@@ -865,7 +995,11 @@ function TaskQCPanel({ onOpen }) {
       flush
       title="Execution and QC checks"
       subtitle="Pending or failed checklist items across projects"
-      actions={!isLoading && !isError && openTasks.length > 0 && <Pill tone="warn">{openTasks.length} open</Pill>}
+      actions={
+        !isLoading &&
+        !isError &&
+        openTasks.length > 0 && <Pill tone="warn">{openTasks.length} open</Pill>
+      }
     >
       {isLoading && <LoadingRow />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
@@ -875,12 +1009,18 @@ function TaskQCPanel({ onOpen }) {
             <ListRow
               key={i}
               icon={isFailed(t.status) ? ShieldAlert : ListChecks}
-              tone={isFailed(t.status) ? "bad" : undefined}
+              tone={isFailed(t.status) ? 'bad' : undefined}
               title={t.name}
-              tag={t.type === "QC" && <Pill tone="lilac" size="sm" dot={false}>QC</Pill>}
+              tag={
+                t.type === 'QC' && (
+                  <Pill tone="lilac" size="sm" dot={false}>
+                    QC
+                  </Pill>
+                )
+              }
               meta={`${t.project} · ${t.phase} · Owner ${t.role}`}
               right={
-                <Pill tone={isFailed(t.status) ? "bad" : "warn"} size="sm">
+                <Pill tone={isFailed(t.status) ? 'bad' : 'warn'} size="sm">
                   {sentence(t.status)}
                 </Pill>
               }
@@ -905,8 +1045,10 @@ function TaskQCPanel({ onOpen }) {
 // ------------------------------------------------------------
 
 function CommercialPanel({ onOpen }) {
-  const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterCommercialQuery(undefined, { refetchOnMountOrArgChange: 60 });
+  const { data, isLoading, isError, error, refetch } = useGetCommandCenterCommercialQuery(
+    undefined,
+    { refetchOnMountOrArgChange: 60 },
+  );
 
   return (
     <Card
@@ -926,21 +1068,28 @@ function CommercialPanel({ onOpen }) {
         <>
           <Figures
             items={[
-              { label: "Total portfolio value", value: data.totalValue ? formatINR(data.totalValue) : "—" },
-              { label: "Commercially approved (G5)", value: formatINR(data.approvedValue), tone: "ok" },
+              {
+                label: 'Total portfolio value',
+                value: data.totalValue ? formatINR(data.totalValue) : '—',
+              },
+              {
+                label: 'Commercially approved (G5)',
+                value: formatINR(data.approvedValue),
+                tone: 'ok',
+              },
             ]}
           />
           <div className="cc-section">
             <p className="cc-detail-head">G5 status across the portfolio</p>
             <div className="cc-g5">
               {[
-                ["Not reached", data.notReached, "mute"],
-                ["Costing in progress", data.inProgress, "info"],
-                ["Awaiting approval", data.awaiting, "warn"],
-                ["Approved", data.approved, "ok"],
+                ['Not reached', data.notReached, 'mute'],
+                ['Costing in progress', data.inProgress, 'info'],
+                ['Awaiting approval', data.awaiting, 'warn'],
+                ['Approved', data.approved, 'ok'],
               ].map(([label, value, tone]) => (
                 <div key={label} className="cc-g5__item">
-                  <span className={cn("cc-bullet", `cc-dot--${tone}`)} />
+                  <span className={cn('cc-bullet', `cc-dot--${tone}`)} />
                   <span className="cc-g5__label">{label}</span>
                   <strong className="tabular">{value ?? 0}</strong>
                 </div>
@@ -963,14 +1112,10 @@ function CommercialPanel({ onOpen }) {
 const SITE_PHASE_NUMBERS = [8, 9];
 
 function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
-  const inSitePhase = rows.filter((r) =>
-    SITE_PHASE_NUMBERS.includes(r.currentPhaseSeq),
-  );
+  const inSitePhase = rows.filter((r) => SITE_PHASE_NUMBERS.includes(r.currentPhaseSeq));
   const stalled = inSitePhase.filter((r) =>
     r.phases.some(
-      (ph) =>
-        SITE_PHASE_NUMBERS.includes(ph.phaseNumber) &&
-        normalizeKey(ph.state) === "STALLED",
+      (ph) => SITE_PHASE_NUMBERS.includes(ph.phaseNumber) && normalizeKey(ph.state) === 'STALLED',
     ),
   );
   const qcFailed = rows.filter(
@@ -978,8 +1123,7 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
       (r.siteQcFailures || 0) > 0 ||
       r.phases.some(
         (ph) =>
-          SITE_PHASE_NUMBERS.includes(ph.phaseNumber) &&
-          normalizeKey(ph.state) === "QC_FAILED",
+          SITE_PHASE_NUMBERS.includes(ph.phaseNumber) && normalizeKey(ph.state) === 'QC_FAILED',
       ),
   );
 
@@ -989,7 +1133,12 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
       title="Site execution"
       subtitle="Projects in execution or handover"
       actions={
-        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpen(ROUTES.tasks)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          iconRight={ArrowRight}
+          onClick={() => onOpen(ROUTES.tasks)}
+        >
           Open execution
         </Button>
       }
@@ -1001,9 +1150,17 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
         <>
           <Figures
             items={[
-              { label: "Projects on site", value: inSitePhase.length },
-              { label: "Projects with QC failures", value: qcFailed.length, tone: qcFailed.length ? "bad" : undefined },
-              { label: "Stalled on site", value: stalled.length, tone: stalled.length ? "peach" : undefined },
+              { label: 'Projects on site', value: inSitePhase.length },
+              {
+                label: 'Projects with QC failures',
+                value: qcFailed.length,
+                tone: qcFailed.length ? 'bad' : undefined,
+              },
+              {
+                label: 'Stalled on site',
+                value: stalled.length,
+                tone: stalled.length ? 'peach' : undefined,
+              },
             ]}
           />
           {inSitePhase.length > 0 ? (
@@ -1016,12 +1173,16 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
                     key={row.code}
                     icon={Construction}
                     title={row.name}
-                    meta={`${ph.name} · ${ph.docsDone}/${ph.docsTotal} docs${row.siteQcFailures ? ` · ${row.siteQcFailures} open QC failure${row.siteQcFailures > 1 ? "s" : ""}` : ""}`}
+                    meta={`${ph.name} · ${ph.docsDone}/${ph.docsTotal} docs${row.siteQcFailures ? ` · ${row.siteQcFailures} open QC failure${row.siteQcFailures > 1 ? 's' : ''}` : ''}`}
                     right={
                       row.siteQcFailures ? (
-                        <Pill tone="bad" size="sm">QC failed</Pill>
+                        <Pill tone="bad" size="sm">
+                          QC failed
+                        </Pill>
                       ) : (
-                        <Pill tone={stateTone(ph.state)} size="sm">{stateLabel(ph.state)}</Pill>
+                        <Pill tone={stateTone(ph.state)} size="sm">
+                          {stateLabel(ph.state)}
+                        </Pill>
                       )
                     }
                     onClick={() => onOpen(ROUTES.taskProject(row.id))}
@@ -1047,11 +1208,13 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
 // ------------------------------------------------------------
 
 function TeamWorkload({ onOpen }) {
-  const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterTeamWorkloadQuery(undefined, { refetchOnMountOrArgChange: 60 });
+  const { data, isLoading, isError, error, refetch } = useGetCommandCenterTeamWorkloadQuery(
+    undefined,
+    { refetchOnMountOrArgChange: 60 },
+  );
   const roleLoad = data || [];
   const maxCount = Math.max(1, ...roleLoad.map((r) => r.count));
-  const loadTone = (count) => (count >= 3 ? "bad" : count > 0 ? "warn" : "ok");
+  const loadTone = (count) => (count >= 3 ? 'bad' : count > 0 ? 'warn' : 'ok');
 
   return (
     <Card flush title="Team workload" subtitle="Open items by role this week">
@@ -1060,16 +1223,24 @@ function TeamWorkload({ onOpen }) {
       {!isLoading && !isError && roleLoad.length > 0 && (
         <div className="cc-list">
           {roleLoad.map((r) => (
-            <button type="button" key={r.role} className="cc-row cc-row--link cc-load" onClick={() => onOpen(ROUTES.tasks)}>
+            <button
+              type="button"
+              key={r.role}
+              className="cc-row cc-row--link cc-load"
+              onClick={() => onOpen(ROUTES.tasks)}
+            >
               <span className="inos-icon-tile inos-icon-tile--sm">
                 <Users aria-hidden />
               </span>
               <span className="cc-row__text">
                 <span className="cc-row__title">{r.role}</span>
-                <span className="cc-row__meta">{PEOPLE_BY_ROLE[r.role] || "Unassigned"}</span>
+                <span className="cc-row__meta">{PEOPLE_BY_ROLE[r.role] || 'Unassigned'}</span>
               </span>
               <span className="cc-load__bar">
-                <Progress value={(r.count / maxCount) * 100} tone={loadTone(r.count) === "ok" ? undefined : loadTone(r.count)} />
+                <Progress
+                  value={(r.count / maxCount) * 100}
+                  tone={loadTone(r.count) === 'ok' ? undefined : loadTone(r.count)}
+                />
               </span>
               <Pill tone={loadTone(r.count)} size="sm">
                 {r.count} open
@@ -1094,20 +1265,28 @@ function TeamWorkload({ onOpen }) {
 // ------------------------------------------------------------
 
 function ActivityTimeline() {
-  const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterActivityQuery({ limit: 20 }, { refetchOnMountOrArgChange: 60 });
+  const { data, isLoading, isError, error, refetch } = useGetCommandCenterActivityQuery(
+    { limit: 20 },
+    { refetchOnMountOrArgChange: 60 },
+  );
   const activities = (data || []).map(mapActivityLog);
 
   const iconFor = (type) => {
-    if (type === "SCAN") return RefreshCw;
-    if (type === "GATE_APPROVED") return ShieldCheck;
-    if (type === "PROJECT_CREATED") return Plus;
-    if (type === "MESSAGE") return MessageCircle;
-    if (type === "DOC") return FileText;
+    if (type === 'SCAN') return RefreshCw;
+    if (type === 'GATE_APPROVED') return ShieldCheck;
+    if (type === 'PROJECT_CREATED') return Plus;
+    if (type === 'MESSAGE') return MessageCircle;
+    if (type === 'DOC') return FileText;
     return ListChecks;
   };
   const toneFor = (type) =>
-    type === "GATE_APPROVED" ? "ok" : type === "DOC" ? "info" : type === "TASK" ? "lilac" : undefined;
+    type === 'GATE_APPROVED'
+      ? 'ok'
+      : type === 'DOC'
+        ? 'info'
+        : type === 'TASK'
+          ? 'lilac'
+          : undefined;
 
   return (
     <Card
@@ -1125,7 +1304,12 @@ function ActivityTimeline() {
             const tone = toneFor(a.type);
             return (
               <li key={index} className="cc-timeline__item">
-                <span className={cn("inos-icon-tile inos-icon-tile--sm", tone && `inos-icon-tile--${tone}`)}>
+                <span
+                  className={cn(
+                    'inos-icon-tile inos-icon-tile--sm',
+                    tone && `inos-icon-tile--${tone}`,
+                  )}
+                >
                   <Icon aria-hidden />
                 </span>
                 <div className="cc-timeline__body">
@@ -1158,13 +1342,17 @@ function ActivityTimeline() {
 export function UploadDocumentModal({ target, onClose, onUploaded }) {
   const [busy, setBusy] = useState(false);
   if (!target) return null;
-  const isDrawing = target.targetType === "DRAWING";
+  const isDrawing = target.targetType === 'DRAWING';
   const UploadForm = isDrawing ? DrawingUploadPage : DocumentUpload;
   return (
     <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
-      <DialogContent className={`cc-upload-modal ${isDrawing ? "sm:max-w-6xl" : "sm:max-w-3xl"} p-0 gap-0 max-h-[90vh] overflow-y-auto`}>
+      <DialogContent
+        className={`cc-upload-modal ${isDrawing ? 'sm:max-w-6xl' : 'sm:max-w-3xl'} p-0 gap-0 max-h-[90vh] overflow-y-auto`}
+      >
         <DialogHeader className="cc-upload-modal__head">
-          <DialogTitle className="inos-section-title">{isDrawing ? "Upload drawings" : "Upload document"}</DialogTitle>
+          <DialogTitle className="inos-section-title">
+            {isDrawing ? 'Upload drawings' : 'Upload document'}
+          </DialogTitle>
         </DialogHeader>
         <div className="cc-upload-modal__body inos-modal-body">
           <UploadForm
@@ -1173,7 +1361,10 @@ export function UploadDocumentModal({ target, onClose, onUploaded }) {
             target={target}
             onCancel={onClose}
             onBusyChange={setBusy}
-            onUploaded={() => { setBusy(false); onUploaded(target); }}
+            onUploaded={() => {
+              setBusy(false);
+              onUploaded(target);
+            }}
           />
         </div>
       </DialogContent>
@@ -1185,18 +1376,18 @@ export function UploadDocumentModal({ target, onClose, onUploaded }) {
 // ------------------------------------------------------------
 
 const TABS = [
-  { id: "portfolio", label: "Portfolio", icon: BriefcaseBusiness },
-  { id: "actions", label: "Action required", icon: AlertCircle },
-  { id: "documents", label: "Document control", icon: FileText },
-  { id: "execution", label: "Site execution", icon: Construction },
-  { id: "qc", label: "Execution & QC checks", icon: ListChecks },
-  { id: "commercial", label: "Commercial", icon: IndianRupee },
-  { id: "team", label: "Team workload", icon: Users },
-  { id: "activity", label: "Live activity", icon: History },
+  { id: 'portfolio', label: 'Portfolio', icon: BriefcaseBusiness },
+  { id: 'actions', label: 'Action required', icon: AlertCircle },
+  { id: 'documents', label: 'Document control', icon: FileText },
+  { id: 'execution', label: 'Site execution', icon: Construction },
+  { id: 'qc', label: 'Execution & QC checks', icon: ListChecks },
+  { id: 'commercial', label: 'Commercial', icon: IndianRupee },
+  { id: 'team', label: 'Team workload', icon: Users },
+  { id: 'activity', label: 'Live activity', icon: History },
 ];
 
 // Shown only to the super authority (ADMIN / SUPERADMIN); the API enforces it too.
-const AUTHORITY_TAB = { id: "authority", label: "Authority", icon: ShieldCheck };
+const AUTHORITY_TAB = { id: 'authority', label: 'Authority', icon: ShieldCheck };
 
 function TabNav({ active, onChange, counts, showAuthority }) {
   const tabs = showAuthority ? [AUTHORITY_TAB, ...TABS] : TABS;
@@ -1211,7 +1402,7 @@ function TabNav({ active, onChange, counts, showAuthority }) {
             value: tab.id,
             label: tab.label,
             icon: tab.icon,
-            count: typeof count === "number" && count > 0 ? count : undefined,
+            count: typeof count === 'number' && count > 0 ? count : undefined,
           };
         })}
       />
@@ -1220,10 +1411,10 @@ function TabNav({ active, onChange, counts, showAuthority }) {
 }
 
 const HEALTH_FILTERS = [
-  { value: "all", label: "All" },
-  { value: "progress", label: "On track" },
-  { value: "gate", label: "Gate pending" },
-  { value: "danger", label: "Attention" },
+  { value: 'all', label: 'All' },
+  { value: 'progress', label: 'On track' },
+  { value: 'gate', label: 'Gate pending' },
+  { value: 'danger', label: 'Attention' },
 ];
 
 // ------------------------------------------------------------
@@ -1234,26 +1425,32 @@ export default function CommandCenter() {
   const dispatch = useDispatch();
   const [refreshCache, refreshState] = useRefreshCommandCenterMutation();
   const [live, setLive] = useState(true);
-  const [healthFilter, setHealthFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  const [healthFilter, setHealthFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 300);
   const [expanded, setExpanded] = useState(null);
   const { user } = useAuth();
   const canUpdateTasks = !!user;
   const navigate = useNavigate();
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState('');
   const [uploadTarget, setUploadTarget] = useState(null);
   const [evidenceTarget, setEvidenceTarget] = useState(null);
   const showAuthority = isSuperAuthority(user);
   // Super authority lands on their own dashboard; ?tab=<id> deep-links any tab.
-  const [chosenTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get("tab"));
+  const [chosenTab, setActiveTab] = useState(() =>
+    new URLSearchParams(window.location.search).get('tab'),
+  );
   const activeTab =
-    chosenTab && (chosenTab !== "authority" || showAuthority) ? chosenTab : showAuthority ? "authority" : "portfolio";
+    chosenTab && (chosenTab !== 'authority' || showAuthority)
+      ? chosenTab
+      : showAuthority
+        ? 'authority'
+        : 'portfolio';
   const pollingInterval = usePollingInterval(60_000, live);
 
   const flashToast = (msg) => {
     setToast(msg);
-    setTimeout(() => setToast(""), 3200);
+    setTimeout(() => setToast(''), 3200);
   };
 
   // ---- KPI strip ----
@@ -1277,29 +1474,41 @@ export default function CommandCenter() {
     isError: portfolioError,
     error: portfolioErrorObj,
     refetch: refetchPortfolio,
-  } = useGetCommandCenterPortfolioQuery({
-    health: healthFilter === "all" ? undefined : healthFilter,
-    search: debouncedSearch || undefined,
-  }, { skip: activeTab !== 'portfolio', refetchOnMountOrArgChange: 60 });
+  } = useGetCommandCenterPortfolioQuery(
+    {
+      health: healthFilter === 'all' ? undefined : healthFilter,
+      search: debouncedSearch || undefined,
+    },
+    { skip: activeTab !== 'portfolio', refetchOnMountOrArgChange: 60 },
+  );
 
   // ---- Portfolio, unfiltered (Site Execution + tab badges) ----
-  const { data: allRows = [] } =
-    useGetCommandCenterPortfolioQuery({}, { skip: activeTab !== 'execution', refetchOnMountOrArgChange: 60 });
+  const { data: allRows = [] } = useGetCommandCenterPortfolioQuery(
+    {},
+    { skip: activeTab !== 'execution', refetchOnMountOrArgChange: 60 },
+  );
 
   // ---- Other tabs, each backed by its own endpoint ----
   useEffect(() => {
     if (!pollingInterval) return;
     const tagsByTab = {
       portfolio: ['CommandCenterPortfolio', 'CommandCenterProjectPhases', 'CommandCenterGates'],
-      execution: ['CommandCenterPortfolio'], actions: ['CommandCenterActions'],
-      documents: ['CommandCenterDocuments'], qc: ['CommandCenterTasks'],
-      commercial: ['CommandCenterCommercial'], team: ['CommandCenterTeamWorkload'],
+      execution: ['CommandCenterPortfolio'],
+      actions: ['CommandCenterActions'],
+      documents: ['CommandCenterDocuments'],
+      qc: ['CommandCenterTasks'],
+      commercial: ['CommandCenterCommercial'],
+      team: ['CommandCenterTeamWorkload'],
       activity: ['CommandCenterActivity'],
     };
     const timer = setInterval(() => {
-      if (canBackgroundPoll()) dispatch(commandCenterApi.util.invalidateTags([
-        'CommandCenterKpis', ...(tagsByTab[activeTab] ?? []),
-      ]));
+      if (canBackgroundPoll())
+        dispatch(
+          commandCenterApi.util.invalidateTags([
+            'CommandCenterKpis',
+            ...(tagsByTab[activeTab] ?? []),
+          ]),
+        );
     }, pollingInterval);
     return () => clearInterval(timer);
   }, [pollingInterval, activeTab, dispatch]);
@@ -1313,7 +1522,7 @@ export default function CommandCenter() {
       return;
     }
     dispatch(commandCenterApi.util.invalidateTags(REFRESH_TAGS));
-    flashToast("Refreshing records…");
+    flashToast('Refreshing records…');
   };
 
   const handleUploaded = (target) => {
@@ -1330,38 +1539,49 @@ export default function CommandCenter() {
   );
 
   const updatedLabel = updatedAt
-    ? new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+    ? new Date(updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
     : null;
 
-  const kpiValue = (v) => (kpiLoading && v == null ? "—" : v);
+  const kpiValue = (v) => (kpiLoading && v == null ? '—' : v);
 
   return (
     <Page className="command-center">
       <PageHeader
-        crumbs={[{ label: "Command Center" }]}
+        crumbs={[{ label: 'Command Center' }]}
         title="Command Center"
         subtitle="Live health of every project — gates, evidence, site checks and money in one calm view."
         actions={
           <>
             <button
               type="button"
-              className={cn("cc-live", live && "is-live")}
+              className={cn('cc-live', live && 'is-live')}
               aria-pressed={live}
-              title={live ? "Refreshes every minute while active. Click to pause." : "Auto-refresh paused. Click to resume."}
+              title={
+                live
+                  ? 'Refreshes every minute while active. Click to pause.'
+                  : 'Auto-refresh paused. Click to resume.'
+              }
               onClick={() => setLive((value) => !value)}
             >
               <span className="cc-live__dot" aria-hidden />
-              {live ? "Live" : "Paused"}
+              {live ? 'Live' : 'Paused'}
               <span className="cc-live__time">
-                {updatedLabel ? `Updated ${updatedLabel}` : "Loading…"}
+                {updatedLabel ? `Updated ${updatedLabel}` : 'Loading…'}
               </span>
             </button>
-            <Button icon={RefreshCw} onClick={handleRescan} disabled={kpiLoading || refreshState.isLoading} className={kpiLoading || refreshState.isLoading ? "cc-refreshing" : undefined}>
-              {kpiLoading ? "Refreshing" : "Rescan"}
+            <Button
+              icon={RefreshCw}
+              onClick={handleRescan}
+              disabled={kpiLoading || refreshState.isLoading}
+              className={kpiLoading || refreshState.isLoading ? 'cc-refreshing' : undefined}
+            >
+              {kpiLoading ? 'Refreshing' : 'Rescan'}
             </Button>
-            <Button icon={FileText} onClick={() => setEvidenceTarget({})}>Documents & drawings</Button>
-            {user?.permissions?.includes("projects:create") && (
-              <Button variant="primary" icon={Plus} onClick={() => navigate("/projects/new")}>
+            <Button icon={FileText} onClick={() => setEvidenceTarget({})}>
+              Documents & drawings
+            </Button>
+            {user?.permissions?.includes('projects:create') && (
+              <Button variant="primary" icon={Plus} onClick={() => navigate('/projects/new')}>
                 New project
               </Button>
             )}
@@ -1376,10 +1596,10 @@ export default function CommandCenter() {
           value={kpiValue(kpi.live)}
           meta="Active projects"
           icon={<BriefcaseBusiness />}
-          active={activeTab === "portfolio" && healthFilter === "all"}
+          active={activeTab === 'portfolio' && healthFilter === 'all'}
           onClick={() => {
-            setActiveTab("portfolio");
-            setHealthFilter("all");
+            setActiveTab('portfolio');
+            setHealthFilter('all');
           }}
         />
         <StatTile
@@ -1388,10 +1608,10 @@ export default function CommandCenter() {
           meta="Complete, not yet signed"
           icon={<ShieldCheck />}
           tone="warn"
-          active={activeTab === "portfolio" && healthFilter === "gate"}
+          active={activeTab === 'portfolio' && healthFilter === 'gate'}
           onClick={() => {
-            setActiveTab("portfolio");
-            setHealthFilter("gate");
+            setActiveTab('portfolio');
+            setHealthFilter('gate');
           }}
         />
         <StatTile
@@ -1400,17 +1620,17 @@ export default function CommandCenter() {
           meta="7+ days without activity"
           icon={<Clock3 />}
           tone="peach"
-          active={activeTab === "actions"}
-          onClick={() => setActiveTab("actions")}
+          active={activeTab === 'actions'}
+          onClick={() => setActiveTab('actions')}
         />
         <StatTile
           label="QC failures"
           value={kpiValue(kpi.failed)}
-          meta={kpi.siteQcFailed ? `${kpi.siteQcFailed} open on site` : "Failed checklist items"}
+          meta={kpi.siteQcFailed ? `${kpi.siteQcFailed} open on site` : 'Failed checklist items'}
           icon={<ShieldAlert />}
           tone="bad"
-          active={activeTab === "qc"}
-          onClick={() => setActiveTab("qc")}
+          active={activeTab === 'qc'}
+          onClick={() => setActiveTab('qc')}
         />
         <StatTile
           label="Documents pending"
@@ -1418,34 +1638,44 @@ export default function CommandCenter() {
           meta="Mandatory, in open phases"
           icon={<FileText />}
           tone="info"
-          active={activeTab === "documents"}
-          onClick={() => setActiveTab("documents")}
+          active={activeTab === 'documents'}
+          onClick={() => setActiveTab('documents')}
         />
         <StatTile
           label="Portfolio value"
-          value={kpiLoading && kpi.value == null ? "—" : formatINR(kpi.value)}
+          value={kpiLoading && kpi.value == null ? '—' : formatINR(kpi.value)}
           meta="Across active projects"
           icon={<IndianRupee />}
-          active={activeTab === "commercial"}
-          onClick={() => setActiveTab("commercial")}
+          active={activeTab === 'commercial'}
+          onClick={() => setActiveTab('commercial')}
         />
       </Stats>
 
       <div className="cc-main">
         {/* TABS */}
-        <TabNav active={activeTab} onChange={setActiveTab} counts={tabCounts} showAuthority={showAuthority} />
+        <TabNav
+          active={activeTab}
+          onChange={setActiveTab}
+          counts={tabCounts}
+          showAuthority={showAuthority}
+        />
 
         {/* SUPER AUTHORITY TAB */}
-        {activeTab === "authority" && showAuthority && <AuthorityPanel onOpen={navigate} />}
+        {activeTab === 'authority' && showAuthority && <AuthorityPanel onOpen={navigate} />}
 
         {/* PORTFOLIO TAB */}
-        {activeTab === "portfolio" && (
+        {activeTab === 'portfolio' && (
           <Card
             flush
             title="Project execution"
             subtitle="Open a project to see its phases, evidence and gate sign-offs."
             actions={
-              <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => navigate(ROUTES.projects)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                iconRight={ArrowRight}
+                onClick={() => navigate(ROUTES.projects)}
+              >
                 All projects
               </Button>
             }
@@ -1457,25 +1687,21 @@ export default function CommandCenter() {
             </div>
 
             {portfolioLoading && <LoadingRow label="Loading portfolio…" />}
-            {portfolioError && (
-              <ErrorRow error={portfolioErrorObj} onRetry={refetchPortfolio} />
-            )}
+            {portfolioError && <ErrorRow error={portfolioErrorObj} onRetry={refetchPortfolio} />}
             {!portfolioLoading && !portfolioError && (
               <ProjectExecutionBoard
                 rows={filteredRows}
                 expanded={expanded}
-                onToggle={(code) =>
-                  setExpanded(expanded === code ? null : code)
-                }
+                onToggle={(code) => setExpanded(expanded === code ? null : code)}
                 onOpenProject={(code) => navigate(ROUTES.project(code))}
                 canUpdateTasks={canUpdateTasks}
                 onOpen={{ navigate, uploadDoc: setUploadTarget, viewEvidence: setEvidenceTarget }}
                 onFlash={flashToast}
                 onClearFilters={
-                  healthFilter !== "all" || search
+                  healthFilter !== 'all' || search
                     ? () => {
-                        setHealthFilter("all");
-                        setSearch("");
+                        setHealthFilter('all');
+                        setSearch('');
                       }
                     : undefined
                 }
@@ -1485,29 +1711,31 @@ export default function CommandCenter() {
         )}
 
         {/* ACTION REQUIRED TAB */}
-        {activeTab === "actions" && <ActionRequired onOpen={navigate} />}
+        {activeTab === 'actions' && <ActionRequired onOpen={navigate} />}
 
         {/* DOCUMENT CONTROL TAB */}
-        {activeTab === "documents" && (
-          <DocumentControl onOpen={navigate} onUploadDoc={setUploadTarget} onViewEvidence={setEvidenceTarget} />
+        {activeTab === 'documents' && (
+          <DocumentControl
+            onOpen={navigate}
+            onUploadDoc={setUploadTarget}
+            onViewEvidence={setEvidenceTarget}
+          />
         )}
 
         {/* SITE EXECUTION TAB */}
-        {activeTab === "execution" && (
-          <SiteExecution rows={allRows} onOpen={navigate} />
-        )}
+        {activeTab === 'execution' && <SiteExecution rows={allRows} onOpen={navigate} />}
 
         {/* EXECUTION & QC CHECKS TAB */}
-        {activeTab === "qc" && <TaskQCPanel onOpen={navigate} />}
+        {activeTab === 'qc' && <TaskQCPanel onOpen={navigate} />}
 
         {/* COMMERCIAL TAB */}
-        {activeTab === "commercial" && <CommercialPanel onOpen={navigate} />}
+        {activeTab === 'commercial' && <CommercialPanel onOpen={navigate} />}
 
         {/* TEAM WORKLOAD TAB */}
-        {activeTab === "team" && <TeamWorkload onOpen={navigate} />}
+        {activeTab === 'team' && <TeamWorkload onOpen={navigate} />}
 
         {/* LIVE ACTIVITY TAB */}
-        {activeTab === "activity" && <ActivityTimeline />}
+        {activeTab === 'activity' && <ActivityTimeline />}
       </div>
 
       {uploadTarget && (
@@ -1519,11 +1747,13 @@ export default function CommandCenter() {
         />
       )}
 
-      {evidenceTarget && <EvidenceDrawer
-        key={`${evidenceTarget.projectId || "browse"}:${evidenceTarget.documentTypeId || "all"}`}
-        target={evidenceTarget}
-        onClose={() => setEvidenceTarget(null)}
-      />}
+      {evidenceTarget && (
+        <EvidenceDrawer
+          key={`${evidenceTarget.projectId || 'browse'}:${evidenceTarget.documentTypeId || 'all'}`}
+          target={evidenceTarget}
+          onClose={() => setEvidenceTarget(null)}
+        />
+      )}
       <Toast message={toast} />
     </Page>
   );

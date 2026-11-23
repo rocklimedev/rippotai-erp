@@ -1,12 +1,12 @@
-import { useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { DocumentPreview, usePdfDownload } from "@/components/print-document";
-import DeliveryChallanDocument, { deliveryChallanFileName } from "@/components/commerce-documents/DeliveryChallanDocument";
-import { useGetProjectByIdQuery } from "../../api/projects/project.api";
-import { useGetVendorByIdQuery } from "../../api/vendors/vendor.api";
-import { useGetPurchaseOrderQuery } from "../../api/procuerment/purchase-order.api";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useMemo, useRef, useState } from 'react';
+import { DocumentPreview, usePdfDownload } from '@/components/print-document';
+import DeliveryChallanDocument, {
+  deliveryChallanFileName,
+} from '@/components/commerce-documents/DeliveryChallanDocument';
+import { useGetProjectByIdQuery } from '../../api/projects/project.api';
+import { useGetVendorByIdQuery } from '../../api/vendors/vendor.api';
+import { useGetPurchaseOrderQuery } from '../../api/procuerment/purchase-order.api';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Download,
@@ -29,32 +29,26 @@ import {
   X,
   Check,
   RefreshCcw,
-} from "lucide-react";
-import { toast } from "sonner";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
+} from 'lucide-react';
+import { toast } from 'sonner';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
 
 import {
   useGetDeliveryChallanQuery,
   useUpdateDeliveryChallanMutation,
   useCompleteDeliveryChallanMutation,
-} from "../../api/procuerment/delivery-challan.api";
+} from '../../api/procuerment/delivery-challan.api';
 
 /**
  * shadcn/ui
  */
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -62,27 +56,26 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 
 export default function DeliveryChallanView() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("preview");
-  const recordInfo = useRecordInfo("delivery-challan", id);
+  const recordInfo = useRecordInfo('delivery-challan', id);
   const nav = useNavigate();
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -93,11 +86,11 @@ export default function DeliveryChallanView() {
 
   const [selectedItem, setSelectedItem] = useState(null);
 
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState('');
 
-  const [statusRemarks, setStatusRemarks] = useState("");
+  const [statusRemarks, setStatusRemarks] = useState('');
 
-  const [completeRemarks, setCompleteRemarks] = useState("");
+  const [completeRemarks, setCompleteRemarks] = useState('');
 
   const {
     data: response,
@@ -109,11 +102,9 @@ export default function DeliveryChallanView() {
     skip: !id,
   });
 
-  const [updateDeliveryChallan, updateState] =
-    useUpdateDeliveryChallanMutation();
+  const [updateDeliveryChallan, updateState] = useUpdateDeliveryChallanMutation();
 
-  const [completeDeliveryChallan, completeState] =
-    useCompleteDeliveryChallanMutation();
+  const [completeDeliveryChallan, completeState] = useCompleteDeliveryChallanMutation();
 
   /**
    * Support both:
@@ -136,9 +127,15 @@ export default function DeliveryChallanView() {
   // Linked records for the printed challan (project, supplier, PO number).
   const docRef = useRef(null);
   const { download: downloadDoc, downloading } = usePdfDownload(docRef);
-  const { data: projectRes } = useGetProjectByIdQuery(challan?.project_id, { skip: !challan?.project_id });
-  const { data: vendorRes } = useGetVendorByIdQuery(challan?.vendor_id, { skip: !challan?.vendor_id });
-  const { data: poRes } = useGetPurchaseOrderQuery(challan?.purchase_order_id, { skip: !challan?.purchase_order_id });
+  const { data: projectRes } = useGetProjectByIdQuery(challan?.project_id, {
+    skip: !challan?.project_id,
+  });
+  const { data: vendorRes } = useGetVendorByIdQuery(challan?.vendor_id, {
+    skip: !challan?.vendor_id,
+  });
+  const { data: poRes } = useGetPurchaseOrderQuery(challan?.purchase_order_id, {
+    skip: !challan?.purchase_order_id,
+  });
   const unwrap = (r) => (r?.data && !Array.isArray(r.data) ? r.data : r);
 
   /**
@@ -148,10 +145,10 @@ export default function DeliveryChallanView() {
    */
 
   const formatDate = (value) => {
-    if (!value) return "—";
+    if (!value) return '—';
 
     const str = String(value).slice(0, 10);
-    const parts = str.split("-");
+    const parts = str.split('-');
 
     if (parts.length !== 3) return value;
 
@@ -159,15 +156,15 @@ export default function DeliveryChallanView() {
   };
 
   const formatDateTime = (value) => {
-    if (!value) return "—";
+    if (!value) return '—';
 
     try {
-      return new Date(value).toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+      return new Date(value).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
       });
     } catch {
       return value;
@@ -236,39 +233,39 @@ export default function DeliveryChallanView() {
 
   const statusConfig = {
     DRAFT: {
-      label: "Draft",
+      label: 'Draft',
       icon: Clock3,
-      className: "border-slate-200 bg-slate-50 text-slate-700",
+      className: 'border-slate-200 bg-slate-50 text-slate-700',
     },
 
     PENDING: {
-      label: "Pending",
+      label: 'Pending',
       icon: Clock3,
-      className: "border-amber-200 bg-amber-50 text-amber-700",
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
     },
 
     PARTIALLY_ACCEPTED: {
-      label: "Partially Accepted",
+      label: 'Partially Accepted',
       icon: AlertCircle,
-      className: "border-amber-200 bg-amber-50 text-amber-700",
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
     },
 
     ACCEPTED: {
-      label: "Accepted",
+      label: 'Accepted',
       icon: CheckCircle2,
-      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     },
 
     REJECTED: {
-      label: "Rejected",
+      label: 'Rejected',
       icon: XCircle,
-      className: "border-red-200 bg-red-50 text-red-700",
+      className: 'border-red-200 bg-red-50 text-red-700',
     },
 
     COMPLETED: {
-      label: "Completed",
+      label: 'Completed',
       icon: CheckCircle2,
-      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     },
   };
 
@@ -294,14 +291,14 @@ export default function DeliveryChallanView() {
    */
 
   const openStatusDialog = () => {
-    setSelectedStatus(challan?.status || "PENDING");
-    setStatusRemarks("");
+    setSelectedStatus(challan?.status || 'PENDING');
+    setStatusRemarks('');
     setStatusDialogOpen(true);
   };
 
   const submitStatusUpdate = async () => {
     if (!selectedStatus) {
-      toast.error("Select a status");
+      toast.error('Select a status');
       return;
     }
 
@@ -314,13 +311,11 @@ export default function DeliveryChallanView() {
         },
       }).unwrap();
 
-      toast.success("Delivery challan status updated");
+      toast.success('Delivery challan status updated');
 
       setStatusDialogOpen(false);
     } catch (err) {
-      toast.error(
-        err?.data?.message || "Failed to update delivery challan status",
-      );
+      toast.error(err?.data?.message || 'Failed to update delivery challan status');
     }
   };
 
@@ -339,12 +334,12 @@ export default function DeliveryChallanView() {
         },
       }).unwrap();
 
-      toast.success("Delivery challan completed successfully");
+      toast.success('Delivery challan completed successfully');
 
       setCompleteDialogOpen(false);
-      setCompleteRemarks("");
+      setCompleteRemarks('');
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to complete delivery challan");
+      toast.error(err?.data?.message || 'Failed to complete delivery challan');
     }
   };
 
@@ -355,13 +350,11 @@ export default function DeliveryChallanView() {
    * Captures the A4 pages rendered below (shared Rippotai print kit).
    */
 
-  const downloadPdf = () => {
-    flushSync(() => setActiveTab("preview"));
+  const downloadPdf = () =>
     downloadDoc(deliveryChallanFileName(challan), {
-      title: `Delivery Challan ${challan?.challan_number || ""}`,
-      label: "delivery challan",
+      title: `Delivery Challan ${challan?.challan_number || ''}`,
+      label: 'delivery challan',
     });
-  };
 
   /**
    * -------------------------------------------------------------
@@ -394,19 +387,16 @@ export default function DeliveryChallanView() {
           <CardContent className="py-10 text-center">
             <XCircle size={36} className="mx-auto text-red-500 mb-3" />
 
-            <h2 className="font-semibold text-lg">
-              Delivery Challan not found
-            </h2>
+            <h2 className="font-semibold text-lg">Delivery Challan not found</h2>
 
             <p className="text-sm text-muted-foreground mt-1">
-              {error?.data?.message ||
-                "The delivery challan could not be loaded."}
+              {error?.data?.message || 'The delivery challan could not be loaded.'}
             </p>
 
             <Button
               variant="outline"
               className="mt-5"
-              onClick={() => nav("/procurement/delivery-challans")}
+              onClick={() => nav('/procurement/delivery-challans')}
             >
               <ArrowLeft size={16} />
               Back to Delivery Challans
@@ -430,7 +420,7 @@ export default function DeliveryChallanView() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => nav("/procurement/delivery-challans")}
+                onClick={() => nav('/procurement/delivery-challans')}
               >
                 <ArrowLeft size={18} />
               </Button>
@@ -445,10 +435,7 @@ export default function DeliveryChallanView() {
                     {challan.challan_number}
                   </h1>
 
-                  <Badge
-                    variant="outline"
-                    className={`gap-1.5 ${currentStatus.className}`}
-                  >
+                  <Badge variant="outline" className={`gap-1.5 ${currentStatus.className}`}>
                     <StatusIcon size={13} />
                     {currentStatus.label}
                   </Badge>
@@ -463,15 +450,12 @@ export default function DeliveryChallanView() {
             {/* Actions */}
             <div className="flex items-center gap-2">
               {isFetching && (
-                <RefreshCcw
-                  size={15}
-                  className="animate-spin text-muted-foreground"
-                />
+                <RefreshCcw size={15} className="animate-spin text-muted-foreground" />
               )}
 
               <Button variant="outline" onClick={downloadPdf} disabled={downloading}>
                 <Download size={16} />
-                {downloading ? "Preparing PDF…" : "Download PDF"}
+                {downloading ? 'Preparing PDF…' : 'Download PDF'}
               </Button>
 
               <Button
@@ -500,9 +484,7 @@ export default function DeliveryChallanView() {
                       if (!hasOutstandingItems) {
                         setCompleteDialogOpen(true);
                       } else {
-                        toast.info(
-                          "This challan still has outstanding quantities.",
-                        );
+                        toast.info('This challan still has outstanding quantities.');
                       }
                     }}
                   >
@@ -512,9 +494,7 @@ export default function DeliveryChallanView() {
 
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem
-                    onClick={() => setActiveTab("history")}
-                  >
+                  <DropdownMenuItem onClick={() => toast.info('History is available below.')}>
                     <History size={15} />
                     View History
                   </DropdownMenuItem>
@@ -529,19 +509,40 @@ export default function DeliveryChallanView() {
           BODY
       =========================================================== */}
       <div className="max-w-[1500px] mx-auto px-5 py-6">
-        <div className="space-y-5">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
           {/* ======================================================
               LEFT DOCUMENT AREA
           ======================================================= */}
           <div className="space-y-5">
             <RecordContext type="delivery-challan" id={id} />
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList aria-label="Delivery challan views">
-                <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-                <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
-                <TabsTrigger value="summary">SUMMARY</TabsTrigger>
-              </TabsList>
-              <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
+            {/* Status alert */}
+            {challan.status === 'PARTIALLY_ACCEPTED' && (
+              <Card className="border-amber-200 bg-amber-50/60">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={20} className="text-amber-600 mt-0.5" />
+
+                    <div className="flex-1">
+                      <p className="font-semibold text-amber-900">Delivery partially accepted</p>
+
+                      <p className="text-sm text-amber-800 mt-1">
+                        Some quantities are still short, damaged, rejected, or otherwise not fully
+                        accepted.
+                      </p>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      onClick={() => setCompleteDialogOpen(true)}
+                      className="bg-[#1F453B] hover:bg-[#16372F]"
+                    >
+                      Complete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* ====================================================
                 A4 DOCUMENT PREVIEW
             ===================================================== */}
@@ -572,59 +573,6 @@ export default function DeliveryChallanView() {
               </CardContent>
             </Card>
 
-              </TabsContent>
-              <TabsContent value="history" className="space-y-5">
-                <VersionHistory type="delivery-challan" id={id} />
-            {/* HISTORY */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">History</CardTitle>
-
-                    <CardDescription>Challan activity</CardDescription>
-                  </div>
-
-                  <History size={18} className="text-muted-foreground" />
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <HistoryTimeline challan={challan} />
-              </CardContent>
-            </Card>
-              </TabsContent>
-              <TabsContent value="summary" className="space-y-5">
-            {/* Status alert */}
-            {challan.status === "PARTIALLY_ACCEPTED" && (
-              <Card className="border-amber-200 bg-amber-50/60">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle size={20} className="text-amber-600 mt-0.5" />
-
-                    <div className="flex-1">
-                      <p className="font-semibold text-amber-900">
-                        Delivery partially accepted
-                      </p>
-
-                      <p className="text-sm text-amber-800 mt-1">
-                        Some quantities are still short, damaged, rejected, or
-                        otherwise not fully accepted.
-                      </p>
-                    </div>
-
-                    <Button
-                      size="sm"
-                      onClick={() => setCompleteDialogOpen(true)}
-                      className="bg-[#1F453B] hover:bg-[#16372F]"
-                    >
-                      Complete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* ====================================================
                 ITEM DETAILS
             ===================================================== */}
@@ -632,17 +580,13 @@ export default function DeliveryChallanView() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-base">
-                      Material Receipt Details
-                    </CardTitle>
+                    <CardTitle className="text-base">Material Receipt Details</CardTitle>
 
-                    <CardDescription>
-                      Quantity acceptance and discrepancies
-                    </CardDescription>
+                    <CardDescription>Quantity acceptance and discrepancies</CardDescription>
                   </div>
 
                   <Badge variant="outline">
-                    {items.length} {items.length === 1 ? "Item" : "Items"}
+                    {items.length} {items.length === 1 ? 'Item' : 'Items'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -672,24 +616,19 @@ export default function DeliveryChallanView() {
 
                     <tbody>
                       {items.map((item) => (
-                        <tr
-                          key={item.id}
-                          className="border-t hover:bg-[#F8FAF9]"
-                        >
+                        <tr key={item.id} className="border-t hover:bg-[#F8FAF9]">
                           <td className="px-4 py-3">
                             <div className="font-medium">
-                              {item.description || item.material?.name || "—"}
+                              {item.description || item.material?.name || '—'}
                             </div>
 
                             <div className="text-xs text-muted-foreground mt-0.5">
-                              {item.material?.material_code || ""}
-                              {item.brand ? ` · ${item.brand}` : ""}
+                              {item.material?.material_code || ''}
+                              {item.brand ? ` · ${item.brand}` : ''}
                             </div>
                           </td>
 
-                          <td className="px-4 py-3 text-right">
-                            {number(item.quantity)}
-                          </td>
+                          <td className="px-4 py-3 text-right">{number(item.quantity)}</td>
 
                           <td className="px-4 py-3 text-right text-emerald-700 font-medium">
                             {number(item.accepted_quantity)}
@@ -701,7 +640,7 @@ export default function DeliveryChallanView() {
                                 {number(item.shortage_quantity)}
                               </span>
                             ) : (
-                              "—"
+                              '—'
                             )}
                           </td>
 
@@ -711,7 +650,7 @@ export default function DeliveryChallanView() {
                                 {number(item.damaged_quantity)}
                               </span>
                             ) : (
-                              "—"
+                              '—'
                             )}
                           </td>
 
@@ -721,7 +660,7 @@ export default function DeliveryChallanView() {
                                 {number(item.rejected_quantity)}
                               </span>
                             ) : (
-                              "—"
+                              '—'
                             )}
                           </td>
 
@@ -729,21 +668,17 @@ export default function DeliveryChallanView() {
                             <Badge
                               variant="outline"
                               className={
-                                item.condition_status === "GOOD"
-                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                  : "border-amber-200 bg-amber-50 text-amber-700"
+                                item.condition_status === 'GOOD'
+                                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                  : 'border-amber-200 bg-amber-50 text-amber-700'
                               }
                             >
-                              {item.condition_status || "—"}
+                              {item.condition_status || '—'}
                             </Badge>
                           </td>
 
                           <td className="px-4 py-3 text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openItemHistory(item)}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => openItemHistory(item)}>
                               <History size={15} />
                               History
                             </Button>
@@ -755,7 +690,13 @@ export default function DeliveryChallanView() {
                 </div>
               </CardContent>
             </Card>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+            <VersionHistory type="delivery-challan" id={id} />
+          </div>
+
+          {/* ======================================================
+              RIGHT SIDEBAR
+          ======================================================= */}
+          <div className="space-y-5">
             {/* SUMMARY */}
             <Card>
               <CardHeader>
@@ -766,16 +707,9 @@ export default function DeliveryChallanView() {
                 <div className="grid grid-cols-2 gap-3">
                   <SummaryBox label="Items" value={items.length} />
 
-                  <SummaryBox
-                    label="Total Qty"
-                    value={number(summary.ordered)}
-                  />
+                  <SummaryBox label="Total Qty" value={number(summary.ordered)} />
 
-                  <SummaryBox
-                    label="Accepted"
-                    value={number(summary.accepted)}
-                    success
-                  />
+                  <SummaryBox label="Accepted" value={number(summary.accepted)} success />
 
                   <SummaryBox
                     label="Shortage"
@@ -833,11 +767,7 @@ export default function DeliveryChallanView() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <InfoRow
-                  icon={FileText}
-                  label="Challan No"
-                  value={challan.challan_number}
-                />
+                <InfoRow icon={FileText} label="Challan No" value={challan.challan_number} />
 
                 <InfoRow
                   icon={CalendarDays}
@@ -845,30 +775,20 @@ export default function DeliveryChallanView() {
                   value={formatDate(challan.challan_date)}
                 />
 
-                <InfoRow
-                  icon={MapPin}
-                  label="Site Address"
-                  value={challan.site_address || "—"}
-                />
+                <InfoRow icon={MapPin} label="Site Address" value={challan.site_address || '—'} />
 
                 <InfoRow
                   icon={Package}
                   label="Purchase Order"
                   value={
-                    challan.purchase_order_id
-                      ? `${challan.purchase_order_id.slice(0, 8)}...`
-                      : "—"
+                    challan.purchase_order_id ? `${challan.purchase_order_id.slice(0, 8)}...` : '—'
                   }
                 />
 
                 <InfoRow
                   icon={User}
                   label="Vendor"
-                  value={
-                    challan.vendor_id
-                      ? `${challan.vendor_id.slice(0, 8)}...`
-                      : "—"
-                  }
+                  value={challan.vendor_id ? `${challan.vendor_id.slice(0, 8)}...` : '—'}
                 />
               </CardContent>
             </Card>
@@ -880,35 +800,36 @@ export default function DeliveryChallanView() {
               </CardHeader>
 
               <CardContent className="space-y-3">
-                <CheckRow
-                  checked={challan.gate_pass_received}
-                  label="Gate pass received"
-                />
+                <CheckRow checked={challan.gate_pass_received} label="Gate pass received" />
 
-                <CheckRow
-                  checked={challan.material_checked}
-                  label="Material checked"
-                />
+                <CheckRow checked={challan.material_checked} label="Material checked" />
 
-                <CheckRow
-                  checked={summary.shortage === 0}
-                  label="No shortage"
-                />
+                <CheckRow checked={summary.shortage === 0} label="No shortage" />
 
-                <CheckRow
-                  checked={summary.damaged === 0}
-                  label="No damaged quantity"
-                />
+                <CheckRow checked={summary.damaged === 0} label="No damaged quantity" />
 
-                <CheckRow
-                  checked={summary.rejected === 0}
-                  label="No rejected quantity"
-                />
+                <CheckRow checked={summary.rejected === 0} label="No rejected quantity" />
               </CardContent>
             </Card>
-          </div>
-              </TabsContent>
-            </Tabs>
+
+            {/* HISTORY */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">History</CardTitle>
+
+                    <CardDescription>Challan activity</CardDescription>
+                  </div>
+
+                  <History size={18} className="text-muted-foreground" />
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <HistoryTimeline challan={challan} />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -938,9 +859,7 @@ export default function DeliveryChallanView() {
                 <SelectContent>
                   <SelectItem value="PENDING">Pending</SelectItem>
 
-                  <SelectItem value="PARTIALLY_ACCEPTED">
-                    Partially Accepted
-                  </SelectItem>
+                  <SelectItem value="PARTIALLY_ACCEPTED">Partially Accepted</SelectItem>
 
                   <SelectItem value="ACCEPTED">Accepted</SelectItem>
 
@@ -964,10 +883,7 @@ export default function DeliveryChallanView() {
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setStatusDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>
               Cancel
             </Button>
 
@@ -976,7 +892,7 @@ export default function DeliveryChallanView() {
               disabled={updateState.isLoading}
               className="bg-[#1F453B] hover:bg-[#16372F]"
             >
-              {updateState.isLoading ? "Updating..." : "Update Status"}
+              {updateState.isLoading ? 'Updating...' : 'Update Status'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1002,8 +918,8 @@ export default function DeliveryChallanView() {
                   <AlertCircle size={18} className="text-amber-600" />
 
                   <div className="text-sm text-amber-800">
-                    There are still outstanding quantities on this challan.
-                    Review the item quantities before completing it.
+                    There are still outstanding quantities on this challan. Review the item
+                    quantities before completing it.
                   </div>
                 </div>
               </div>
@@ -1022,10 +938,7 @@ export default function DeliveryChallanView() {
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCompleteDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setCompleteDialogOpen(false)}>
               Cancel
             </Button>
 
@@ -1034,7 +947,7 @@ export default function DeliveryChallanView() {
               disabled={completeState.isLoading}
               className="bg-[#1F453B] hover:bg-[#16372F]"
             >
-              {completeState.isLoading ? "Completing..." : "Complete Challan"}
+              {completeState.isLoading ? 'Completing...' : 'Complete Challan'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1064,14 +977,12 @@ export default function DeliveryChallanView() {
 
                   <div>
                     <h3 className="font-semibold">
-                      {selectedItem.description ||
-                        selectedItem.material?.name ||
-                        "—"}
+                      {selectedItem.description || selectedItem.material?.name || '—'}
                     </h3>
 
                     <p className="text-xs text-muted-foreground mt-1">
-                      {selectedItem.material?.material_code || ""}
-                      {selectedItem.brand ? ` · ${selectedItem.brand}` : ""}
+                      {selectedItem.material?.material_code || ''}
+                      {selectedItem.brand ? ` · ${selectedItem.brand}` : ''}
                     </p>
                   </div>
                 </div>
@@ -1081,29 +992,13 @@ export default function DeliveryChallanView() {
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 <MiniStat label="Qty" value={number(selectedItem.quantity)} />
 
-                <MiniStat
-                  label="Accepted"
-                  value={number(selectedItem.accepted_quantity)}
-                  success
-                />
+                <MiniStat label="Accepted" value={number(selectedItem.accepted_quantity)} success />
 
-                <MiniStat
-                  label="Shortage"
-                  value={number(selectedItem.shortage_quantity)}
-                  warning
-                />
+                <MiniStat label="Shortage" value={number(selectedItem.shortage_quantity)} warning />
 
-                <MiniStat
-                  label="Damaged"
-                  value={number(selectedItem.damaged_quantity)}
-                  danger
-                />
+                <MiniStat label="Damaged" value={number(selectedItem.damaged_quantity)} danger />
 
-                <MiniStat
-                  label="Rejected"
-                  value={number(selectedItem.rejected_quantity)}
-                  danger
-                />
+                <MiniStat label="Rejected" value={number(selectedItem.rejected_quantity)} danger />
               </div>
 
               <Separator />
@@ -1113,37 +1008,29 @@ export default function DeliveryChallanView() {
                 <h4 className="text-sm font-semibold mb-4">Activity</h4>
 
                 <div className="space-y-4">
-                  {buildItemHistory(selectedItem, challan).map(
-                    (event, index) => (
-                      <div key={index} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="h-8 w-8 rounded-full bg-[#E8EFEB] flex items-center justify-center">
-                            <event.icon size={15} className="text-[#1F453B]" />
-                          </div>
-
-                          {index <
-                            buildItemHistory(selectedItem, challan).length -
-                              1 && (
-                            <div className="w-px flex-1 bg-border mt-1" />
-                          )}
+                  {buildItemHistory(selectedItem, challan).map((event, index) => (
+                    <div key={index} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="h-8 w-8 rounded-full bg-[#E8EFEB] flex items-center justify-center">
+                          <event.icon size={15} className="text-[#1F453B]" />
                         </div>
 
-                        <div className="pb-3">
-                          <div className="font-medium text-sm">
-                            {event.title}
-                          </div>
-
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {event.description}
-                          </div>
-
-                          <div className="text-[11px] text-muted-foreground mt-1">
-                            {event.date}
-                          </div>
-                        </div>
+                        {index < buildItemHistory(selectedItem, challan).length - 1 && (
+                          <div className="w-px flex-1 bg-border mt-1" />
+                        )}
                       </div>
-                    ),
-                  )}
+
+                      <div className="pb-3">
+                        <div className="font-medium text-sm">{event.title}</div>
+
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {event.description}
+                        </div>
+
+                        <div className="text-[11px] text-muted-foreground mt-1">{event.date}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -1162,9 +1049,7 @@ export default function DeliveryChallanView() {
                     )}
 
                     {selectedItem.remarks && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {selectedItem.remarks}
-                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">{selectedItem.remarks}</p>
                     )}
                   </div>
                 </>
@@ -1184,18 +1069,18 @@ export default function DeliveryChallanView() {
  */
 
 function SummaryBox({ label, value, success, warning, danger }) {
-  let valueClass = "text-[#1F453B]";
+  let valueClass = 'text-[#1F453B]';
 
   if (success) {
-    valueClass = "text-emerald-700";
+    valueClass = 'text-emerald-700';
   }
 
   if (warning) {
-    valueClass = "text-amber-700";
+    valueClass = 'text-amber-700';
   }
 
   if (danger) {
-    valueClass = "text-red-700";
+    valueClass = 'text-red-700';
   }
 
   return (
@@ -1208,18 +1093,18 @@ function SummaryBox({ label, value, success, warning, danger }) {
 }
 
 function MiniStat({ label, value, success, warning, danger }) {
-  let className = "";
+  let className = '';
 
   if (success) {
-    className = "text-emerald-700";
+    className = 'text-emerald-700';
   }
 
   if (warning) {
-    className = "text-amber-700";
+    className = 'text-amber-700';
   }
 
   if (danger) {
-    className = "text-red-700";
+    className = 'text-red-700';
   }
 
   return (
@@ -1239,9 +1124,7 @@ function InfoRow({ icon: Icon, label, value }) {
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
 
-        <div className="text-sm font-medium mt-0.5 break-words">
-          {value || "—"}
-        </div>
+        <div className="text-sm font-medium mt-0.5 break-words">{value || '—'}</div>
       </div>
     </div>
   );
@@ -1253,9 +1136,7 @@ function CheckRow({ checked, label }) {
       <div className="flex items-center gap-2">
         <div
           className={`h-6 w-6 rounded-full flex items-center justify-center ${
-            checked
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-slate-100 text-slate-400"
+            checked ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'
           }`}
         >
           {checked ? <Check size={14} /> : <Clock3 size={14} />}
@@ -1265,11 +1146,9 @@ function CheckRow({ checked, label }) {
       </div>
 
       <span
-        className={`text-xs font-medium ${
-          checked ? "text-emerald-700" : "text-muted-foreground"
-        }`}
+        className={`text-xs font-medium ${checked ? 'text-emerald-700' : 'text-muted-foreground'}`}
       >
-        {checked ? "Done" : "Pending"}
+        {checked ? 'Done' : 'Pending'}
       </span>
     </div>
   );
@@ -1280,7 +1159,7 @@ function HistoryTimeline({ challan }) {
 
   if (challan.createdAt) {
     events.push({
-      title: "Delivery Challan Created",
+      title: 'Delivery Challan Created',
       description: `Challan ${challan.challan_number} was created.`,
       date: formatHistoryDate(challan.createdAt),
       icon: FileText,
@@ -1289,8 +1168,8 @@ function HistoryTimeline({ challan }) {
 
   if (challan.gate_pass_received) {
     events.push({
-      title: "Gate Pass Received",
-      description: "Gate pass has been marked as received.",
+      title: 'Gate Pass Received',
+      description: 'Gate pass has been marked as received.',
       date: formatHistoryDate(challan.updatedAt),
       icon: ShieldCheck,
     });
@@ -1298,35 +1177,35 @@ function HistoryTimeline({ challan }) {
 
   if (challan.material_checked) {
     events.push({
-      title: "Material Checked",
-      description: "Material inspection has been completed.",
+      title: 'Material Checked',
+      description: 'Material inspection has been completed.',
       date: formatHistoryDate(challan.updatedAt),
       icon: ClipboardCheck,
     });
   }
 
-  if (challan.status === "PARTIALLY_ACCEPTED") {
+  if (challan.status === 'PARTIALLY_ACCEPTED') {
     events.push({
-      title: "Partially Accepted",
-      description: "The delivered quantities were partially accepted.",
+      title: 'Partially Accepted',
+      description: 'The delivered quantities were partially accepted.',
       date: formatHistoryDate(challan.updatedAt),
       icon: AlertCircle,
     });
   }
 
-  if (challan.status === "ACCEPTED") {
+  if (challan.status === 'ACCEPTED') {
     events.push({
-      title: "Accepted",
-      description: "The delivery challan was accepted.",
+      title: 'Accepted',
+      description: 'The delivery challan was accepted.',
       date: formatHistoryDate(challan.updatedAt),
       icon: CheckCircle2,
     });
   }
 
-  if (challan.status === "COMPLETED") {
+  if (challan.status === 'COMPLETED') {
     events.push({
-      title: "Completed",
-      description: "The delivery challan receiving process was completed.",
+      title: 'Completed',
+      description: 'The delivery challan receiving process was completed.',
       date: formatHistoryDate(challan.updatedAt),
       icon: CheckCircle2,
     });
@@ -1334,9 +1213,9 @@ function HistoryTimeline({ challan }) {
 
   if (!events.length) {
     events.push({
-      title: "No history available",
-      description: "No activity history has been recorded yet.",
-      date: "—",
+      title: 'No history available',
+      description: 'No activity history has been recorded yet.',
+      date: '—',
       icon: History,
     });
   }
@@ -1353,21 +1232,15 @@ function HistoryTimeline({ challan }) {
                 <Icon size={14} className="text-[#1F453B]" />
               </div>
 
-              {index < events.length - 1 && (
-                <div className="w-px flex-1 bg-border mt-1" />
-              )}
+              {index < events.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
             </div>
 
             <div className="pb-3">
               <div className="text-sm font-medium">{event.title}</div>
 
-              <div className="text-xs text-muted-foreground mt-1">
-                {event.description}
-              </div>
+              <div className="text-xs text-muted-foreground mt-1">{event.description}</div>
 
-              <div className="text-[11px] text-muted-foreground mt-1">
-                {event.date}
-              </div>
+              <div className="text-[11px] text-muted-foreground mt-1">{event.date}</div>
             </div>
           </div>
         );
@@ -1380,7 +1253,7 @@ function buildItemHistory(item, challan) {
   const history = [];
 
   history.push({
-    title: "Item Added",
+    title: 'Item Added',
     description: `Quantity ${item.quantity || 0} was recorded on the delivery challan.`,
     date: formatHistoryDate(item.createdAt || challan.createdAt),
     icon: Package,
@@ -1388,7 +1261,7 @@ function buildItemHistory(item, challan) {
 
   if (Number(item.accepted_quantity || 0) > 0) {
     history.push({
-      title: "Quantity Accepted",
+      title: 'Quantity Accepted',
       description: `${item.accepted_quantity} quantity accepted.`,
       date: formatHistoryDate(item.updatedAt || challan.updatedAt),
       icon: CheckCircle2,
@@ -1397,7 +1270,7 @@ function buildItemHistory(item, challan) {
 
   if (Number(item.shortage_quantity || 0) > 0) {
     history.push({
-      title: "Shortage Recorded",
+      title: 'Shortage Recorded',
       description: `${item.shortage_quantity} quantity recorded as shortage.`,
       date: formatHistoryDate(item.updatedAt || challan.updatedAt),
       icon: AlertCircle,
@@ -1406,7 +1279,7 @@ function buildItemHistory(item, challan) {
 
   if (Number(item.damaged_quantity || 0) > 0) {
     history.push({
-      title: "Damage Recorded",
+      title: 'Damage Recorded',
       description: `${item.damaged_quantity} quantity recorded as damaged.`,
       date: formatHistoryDate(item.updatedAt || challan.updatedAt),
       icon: AlertCircle,
@@ -1415,7 +1288,7 @@ function buildItemHistory(item, challan) {
 
   if (Number(item.rejected_quantity || 0) > 0) {
     history.push({
-      title: "Quantity Rejected",
+      title: 'Quantity Rejected',
       description: `${item.rejected_quantity} quantity rejected.`,
       date: formatHistoryDate(item.updatedAt || challan.updatedAt),
       icon: XCircle,
@@ -1426,15 +1299,15 @@ function buildItemHistory(item, challan) {
 }
 
 function formatHistoryDate(value) {
-  if (!value) return "—";
+  if (!value) return '—';
 
   try {
-    return new Date(value).toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Date(value).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   } catch {
     return value;

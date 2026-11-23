@@ -167,12 +167,6 @@ export default function AdminOverview() {
             ) : null,
         },
         {
-          to: '/console/site-visit-stages',
-          icon: Layers3,
-          title: 'Site visit stages',
-          desc: 'Manage architect visit stages, checks and visit types.',
-        },
-        {
           to: '/console/project-structure',
           icon: Network,
           title: 'Project structure',

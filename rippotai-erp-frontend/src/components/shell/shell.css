@@ -18,11 +18,11 @@
 .inos-shell__content { padding: 24px 32px 48px; min-width: 0; }
 .inos-shell__page { min-width: 0; }
 .inos-autohead { max-width: 1360px; margin: 0 auto 20px; }
+/* App dashboards are full width: align the breadcrumb + title with the widgets (dashboard header has 16px side padding). */
+.inos-shell__content:has([data-testid^="app-dashboard-"]) .inos-autohead { max-width: none; padding: 0 16px; margin-bottom: 8px; }
 
 /* ---------- global top bar ---------- */
 .inos-topbar {
-  box-sizing: border-box;
-  width: 100%; min-width: 0;
   position: sticky; top: 0; z-index: 45;
   height: var(--topbar-h);
   display: flex; align-items: center; gap: 12px;
@@ -36,9 +36,9 @@
   align-items: center; justify-content: center;
   color: var(--text); border: 1px solid var(--line); background: #fff;
 }
-.inos-topbar__brand { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.inos-topbar__brand { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .inos-topbar__brand img { width: 30px; height: 30px; object-fit: contain; }
-.inos-topbar__brand .inos-topbar__wordmark { width: 82px; height: auto; }
+.inos-topbar__brand span { font-weight: 800; letter-spacing: 0.16em; font-size: 15px; color: var(--brand); }
 .inos-topbar__sep { width: 1px; height: 24px; background: var(--line); flex: 0 0 auto; }
 .inos-topbar__apps {
   display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
@@ -50,8 +50,6 @@
 .inos-topbar__search { margin-left: auto; flex: 0 1 300px; min-width: 0; display: flex; }
 /* CommandShellSearch's trigger shown as a wide input-like field */
 .inos-topbar__search [data-testid="topbar-search"] {
-  min-width: 0;
-  flex-shrink: 1;
   width: 100% !important; height: 36px !important;
   justify-content: flex-start !important; gap: 8px;
   padding: 0 12px !important;
@@ -126,7 +124,7 @@
   min-height: 36px; padding: 6px 10px; border-radius: 8px;
   font-size: 14px; font-weight: 500; color: var(--text);
 }
-.inos-side__item > span:not(.inos-side__initial) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inos-side__item > span:not(.inos-side__initial):not(.inos-side__icon) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inos-side__item:hover { background: var(--surface-2); }
 .inos-side__item.is-active { background: var(--brand-50); color: var(--brand); font-weight: 650; box-shadow: inset 3px 0 0 var(--brand); }
 .inos-side__initial {
@@ -134,6 +132,21 @@
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; background: var(--surface-2);
 }
+
+/* collapsed rail: item icons + section heading marks */
+.inos-side__icon {
+  width: 34px; height: 34px; border-radius: 9px; margin: 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-2, var(--text));
+}
+.inos-side__item:hover .inos-side__icon { color: var(--brand); }
+.inos-side__item.is-active .inos-side__icon { background: var(--brand-50); color: var(--brand); }
+.inos-side__section-mark {
+  display: flex; align-items: center; gap: 4px; margin: 12px 2px 4px;
+  color: var(--brand); cursor: default;
+}
+.inos-side__section-mark::before, .inos-side__section-mark::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.inos-side__section-mark svg { flex: 0 0 auto; }
 
 /* shortcuts at the bottom */
 .inos-side__foot { flex: 0 0 auto; border-top: 1px solid var(--line); padding: 2px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
@@ -154,7 +167,8 @@
 .inos-side.is-collapsed .inos-side__body { padding: 10px 8px; }
 .inos-side.is-collapsed .inos-side__head { flex-direction: column; }
 .inos-side.is-collapsed .inos-side__app { justify-content: center; padding: 4px 0; width: 100%; }
-.inos-side.is-collapsed .inos-side__item { padding: 4px 0; justify-content: center; }
+.inos-side.is-collapsed .inos-side__item { padding: 1px 0; min-height: 36px; justify-content: center; }
+.inos-side.is-collapsed .inos-side__item:hover, .inos-side.is-collapsed .inos-side__item.is-active { background: none; }
 .inos-side.is-collapsed .inos-side__item.is-active { box-shadow: none; }
 .inos-side.is-collapsed .inos-side__foot { padding: 8px; align-items: center; }
 .inos-side.is-collapsed .inos-side__shortcut { justify-content: center; padding: 6px; }
@@ -182,9 +196,7 @@
 @media (max-width: 767px) {
   :root { --topbar-h: 56px; }
   .inos-topbar { gap: 6px; padding: 0 10px; }
-  .inos-topbar__sep { display: none; }
-  .inos-topbar__brand { gap: 5px; }
-  .inos-topbar__brand .inos-topbar__wordmark { width: 62px; }
+  .inos-topbar__brand span, .inos-topbar__sep { display: none; }
   .inos-topbar__apps { width: 36px; padding: 0; justify-content: center; }
   .inos-topbar__apps span { display: none; }
   .inos-topbar__search { flex: 0 0 auto; }
@@ -193,24 +205,6 @@
   .inos-topbar__search [data-testid="topbar-search"] svg { width: 19px; height: 19px; color: var(--brand) !important; }
   .inos-topbar__tools > button:not([data-testid="topbar-user"]), .inos-topbar__tools > a, .inos-topbar__tools > * > button { width: 36px; height: 36px; }
   .inos-shell__content { padding: 16px 16px 40px; }
-}
-/* Keep all actions available when a single row cannot fit. The shared height
-   also moves the sidebar and its scrim below both header rows. */
-@media (max-width: 479px) {
-  :root { --topbar-h: 100px; }
-  .inos-topbar {
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr) 36px;
-    grid-template-rows: 44px 44px;
-    column-gap: 8px; row-gap: 0;
-    padding: 5px 10px;
-  }
-  .inos-topbar__menu { grid-column: 1; grid-row: 1; }
-  .inos-topbar__brand { grid-column: 2; grid-row: 1; justify-self: start; }
-  .inos-topbar:not(:has(.inos-topbar__menu)) .inos-topbar__brand { grid-column: 1 / 3; }
-  .inos-topbar__apps { grid-column: 3; grid-row: 1; }
-  .inos-topbar__search { grid-column: 1; grid-row: 2; margin-left: 0; }
-  .inos-topbar__tools { grid-column: 2 / 4; grid-row: 2; justify-self: end; }
 }
 @media print {
   .inos-side, .inos-topbar, .inos-autohead { display: none !important; }

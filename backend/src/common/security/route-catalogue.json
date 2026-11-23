@@ -4852,6 +4852,16 @@
   {
     "module": "projects",
     "controller": "ProjectPlannerController",
+    "handler": "createPlannerPhase",
+    "method": "POST",
+    "path": "/planner-phases",
+    "permission": "project-planners:create",
+    "public": false,
+    "file": "src/modules/projects/project-planner.controller.ts"
+  },
+  {
+    "module": "projects",
+    "controller": "ProjectPlannerController",
     "handler": "createProcurementItem",
     "method": "POST",
     "path": "/planners/:plannerId/procurement",
@@ -4986,6 +4996,16 @@
     "method": "POST",
     "path": "/projects/:projectId/planners/initialize",
     "permission": "project-planners:create",
+    "public": false,
+    "file": "src/modules/projects/project-planner.controller.ts"
+  },
+  {
+    "module": "projects",
+    "controller": "ProjectPlannerController",
+    "handler": "listPlannerPhases",
+    "method": "GET",
+    "path": "/planner-phases",
+    "permission": "project-planners:read",
     "public": false,
     "file": "src/modules/projects/project-planner.controller.ts"
   },

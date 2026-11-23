@@ -1,13 +1,13 @@
 // Build › Procurement › Quotation — vendor comparison → quotation → PO / WO.
-import { baseApi } from "../../store/baseApi";
+import { baseApi } from '../../store/baseApi';
 
-const TAG = "ProcurementQuotations";
+const TAG = 'ProcurementQuotations';
 
 export const procurementQuotationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getProcurementQuotations: builder.query({
       query: ({ projectId, vendorId, status } = {}) => ({
-        url: "/procurement-quotations",
+        url: '/procurement-quotations',
         params: {
           ...(projectId && { project_id: projectId }),
           ...(vendorId && { vendor_id: vendorId }),
@@ -23,31 +23,36 @@ export const procurementQuotationApi = baseApi.injectEndpoints({
     getProcurementQuotationVersion: builder.query({
       query: ({ id, version }) => `/procurement-quotations/${id}/versions/${version}`,
     }),
-    createProcurementQuotation: builder.mutation({
-      query: (body) => ({ url: "/procurement-quotations", method: "POST", body }),
-      invalidatesTags: [TAG],
-    }),
     createQuotationFromComparison: builder.mutation({
-      query: (body) => ({ url: "/procurement-quotations/from-comparison", method: "POST", body }),
+      query: (body) => ({ url: '/procurement-quotations/from-comparison', method: 'POST', body }),
       invalidatesTags: [TAG],
     }),
     updateProcurementQuotation: builder.mutation({
-      query: ({ id, ...body }) => ({ url: `/procurement-quotations/${id}`, method: "PUT", body }),
+      query: ({ id, ...body }) => ({ url: `/procurement-quotations/${id}`, method: 'PUT', body }),
       invalidatesTags: (result, error, { id }) => [TAG, { type: TAG, id }],
     }),
     setProcurementQuotationStatus: builder.mutation({
-      query: ({ id, status }) => ({ url: `/procurement-quotations/${id}/status`, method: "PATCH", body: { status } }),
+      query: ({ id, status }) => ({
+        url: `/procurement-quotations/${id}/status`,
+        method: 'PATCH',
+        body: { status },
+      }),
       invalidatesTags: (result, error, { id }) => [TAG, { type: TAG, id }],
     }),
     raiseQuotationOrder: builder.mutation({
       query: ({ id, kind }) => ({
-        url: `/procurement-quotations/${id}/${kind === "LABOUR" ? "raise-wo" : "raise-po"}`,
-        method: "POST",
+        url: `/procurement-quotations/${id}/${kind === 'LABOUR' ? 'raise-wo' : 'raise-po'}`,
+        method: 'POST',
       }),
-      invalidatesTags: (result, error, { id }) => [TAG, { type: TAG, id }, "PurchaseOrders", "WorkOrders"],
+      invalidatesTags: (result, error, { id }) => [
+        TAG,
+        { type: TAG, id },
+        'PurchaseOrders',
+        'WorkOrders',
+      ],
     }),
     deleteProcurementQuotation: builder.mutation({
-      query: (id) => ({ url: `/procurement-quotations/${id}`, method: "DELETE" }),
+      query: (id) => ({ url: `/procurement-quotations/${id}`, method: 'DELETE' }),
       invalidatesTags: [TAG],
     }),
   }),
@@ -59,7 +64,6 @@ export const {
   useGetProcurementQuotationVersionQuery,
   useLazyGetProcurementQuotationVersionQuery,
   useCreateQuotationFromComparisonMutation,
-  useCreateProcurementQuotationMutation,
   useUpdateProcurementQuotationMutation,
   useSetProcurementQuotationStatusMutation,
   useRaiseQuotationOrderMutation,

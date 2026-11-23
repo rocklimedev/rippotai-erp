@@ -183,10 +183,8 @@ export const APP_MENUS = {
       items: [
         I('Client', 'clients'),
         I('Users', 'users'),
-        I('Vendors', '/procurement/vendors/directory'),
         I('Roles & Permissions', 'roles-permissions'),
         I('Project Phases', 'project-phases'),
-        I('Site Visit Stages', 'site-visit-stages'),
         I('Document Types', 'document-types'),
         I('Project Structure', 'project-structure'),
         I('Estimate Signature', 'estimate-signature'),
@@ -263,12 +261,6 @@ export const APP_MENUS = {
 };
 
 export function navigationAppFor(app, pathname = '') {
-  // Vendor directory and profiles belong to Admin Console; comparisons stay in Build.
-  if (
-    /^\/procurement\/vendors(?:\/|$)/.test(pathname) &&
-    !/^\/procurement\/vendors\/rate-comparison(?:\/|$)/.test(pathname)
-  )
-    return 'adminConsole';
   if (['design_studio', 'crm'].includes(app)) return 'design';
   if (['inventory', 'procurement', 'siteOperations'].includes(app)) return 'build';
   if (app === 'ledger') {

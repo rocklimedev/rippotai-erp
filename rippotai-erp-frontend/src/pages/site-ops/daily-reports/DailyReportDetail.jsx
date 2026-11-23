@@ -1,8 +1,8 @@
-// Daily site report — Report | PDF preview | Version History.
+// Daily site report — read view + A4 PDF (print kit). Tabs: Report | PDF preview.
 import RecordContext from '@/components/record-context/RecordContext';
 import VersionHistory from '@/components/record-context/VersionHistory';
 import { useRecordInfo } from '@/components/record-context/useRecordInfo';
-import { createElement, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -17,7 +17,6 @@ import {
   MapPin,
   CalendarDays,
   User,
-  History,
 } from 'lucide-react';
 import {
   Page,
@@ -119,7 +118,7 @@ export default function DailyReportDetail() {
   const flagged = issues.filter((i) => i.needsAttention).length;
   const received = (r.materials || []).filter((m) => m.direction === 'RECEIVED');
   const used = (r.materials || []).filter((m) => m.direction === 'USED');
-  const weatherSymbol = createElement(weatherIcon(r.weatherCondition));
+  const WIcon = weatherIcon(r.weatherCondition);
   const qty = (m) => `${Number(m.quantity).toLocaleString('en-IN')} ${m.unit || ''}`;
 
   const downloadPdf = async () => {
@@ -199,7 +198,6 @@ export default function DailyReportDetail() {
         options={[
           { value: 'report', label: 'Report', icon: ClipboardList },
           { value: 'pdf', label: 'PDF preview', icon: FileText },
-          { value: 'history', label: 'Version History', icon: History },
         ]}
       />
 
@@ -207,10 +205,6 @@ export default function DailyReportDetail() {
         <DocumentPreview>
           <DailyReportDocument ref={docRef} report={r} />
         </DocumentPreview>
-      ) : tab === 'history' ? (
-        <div role="tabpanel" aria-label="Version History">
-          <VersionHistory type="daily-site-report" id={id} title="Version & approval history" />
-        </div>
       ) : (
         <>
           <Stats>
@@ -340,7 +334,10 @@ export default function DailyReportDetail() {
                   </dt>
                   <dd>{fmtDate(r.reportDate)}</dd>
                   <dt>
-                    <span className="dsr-meta">{weatherSymbol}Weather</span>
+                    <span className="dsr-meta">
+                      <WIcon />
+                      Weather
+                    </span>
                   </dt>
                   <dd>
                     {r.weatherCondition ? weatherLabel(r.weatherCondition) : '—'}
@@ -401,6 +398,7 @@ export default function DailyReportDetail() {
           </div>
         </>
       )}
+      <VersionHistory type="daily-site-report" id={id} />
     </Page>
   );
 }

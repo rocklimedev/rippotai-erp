@@ -1,4 +1,3 @@
-import VisitStageActions from './VisitStageActions';
 import ArchitectVisitScheduleList from '@/pages/doc-lists/ArchitectVisitScheduleList';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -20,7 +19,6 @@ import {
   useDownloadVisitScheduleMutation,
   useGetVisitStagesQuery,
 } from '@/api/site-ops/site-ops.api';
-import { useGetUsersQuery } from '@/api/users/user.api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,7 +36,6 @@ const initial = () => ({
   scheduledDate: '',
   teamId: '',
   externalPartyName: '',
-  visitorUserId: '',
   purpose: '',
 });
 const types = ['ARCHITECT', 'SUPERVISOR', 'VENDOR', 'CONTRACTOR', 'CLIENT', 'OTHER'];
@@ -66,8 +63,6 @@ function VisitAssignmentsEditor() {
   const [deactivate] = useDeactivateVisitAssignmentMutation();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const { data: usersData, isLoading: loadingUsers, isError: usersError, refetch: refetchUsers } = useGetUsersQuery({ is_active: true }, { skip: !open });
-  const users = (Array.isArray(usersData) ? usersData : usersData?.data || []).filter((user) => user.name && user.is_active !== false && user.is_active !== 0 && !user.deleted_at && !user.is_deleted).slice().sort((a, b) => a.name.localeCompare(b.name));
   const [form, setForm] = useState(initial);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('active');
@@ -107,18 +102,13 @@ function VisitAssignmentsEditor() {
   };
   const save = async (e) => {
     e.preventDefault();
-    const visitor = users.find((user) => user.id === form.visitorUserId);
-    if (!form.teamId && !visitor && !(editing && form.externalPartyName === editing.externalPartyName && !form.visitorUserId)) {
-      toast.error('Select an allocated visitor');
-      return;
-    }
     const body = {
       projectId: form.projectId,
       visitorType: form.visitorType,
       scheduledDate: form.scheduledDate,
       stageId: form.visitorType === 'ARCHITECT' ? form.stageId : undefined,
       teamId: form.teamId ? Number(form.teamId) : null,
-      externalPartyName: form.teamId ? null : visitor?.name || form.externalPartyName.trim() || null,
+      externalPartyName: form.externalPartyName.trim() || null,
       purpose: form.visitorType === 'ARCHITECT' ? undefined : form.purpose.trim(),
     };
     try {
@@ -334,7 +324,6 @@ function VisitAssignmentsEditor() {
                     </option>
                   ))}
                 </select>
-                <VisitStageActions selected={selected} onSelect={(id) => change('stageId', id)} disabled={!!editing || loadingStages || creating || updating} />
                 <p className="mt-2 text-sm">{editing?.checksPurpose || selected?.checks_purpose}</p>
                 <p className="text-sm text-muted-foreground">
                   {editing?.visitType || selected?.visit_type}
@@ -375,12 +364,11 @@ function VisitAssignmentsEditor() {
                   setForm((f) => ({
                     ...f,
                     teamId: e.target.value,
-                    visitorUserId: '',
                     externalPartyName: '',
                   }))
                 }
               >
-                <option value="">Select a user instead</option>
+                <option value="">Named visitor instead</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -391,22 +379,16 @@ function VisitAssignmentsEditor() {
             {!form.teamId && (
               <div>
                 <Label htmlFor="allocation-visitor">Allocated visitor name</Label>
-                <select
+                <Input
                   id="allocation-visitor"
                   required
-                  className="w-full rounded border p-2"
-                  disabled={loadingUsers || usersError}
-                  value={form.visitorUserId || (form.externalPartyName ? 'existing-visitor' : '')}
-                  onChange={(e) => setForm((f) => ({ ...f, visitorUserId: e.target.value, externalPartyName: '' }))}
-                >
-                  <option value="">{loadingUsers ? 'Loading users…' : 'Select user'}</option>
-                  {form.externalPartyName && !form.visitorUserId && <option value="existing-visitor">{form.externalPartyName} (current visitor)</option>}
-                  {users.map((user) => <option key={user.id} value={user.id}>{user.name}{user.email ? ` (${user.email})` : ''}</option>)}
-                </select>
-                {usersError ? <p role="alert" className="mt-1 text-sm text-destructive">Unable to load users. <button type="button" className="underline" onClick={refetchUsers}>Retry</button></p> : !loadingUsers && !users.length && <p className="mt-1 text-sm text-muted-foreground">No active users available.</p>}
+                  maxLength={150}
+                  value={form.externalPartyName}
+                  onChange={(e) => change('externalPartyName', e.target.value)}
+                />
               </div>
             )}
-            <Button type="submit" disabled={creating || updating || loadingStages || (!form.teamId && (loadingUsers || usersError))}>
+            <Button type="submit" disabled={creating || updating || loadingStages}>
               {creating || updating ? 'Saving…' : 'Save allocation'}
             </Button>
           </form>

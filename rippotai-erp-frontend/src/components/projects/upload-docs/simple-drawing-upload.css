@@ -1,0 +1,38 @@
+.sdu .inos-form-grid {
+  margin-bottom: 4px;
+}
+.sdu-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1.5px dashed var(--line-strong, #d2dbd6);
+  border-radius: 10px;
+  background: var(--surface-2, #f9fbfa);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.sdu-file:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.sdu-file.has-file {
+  border-style: solid;
+  border-color: var(--brand);
+  background: var(--brand-50, #eef3f0);
+  color: var(--text);
+}
+.sdu-file__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.sdu-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

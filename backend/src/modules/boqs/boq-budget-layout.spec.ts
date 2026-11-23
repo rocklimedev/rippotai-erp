@@ -106,9 +106,7 @@ describe('BOQ Budget Breakdown layout (user template)', () => {
     expect(html).toContain('aria-level="1">Budget Breakdown</div>');
     expect(html).toContain('Extension Works · Internal copy · 02 Nov 2026');
     expect(html).toContain('Estimate Total');
-    expect(html).toContain(
-      '<th>S.No</th><th>Description</th><th>Location</th>',
-    );
+    expect(html).toContain('<th>S.No</th><th>Description</th><th>Location</th>');
     expect(html).toContain('Subtotal — Civil Work (Extension)');
     expect(html).toContain('Cost Summary');
     expect(html).toContain('Final Total');

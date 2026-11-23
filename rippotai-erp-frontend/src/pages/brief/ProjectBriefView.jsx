@@ -1,59 +1,43 @@
-import { appConfirm } from "@/lib/app-dialog";
-import { useAuth } from "@/context/AuthContext";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
-import { BRIEF_STATUS_LABELS, briefTransitions } from "./brief-status";
-import { useRef, useState } from "react";
-import { flushSync } from "react-dom";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Edit3, Trash2, Download, FileText } from "lucide-react";
-import {
-  usePdfDownload,
-  pdfFileName,
-  DocumentPreview,
-} from "@/components/print-document";
-import {
-  Page,
-  PageHeader,
-  Button,
-  EmptyState,
-  } from "@/components/inos";
-import ClientBriefDocument from "@/components/brief-document/ClientBriefDocument";
+import { appConfirm } from '@/lib/app-dialog';
+import { useAuth } from '@/context/AuthContext';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
+import { BRIEF_STATUS_LABELS, briefTransitions } from './brief-status';
+import React, { useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Edit3, Trash2, Download, FileText } from 'lucide-react';
+import { usePdfDownload, pdfFileName, DocumentPreview } from '@/components/print-document';
+import { Page, PageHeader, Button, EmptyState } from '@/components/inos';
+import ClientBriefDocument from '@/components/brief-document/ClientBriefDocument';
 import {
   useGetProjectBriefQuery,
   useDeleteProjectBriefMutation,
   useUpdateProjectBriefStatusMutation,
   useCreateProjectBriefVersionMutation,
-} from "../../api/documents/brief.api";
+} from '../../api/documents/brief.api';
 
 // Client Brief viewer: shows exactly what the client receives (A4 pages) and
 // downloads the same pages as a PDF.
 export function ProjectBriefView() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("preview");
-  const recordInfo = useRecordInfo("client-brief", id);
+  const recordInfo = useRecordInfo('client-brief', id);
   const nav = useNavigate();
   const { user } = useAuth();
-  const [changeStatus, { isLoading: changingStatus }] =
-    useUpdateProjectBriefStatusMutation();
-  const [newVersion, { isLoading: creatingVersion }] =
-    useCreateProjectBriefVersionMutation();
+  const [changeStatus, { isLoading: changingStatus }] = useUpdateProjectBriefStatusMutation();
+  const [newVersion, { isLoading: creatingVersion }] = useCreateProjectBriefVersionMutation();
   const updateStatus = async (status) => {
     if (
-      status === "SIGNED_OFF" &&
-      !(await appConfirm(
-        "Sign off this client brief? Changes will require a new draft version.",
-      ))
+      status === 'SIGNED_OFF' &&
+      !(await appConfirm('Sign off this client brief? Changes will require a new draft version.'))
     )
       return;
     try {
       await changeStatus({ id, status }).unwrap();
-      toast.success("Brief status updated");
+      toast.success('Brief status updated');
     } catch (e) {
-      toast.error(e?.data?.message || "Could not update status");
+      toast.error(e?.data?.message || 'Could not update status');
     }
   };
   const createVersion = async () => {
@@ -61,51 +45,41 @@ export function ProjectBriefView() {
       const next = await newVersion(id).unwrap();
       nav(`/crm/brief/${next.id}/edit`);
     } catch (e) {
-      toast.error(e?.data?.message || "Could not create version");
+      toast.error(e?.data?.message || 'Could not create version');
     }
   };
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
 
-  const {
-    data: brief,
-    isFetching,
-    isError,
-  } = useGetProjectBriefQuery(id, { skip: !id });
-  const [deleteProjectBrief, { isLoading: deleting }] =
-    useDeleteProjectBriefMutation();
+  const { data: brief, isFetching, isError } = useGetProjectBriefQuery(id, { skip: !id });
+  const [deleteProjectBrief, { isLoading: deleting }] = useDeleteProjectBriefMutation();
 
   const removeBrief = async () => {
-    if (!(await appConfirm("Delete this client brief? It will be removed from active briefs. Its stored data and related records will be retained.")))
+    if (
+      !(await appConfirm(
+        'Delete this client brief? It will be removed from active briefs. Its stored data and related records will be retained.',
+      ))
+    )
       return;
     try {
       await deleteProjectBrief(id).unwrap();
-      toast.success("Project brief deleted");
-      nav("/crm/brief/all");
+      toast.success('Project brief deleted');
+      nav('/crm/brief/all');
     } catch (e) {
-      toast.error(e?.data?.detail || e?.data?.message || "Failed to delete");
+      toast.error(e?.data?.detail || e?.data?.message || 'Failed to delete');
     }
   };
 
-  const downloadPdf = () => {
-    flushSync(() => setActiveTab("preview"));
-    download(
-      pdfFileName(
-        "Client-Brief",
-        brief?.project?.name || "project",
-        brief?.version || 1,
-      ),
-      {
-        title: `Client Brief — ${brief?.project?.name || "Project"}`,
-        label: "client brief",
-      },
-    );
-  };
+  const downloadPdf = () =>
+    download(pdfFileName('Client-Brief', brief?.project?.name || 'project', brief?.version || 1), {
+      title: `Client Brief — ${brief?.project?.name || 'Project'}`,
+      label: 'client brief',
+    });
 
   const crumbs = [
-    { label: "CRM", to: "/crm" },
-    { label: "Client briefs", to: "/crm/brief/all" },
-    { label: "Brief" },
+    { label: 'CRM', to: '/crm' },
+    { label: 'Client briefs', to: '/crm/brief/all' },
+    { label: 'Brief' },
   ];
 
   if (isFetching && !brief) {
@@ -138,12 +112,12 @@ export function ProjectBriefView() {
       <PageHeader
         info={recordInfo}
         crumbs={crumbs}
-        title={project.name || "Client brief"}
+        title={project.name || 'Client brief'}
         actions={
           <>
             {briefTransitions(
-              brief.status || "DRAFT",
-              user?.permissions?.includes("documents:approve"),
+              brief.status || 'DRAFT',
+              user?.permissions?.includes('documents:approve'),
             ).map((status) => (
               <Button
                 key={status}
@@ -151,17 +125,11 @@ export function ProjectBriefView() {
                 disabled={changingStatus}
                 onClick={() => updateStatus(status)}
               >
-                {status === "SIGNED_OFF"
-                  ? "Sign off"
-                  : BRIEF_STATUS_LABELS[status]}
+                {status === 'SIGNED_OFF' ? 'Sign off' : BRIEF_STATUS_LABELS[status]}
               </Button>
             ))}
-            {brief.status !== "DRAFT" && (
-              <Button
-                variant="secondary"
-                disabled={creatingVersion}
-                onClick={createVersion}
-              >
+            {brief.status !== 'DRAFT' && (
+              <Button variant="secondary" disabled={creatingVersion} onClick={createVersion}>
                 New draft version
               </Button>
             )}
@@ -169,24 +137,19 @@ export function ProjectBriefView() {
               variant="ghost"
               icon={Trash2}
               onClick={removeBrief}
-              disabled={deleting || !["DRAFT", "READY_FOR_DESIGN"].includes(brief.status)}
+              disabled={deleting || !['DRAFT', 'READY_FOR_DESIGN'].includes(brief.status)}
             >
               Delete
             </Button>
             <Button
               variant="secondary"
-              disabled={brief.status !== "DRAFT"}
+              disabled={brief.status !== 'DRAFT'}
               icon={Edit3}
               onClick={() => nav(`/crm/brief/${id}/edit`)}
             >
               Edit
             </Button>
-            <Button
-              variant="primary"
-              icon={Download}
-              onClick={downloadPdf}
-              loading={downloading}
-            >
+            <Button variant="primary" icon={Download} onClick={downloadPdf} loading={downloading}>
               Download PDF
             </Button>
           </>
@@ -194,20 +157,10 @@ export function ProjectBriefView() {
       />
       <RecordContext type="client-brief" id={id} />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList aria-label="Client brief views">
-          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
-        </TabsList>
-        <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
-          <DocumentPreview>
-            <ClientBriefDocument ref={docRef} brief={brief} />
-          </DocumentPreview>
-        </TabsContent>
-        <TabsContent value="history">
-          <VersionHistory type="client-brief" id={id} />
-        </TabsContent>
-      </Tabs>
+      <DocumentPreview>
+        <ClientBriefDocument ref={docRef} brief={brief} />
+      </DocumentPreview>
+      <VersionHistory type="client-brief" id={id} />
     </Page>
   );
 }
