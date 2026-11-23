@@ -20,6 +20,12 @@ import { CreateDocumentAttachmentDto } from './dto/create-document-attachment.dt
 import { CdnService } from '../cdn/cdn.service';
 import { GateEngineService } from '../gates/gate-engine.service';
 
+const PRE_DESIGN_UPLOAD_TYPES = new Set([
+  'PRE_PITCH_PROPOSAL',
+  'PRE_BUSINESS_PROPOSAL',
+  'PRE_CONCEPT_DESIGN_01',
+]);
+
 const DOCUMENT_INCLUDES = [
   { model: DocumentType },
   { model: DocumentRequirement },
@@ -125,11 +131,14 @@ export class DocumentsService {
   ): Promise<Document> {
     let fileFields: Partial<Document> = {};
     let requirement: DocumentRequirement | undefined;
-    if (file && dto.projectId && dto.documentTypeId) {
-      const documentType = await this.documentTypeModel.findByPk(
-        dto.documentTypeId,
-      );
-      if (!documentType) throw new NotFoundException('Document type not found');
+    const documentType =
+      file && dto.documentTypeId
+        ? await this.documentTypeModel.findByPk(dto.documentTypeId)
+        : null;
+    if (file && dto.documentTypeId && !documentType) {
+      throw new NotFoundException('Document type not found');
+    }
+    if (documentType && dto.projectId && dto.documentTypeId) {
       [requirement] = await this.requirementModel.findOrCreate({
         where: { projectId: dto.projectId, documentTypeId: dto.documentTypeId },
         defaults: {
@@ -144,14 +153,9 @@ export class DocumentsService {
         );
       }
     }
-    let status = dto.status;
+    const startsInDraft = documentType && PRE_DESIGN_UPLOAD_TYPES.has(documentType.code);
+    let status = startsInDraft ? 'draft' : dto.status;
     if (file && !status) {
-      const documentType = dto.documentTypeId
-        ? await this.documentTypeModel.findByPk(dto.documentTypeId)
-        : null;
-      if (dto.documentTypeId && !documentType) {
-        throw new NotFoundException('Document type not found');
-      }
       status =
         documentType && !documentType.requiresApproval
           ? 'approved'
@@ -176,8 +180,9 @@ export class DocumentsService {
       ...(status ? { status } : {}),
       ...(requirement ? { requirementId: requirement.id } : {}),
     } as any);
-    if (requirement && document.status === 'approved') {
-      await requirement.update({ isCompleted: true, completedAt: new Date() });
+    if (requirement && (startsInDraft || document.status === 'approved')) {
+      const isCompleted = document.status === 'approved';
+      await requirement.update({ isCompleted, completedAt: isCompleted ? new Date() : null });
     }
     if (document.projectId)
       await this.gateEngine.invalidateReadinessCache(document.projectId);
@@ -226,6 +231,10 @@ export class DocumentsService {
         throw new BadRequestException('Approve the latest uploaded document');
       }
     }
+    const currentVersion = document.versions?.find(
+      (version) => version.storageFilename === document.storageFilename,
+    );
+    await currentVersion?.update({ status: 'approved' });
     await document.update({ status: 'approved' });
     if (document.requirementId) {
       const requirement = await this.requirementModel.findByPk(
@@ -255,7 +264,9 @@ export class DocumentsService {
     const type = document.documentTypeId
       ? await this.documentTypeModel.findByPk(document.documentTypeId)
       : null;
-    const status = type && !type.requiresApproval ? 'approved' : 'submitted';
+    const startsInDraft = type && PRE_DESIGN_UPLOAD_TYPES.has(type.code);
+    const reviewStatus = type && !type.requiresApproval ? 'approved' : 'submitted';
+    const status = startsInDraft ? 'draft' : reviewStatus;
 
     const { filename, url } = await this.cdnService.uploadFile(file);
 
@@ -392,6 +403,9 @@ export class DocumentsService {
 
     const nextVersionLabel =
       dto.version ?? this.computeNextVersionLabel(document);
+    const startsInDraft = document.documentType &&
+      PRE_DESIGN_UPLOAD_TYPES.has(document.documentType.code);
+    const status = startsInDraft ? 'draft' : dto.status;
 
     const version = await this.versionModel.create({
       documentId,
@@ -401,7 +415,7 @@ export class DocumentsService {
       url,
       mime: file.mimetype,
       size: file.size,
-      status: dto.status ?? 'draft',
+      status: status ?? 'draft',
       remarks: dto.remarks,
       uploadedBy: dto.uploadedBy,
       uploadedByName: dto.uploadedByName,
@@ -414,8 +428,17 @@ export class DocumentsService {
       url,
       mime: file.mimetype,
       size: file.size,
-      status: dto.status ?? document.status,
+      status: status ?? document.status,
     } as any);
+
+    if (startsInDraft) {
+      if (document.requirementId) {
+        const requirement = await this.requirementModel.findByPk(document.requirementId);
+        await requirement?.update({ isCompleted: false, completedAt: null });
+      }
+      if (document.projectId)
+        await this.gateEngine.invalidateReadinessCache(document.projectId);
+    }
 
     return version;
   }

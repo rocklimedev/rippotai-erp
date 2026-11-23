@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { API_URL } from "@/lib/config";
 import {
   useRequestEmailVerificationMutation,
   useVerifyEmailMutation,
 } from "@/api/auth/auth.api";
+
+const zohoMessages = new Map([
+  ["verified", "Email verified. You can now sign in."],
+  ["failed", "Zoho could not verify your ERP email. Use the Zoho account with your ERP email address, or request a verification link."],
+  ["unavailable", "Zoho verification is unavailable. You can request a verification link below."],
+]);
 
 export default function VerifyEmail() {
   const location = useLocation();
@@ -11,8 +18,9 @@ export default function VerifyEmail() {
     () => new URLSearchParams(location.hash.slice(1)).get("token") || "",
   );
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [verified, setVerified] = useState(false);
+  const zohoStatus = new URLSearchParams(location.search).get("zoho");
+  const [message, setMessage] = useState(zohoMessages.get(zohoStatus) || "");
+  const [verified, setVerified] = useState(zohoStatus === "verified");
   const [requestVerification, { isLoading: sending }] =
     useRequestEmailVerificationMutation();
   const [verifyEmail, { isLoading: verifying }] = useVerifyEmailMutation();
@@ -68,6 +76,12 @@ export default function VerifyEmail() {
                   : "Send verification link"}
             </button>
           </form>
+        )}
+        {!verified && !token && (
+          <a className="block rounded-lg border p-3 text-center font-semibold"
+            href={`${API_URL}/auth/zoho-email/start`}>
+            Verify with Zoho
+          </a>
         )}
         {message && <p role="status">{message}</p>}
         {token && !verified && (

@@ -2,6 +2,7 @@
 // Business Proposal and Concept Design 01 – 3D, one page per project.
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -23,6 +24,10 @@ import {
   Toolbar,
 } from '@/components/inos';
 import { useDocumentAccess } from '@/hooks/use-permission';
+import { useAuth } from '@/context/AuthContext';
+import { useApproveDocumentMutation } from '@/api/documents/document.api';
+import { useApproveDrawingMutation } from '@/api/documents/drawing.api';
+import { latestRevision } from '@/pages/design-studio/drawingUtils';
 import { PRE_DESIGN_SLOTS } from '@/config/projectDocuments';
 import { formatDay, openRow, useProjectsList, useUploadRows, viewPathFor } from './uploadDocs';
 import UploadDocModal from './UploadDocModal';
@@ -137,7 +142,27 @@ export function PreDesignList() {
 
 function SlotCard({ slot, row, types, rows, onUpload, onRevisions }) {
   const nav = useNavigate();
+  const { user } = useAuth();
   const access = useDocumentAccess(slot.target === 'DRAWING' ? 'drawings' : 'documents');
+  const [approveDocument, documentApproval] = useApproveDocumentMutation();
+  const [approveDrawing, drawingApproval] = useApproveDrawingMutation();
+  const isDrawing = row?.kind === 'drawing';
+  const file = isDrawing ? latestRevision(row.record) : row?.record;
+  const canApprove = user?.permissions?.includes('documents:approve') &&
+    (file?.storageFilename || file?.url) && !row.record.isLocked &&
+    !['approved', 'archived', 'superseded'].includes(row.status.toLowerCase());
+  const approving = documentApproval.isLoading || drawingApproval.isLoading;
+
+  const approve = async () => {
+    try {
+      const approveUpload = isDrawing ? approveDrawing : approveDocument;
+      await approveUpload(row.id).unwrap();
+      toast.success(`${slot.name} approved`);
+    } catch (error) {
+      toast.error(error?.data?.message || `Could not approve ${slot.name}`);
+    }
+  };
+
   return (
     <Card
       title={slot.name}
@@ -160,6 +185,11 @@ function SlotCard({ slot, row, types, rows, onUpload, onRevisions }) {
         )}
         {row && (
           <>
+            {canApprove && (
+              <Button size="sm" variant="soft" icon={CheckCircle2} loading={approving} onClick={approve}>
+                Approve
+              </Button>
+            )}
             <Button size="sm" variant="ghost" icon={Eye} onClick={() => nav(viewPathFor(row))}>
               View
             </Button>

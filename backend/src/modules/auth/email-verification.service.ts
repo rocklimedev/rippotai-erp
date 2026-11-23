@@ -166,4 +166,30 @@ export class EmailVerificationService {
     // Verification never activates a disabled account or issues a session.
     return { message: 'Email verified. You can now sign in.' };
   }
+
+  async verifyZohoAddress(email: string): Promise<boolean> {
+    const address = email.trim().toLowerCase();
+    return this.sequelize.transaction(async (transaction) => {
+      const user = await this.users.findOne({
+        where: { email: address },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!user || user.is_active !== true || user.email.toLowerCase() !== address) {
+        return false;
+      }
+      if (hasVerifiedEmail(user)) return true;
+
+      const now = new Date();
+      await user.update(
+        { email_verified_at: now, email_verified_address: user.email },
+        { transaction },
+      );
+      await this.sessions.update(
+        { revoked_at: now },
+        { where: { user_id: user.id, revoked_at: null }, transaction },
+      );
+      return true;
+    });
+  }
 }

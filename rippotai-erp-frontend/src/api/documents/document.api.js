@@ -12,7 +12,7 @@ export const documentApi = baseApi.enhanceEndpoints({ addTagTypes: documentUploa
   endpoints: (builder) => ({
     approveDocument: builder.mutation({
       query: (id) => ({ url: `/documents/${id}/approve`, method: "POST" }),
-      invalidatesTags: (result, error) => error ? [] : documentUploadTags,
+      invalidatesTags: (result, error) => error ? [] : [...documentUploadTags, "DocumentVersion"],
     }),
     // ============================================================
     // DOCUMENTS
