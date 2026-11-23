@@ -20,6 +20,7 @@ export interface MaterialProcurementItemCreationAttributes {
 
   area?: string | null;
   location?: string | null;
+  sheetName?: string | null;
 
   wallArea?: number | null;
   floorArea?: number | null;
@@ -112,6 +113,13 @@ export class MaterialProcurementItem extends Model<
     allowNull: true,
   })
   declare location: string | null;
+
+  // Material-type sheet this row belongs to (e.g. "Flooring & Stone").
+  @Column({
+    type: DataType.STRING(120),
+    allowNull: true,
+  })
+  declare sheetName: string | null;
 
   // ============================================================
   // AREA MEASUREMENTS

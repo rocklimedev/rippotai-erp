@@ -1,27 +1,26 @@
-import UsersSettings from "@/pages/settings/UserSettings";
-import RolesPermissions from "@/pages/settings/RolesPermissions";
-import SuperAdmin from "@/pages/settings/SuperAdmin";
-import TermsSettings from "@/pages/settings/TermsSettings";
-import EstimateSignature from "@/pages/settings/EstimateSignature";
+import UsersSettings from '@/pages/settings/UserSettings';
+import RolesPermissions from '@/pages/settings/RolesPermissions';
+import SuperAdmin from '@/pages/settings/SuperAdmin';
+import TermsSettings from '@/pages/settings/TermsSettings';
+import EstimateSignature from '@/pages/settings/EstimateSignature';
 
-import AppLayout from "@/layouts/AppLayout";
-import ClientSettings from "../../pages/settings/ClientSettings";
-import DocumentTypes from "../../pages/documents/DocumentTypes";
-import ProjectPhases from "../../pages/projects/ProjectPhases";
-import ProjectStructure from "../../pages/projects/ProjectStructure";
+import AppLayout from '@/layouts/AppLayout';
+import ClientSettings from '../../pages/settings/ClientSettings';
+import DocumentTypes from '../../pages/documents/DocumentTypes';
+import ProjectPhases from '../../pages/projects/ProjectPhases';
+import ProjectStructure from '../../pages/projects/ProjectStructure';
 
-import VisitStageSettings from "@/pages/settings/VisitStageSettings";
-import AdminOverview from "@/pages/settings/AdminOverview";
-import CompanyProfile from "@/pages/settings/CompanyProfile";
+import AdminOverview from '@/pages/settings/AdminOverview';
+import CompanyProfile from '@/pages/settings/CompanyProfile';
 
 export const adminConsoleRoutes = [
   {
-    type: "layout",
-    path: "/console",
+    type: 'layout',
+    path: '/console',
     layout: AppLayout,
 
     layoutProps: {
-      app: "adminConsole",
+      app: 'adminConsole',
     },
 
     // Dynamic sections such as:
@@ -30,24 +29,23 @@ export const adminConsoleRoutes = [
     // Roles & Permissions
     // are handled by AppLayout.
     dynamicSections: {
-      appKey: "adminConsole",
+      appKey: 'adminConsole',
 
       exclude: [
-        "users",
-        "clients",
-        "roles-permissions",
-        "project-phases",
-        "site-visit-stages",
-        "document-types",
-        "project-structure",
-        "estimate-signature",
-        "terms-and-conditions",
-        "super-admin",
-        "company-profile",
+        'users',
+        'clients',
+        'roles-permissions',
+        'project-phases',
+        'document-types',
+        'project-structure',
+        'estimate-signature',
+        'terms-and-conditions',
+        'super-admin',
+        'company-profile',
       ],
     },
 
-    blockRoles: ["client"],
+    blockRoles: ['client'],
 
     children: [
       // =========================================================
@@ -64,42 +62,37 @@ export const adminConsoleRoutes = [
       // =========================================================
 
       {
-        path: "clients",
+        path: 'clients',
         element: <ClientSettings />,
       },
 
       {
-        path: "users",
+        path: 'users',
         element: <UsersSettings />,
       },
 
       {
-        path: "roles-permissions",
+        path: 'roles-permissions',
         element: <RolesPermissions />,
       },
 
       {
-        path: "site-visit-stages",
-        element: <VisitStageSettings />,
-      },
-
-      {
-        path: "project-phases",
+        path: 'project-phases',
         element: <ProjectPhases />,
       },
 
       {
-        path: "document-types",
+        path: 'document-types',
         element: <DocumentTypes />,
       },
 
       {
-        path: "project-structure",
+        path: 'project-structure',
         element: <ProjectStructure />,
       },
 
       {
-        path: "estimate-signature",
+        path: 'estimate-signature',
         element: <EstimateSignature />,
       },
 
@@ -108,17 +101,17 @@ export const adminConsoleRoutes = [
       // =========================================================
 
       {
-        path: "terms-and-conditions",
+        path: 'terms-and-conditions',
         element: <TermsSettings />,
       },
 
       {
-        path: "super-admin",
+        path: 'super-admin',
         element: <SuperAdmin />,
       },
 
       {
-        path: "company-profile",
+        path: 'company-profile',
         element: <CompanyProfile />,
       },
     ],

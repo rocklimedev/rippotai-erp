@@ -89,7 +89,7 @@
 }
 .wd-ps-release__row {
   display: grid;
-  grid-template-columns: 7mm 11mm 1fr 18mm;
+  grid-template-columns: 7mm 11mm 1fr 26mm;
   align-items: center;
   height: 9.4mm;
   border-bottom: 0.5pt solid #f0f0ee;
@@ -305,4 +305,28 @@
   font-size: 6.5pt;
   color: #6b6b6b;
   line-height: 2;
+}
+
+/* % share with its amount underneath, amount in bold */
+.pd-doc .wd-ps-t__share .wd-ps-pct,
+.pd-doc .wd-ps-release__pct {
+  font-weight: 600;
+}
+.pd-doc .wd-ps-t__share .wd-ps-amt,
+.pd-doc .wd-ps-release__pct .wd-ps-amt {
+  display: block;
+  font-weight: 800;
+  color: var(--wd-ink, #101010);
+  white-space: nowrap;
+}
+.pd-doc .wd-ps-t__share .wd-ps-amt {
+  font-size: 9pt;
+  margin-top: 0.6mm;
+}
+.pd-doc .wd-ps-release__pct .wd-ps-amt {
+  font-size: 7.5pt;
+}
+.pd-doc .wd-ps-t__share--total .wd-ps-amt {
+  color: var(--wd-green);
+  font-size: 10pt;
 }

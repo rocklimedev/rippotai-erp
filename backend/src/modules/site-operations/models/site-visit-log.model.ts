@@ -19,47 +19,47 @@ import {
 export class SiteVisitLog extends Model<SiteVisitLog> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
-  declare projectId: string;
+  projectId: string;
 
   @BelongsTo(() => Project, { constraints: false })
-  declare project: Project;
+  project: Project;
 
   /** Event allocation fulfilled by this visit. Required for new architect logs. */
   @ForeignKey(() => VisitAssignment)
   @Column({ type: DataType.INTEGER, allowNull: true })
-  declare visitAssignmentId: number | null;
+  visitAssignmentId: number | null;
 
   @BelongsTo(() => VisitAssignment)
-  declare visitAssignment: VisitAssignment;
+  visitAssignment: VisitAssignment;
 
   @Column({
     type: DataType.ENUM(...Object.values(VisitorType)),
     allowNull: false,
   })
-  declare visitorType: VisitorType;
+  visitorType: VisitorType;
 
   @Column({ type: DataType.STRING(150), allowNull: false })
-  declare visitorName: string;
+  visitorName: string;
 
   @Column({ type: DataType.DATEONLY, allowNull: false })
-  declare scheduledDate: string;
+  scheduledDate: string;
 
   @Column({ type: DataType.DATE, allowNull: true })
-  declare actualVisitAt: Date | null;
+  actualVisitAt: Date | null;
 
   @Default(VisitStatus.SCHEDULED)
   @Column({
     type: DataType.ENUM(...Object.values(VisitStatus)),
     allowNull: false,
   })
-  declare status: VisitStatus;
+  status: VisitStatus;
 
   @Column({ type: DataType.STRING(250), allowNull: true })
-  declare purpose: string | null;
+  purpose: string | null;
 
   @Column({ type: DataType.TEXT, allowNull: true })
-  declare notes: string | null;
+  notes: string | null;
 
   @Column({ type: DataType.STRING(150), allowNull: false })
-  declare loggedBy: string;
+  loggedBy: string;
 }

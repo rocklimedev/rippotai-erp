@@ -1,0 +1,62 @@
+/* Projects › Documents — filters, stage line, execution sub-phases, late box */
+.pdb-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+.pdb-filters > :first-child { flex: 1 1 280px; }
+.pdb-project { flex: 0 1 320px; min-width: 220px; }
+
+.pdb-stages {
+  display: flex; flex-wrap: wrap; align-items: center; row-gap: 6px;
+  padding: 10px 12px; margin-bottom: 18px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2, #f9fbfa);
+}
+.pdb-stage-wrap { display: inline-flex; align-items: center; }
+.pdb-sep { color: var(--line-strong, #c9d1cf); margin: 0 2px; user-select: none; }
+.pdb-stage {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 7px; border: 0; border-radius: 8px; background: none;
+  font: inherit; font-size: 13px; white-space: nowrap; font-weight: 500; color: var(--text-2); cursor: pointer;
+}
+.pdb-stage:hover { background: #fff; color: var(--brand); }
+.pdb-stage.is-done { color: var(--text); }
+.pdb-stage.is-done::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok-fg, #2e7d4f); }
+.pdb-stage.is-current { font-weight: 700; color: var(--brand); }
+.pdb-stage.is-active { background: var(--brand); color: #fff; }
+.pdb-stage.is-active::before { background: #fff; }
+.pdb-stage em { font-style: normal; font-weight: 500; opacity: .85; }
+.pdb-stage.is-late { color: #a32a20; }
+.pdb-stage.is-active.is-late { background: #a32a20; color: #fff; }
+.pdb-stage__late {
+  font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 99px; background: #fbe3e1; color: #a32a20;
+}
+.pdb-stage.is-active .pdb-stage__late { background: #fff; }
+
+.pdb-stage-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.pdb-stage-head .cc-detail-head { margin: 0; }
+
+.pdb-subs { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.pdb-sub {
+  display: grid; gap: 3px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: #fff; font-size: 12.5px;
+}
+.pdb-sub__title { font-weight: 650; color: var(--text); }
+.pdb-sub__meta { display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); }
+.pdb-sub__state { font-weight: 700; font-size: 11.5px; }
+.pdb-sub.is-completed { border-color: #bfe0cb; }
+.pdb-sub.is-completed .pdb-sub__state { color: #17603a; }
+.pdb-sub.is-late { border-color: #efb7b1; background: #fff6f5; }
+.pdb-sub.is-late .pdb-sub__state { color: #a32a20; }
+.pdb-sub.is-due .pdb-sub__state { color: #8a6420; }
+.pdb-sub.is-pending .pdb-sub__state { color: var(--text-3); }
+.pdb-sub.is-now { box-shadow: inset 0 3px 0 var(--brand); }
+
+.pdb-late {
+  border: 1px solid #efb7b1; background: #fff6f5; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 16px;
+}
+.pdb-late__head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-weight: 700; color: #a32a20; font-size: 13.5px; }
+.pdb-late ul { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.pdb-late li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.pdb-late__phase { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+.pdb-late__date { margin-left: auto; color: #a32a20; font-weight: 600; font-size: 12px; }
+
+.pdb-search { display: grid; gap: 14px; }

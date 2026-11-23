@@ -1,66 +1,81 @@
-import { appConfirm } from "@/lib/app-dialog";
-import RecordContext from "@/components/record-context/RecordContext";
-import VersionHistory from "@/components/record-context/VersionHistory";
-import { useRecordInfo } from "@/components/record-context/useRecordInfo";
+import { appConfirm } from '@/lib/app-dialog';
+import RecordContext from '@/components/record-context/RecordContext';
+import VersionHistory from '@/components/record-context/VersionHistory';
+import { useRecordInfo } from '@/components/record-context/useRecordInfo';
 // Site Recce — a filled copy of the user's SITE RECCE TEMPLATE.docx ("SITE RECCE FORMAT"): Word
 // family of the print kit, same cover, 01 Project & Site Details, 02 Room-Wise Measurements,
 // 03 / 03.1 guidance pages and 04 Layout & Photo Sheets with each shot's layout + photo pair.
-import { useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import PrivateImage from "@/components/PrivateImage";
-import { roomFeetInchesDraft } from "@/hooks/site-recce-form-helpers";
-import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Edit3, Trash2, Download, FileText } from "lucide-react";
-import { Page, PageHeader, Button, EmptyState } from "@/components/inos";
+import { useMemo, useRef } from 'react';
+import PrivateImage from '@/components/PrivateImage';
+import { roomFeetInchesDraft } from '@/hooks/site-recce-form-helpers';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Edit3, Trash2, Download, FileText } from 'lucide-react';
+import { Page, PageHeader, Button, EmptyState } from '@/components/inos';
 import {
-  PrintDocument, DocumentPreview, usePdfDownload, pdfFileName,
-  has, fmtDate, num, labelOf, bySort,
-  WSub, WIntro, WFields, WLines, padRows,
-} from "@/components/print-document";
-import { resolveSite } from "@/components/brief-document/site-options";
-import { ProjectTypeGrid, SiteConditionGrid } from "@/components/brief-document/SiteOptionGrids";
-import howTo1 from "@/assets/brand/word/recce-how-to-1.jpg";
-import howTo2 from "@/assets/brand/word/recce-how-to-2.jpg";
-import "./site-recce-document.css";
-import { useGetSiteRecceQuery, useDeleteSiteRecceMutation } from "../../api/documents/site-recce.api";
+  PrintDocument,
+  DocumentPreview,
+  usePdfDownload,
+  pdfFileName,
+  has,
+  fmtDate,
+  num,
+  labelOf,
+  bySort,
+  WSub,
+  WIntro,
+  WFields,
+  WLines,
+  padRows,
+} from '@/components/print-document';
+import { resolveSite } from '@/components/brief-document/site-options';
+import { ProjectTypeGrid, SiteConditionGrid } from '@/components/brief-document/SiteOptionGrids';
+import howTo1 from '@/assets/brand/word/recce-how-to-1.jpg';
+import howTo2 from '@/assets/brand/word/recce-how-to-2.jpg';
+import './site-recce-document.css';
+import {
+  useGetSiteRecceQuery,
+  useDeleteSiteRecceMutation,
+} from '../../api/documents/site-recce.api';
 
 const ROOM_TYPE = {
-  LIVING_DINING: "Living / dining",
-  MASTER_BEDROOM: "Master bedroom",
-  BEDROOM: "Bedroom",
-  KITCHEN: "Kitchen",
-  BATHROOM: "Bathroom",
-  BALCONY: "Balcony",
-  OTHER: "Other",
+  LIVING_DINING: 'Living / dining',
+  MASTER_BEDROOM: 'Master bedroom',
+  BEDROOM: 'Bedroom',
+  KITCHEN: 'Kitchen',
+  BATHROOM: 'Bathroom',
+  BALCONY: 'Balcony',
+  OTHER: 'Other',
 };
 
-const sqft = (v) => (has(v) && Number(v) > 0 ? `${num(v, 0)} sq ft` : "");
+const sqft = (v) => (has(v) && Number(v) > 0 ? `${num(v, 0)} sq ft` : '');
 
 // 03.1 — fixed guidance table of the template.
 const CAPTURE = [
-  ["Living & Dining", "Every wall, the ceiling, the floor, and each window and door."],
-  ["Bedrooms", "Every wall, the ceiling, the floor, and the window."],
-  ["Kitchen", "Every wall, plus a close-up of every existing plumbing point and every existing electrical point."],
-  ["Bathroom", "Every wall, plus a close-up of the floor drain and the ventilation point."],
-  ["Balcony", "Every wall, the railing, the floor drain, and the view looking out."],
+  ['Living & Dining', 'Every wall, the ceiling, the floor, and each window and door.'],
+  ['Bedrooms', 'Every wall, the ceiling, the floor, and the window.'],
+  [
+    'Kitchen',
+    'Every wall, plus a close-up of every existing plumbing point and every existing electrical point.',
+  ],
+  ['Bathroom', 'Every wall, plus a close-up of the floor drain and the ventilation point.'],
+  ['Balcony', 'Every wall, the railing, the floor drain, and the view looking out.'],
 ];
 
 const STEPS = [
-  "For every photo you take in a room, use one row on that room’s sheet.",
-  "Paste or insert a copy of the room’s layout into the left box of that row.",
-  "On that layout, mark one dot where you were standing, and draw one arrow from the dot showing exactly which way the camera was pointed.",
-  "Paste the matching photo into the right box of the same row.",
-  "Move to the next row for your next photo. Do not put more than one arrow on a single layout copy — a layout with two arrows does not say which photo is which.",
+  'For every photo you take in a room, use one row on that room’s sheet.',
+  'Paste or insert a copy of the room’s layout into the left box of that row.',
+  'On that layout, mark one dot where you were standing, and draw one arrow from the dot showing exactly which way the camera was pointed.',
+  'Paste the matching photo into the right box of the same row.',
+  'Move to the next row for your next photo. Do not put more than one arrow on a single layout copy — a layout with two arrows does not say which photo is which.',
 ];
 
 /** One SHOT row: room layout (with the marked position) left, matching photo right. */
 function ShotRow({ photo, index }) {
   const n = photo?.shot_number ?? index + 1;
   const where = [
-    has(photo?.standing_position) && ["Stood at", photo.standing_position],
-    has(photo?.camera_direction) && ["Camera faced", photo.camera_direction],
+    has(photo?.standing_position) && ['Stood at', photo.standing_position],
+    has(photo?.camera_direction) && ['Camera faced', photo.camera_direction],
   ].filter(Boolean);
   return (
     <div className="wd-sr-shot">
@@ -100,7 +115,7 @@ function ShotRow({ photo, index }) {
 
 export function buildRecceSections(recce) {
   const project = recce.project || {};
-  const rooms = bySort(recce.rooms, "sort_order");
+  const rooms = bySort(recce.rooms, 'sort_order');
   const site = resolveSite({
     category: recce.project_type,
     projectTypeName: project.project_type?.name,
@@ -112,35 +127,44 @@ export function buildRecceSections(recce) {
   });
   const lift =
     recce.lift_available === true || recce.lift_available === 1
-      ? ["Y", recce.lift_size].filter(has).join(" · ")
+      ? ['Y', recce.lift_size].filter(has).join(' · ')
       : recce.lift_available === false || recce.lift_available === 0
-        ? "N"
-        : "";
+        ? 'N'
+        : '';
   const sections = [];
 
   /* 01 — Project & Site Details */
   sections.push({
-    title: "Project & Site Details",
+    title: 'Project & Site Details',
     blocks: [
       <div key="f">
         <WFields
           items={[
-            { label: "Project name", value: project.name || recce.project_name },
-            { label: "Client name", value: recce.client_name },
+            { label: 'Project name', value: project.name || recce.project_name },
+            { label: 'Client name', value: recce.client_name },
           ]}
         />
-        <WFields cols={1} items={[{ label: "Site address", value: recce.site_address || project.site_location }]} />
+        <WFields
+          cols={1}
+          items={[{ label: 'Site address', value: recce.site_address || project.site_location }]}
+        />
         <WFields
           cols={3}
           items={[
-            { label: "Date of recce", value: fmtDate(recce.recce_date) },
-            { label: "Site engineer", value: recce.site_engineer?.name },
-            { label: "Accompanied by", value: recce.accompanied_by },
-            { label: "Unit / floor no.", value: recce.unit_floor_no },
-            { label: "Carpet area (approx. sq ft)", value: sqft(recce.carpet_area_sqft) },
-            { label: "No. of rooms", value: has(recce.number_of_rooms) ? String(recce.number_of_rooms) : "" },
-            { label: "Build up area (approx. sq ft)", value: sqft(recce.built_up_area_sqft) },
-            { label: "No. of floors", value: has(recce.number_of_floors) ? String(recce.number_of_floors) : "" },
+            { label: 'Date of recce', value: fmtDate(recce.recce_date) },
+            { label: 'Site engineer', value: recce.site_engineer?.name },
+            { label: 'Accompanied by', value: recce.accompanied_by },
+            { label: 'Unit / floor no.', value: recce.unit_floor_no },
+            { label: 'Carpet area (approx. sq ft)', value: sqft(recce.carpet_area_sqft) },
+            {
+              label: 'No. of rooms',
+              value: has(recce.number_of_rooms) ? String(recce.number_of_rooms) : '',
+            },
+            { label: 'Build up area (approx. sq ft)', value: sqft(recce.built_up_area_sqft) },
+            {
+              label: 'No. of floors',
+              value: has(recce.number_of_floors) ? String(recce.number_of_floors) : '',
+            },
           ]}
         />
       </div>,
@@ -152,14 +176,14 @@ export function buildRecceSections(recce) {
         <WSub className="wd-sub--lg">Site condition</WSub>
         <SiteConditionGrid site={site} headingBox={false} itemGap={3.6} widths="57mm 57mm 1fr" />
       </div>,
-      <div key="ac" style={{ marginTop: "13mm" }}>
+      <div key="ac" style={{ marginTop: '13mm' }}>
         <WSub>Access for material &amp; labour</WSub>
         <WFields
           cols={3}
           items={[
-            { label: "Lift available (Y/N) & size", value: lift },
-            { label: "Staircase width", value: recce.staircase_width },
-            { label: "Material entry point", value: recce.material_entry_point },
+            { label: 'Lift available (Y/N) & size', value: lift },
+            { label: 'Staircase width', value: recce.staircase_width },
+            { label: 'Material entry point', value: recce.material_entry_point },
           ]}
         />
       </div>,
@@ -168,9 +192,9 @@ export function buildRecceSections(recce) {
         <WFields
           cols={3}
           items={[
-            { label: "Water connection", value: recce.water_connection },
-            { label: "Power load available", value: recce.power_load_available },
-            { label: "Drainage point location", value: recce.drainage_point_location },
+            { label: 'Water connection', value: recce.water_connection },
+            { label: 'Power load available', value: recce.power_load_available },
+            { label: 'Drainage point location', value: recce.drainage_point_location },
           ]}
         />
       </div>,
@@ -179,10 +203,10 @@ export function buildRecceSections(recce) {
         <WFields
           cols={3}
           items={[
-            { label: "Working hours allowed", value: recce.working_hours_allowed },
-            { label: "Material movement rule", value: recce.material_movement_rule },
+            { label: 'Working hours allowed', value: recce.working_hours_allowed },
+            { label: 'Material movement rule', value: recce.material_movement_rule },
             ...(has(recce.society_rwa_restrictions)
-              ? [{ label: "Other restrictions", value: recce.society_rwa_restrictions }]
+              ? [{ label: 'Other restrictions', value: recce.society_rwa_restrictions }]
               : []),
           ]}
         />
@@ -192,10 +216,16 @@ export function buildRecceSections(recce) {
         node: (
           <div>
             <WSub>Existing condition — note anything found</WSub>
-            <WIntro style={{ margin: "-4.4mm 0 0" }}>
+            <WIntro style={{ margin: '-4.4mm 0 0' }}>
               Seepage, cracks, prior alterations, damage — record before any work touches the site.
             </WIntro>
-            <WLines value={recce.existing_condition} count={3} lineHeight={11.7} charsPerLine={110} style={{ marginTop: "-3.3mm" }} />
+            <WLines
+              value={recce.existing_condition}
+              count={3}
+              lineHeight={11.7}
+              charsPerLine={110}
+              style={{ marginTop: '-3.3mm' }}
+            />
           </div>
         ),
       },
@@ -205,35 +235,44 @@ export function buildRecceSections(recce) {
   /* 02 — Room-Wise Measurements (continues on the same page, as in the template) */
   const measured = rooms.filter((r) => has(r.room_name));
   sections.push({
-    title: "Room-Wise Measurements",
+    title: 'Room-Wise Measurements',
     newPage: false,
     blocks: [
       {
         table: {
-          skin: "word",
-          className: "wd-table--open wd-sr-table",
+          skin: 'word',
+          className: 'wd-table--open wd-sr-table',
           allowSplit: true,
-          cols: ["Room", "Length", "Width", "Height", "Existing flooring / ceiling / notes"],
-          template: "37.9mm 20.9mm 20.9mm 20.9mm 1fr",
+          cols: ['Room', 'Length', 'Width', 'Height', 'Existing flooring / ceiling / notes'],
+          template: '37.9mm 20.9mm 20.9mm 20.9mm 1fr',
           items: padRows(
             measured.map((r) => {
               const d = roomFeetInchesDraft(r);
-              const type = r.room_type === "OTHER" ? r.room_type_other : labelOf(ROOM_TYPE, r.room_type);
+              const type =
+                r.room_type === 'OTHER' ? r.room_type_other : labelOf(ROOM_TYPE, r.room_type);
               return {
                 key: r.id,
                 cells: [
                   {
                     text: r.room_name,
-                    sub: [type, has(r.room_number) && `No. ${r.room_number}`, has(d.area) && `${num(d.area, 2)} sq ft`]
+                    sub: [
+                      type,
+                      has(r.room_number) && `No. ${r.room_number}`,
+                      has(d.area) && `${num(d.area, 2)} sq ft`,
+                    ]
                       .filter(Boolean)
-                      .join(" · "),
+                      .join(' · '),
                   },
                   d.length,
                   d.width,
                   d.height,
-                  [r.existing_flooring && `Flooring: ${r.existing_flooring}`, r.existing_ceiling && `Ceiling: ${r.existing_ceiling}`, r.notes]
+                  [
+                    r.existing_flooring && `Flooring: ${r.existing_flooring}`,
+                    r.existing_ceiling && `Ceiling: ${r.existing_ceiling}`,
+                    r.notes,
+                  ]
                     .filter(has)
-                    .join("\n"),
+                    .join('\n'),
                 ],
               };
             }),
@@ -247,12 +286,12 @@ export function buildRecceSections(recce) {
 
   /* 03 — How to Document the Layout & Photos (fixed guidance page) */
   sections.push({
-    title: "How to Document the Layout & Photos",
+    title: 'How to Document the Layout & Photos',
     blocks: [
       <div key="how">
         <p className="wd-sr-lead">
-          One photo. One arrow. One copy of the layout. That is the whole method — repeated as many times as you took
-          photos in that room.
+          One photo. One arrow. One copy of the layout. That is the whole method — repeated as many
+          times as you took photos in that room.
         </p>
         <div className="wd-sr-figure">
           <img src={howTo1} alt="Mark where you stood; paste that photo next to it" />
@@ -278,25 +317,28 @@ export function buildRecceSections(recce) {
 
   /* 03.1 — What to Make Sure You Capture, Room by Room */
   sections.push({
-    title: "What to Make Sure You Capture, Room by Room",
-    no: "03.1",
+    title: 'What to Make Sure You Capture, Room by Room',
+    no: '03.1',
     unnumbered: false,
     blocks: [
       {
         table: {
-          skin: "word",
-          className: "wd-table--open wd-sr-capture",
+          skin: 'word',
+          className: 'wd-table--open wd-sr-capture',
           keepWhole: true,
-          cols: ["Room", "Make sure one photo each covers"],
-          template: "43.7mm 1fr",
+          cols: ['Room', 'Make sure one photo each covers'],
+          template: '43.7mm 1fr',
           items: CAPTURE.map(([room, what]) => ({ key: room, cells: [room, what] })),
         },
       },
-      <div key="note" style={{ marginTop: "9mm" }}>
-        <div className="wd-goldrule" style={{ borderBottomWidth: "1.5pt", marginBottom: "6.6mm" }} />
+      <div key="note" style={{ marginTop: '9mm' }}>
+        <div
+          className="wd-goldrule"
+          style={{ borderBottomWidth: '1.5pt', marginBottom: '6.6mm' }}
+        />
         <p className="wd-sr-lead">
-          A close-up of a plumbing or electrical point still gets its own row — mark where you stood and which way you
-          pointed the camera, exactly like any other shot.
+          A close-up of a plumbing or electrical point still gets its own row — mark where you stood
+          and which way you pointed the camera, exactly like any other shot.
         </p>
       </div>,
     ],
@@ -304,7 +346,7 @@ export function buildRecceSections(recce) {
 
   /* 04 — Layout & Photo Sheets */
   const layouts = [...(recce.floor_layouts || []), ...(recce.existing_site_layouts || [])]
-    .map((l) => (typeof l === "string" ? l : l?.url || l?.file_url))
+    .map((l) => (typeof l === 'string' ? l : l?.url || l?.file_url))
     .filter(has);
   const layoutBoxes = layouts.length ? layouts : [null, null];
   const blocks = [
@@ -325,21 +367,24 @@ export function buildRecceSections(recce) {
     )),
   ];
   rooms.forEach((room, ri) => {
-    const photos = bySort(room.photos, "shot_number").filter(
+    const photos = bySort(room.photos, 'shot_number').filter(
       (p) => has(p.photo_url) || has(p.layout_image_url) || has(p.standing_position),
     );
     const d = roomFeetInchesDraft(room);
-    const type = room.room_type === "OTHER" ? room.room_type_other : labelOf(ROOM_TYPE, room.room_type);
+    const type =
+      room.room_type === 'OTHER' ? room.room_type_other : labelOf(ROOM_TYPE, room.room_type);
     const head = (
       <div>
         {ri === 0 && (
-          <p className="wd-sr-lead" style={{ marginBottom: "4mm" }}>
+          <p className="wd-sr-lead" style={{ marginBottom: '4mm' }}>
             One block per room. Each row is one photo and its matching layout arrow.
           </p>
         )}
         <h3 className="wd-sr-room">ROOM {ri + 1}</h3>
         <p className="wd-sr-room__note">
-          {[room.room_name, type, [d.length, d.width].filter(has).join(" × ")].filter(has).join(" — ")}
+          {[room.room_name, type, [d.length, d.width].filter(has).join(' × ')]
+            .filter(has)
+            .join(' — ')}
         </p>
       </div>
     );
@@ -356,15 +401,14 @@ export function buildRecceSections(recce) {
       }),
     );
   });
-  sections.push({ title: "Layout & Photo Sheets", blocks });
+  sections.push({ title: 'Layout & Photo Sheets', blocks });
 
   return sections;
 }
 
 export function SiteRekiView() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("preview");
-  const recordInfo = useRecordInfo("site-recce", id);
+  const recordInfo = useRecordInfo('site-recce', id);
   const nav = useNavigate();
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
@@ -372,16 +416,20 @@ export function SiteRekiView() {
   const [deleteSiteRecce, { isLoading: deleting }] = useDeleteSiteRecceMutation();
   const sections = useMemo(() => (recce ? buildRecceSections(recce) : []), [recce]);
 
-  const crumbs = [{ label: "CRM", to: "/crm" }, { label: "Site recces", to: "/crm/recce/all" }, { label: "Recce" }];
+  const crumbs = [
+    { label: 'CRM', to: '/crm' },
+    { label: 'Site recces', to: '/crm/recce/all' },
+    { label: 'Recce' },
+  ];
 
   const removeRecce = async () => {
-    if (!(await appConfirm("Delete this site recce? This cannot be undone."))) return;
+    if (!(await appConfirm('Delete this site recce? This cannot be undone.'))) return;
     try {
       await deleteSiteRecce(id).unwrap();
-      toast.success("Site recce deleted");
-      nav("/crm/recce/all");
+      toast.success('Site recce deleted');
+      nav('/crm/recce/all');
     } catch (e) {
-      toast.error(e?.data?.detail || e?.data?.message || "Failed to delete");
+      toast.error(e?.data?.detail || e?.data?.message || 'Failed to delete');
     }
   };
 
@@ -396,13 +444,17 @@ export function SiteRekiView() {
       <Page>
         <PageHeader crumbs={crumbs} title="Site recce report" />
         <div className="inos-card">
-          <EmptyState icon={FileText} title="Site recce not found" text="It may have been deleted, or you don't have access to it." />
+          <EmptyState
+            icon={FileText}
+            title="Site recce not found"
+            text="It may have been deleted, or you don't have access to it."
+          />
         </div>
       </Page>
     );
 
   const project = recce.project || {};
-  const projectName = project.name || recce.project_name || "Project";
+  const projectName = project.name || recce.project_name || 'Project';
   const version = recce.version || 1;
 
   return (
@@ -423,10 +475,12 @@ export function SiteRekiView() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() => {
-                flushSync(() => setActiveTab("preview"));
-                download(pdfFileName("Site-Recce", projectName, version), { title: `Site Recce Report — ${projectName}`, label: "site recce report" });
-              }}
+              onClick={() =>
+                download(pdfFileName('Site-Recce', projectName, version), {
+                  title: `Site Recce Report — ${projectName}`,
+                  label: 'site recce report',
+                })
+              }
             >
               Download PDF
             </Button>
@@ -434,12 +488,6 @@ export function SiteRekiView() {
         }
       />
       <RecordContext type="site-recce" id={id} />
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList aria-label="Site recce views">
-          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
-        </TabsList>
-        <TabsContent value="preview" forceMount hidden={activeTab !== "preview"}>
       <DocumentPreview>
         <PrintDocument
           ref={docRef}
@@ -449,12 +497,14 @@ export function SiteRekiView() {
           footerLabel="SITE RECCE"
           title={projectName}
           wordCover={{
-            title: "SITE RECCE FORMAT",
+            title: 'SITE RECCE FORMAT',
             logoWidth: 46,
             logoTop: 58,
             after: (
               <div className="wd-sr-cover__foot">
-                <div className="wd-sr-cover__lead">To be filled by the site engineer at the survey visit</div>
+                <div className="wd-sr-cover__lead">
+                  To be filled by the site engineer at the survey visit
+                </div>
                 <div className="wd-sr-cover__parts">
                   <div>
                     <span className="wd-sr-cover__part">PART 1</span>
@@ -471,11 +521,7 @@ export function SiteRekiView() {
           sections={sections}
         />
       </DocumentPreview>
-        </TabsContent>
-        <TabsContent value="history">
-          <VersionHistory type="site-recce" id={id} />
-        </TabsContent>
-      </Tabs>
+      <VersionHistory type="site-recce" id={id} />
     </Page>
   );
 }

@@ -5,9 +5,7 @@ import { useRecordInfo } from '@/components/record-context/useRecordInfo';
 // Scope of Work — a filled copy of the user's SCOPE OF WORK TEMPLATE.docx (Word family of the
 // print kit): cover, 01 Project details, 02 Work Type, scope summary, 03 Area-wise scope matrix,
 // 04 Acceptance. Project type / site / services / procurement come from the project's brief.
-import { useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Edit3, Trash2, Download, FileText } from 'lucide-react';
@@ -386,7 +384,6 @@ export function buildSowSections(sow, brief) {
 
 export function ScopeOfWorkView() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState('preview');
   const recordInfo = useRecordInfo('scope-of-work', id);
   const nav = useNavigate();
   const docRef = useRef(null);
@@ -463,13 +460,12 @@ export function ScopeOfWorkView() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() => {
-                flushSync(() => setActiveTab('preview'));
+              onClick={() =>
                 download(pdfFileName('Scope-of-Work', projectName, version), {
                   title: `Scope of Work — ${projectName}`,
                   label: 'scope of work',
-                });
-              }}
+                })
+              }
             >
               Download PDF
             </Button>
@@ -477,41 +473,31 @@ export function ScopeOfWorkView() {
         }
       />
       <RecordContext type="scope-of-work" id={id} />
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList aria-label="Scope of work views">
-          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
-        </TabsList>
-        <TabsContent value="preview" forceMount hidden={activeTab !== 'preview'}>
-          <DocumentPreview>
-            <PrintDocument
-              ref={docRef}
-              variant="word"
-              className="wd-sow"
-              docType="Scope of Work"
-              footerLabel="SCOPE OF WORK"
-              title={projectName}
-              wordCover={{
-                title: 'SCOPE OF WORK',
-                className: 'wd-cover--stacked',
-                logoWidth: 44,
-                logoTop: 57,
-                rowsTop: 240,
-                rows: coverRows({
-                  project: projectName,
-                  address: project.site_location,
-                  client: client.name,
-                  ...projectPeople(project.team_members),
-                }).map((row, i) => (i === 2 ? row.map((f) => ({ ...f, gold: true })) : row)),
-              }}
-              sections={sections}
-            />
-          </DocumentPreview>
-        </TabsContent>
-        <TabsContent value="history">
-          <VersionHistory type="scope-of-work" id={id} />
-        </TabsContent>
-      </Tabs>
+      <DocumentPreview>
+        <PrintDocument
+          ref={docRef}
+          variant="word"
+          className="wd-sow"
+          docType="Scope of Work"
+          footerLabel="SCOPE OF WORK"
+          title={projectName}
+          wordCover={{
+            title: 'SCOPE OF WORK',
+            className: 'wd-cover--stacked',
+            logoWidth: 44,
+            logoTop: 57,
+            rowsTop: 240,
+            rows: coverRows({
+              project: projectName,
+              address: project.site_location,
+              client: client.name,
+              ...projectPeople(project.team_members),
+            }).map((row, i) => (i === 2 ? row.map((f) => ({ ...f, gold: true })) : row)),
+          }}
+          sections={sections}
+        />
+      </DocumentPreview>
+      <VersionHistory type="scope-of-work" id={id} />
     </Page>
   );
 }

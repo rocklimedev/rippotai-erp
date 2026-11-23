@@ -1,45 +1,68 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { useRefill } from "@/components/doc-list/useRefill";
-import { PrefillNotice } from "@/components/PrefillNotice";
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useRefill } from '@/components/doc-list/useRefill';
+import { PrefillNotice } from '@/components/PrefillNotice';
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Save, Send, PackageSearch } from "lucide-react";
-import { toast } from "sonner";
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Save,
+  Send,
+  Calculator,
+  Pencil,
+  PackagePlus,
+  Layers,
+} from 'lucide-react';
+import { Modal } from '@/components/projects/_projects-ui';
+import {
+  defaultMaterialsFor,
+  freshSheets,
+  itemSheet,
+  sheetsOf,
+} from '@/components/procurement-sheet/sheets';
+import { toast } from 'sonner';
 
 import {
   useCreateMaterialProcurementMutation,
   useGetMaterialProcurementQuery,
   useSubmitMaterialProcurementMutation,
   useUpdateMaterialProcurementMutation,
-} from "../../api/procuerment/material-procurement.api";
+} from '../../api/procuerment/material-procurement.api';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
-import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
+import { useGetMaterialsQuery } from '../../api/procuerment/material-master.api';
 
-import { Page, PageHeader, Button, Card, Field, TextInput, SelectInput, TextArea, Stats, StatTile } from "@/components/inos";
+import { PageHeader } from '@/components/site-ops/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import '@/components/procurement-sheet/procurement-sheet.css';
 
 // ============================================================
 // EMPTY ITEM
 // ============================================================
 
-const createEmptyItem = (serialNo = 1) => ({
+const createEmptyItem = (serialNo = 1, sheetName = '') => ({
   serialNo,
+  sheetName,
 
-  area: "",
-  location: "",
+  area: '',
+  location: '',
 
   // Material Master
-  materialId: "",
+  materialId: '',
 
-  wallArea: "",
-  floorArea: "",
-  ceilingArea: "",
-  totalArea: "",
+  wallArea: '',
+  floorArea: '',
+  ceilingArea: '',
+  totalArea: '',
 
-  quantity: "",
-  price: "",
-  amount: "",
+  quantity: '',
+  price: '',
+  amount: '',
 });
 
 // ============================================================
@@ -69,9 +92,9 @@ const calculateItem = (item) => {
   return {
     ...item,
 
-    totalArea: wallArea || floorArea || ceilingArea ? totalArea.toFixed(2) : "",
+    totalArea: wallArea || floorArea || ceilingArea ? totalArea.toFixed(2) : '',
 
-    amount: quantity || price ? (quantity * price).toFixed(2) : "",
+    amount: quantity || price ? (quantity * price).toFixed(2) : '',
   };
 };
 
@@ -87,11 +110,10 @@ export default function CreateMaterialProcurementSheet() {
   // URL
   // ============================================================
 
-  const projectIdFromUrl =
-    searchParams.get("projectId") || searchParams.get("project_id");
+  const projectIdFromUrl = searchParams.get('projectId') || searchParams.get('project_id');
 
   const { id: routeId } = useParams();
-  const editId = routeId || searchParams.get("id");
+  const editId = routeId || searchParams.get('id');
 
   const isEdit = Boolean(editId);
 
@@ -99,26 +121,26 @@ export default function CreateMaterialProcurementSheet() {
   // PROJECTS
   // ============================================================
 
-  const { data: projectsResponse, isLoading: projectsLoading } =
-    useGetProjectsQuery();
+  const { data: projectsResponse, isLoading: projectsLoading } = useGetProjectsQuery();
 
   // ============================================================
   // MATERIAL MASTER
   // ============================================================
 
-  const { data: materialsResponse, isLoading: materialsLoading } =
-    useGetMaterialsQuery({
-      isActive: true,
-    });
+  const { data: materialsResponse, isLoading: materialsLoading } = useGetMaterialsQuery({
+    isActive: true,
+  });
 
   // ============================================================
   // EXISTING PROCUREMENT
   // ============================================================
 
-  const { data: existingResponse, isLoading: existingLoading } =
-    useGetMaterialProcurementQuery(editId, {
+  const { data: existingResponse, isLoading: existingLoading } = useGetMaterialProcurementQuery(
+    editId,
+    {
       skip: !editId,
-    });
+    },
+  );
 
   // ============================================================
   // MUTATIONS
@@ -137,21 +159,17 @@ export default function CreateMaterialProcurementSheet() {
   // NORMALIZE PROJECTS
   // ============================================================
 
-  const projects =
-    projectsResponse?.data?.data ??
-    projectsResponse?.data ??
-    projectsResponse ??
-    [];
+  const projects = projectsResponse?.data?.data ?? projectsResponse?.data ?? projectsResponse ?? [];
 
   // ============================================================
   // NORMALIZE MATERIALS
   // ============================================================
 
-  const materials =
-    materialsResponse?.data?.data ??
-    materialsResponse?.data ??
-    materialsResponse ??
-    [];
+  const materials = useMemo(() => {
+    const list =
+      materialsResponse?.data?.data ?? materialsResponse?.data ?? materialsResponse ?? [];
+    return Array.isArray(list) ? list : [];
+  }, [materialsResponse]);
 
   // ============================================================
   // EXISTING
@@ -163,15 +181,38 @@ export default function CreateMaterialProcurementSheet() {
   // STATE
   // ============================================================
 
-  const [projectId, setProjectId] = useState(projectIdFromUrl || "");
-  useRefill({ type: "procurement-sheet", label: "Procurement Sheet", projectId, enabled: !isEdit, editPath: (id) => `/procurement/material-procurement/${id}/edit` });
+  const [projectId, setProjectId] = useState(projectIdFromUrl || '');
+  useRefill({
+    type: 'procurement-sheet',
+    label: 'Procurement Sheet',
+    projectId,
+    enabled: !isEdit,
+    editPath: (id) => `/procurement/material-procurement/${id}/edit`,
+  });
 
-  const [remarks, setRemarks] = useState("");
+  const [remarks, setRemarks] = useState('');
 
-  const [items, setItems] = useState([createEmptyItem(1)]);
+  const [items, setItems] = useState([]);
+  const [sheets, setSheets] = useState(() => freshSheets());
+  const [activeSheet, setActiveSheet] = useState(
+    () => searchParams.get('sheet') || freshSheets()[0].name,
+  );
+  const [sheetDialog, setSheetDialog] = useState(() =>
+    searchParams.get('newSheet') ? { mode: 'new', name: '' } : null,
+  );
   const procurementValues = useMemo(() => ({ items }), [items]);
-  const setProcurementValues = useCallback(updater => setItems(current => updater({ items: current }).items), []);
-  const prefill = useSharedProjectData(projectId, 'procurement', procurementValues, setProcurementValues, !isEdit && !materialsLoading, materials);
+  const setProcurementValues = useCallback(
+    (updater) => setItems((current) => updater({ items: current }).items),
+    [],
+  );
+  const prefill = useSharedProjectData(
+    projectId,
+    'procurement',
+    procurementValues,
+    setProcurementValues,
+    !isEdit && !materialsLoading,
+    materials,
+  );
 
   const [initialized, setInitialized] = useState(false);
 
@@ -184,11 +225,15 @@ export default function CreateMaterialProcurementSheet() {
       return;
     }
 
-    setProjectId(existing.projectId || "");
+    setProjectId(existing.projectId || '');
 
-    setRemarks(existing.remarks || "");
+    setRemarks(existing.remarks || '');
 
     const existingItems = existing.items || [];
+    const savedSheets = sheetsOf(existing);
+    setSheets(savedSheets);
+    const wanted = searchParams.get('sheet');
+    setActiveSheet(savedSheets.some((sh) => sh.name === wanted) ? wanted : savedSheets[0]?.name);
 
     setItems(
       existingItems.length
@@ -196,32 +241,141 @@ export default function CreateMaterialProcurementSheet() {
             calculateItem({
               serialNo: item.serialNo || index + 1,
 
-              area: item.area || "",
+              sheetName: itemSheet(item, savedSheets),
 
-              location: item.location || "",
+              area: item.area || '',
 
-              materialId: item.materialId || item.materialMaster?.id || "",
+              location: item.location || '',
 
-              wallArea: item.wallArea ?? "",
+              materialId: item.materialId || item.materialMaster?.id || '',
 
-              floorArea: item.floorArea ?? "",
+              wallArea: item.wallArea ?? '',
 
-              ceilingArea: item.ceilingArea ?? "",
+              floorArea: item.floorArea ?? '',
 
-              totalArea: item.totalArea ?? "",
+              ceilingArea: item.ceilingArea ?? '',
 
-              quantity: item.quantity ?? "",
+              totalArea: item.totalArea ?? '',
 
-              price: item.price ?? "",
+              quantity: item.quantity ?? '',
 
-              amount: item.amount ?? "",
+              price: item.price ?? '',
+
+              amount: item.amount ?? '',
             }),
           )
-        : [createEmptyItem(1)],
+        : [],
     );
 
     setInitialized(true);
-  }, [existing, initialized, isEdit]);
+  }, [existing, initialized, isEdit, searchParams]);
+
+  // ============================================================
+  // SHEETS (material types)
+  // ============================================================
+
+  const materialsById = useMemo(
+    () => Object.fromEntries(materials.map((m) => [m.id, m])),
+    [materials],
+  );
+
+  const sheetOfRow = (item) =>
+    item.sheetName && sheets.some((sheet) => sheet.name === item.sheetName)
+      ? item.sheetName
+      : itemSheet(item, sheets, materialsById);
+
+  const currentSheet = sheets.find((sheet) => sheet.name === activeSheet) || sheets[0];
+  const activeName = currentSheet?.name;
+
+  const visibleRows = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => sheetOfRow(item) === activeName);
+
+  const sheetStats = Object.fromEntries(
+    sheets.map((sheet) => [sheet.name, { count: 0, amount: 0 }]),
+  );
+  items.forEach((item) => {
+    const stat = sheetStats[sheetOfRow(item)];
+    if (stat) {
+      stat.count += 1;
+      stat.amount += toNumber(item.amount);
+    }
+  });
+
+  const sheetTypeMaterials = defaultMaterialsFor(currentSheet, materials);
+  const sheetTypeIds = new Set(sheetTypeMaterials.map((m) => m.id));
+  const otherMaterials = materials.filter((m) => !sheetTypeIds.has(m.id));
+
+  const saveSheetDialog = () => {
+    const name = String(sheetDialog?.name || '').trim();
+    if (!name) return toast.error('Enter a sheet name.');
+    const clash = sheets.some(
+      (sheet) => sheet.name.toLowerCase() === name.toLowerCase() && sheet.name !== sheetDialog.from,
+    );
+    if (clash) return toast.error('A sheet with this name already exists.');
+    if (sheetDialog.mode === 'new') {
+      setSheets((current) => [...current, { name, type: null }]);
+    } else {
+      const from = sheetDialog.from;
+      setSheets((current) =>
+        current.map((sheet) => (sheet.name === from ? { ...sheet, name } : sheet)),
+      );
+      setItems((current) =>
+        current.map((item) => (sheetOfRow(item) === from ? { ...item, sheetName: name } : item)),
+      );
+    }
+    setActiveSheet(name);
+    setSheetDialog(null);
+  };
+
+  const deleteSheet = () => {
+    const name = sheetDialog?.from;
+    if (sheets.length === 1) {
+      toast.error('A procurement sheet needs at least one material type.');
+      return;
+    }
+    const remaining = sheets.filter((sheet) => sheet.name !== name);
+    setItems((current) =>
+      current
+        .filter((item) => sheetOfRow(item) !== name)
+        .map((item, index) => ({ ...item, serialNo: index + 1 })),
+    );
+    setSheets(remaining);
+    setActiveSheet(remaining[0].name);
+    setSheetDialog(null);
+  };
+
+  const addDefaultMaterials = () => {
+    const have = new Set(visibleRows.map(({ item }) => item.materialId).filter(Boolean));
+    const fresh = sheetTypeMaterials.filter((m) => !have.has(m.id));
+    if (!fresh.length) {
+      toast.info(
+        sheetTypeMaterials.length
+          ? 'All default materials of this type are already in the sheet.'
+          : 'No materials of this type in Material Master yet.',
+      );
+      return;
+    }
+    setItems((current) => [
+      // drop untouched blank rows of this sheet before adding the defaults
+      ...current.filter(
+        (item) =>
+          !(
+            sheetOfRow(item) === activeName &&
+            !item.materialId &&
+            !item.area.trim() &&
+            !item.location.trim()
+          ),
+      ),
+      ...fresh.map((m, i) => ({
+        ...createEmptyItem(current.length + i + 1, activeName),
+        materialId: m.id,
+      })),
+    ]);
+    toast.success(
+      `${fresh.length} default material${fresh.length === 1 ? '' : 's'} added to ${activeName}.`,
+    );
+  };
 
   // ============================================================
   // TOTALS
@@ -270,7 +424,7 @@ export default function CreateMaterialProcurementSheet() {
   // ============================================================
 
   const addItem = () => {
-    setItems((current) => [...current, createEmptyItem(current.length + 1)]);
+    setItems((current) => [...current, createEmptyItem(current.length + 1, activeSheet)]);
   };
 
   // ============================================================
@@ -278,12 +432,6 @@ export default function CreateMaterialProcurementSheet() {
   // ============================================================
 
   const removeItem = (index) => {
-    if (items.length === 1) {
-      toast.error("At least one material item is required.");
-
-      return;
-    }
-
     setItems((current) =>
       current
         .filter((_, itemIndex) => itemIndex !== index)
@@ -303,6 +451,11 @@ export default function CreateMaterialProcurementSheet() {
 
     remarks: remarks.trim() || undefined,
 
+    sheets: sheets.map((sheet) => ({
+      name: sheet.name,
+      ...(sheet.type ? { type: sheet.type } : {}),
+    })),
+
     items: items
       .filter((item) => item.materialId)
       .map((item, index) => ({
@@ -310,18 +463,19 @@ export default function CreateMaterialProcurementSheet() {
 
         materialId: item.materialId,
 
+        sheetName: sheetOfRow(item),
+
         area: item.area.trim() || undefined,
 
         location: item.location.trim() || undefined,
 
-        wallArea: item.wallArea === "" ? undefined : toNumber(item.wallArea),
+        wallArea: item.wallArea === '' ? undefined : toNumber(item.wallArea),
 
-        floorArea: item.floorArea === "" ? undefined : toNumber(item.floorArea),
+        floorArea: item.floorArea === '' ? undefined : toNumber(item.floorArea),
 
-        ceilingArea:
-          item.ceilingArea === "" ? undefined : toNumber(item.ceilingArea),
+        ceilingArea: item.ceilingArea === '' ? undefined : toNumber(item.ceilingArea),
 
-        totalArea: item.totalArea === "" ? undefined : toNumber(item.totalArea),
+        totalArea: item.totalArea === '' ? undefined : toNumber(item.totalArea),
 
         quantity: toNumber(item.quantity),
 
@@ -337,7 +491,7 @@ export default function CreateMaterialProcurementSheet() {
 
   const validate = () => {
     if (!projectId) {
-      toast.error("Please select a project.");
+      toast.error('Please select a project.');
 
       return false;
     }
@@ -347,7 +501,7 @@ export default function CreateMaterialProcurementSheet() {
     );
 
     if (!validItems.length) {
-      toast.error("Add at least one material item.");
+      toast.error('Add at least one material item.');
 
       return false;
     }
@@ -355,7 +509,7 @@ export default function CreateMaterialProcurementSheet() {
     const missingMaterial = validItems.find((item) => !item.materialId);
 
     if (missingMaterial) {
-      toast.error("Please select a Material Master for every item.");
+      toast.error('Please select a Material Master for every item.');
 
       return false;
     }
@@ -381,7 +535,7 @@ export default function CreateMaterialProcurementSheet() {
           ...payload,
         }).unwrap();
 
-        toast.success("Material procurement updated.");
+        toast.success('Material procurement updated.');
 
         navigate(`/procurement/material-procurement/${editId}`);
       } else {
@@ -389,20 +543,16 @@ export default function CreateMaterialProcurementSheet() {
 
         const created = response?.data ?? response;
 
-        toast.success("Material procurement created.");
+        toast.success('Material procurement created.');
 
         if (created?.id) {
           navigate(`/procurement/material-procurement/${created.id}`);
         } else {
-          navigate("/procurement/material-procurement/list");
+          navigate('/procurement/material-procurement/list');
         }
       }
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to save material procurement.",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to save material procurement.');
     }
   };
 
@@ -434,19 +584,17 @@ export default function CreateMaterialProcurementSheet() {
       }
 
       if (!procurementId) {
-        throw new Error("Procurement ID was not returned by the server.");
+        throw new Error('Procurement ID was not returned by the server.');
       }
 
       await submitMaterialProcurement(procurementId).unwrap();
 
-      toast.success("Material procurement submitted.");
+      toast.success('Material procurement submitted.');
 
       navigate(`/procurement/material-procurement/${procurementId}`);
     } catch (error) {
       toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to submit material procurement.",
+        error?.data?.message || error?.message || 'Unable to submit material procurement.',
       );
     }
   };
@@ -455,57 +603,567 @@ export default function CreateMaterialProcurementSheet() {
   // BUSY
   // ============================================================
 
-  const busy =
-    creating || updating || submitting || existingLoading || materialsLoading;
+  const busy = creating || updating || submitting || existingLoading || materialsLoading;
 
   // ============================================================
   // LOADING EDIT
   // ============================================================
 
-  if (isEdit && existingLoading) return <Page><PageHeader title="Edit Material Procurement" /><Card>Loading procurement sheet…</Card></Page>;
-  const amountLabel = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const renderNumberInput = (item, index, key, label) => <TextInput type="number" min="0" aria-label={`${label} for item ${index + 1}`} value={item[key]} disabled={busy} onChange={(e) => updateItem(index, key, e.target.value)} placeholder="0" />;
-  return <Page>
-    <PageHeader title={isEdit ? 'Edit Material Procurement' : 'Create Material Procurement'} info={existing?.procurementNo} actions={<>
-      <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/procurement/material-procurement/list')}>Back</Button>
-      <Button variant="secondary" icon={Save} disabled={busy} onClick={handleSave}>{creating || updating ? 'Saving…' : 'Save Draft'}</Button>
-      <Button variant="primary" icon={Send} disabled={busy} onClick={handleSubmit}>{submitting ? 'Submitting…' : 'Save & Submit'}</Button>
-    </>} />
-    <PrefillNotice prefill={prefill} />
-    <Stats>
-      <StatTile label="Material items" value={items.filter((item) => item.materialId).length} icon={<PackageSearch />} />
-      <StatTile label="Total area" value={totals.totalArea.toFixed(2)} meta="sq.ft" />
-      <StatTile label="Total quantity" value={totals.quantity.toFixed(3)} />
-      <StatTile label="Procurement value" value={`₹ ${amountLabel(totals.amount)}`} />
-    </Stats>
-    <Card title="Procurement details"><div className="inos-form-grid">
-      <Field label="Project" required htmlFor="project"><SelectInput id="project" value={projectId} disabled={Boolean(projectIdFromUrl) || isEdit || projectsLoading || busy} onChange={(e) => setProjectId(e.target.value)} placeholder="Select project">
-        {projects.map((project) => <option key={project.id} value={project.id}>{project.name || project.projectName || project.title || project.code || project.id}</option>)}
-      </SelectInput></Field>
-      <Field label="Remarks" optional htmlFor="remarks"><TextArea id="remarks" rows={2} value={remarks} disabled={busy} placeholder="Add remarks for this procurement sheet" onChange={(e) => setRemarks(e.target.value)} /></Field>
-    </div></Card>
-    <Card title="Material procurement items" subtitle="Choose materials, enter measurements and set quantities and prices." flush actions={<Button variant="secondary" icon={Plus} onClick={addItem} disabled={busy}>Add material</Button>}>
-      <div className="inos-table-wrap"><table className="inos-table" style={{ minWidth: 1550 }}>
-        <thead><tr><th rowSpan={2}>S.No</th><th rowSpan={2} style={{ minWidth: 140 }}>Area</th><th rowSpan={2} style={{ minWidth: 140 }}>Location</th><th rowSpan={2} style={{ minWidth: 280 }}>Material *</th><th colSpan={4} className="text-center">Surface area · sq.ft</th><th colSpan={3} className="text-center">Quantity & pricing</th><th rowSpan={2} aria-label="Item actions" /></tr>
-          <tr><th>Wall</th><th>Floor</th><th>Ceiling</th><th>Total area</th><th>Quantity</th><th>Price</th><th className="text-right">Amount</th></tr>
-        </thead>
-        <tbody>{items.map((item, index) => {
-          const material = materials.find((entry) => entry.id === item.materialId);
-          return <tr key={`material-${index}`}>
-            <td>{index + 1}</td>
-            <td><TextInput aria-label={`Area for item ${index + 1}`} value={item.area} disabled={busy} onChange={(e) => updateItem(index, 'area', e.target.value)} placeholder="Area" /></td>
-            <td><TextInput aria-label={`Location for item ${index + 1}`} value={item.location} disabled={busy} onChange={(e) => updateItem(index, 'location', e.target.value)} placeholder="Location" /></td>
-            <td><SelectInput aria-label={`Material for item ${index + 1}`} value={item.materialId} disabled={busy} onChange={(e) => updateItem(index, 'materialId', e.target.value)} placeholder={materialsLoading ? 'Loading materials…' : item.description || 'Select material'}>
-              {materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.material_code ? `${entry.material_code} — ` : ''}{entry.name}{entry.brand ? ` (${entry.brand})` : ''}</option>)}
-            </SelectInput>{material && <div className="inos-hint mt-1">{material.category ? `${material.category} · ` : ''}{material.unit?.name || 'Unit not specified'}</div>}</td>
-            <td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'wallArea', 'Wall area')}</td><td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'floorArea', 'Floor area')}</td><td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'ceilingArea', 'Ceiling area')}</td>
-            <td className="text-right font-semibold tabular-nums">{item.totalArea || '—'}</td><td style={{ minWidth: 100 }}>{renderNumberInput(item, index, 'quantity', 'Quantity')}</td><td style={{ minWidth: 110 }}>{renderNumberInput(item, index, 'price', 'Price')}</td><td className="text-right font-semibold tabular-nums whitespace-nowrap">{item.amount === '' ? '—' : `₹ ${amountLabel(item.amount)}`}</td>
-            <td><Button variant="ghost" icon={Trash2} aria-label={`Remove material ${index + 1}`} disabled={busy || items.length === 1} onClick={() => removeItem(index)} /></td>
-          </tr>;
-        })}</tbody>
-        <tfoot><tr><td colSpan={7}>Totals</td><td className="text-right">{totals.totalArea.toFixed(2)}</td><td className="text-right">{totals.quantity.toFixed(3)}</td><td /><td className="text-right whitespace-nowrap">₹ {amountLabel(totals.amount)}</td><td /></tr></tfoot>
-      </table></div>
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4"><p className="inos-hint">Total area and amount calculate automatically. Material details come from Material Master.</p><Button variant="ghost" icon={Plus} onClick={addItem} disabled={busy}>Add material</Button></div>
-    </Card>
-  </Page>;
+  if (isEdit && existingLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Edit Material Procurement" description="Loading procurement sheet..." />
+
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Loading procurement sheet...
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+
+  return (
+    <div className="space-y-6 pb-10">
+      <PageHeader
+        title={isEdit ? 'Edit Material Procurement' : 'Create Material Procurement'}
+        description={
+          <>
+            {isEdit
+              ? 'Update the material procurement sheet.'
+              : 'Create a digital material procurement sheet for a project.'}
+            <PrefillNotice prefill={prefill} />
+          </>
+        }
+      />
+
+      {/* ========================================================
+          TOP ACTIONS
+      ======================================================== */}
+
+      <div className="flex items-center justify-between gap-3">
+        <Button
+          variant="outline"
+          onClick={() => navigate('/procurement/material-procurement/list')}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+
+        <div className="flex gap-2">
+          <Button variant="outline" disabled={busy} onClick={handleSave}>
+            <Save className="mr-2 h-4 w-4" />
+            {creating || updating ? 'Saving...' : 'Save Draft'}
+          </Button>
+
+          <Button disabled={busy} onClick={handleSubmit}>
+            <Send className="mr-2 h-4 w-4" />
+            {submitting ? 'Submitting...' : 'Save & Submit'}
+          </Button>
+        </div>
+      </div>
+
+      {/* ========================================================
+          PROCUREMENT DETAILS
+      ======================================================== */}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Procurement Details</CardTitle>
+        </CardHeader>
+
+        <CardContent className="grid gap-5 md:grid-cols-2">
+          {/* PROJECT */}
+
+          <div className="space-y-2">
+            <Label htmlFor="project">Project *</Label>
+
+            <select
+              id="project"
+              value={projectId}
+              disabled={Boolean(projectIdFromUrl) || isEdit || projectsLoading || busy}
+              onChange={(event) => setProjectId(event.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Select project</option>
+
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name ||
+                    project.projectName ||
+                    project.title ||
+                    project.code ||
+                    project.id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* REMARKS */}
+
+          <div className="space-y-2">
+            <Label htmlFor="remarks">Remarks</Label>
+
+            <Input
+              id="remarks"
+              value={remarks}
+              disabled={busy}
+              placeholder="Optional remarks"
+              onChange={(event) => setRemarks(event.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ========================================================
+          ITEMS
+      ======================================================== */}
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <div>
+            <CardTitle>Material Procurement Items</CardTitle>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              One sheet per material type. Pick a sheet, then add its materials, quantities and
+              prices.
+            </p>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => setSheetDialog({ mode: 'new', name: '' })}
+            disabled={busy}
+          >
+            <Layers className="mr-2 h-4 w-4" />
+            New sheet
+          </Button>
+        </CardHeader>
+
+        <CardContent>
+          <div className="mps-tabs" role="tablist" aria-label="Material types">
+            {sheets.map((sheet) => {
+              const stat = sheetStats[sheet.name] || { count: 0, amount: 0 };
+              return (
+                <button
+                  key={sheet.name}
+                  type="button"
+                  role="tab"
+                  aria-selected={sheet.name === activeName}
+                  className={`mps-tab ${sheet.name === activeName ? 'is-active' : ''}`}
+                  onClick={() => setActiveSheet(sheet.name)}
+                >
+                  <span>{sheet.name}</span>
+                  <span className="mps-tab__count">{stat.count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mps-sheetbar">
+            <div>
+              <strong>{activeName}</strong>
+              <span className="mps-muted">
+                {' '}
+                · {visibleRows.length} item{visibleRows.length === 1 ? '' : 's'} · ₹{' '}
+                {(sheetStats[activeName]?.amount || 0).toLocaleString('en-IN', {
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {currentSheet?.type && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addDefaultMaterials}
+                  disabled={busy || materialsLoading}
+                >
+                  <PackagePlus className="mr-2 h-4 w-4" />
+                  Add default materials
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setSheetDialog({ mode: 'rename', from: activeName, name: activeName })
+                }
+                disabled={busy}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Rename
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setSheetDialog({ mode: 'delete', from: activeName })}
+                disabled={busy || sheets.length === 1}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete sheet
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[1450px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="w-14 px-3 py-3 text-left font-medium">#</th>
+
+                  <th className="min-w-[150px] px-3 py-3 text-left font-medium">Area</th>
+
+                  <th className="min-w-[150px] px-3 py-3 text-left font-medium">Location</th>
+
+                  <th className="min-w-[260px] px-3 py-3 text-left font-medium">
+                    Material Master *
+                  </th>
+
+                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">Wall (Sq.ft)</th>
+
+                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">Floor (Sq.ft)</th>
+
+                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">Ceiling (Sq.ft)</th>
+
+                  <th className="min-w-[130px] px-3 py-3 text-left font-medium">Total Area</th>
+
+                  <th className="min-w-[110px] px-3 py-3 text-left font-medium">Quantity</th>
+
+                  <th className="min-w-[120px] px-3 py-3 text-left font-medium">Price</th>
+
+                  <th className="min-w-[130px] px-3 py-3 text-left font-medium">Amount</th>
+
+                  <th className="w-16 px-3 py-3" />
+                </tr>
+              </thead>
+
+              <tbody>
+                {visibleRows.length === 0 && (
+                  <tr>
+                    <td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">
+                      No materials in {activeName} yet.{' '}
+                      {currentSheet?.type
+                        ? 'Use “Add default materials” or “Add Material”.'
+                        : 'Use “Add Material”.'}
+                    </td>
+                  </tr>
+                )}
+                {visibleRows.map(({ item, index }, rowIndex) => {
+                  const selectedMaterial = materials.find(
+                    (material) => material.id === item.materialId,
+                  );
+
+                  return (
+                    <tr key={`material-${index}`} className="border-b last:border-b-0">
+                      {/* SERIAL */}
+
+                      <td className="px-3 py-2 align-top font-medium">{rowIndex + 1}</td>
+
+                      {/* AREA */}
+
+                      <td className="px-2 py-2">
+                        <Input
+                          value={item.area}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'area', event.target.value)}
+                          placeholder="Area"
+                        />
+                      </td>
+
+                      {/* LOCATION */}
+
+                      <td className="px-2 py-2">
+                        <Input
+                          value={item.location}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'location', event.target.value)}
+                          placeholder="Location"
+                        />
+                      </td>
+
+                      {/* MATERIAL MASTER */}
+
+                      <td className="px-2 py-2">
+                        <select
+                          value={item.materialId}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'materialId', event.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="">
+                            {materialsLoading
+                              ? 'Loading materials...'
+                              : item.description || 'Select material'}
+                          </option>
+
+                          {[
+                            [sheetTypeMaterials, activeName],
+                            [otherMaterials, sheetTypeMaterials.length ? 'Other materials' : null],
+                          ].map(([list, label]) => {
+                            if (!list.length) return null;
+                            const options = list.map((material) => (
+                              <option key={material.id} value={material.id}>
+                                {material.material_code ? `${material.material_code} — ` : ''}
+                                {material.name}
+                                {material.brand ? ` (${material.brand})` : ''}
+                              </option>
+                            ));
+                            return label ? (
+                              <optgroup key={label} label={label}>
+                                {options}
+                              </optgroup>
+                            ) : (
+                              options
+                            );
+                          })}
+                        </select>
+
+                        {/* SELECTED MATERIAL INFO */}
+
+                        {selectedMaterial && (
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {selectedMaterial.category ? `${selectedMaterial.category} • ` : ''}
+
+                            {selectedMaterial.unit?.name
+                              ? selectedMaterial.unit.name
+                              : 'Unit not specified'}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* WALL */}
+
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.wallArea}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'wallArea', event.target.value)}
+                          placeholder="0"
+                        />
+                      </td>
+
+                      {/* FLOOR */}
+
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.floorArea}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'floorArea', event.target.value)}
+                          placeholder="0"
+                        />
+                      </td>
+
+                      {/* CEILING */}
+
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.ceilingArea}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'ceilingArea', event.target.value)}
+                          placeholder="0"
+                        />
+                      </td>
+
+                      {/* TOTAL AREA */}
+
+                      <td className="px-2 py-2">
+                        <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 font-medium">
+                          {item.totalArea || '—'}
+                        </div>
+                      </td>
+
+                      {/* QUANTITY */}
+
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.quantity}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'quantity', event.target.value)}
+                          placeholder="0"
+                        />
+                      </td>
+
+                      {/* PRICE */}
+
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.price}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'price', event.target.value)}
+                          placeholder="0.00"
+                        />
+                      </td>
+
+                      {/* AMOUNT */}
+
+                      <td className="px-2 py-2">
+                        <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 font-medium">
+                          {item.amount || '—'}
+                        </div>
+                      </td>
+
+                      {/* DELETE */}
+
+                      <td className="px-2 py-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={busy}
+                          onClick={() => removeItem(index)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+
+              {/* ==================================================
+                  TOTALS
+              ================================================== */}
+
+              <tfoot>
+                <tr className="bg-muted/30 font-semibold">
+                  <td colSpan={7} className="px-3 py-4 text-right">
+                    <span className="inline-flex items-center gap-2">
+                      <Calculator className="h-4 w-4" />
+                      Totals · all sheets
+                    </span>
+                  </td>
+
+                  <td className="px-3 py-4">{totals.totalArea.toFixed(2)}</td>
+
+                  <td className="px-3 py-4">{totals.quantity.toFixed(3)}</td>
+
+                  <td />
+
+                  <td className="px-3 py-4">
+                    ₹{' '}
+                    {totals.amount.toLocaleString('en-IN', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </td>
+
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* ADD */}
+
+          <div className="mt-4 flex justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Total area and amount are calculated automatically. Material details are pulled from
+              Material Master.
+            </p>
+
+            <Button variant="outline" onClick={addItem} disabled={busy}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Material
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ========================================================
+          BOTTOM ACTIONS
+      ======================================================== */}
+
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          disabled={busy}
+          onClick={() => navigate('/procurement/material-procurement/list')}
+        >
+          Cancel
+        </Button>
+
+        <Button variant="outline" disabled={busy} onClick={handleSave}>
+          <Save className="mr-2 h-4 w-4" />
+
+          {creating || updating ? 'Saving...' : 'Save Draft'}
+        </Button>
+
+        <Button disabled={busy} onClick={handleSubmit}>
+          <Send className="mr-2 h-4 w-4" />
+
+          {submitting ? 'Submitting...' : 'Save & Submit'}
+        </Button>
+      </div>
+      {sheetDialog && (
+        <Modal
+          open
+          onClose={() => setSheetDialog(null)}
+          title={
+            sheetDialog.mode === 'new'
+              ? 'New sheet'
+              : sheetDialog.mode === 'rename'
+                ? 'Rename sheet'
+                : 'Delete sheet?'
+          }
+          width={440}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setSheetDialog(null)}>
+                Cancel
+              </Button>
+              {sheetDialog.mode === 'delete' ? (
+                <Button variant="destructive" onClick={deleteSheet}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete sheet
+                </Button>
+              ) : (
+                <Button onClick={saveSheetDialog}>
+                  {sheetDialog.mode === 'new' ? 'Add sheet' : 'Rename'}
+                </Button>
+              )}
+            </>
+          }
+        >
+          {sheetDialog.mode === 'delete' ? (
+            <p className="text-sm leading-relaxed">
+              <strong>{sheetDialog.from}</strong> and its {sheetStats[sheetDialog.from]?.count || 0}{' '}
+              material
+              {(sheetStats[sheetDialog.from]?.count || 0) === 1 ? '' : 's'} will be removed from
+              this procurement sheet when you save.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="sheet-name">Material type</Label>
+              <Input
+                id="sheet-name"
+                autoFocus
+                maxLength={120}
+                value={sheetDialog.name}
+                placeholder="e.g. Wallpaper"
+                onChange={(event) => setSheetDialog((d) => ({ ...d, name: event.target.value }))}
+                onKeyDown={(event) => event.key === 'Enter' && saveSheetDialog()}
+              />
+            </div>
+          )}
+        </Modal>
+      )}
+    </div>
+  );
 }

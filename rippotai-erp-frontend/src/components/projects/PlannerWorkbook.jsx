@@ -1,41 +1,37 @@
+// Project planner sheet — Design / Build / Procurement.
+// Columns: S.no · (Phase | Labour contractor) · (Drawings & design | Work | Material vendor)
+// · (Details | Vendor name & phase) · Date · Status · Remarks.
+// Date red = Late (past date, not completed) · green = Completed.
 import { useState } from 'react';
 import { toast } from 'sonner';
-
 import {
-  useAttachPlannerLocationsMutation,
-  useUpdateItemLocationMutation,
   useUpdatePlannerItemMutation,
   useUpdateProcurementItemMutation,
 } from '../../api/documents/project-planner.api';
-
+import { STATUS_OPTIONS, VIEW_COLUMNS, rowState, viewRows } from './plannerModel';
 import './PlannerWorkbook.css';
-import { workbookRows } from './plannerWorkbookFormat';
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+const fmt = (d) =>
+  d
+    ? new Date(`${d}T00:00:00`).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '';
 
-const STATUSES = ['NOT_STARTED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'NOT_APPLICABLE'];
-
-const label = (value) => value?.toLowerCase().replaceAll('_', ' ') || '';
-
-function EditCell({ value, type = 'text', title, save }) {
+function EditCell({ value, type = 'text', title, save, className }) {
   const [draft, setDraft] = useState(value || '');
   const [busy, setBusy] = useState(false);
-
   const Control = type === 'date' ? 'input' : 'textarea';
-
   return (
     <Control
-      rows={2}
+      rows={1}
       aria-label={title}
       type={type}
       value={draft}
       disabled={busy}
+      className={className}
       ref={(node) => {
         if (node?.tagName === 'TEXTAREA') {
           node.style.height = 'auto';
@@ -44,7 +40,6 @@ function EditCell({ value, type = 'text', title, save }) {
       }}
       onChange={(e) => {
         setDraft(e.target.value);
-
         if (type !== 'date') {
           e.target.style.height = 'auto';
           e.target.style.height = `${e.target.scrollHeight}px`;
@@ -52,14 +47,11 @@ function EditCell({ value, type = 'text', title, save }) {
       }}
       onBlur={async () => {
         if (draft === (value || '')) return;
-
         setBusy(true);
-
         try {
           await save(draft || null);
         } catch (error) {
           setDraft(value || '');
-
           toast.error(error?.data?.message || 'Could not save this cell');
         } finally {
           setBusy(false);
@@ -70,342 +62,190 @@ function EditCell({ value, type = 'text', title, save }) {
 }
 
 export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
-  const [updateLocation] = useUpdateItemLocationMutation();
-  const [attachLocation] = useAttachPlannerLocationsMutation();
   const [updateItem] = useUpdatePlannerItemMutation();
   const [updateProcurement] = useUpdateProcurementItemMutation();
-
   const [saving, setSaving] = useState('');
+  const isProc = view === 'Procurement';
+  const cols = VIEW_COLUMNS[view] || VIEW_COLUMNS.Design;
+  const rows = viewRows(overview, view);
 
-  const floors = (overview?.locations || []).filter((location) => location.type === 'FLOOR');
-
-  const columns =
-    view === 'Overview'
-      ? floors.flatMap((floor) => (floor.children?.length ? floor.children : [floor]))
-      : floors;
-
-  const allRows = workbookRows(overview?.planners);
-
-  const rows =
-    view === 'Overview'
-      ? allRows
-      : allRows.filter(
-          (item) => item.phase?.module === (view === 'Consultancy' ? 'CONSULTANCY' : 'PMC'),
-        );
-
-  const procurement = (overview?.planners || [])
-    .flatMap((planner) => planner.procurement_items || [])
-    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
-
-  const isVendor = view === 'Vendor & Procurement';
-
-  const saveItem = async (item, key, value) => {
-    await updateItem({
-      id: item.id,
-      data: {
-        [key]: value,
-      },
-    }).unwrap();
-
+  const save = async (item, data) => {
+    await (isProc ? updateProcurement : updateItem)({ id: item.id, data }).unwrap();
     await refresh();
   };
 
-  const saveVendor = async (item, key, value) => {
-    await updateProcurement({
-      id: item.id,
-      data: {
-        [key]: value,
-      },
-    }).unwrap();
-
-    await refresh();
-  };
-
-  const statusCell = (item, location) => {
-    const relation = item.locations?.find(
-      (locationItem) => locationItem.location_id === location.id,
-    );
-
-    const key = `${item.id}:${location.id}`;
-
-    if (!editable) {
-      return label(relation?.status);
-    }
-
-    return (
-      <div className="min-w-[120px]">
-        <Select
-          value={relation?.status || ''}
-          disabled={saving === key}
-          onValueChange={async (status) => {
-            if (!status) return;
-
-            setSaving(key);
-
-            try {
-              let id = relation?.id;
-
-              if (!id) {
-                await attachLocation({
-                  itemId: item.id,
-                  location_ids: [location.id],
-                }).unwrap();
-
-                const result = await refresh();
-
-                const data = result?.data?.data || result?.data;
-
-                id = workbookRows(data?.planners)
-                  .find((plannerItem) => plannerItem.id === item.id)
-                  ?.locations?.find((locationItem) => locationItem.location_id === location.id)?.id;
-              }
-
-              if (!id) {
-                throw new Error('Location relation could not be resolved');
-              }
-
-              await updateLocation({
-                id,
-                data: {
-                  status,
-                  progress_pct:
-                    status === 'COMPLETED'
-                      ? 100
-                      : status === 'IN_PROGRESS'
-                        ? Math.max(1, Math.min(99, Number(relation?.progress_pct || 1)))
-                        : 0,
-                },
-              }).unwrap();
-
-              await refresh();
-            } catch (error) {
-              toast.error(error?.data?.message || error.message || 'Could not save status');
-            } finally {
-              setSaving('');
-            }
-          }}
-        >
-          <SelectTrigger
-            className="planner-status w-full min-w-[110px] border-0 shadow-none focus:ring-1"
-            data-status={relation?.status || ''}
-            aria-label={`${item.work_name || item.details} — ${location.name}`}
-          >
-            <SelectValue placeholder="—" />
-          </SelectTrigger>
-
-          <SelectContent>
-            {STATUSES.map((status) => (
-              <SelectItem key={status} value={status}>
-                {label(status)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  };
-
-  const field = (item, key, type = 'text', vendor = false) =>
+  const field = (item, key, type = 'text', className) =>
     editable ? (
       <EditCell
         key={`${item.id}:${key}:${item[key] || ''}`}
-        value={item[key]}
+        value={
+          type === 'date'
+            ? String(item[key] || '').slice(0, 10)
+            : String(item[key] ?? '')
+                  .trim()
+                  .toUpperCase() === 'NULL'
+              ? ''
+              : item[key]
+        }
         type={type}
-        title={`${key.replaceAll('_', ' ')} — ${
-          item.work_name || item.category_name || item.details
-        }`}
-        save={(value) => (vendor ? saveVendor(item, key, value) : saveItem(item, key, value))}
+        className={className}
+        title={`${key.replaceAll('_', ' ')} — ${item.work_name || item.category_name || item.details || ''}`}
+        save={(value) => save(item, { [key]: value })}
       />
+    ) : type === 'date' ? (
+      fmt(String(item[key] || '').slice(0, 10))
+    ) : String(item[key] ?? '')
+        .trim()
+        .toUpperCase() === 'NULL' ? (
+      ''
     ) : (
       item[key] || ''
     );
 
+  const setStatus = async (item, status) => {
+    setSaving(item.id);
+    try {
+      const data = { status };
+      if (!isProc) {
+        data.progress_pct = status === 'COMPLETED' ? 100 : 0;
+        data.actual_end_date =
+          status === 'COMPLETED' ? new Date().toISOString().slice(0, 10) : null;
+      }
+      await save(item, data);
+    } catch (error) {
+      toast.error(error?.data?.message || 'Could not save status');
+    } finally {
+      setSaving('');
+    }
+  };
+
+  const dateCell = (item, st) => {
+    const tone = st.key === 'late' ? 'is-late' : st.key === 'completed' ? 'is-done' : '';
+    if (st.auto)
+      return (
+        <div
+          className={`planner-date ${tone}`}
+          title={`Uploaded: ${st.evidence.title}${st.planned ? ` · planned ${fmt(st.planned)}` : ''}`}
+        >
+          <span className="planner-date__text">{fmt(st.evidence.date)}</span>
+          <small>Uploaded</small>
+        </div>
+      );
+    return <div className={`planner-date ${tone}`}>{field(item, 'planned_end_date', 'date')}</div>;
+  };
+
+  const statusCell = (item, st) => {
+    if (st.auto)
+      return (
+        <span
+          className="planner-state is-completed"
+          title={`Completed automatically — ${st.evidence.title} uploaded`}
+        >
+          Completed
+        </span>
+      );
+    if (!editable) return <span className={`planner-state is-${st.key}`}>{st.label}</span>;
+    const value =
+      st.key === 'late'
+        ? item.status || 'NOT_STARTED'
+        : item.status === 'COMPLETED'
+          ? 'COMPLETED'
+          : item.status === 'IN_PROGRESS'
+            ? 'IN_PROGRESS'
+            : 'NOT_STARTED';
+    return (
+      <div className="planner-state-wrap">
+        <select
+          className={`planner-state is-${st.key}`}
+          value={st.key === 'late' ? 'LATE' : value}
+          disabled={saving === item.id}
+          aria-label={`Status — ${item.work_name || item.category_name || item.details || ''}`}
+          onChange={(e) => e.target.value !== 'LATE' && setStatus(item, e.target.value)}
+        >
+          {st.key === 'late' && (
+            <option value="LATE" disabled>
+              Late
+            </option>
+          )}
+          {STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
   return (
     <div className="planner-sheet-scroll">
-      <section
-        className="planner-sheet"
-        style={{
-          minWidth: isVendor ? 1660 : Math.max(1100, 650 + columns.length * 150),
-        }}
-        data-sheet={view}
-      >
+      <section className="planner-sheet" style={{ minWidth: 1130 }} data-sheet={view}>
         <header>
           <strong>RIPPŌTAI</strong>
-
-          <h2>
-            {view === 'Overview' ? 'PROJECT PLANNER' : `${view.toUpperCase()} — PROJECT PLANNER`}
-          </h2>
-
+          <h2>{`${view.toUpperCase()} — PROJECT PLANNER`}</h2>
           <p>{overview?.project?.name}</p>
         </header>
 
         <table>
           <colgroup>
-            {(isVendor
-              ? [54, 170, 170, 220, 140, 140, 140, 140, 140, 220]
-              : [
-                  54,
-                  180,
-                  230,
-                  250,
-                  ...columns.map(() => 150),
-                  ...(view !== 'Overview' ? [220] : []),
-                ]
-            ).map((width, index) => (
-              <col
-                key={index}
-                style={{
-                  width,
-                }}
-              />
+            {[50, 150, 220, 210, 150, 130, 220].map((width, index) => (
+              <col key={index} style={{ width }} />
             ))}
           </colgroup>
-
           <thead>
-            {isVendor ? (
-              <>
-                <tr className="planner-superhead">
-                  <th colSpan={5} />
-
-                  <th colSpan={2}>TIMELINE (LABOUR WORK)</th>
-
-                  <th colSpan={2}>STATUS (MATERIAL)</th>
-
-                  <th />
-                </tr>
-
-                <tr>
-                  {[
-                    'Sr. No.',
-                    'LABOUR CONTRACTOR',
-                    'MATERIAL VENDOR',
-                    'VENDOR NAME',
-                    'ESTIMATE FINALISED',
-                    'START',
-                    'END',
-                    'PURCHASE',
-                    'RECEIVED AT SITE',
-                    'REMARKS',
-                  ].map((heading) => (
-                    <th key={heading}>{heading}</th>
-                  ))}
-                </tr>
-              </>
-            ) : (
-              <>
-                <tr>
-                  <th rowSpan={view === 'Overview' ? 2 : 1}>S.no</th>
-
-                  <th rowSpan={view === 'Overview' ? 2 : 1}>
-                    {view === 'Overview' ? 'EXECUTION' : 'PHASE'}
-                  </th>
-
-                  <th rowSpan={view === 'Overview' ? 2 : 1}>
-                    {view === 'Consultancy'
-                      ? 'DRAWINGS & DESIGN'
-                      : view === 'Overview'
-                        ? 'DOCUMENTS'
-                        : 'WORK'}
-                  </th>
-
-                  <th rowSpan={view === 'Overview' ? 2 : 1}>DETAILS</th>
-
-                  {view === 'Overview'
-                    ? floors.map((floor) => (
-                        <th key={floor.id} colSpan={floor.children?.length || 1}>
-                          {floor.name}
-                        </th>
-                      ))
-                    : columns.map((location) => <th key={location.id}>{location.name}</th>)}
-
-                  {view !== 'Overview' && <th>REMARKS</th>}
-                </tr>
-
-                {view === 'Overview' && (
-                  <tr>
-                    {columns.map((location) => (
-                      <th key={location.id}>{location.name}</th>
-                    ))}
-                  </tr>
-                )}
-              </>
-            )}
+            <tr>
+              <th>S.no</th>
+              <th>{cols.a}</th>
+              <th>{cols.b}</th>
+              <th>{cols.c}</th>
+              <th>DATE</th>
+              <th>STATUS</th>
+              <th>REMARKS</th>
+            </tr>
           </thead>
-
           <tbody>
-            {isVendor
-              ? procurement.map((item, index) => (
-                  <tr key={item.id}>
+            {rows.map((item, index) => {
+              const st = rowState(item);
+              const rowCls = st.key === 'late' ? 'is-late-row' : '';
+              if (isProc)
+                return (
+                  <tr key={item.id} className={rowCls}>
                     <td>{index + 1}.0</td>
-
-                    <td>
-                      {item.item_type === 'LABOUR'
-                        ? field(item, 'category_name', 'text', true)
-                        : ''}
-                    </td>
-
-                    <td>
-                      {item.item_type === 'MATERIAL'
-                        ? field(item, 'category_name', 'text', true)
-                        : ''}
-                    </td>
-
-                    <td>{field(item, 'vendor_name', 'text', true)}</td>
-
-                    {[
-                      'estimate_finalised_at',
-                      'planned_start_date',
-                      'planned_end_date',
-                      'purchase_date',
-                      'received_at_site_date',
-                    ].map((key) => (
-                      <td key={key}>{field(item, key, 'date', true)}</td>
-                    ))}
-
-                    <td>{field(item, 'remarks', 'text', true)}</td>
+                    <td>{item.item_type === 'LABOUR' ? field(item, 'category_name') : ''}</td>
+                    <td>{item.item_type === 'MATERIAL' ? field(item, 'category_name') : ''}</td>
+                    <td>{field(item, 'vendor_name')}</td>
+                    <td>{dateCell(item, st)}</td>
+                    <td>{statusCell(item, st)}</td>
+                    <td>{field(item, 'remarks')}</td>
                   </tr>
-                ))
-              : rows.map((item, index) => {
-                  const start = index === 0 || rows[index - 1].phase_id !== item.phase_id;
-
-                  let span = 1;
-
-                  while (rows[index + span]?.phase_id === item.phase_id) {
-                    span++;
-                  }
-
-                  return (
-                    <tr key={item.id}>
-                      <td>{index + 1}.0</td>
-
-                      {start && (
-                        <td rowSpan={span} className="planner-phase">
-                          {item.phase?.title}
-                        </td>
-                      )}
-
-                      <td>{field(item, 'work_name')}</td>
-
-                      <td>{field(item, 'details')}</td>
-
-                      {columns.map((location) => (
-                        <td key={location.id}>{statusCell(item, location)}</td>
-                      ))}
-
-                      {view !== 'Overview' && <td>{field(item, 'remarks')}</td>}
-                    </tr>
-                  );
-                })}
+                );
+              const start = index === 0 || rows[index - 1].phase_id !== item.phase_id;
+              let span = 1;
+              while (rows[index + span]?.phase_id === item.phase_id) span++;
+              return (
+                <tr key={item.id} className={rowCls}>
+                  <td>{index + 1}.0</td>
+                  {start && (
+                    <td rowSpan={span} className="planner-phase">
+                      {item.phase?.title}
+                    </td>
+                  )}
+                  <td>{field(item, 'work_name')}</td>
+                  <td>{field(item, 'details')}</td>
+                  <td>{dateCell(item, st)}</td>
+                  <td>{statusCell(item, st)}</td>
+                  <td>{field(item, 'remarks')}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
-        {!rows.length && !isVendor && (
-          <p className="planner-empty">Initialize the project planner to populate this sheet.</p>
-        )}
-
-        {isVendor && !procurement.length && (
+        {!rows.length && (
           <p className="planner-empty">
-            Initialize the project planner to populate procurement categories.
+            {isProc
+              ? 'No procurement rows yet — add labour contractors and material vendors below.'
+              : 'No rows yet — initialise the planner or add rows below.'}
           </p>
         )}
       </section>

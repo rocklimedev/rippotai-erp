@@ -37,3 +37,13 @@
 @media print {
   .rc-card { display: none !important; }
 }
+
+/* Slim document action bar (Version · Edit · Delete) */
+.rc-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -4px 0 4px; }
+.rc-bar__spacer { flex: 1; }
+.rc-version {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff);
+  font-size: 12.5px; font-weight: 600; color: var(--text-2); cursor: pointer;
+}
+.rc-version:hover { border-color: var(--brand); color: var(--brand); }

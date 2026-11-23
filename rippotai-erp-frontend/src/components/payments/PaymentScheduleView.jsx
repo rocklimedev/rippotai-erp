@@ -1,6 +1,3 @@
-// Payment Schedule — the user's PAYMENT SCHEDULE TEMPLATE.docx on the Word family of the print kit
-// (PaymentScheduleView). buildScheduleSections() is the older section list still embedded by the
-// business proposal; the client document uses buildScheduleWordSections().
 import { forwardRef, useMemo } from 'react';
 import {
   PrintDocument,
@@ -21,6 +18,9 @@ import {
   projectPeople,
 } from '@/components/print-document';
 import './payment-schedule-document.css';
+
+const shareAmount = (m, contract) =>
+  Number(m.amount) || (contract ? (contract * (Number(m.percentage) || 0)) / 100 : 0);
 
 const pct = (v) => `${Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}%`;
 
@@ -104,9 +104,7 @@ export function buildScheduleSections(schedule) {
                 text: (
                   <>
                     {m.title || 'Milestone'}
-                    {status && status !== 'PENDING' && (
-                      <Pill>{titleCase(status)}</Pill>
-                    )}
+                    {status && status !== 'PENDING' && <Pill>{titleCase(status)}</Pill>}
                   </>
                 ),
                 sub: [
@@ -135,7 +133,11 @@ export function buildScheduleSections(schedule) {
 
   const termsHtml = schedule.terms_content_snapshot ?? schedule.termsTemplate?.content_html;
   if (htmlToTerms(termsHtml).length)
-    sections.push({ title: 'Terms', newPage: true, blocks: [<HtmlTerms key="t" html={termsHtml} />] });
+    sections.push({
+      title: 'Terms',
+      newPage: true,
+      blocks: [<HtmlTerms key="t" html={termsHtml} />],
+    });
 
   const architect =
     project.team_members?.find((m) => m.role_label === 'Principal Architect')?.user?.name ||
@@ -164,7 +166,16 @@ export function buildScheduleSections(schedule) {
    PAYMENT SCHEDULE TEMPLATE (.docx) — Word family of the print kit
    ===================================================================== */
 
-const DONUT = ['#0D3D2F', '#14503D', '#1B634B', '#247659', '#3C8A70', '#6FA593', '#8DB8A9', '#A9C9BE'];
+const DONUT = [
+  '#0D3D2F',
+  '#14503D',
+  '#1B634B',
+  '#247659',
+  '#3C8A70',
+  '#6FA593',
+  '#8DB8A9',
+  '#A9C9BE',
+];
 
 function sortMilestones(schedule) {
   return [...(schedule.milestones || [])].sort(
@@ -186,7 +197,9 @@ function Donut({ milestones }) {
   const starts = milestones.map(
     (_, i) =>
       -Math.PI / 2 +
-      (milestones.slice(0, i).reduce((s, x) => s + (Number(x.percentage) || 0), 0) / total) * Math.PI * 2,
+      (milestones.slice(0, i).reduce((s, x) => s + (Number(x.percentage) || 0), 0) / total) *
+        Math.PI *
+        2,
   );
   const segs = milestones.map((m, i) => {
     const a0 = starts[i];
@@ -215,19 +228,49 @@ function Donut({ milestones }) {
       {segs.map((s, i) => (
         <g key={`t${i}`}>
           {s.pct >= 4 && (
-            <text x={s.label[0]} y={s.label[1] + 1.8} textAnchor="middle" fontSize="5.4" fill="#fff" fontFamily="Lato">
+            <text
+              x={s.label[0]}
+              y={s.label[1] + 1.8}
+              textAnchor="middle"
+              fontSize="5.4"
+              fill="#fff"
+              fontFamily="Lato"
+            >
               {`${s.pct.toLocaleString('en-IN', { maximumFractionDigits: 1 })}%`}
             </text>
           )}
-          <text x={s.tag[0]} y={s.tag[1] + 1.6} textAnchor="middle" fontSize="4.6" fill="#0D3D2F" fontFamily="Lato">
+          <text
+            x={s.tag[0]}
+            y={s.tag[1] + 1.6}
+            textAnchor="middle"
+            fontSize="4.6"
+            fill="#0D3D2F"
+            fontFamily="Lato"
+          >
             M{s.n}
           </text>
         </g>
       ))}
-      <text x={cx} y={cy + 3} textAnchor="middle" fontSize="14" fill="#101010" fontFamily="Lato" fontWeight="300">
+      <text
+        x={cx}
+        y={cy + 3}
+        textAnchor="middle"
+        fontSize="14"
+        fill="#101010"
+        fontFamily="Lato"
+        fontWeight="300"
+      >
         100%
       </text>
-      <text x={cx} y={cy + 10.5} textAnchor="middle" fontSize="3.4" letterSpacing="0.9" fill="#7E9A92" fontFamily="Lato">
+      <text
+        x={cx}
+        y={cy + 10.5}
+        textAnchor="middle"
+        fontSize="3.4"
+        letterSpacing="0.9"
+        fill="#7E9A92"
+        fontFamily="Lato"
+      >
         CONTRACT VALUE
       </text>
     </svg>
@@ -249,7 +292,10 @@ export function buildScheduleWordSections(schedule) {
     Number(schedule.gstAmount) ||
     (schedule.gstRate != null ? (contract * Number(schedule.gstRate)) / 100 : 0);
   const payable = Number(schedule.totalPayable) || contract + gst;
-  const dues = milestones.map((m) => m.dueDate).filter(Boolean).sort();
+  const dues = milestones
+    .map((m) => m.dueDate)
+    .filter(Boolean)
+    .sort();
   const months = monthsBetween(dues[0], dues[dues.length - 1]);
   const last = milestones[milestones.length - 1];
   const sections = [];
@@ -264,7 +310,10 @@ export function buildScheduleWordSections(schedule) {
         {milestones.length > 0 && <Donut milestones={milestones} />}
         <div className="wd-ps-stats">
           {[
-            [String(milestones.length).padStart(2, '0'), 'Payment milestones from booking to handover'],
+            [
+              String(milestones.length).padStart(2, '0'),
+              'Payment milestones from booking to handover',
+            ],
             [months ? String(months) : '', 'Months from the first to the last milestone due date'],
             [last ? pct(last.percentage) : '', last ? last.releaseTrigger || last.title : ''],
           ].map(([v, l], i) => (
@@ -287,12 +336,24 @@ export function buildScheduleWordSections(schedule) {
                 <span className="wd-ps-release__dot" />
                 <span className="wd-ps-release__m">M{m.milestoneNumber || i + 1}</span>
                 <div className="wd-ps-release__track">
-                  <div className={`wd-ps-release__bar ${gold ? 'is-gold' : ''}`} style={{ width: `${w}%` }}>
+                  <div
+                    className={`wd-ps-release__bar ${gold ? 'is-gold' : ''}`}
+                    style={{ width: `${w}%` }}
+                  >
                     {inside && <span>{String(m.title || '').toUpperCase()}</span>}
                   </div>
-                  {!inside && <span className="wd-ps-release__out">{String(m.title || '').toUpperCase()}</span>}
+                  {!inside && (
+                    <span className="wd-ps-release__out">
+                      {String(m.title || '').toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <span className="wd-ps-release__pct">{pct(m.percentage)}</span>
+                <span className="wd-ps-release__pct">
+                  {pct(m.percentage)}
+                  {shareAmount(m, contract) > 0 && (
+                    <b className="wd-ps-amt">{money(shareAmount(m, contract))}</b>
+                  )}
+                </span>
               </div>
             );
           })}
@@ -318,12 +379,11 @@ export function buildScheduleWordSections(schedule) {
             className: 'wd-table--open wd-ps-t',
             allowSplit: true,
             cols: ['', 'Milestone', 'Coverage & release trigger', 'Share'],
-            template: '10.5mm 33.5mm 1fr 20mm',
+            template: '10.5mm 33.5mm 1fr 30mm',
             items: [
               ...milestones.map((m, i) => {
                 const status = String(m.status || '').toUpperCase();
                 const facts = [
-                  money(m.amount) && `Amount ${money(m.amount)}`,
                   m.dueDate && `Due ${fmtDate(m.dueDate, { short: true })}`,
                   status && status !== 'PENDING' && titleCase(status),
                   status === 'PAID' && m.paidAt && `Paid on ${fmtDate(m.paidAt, { short: true })}`,
@@ -331,18 +391,37 @@ export function buildScheduleWordSections(schedule) {
                 return {
                   key: m.id || i,
                   cells: [
-                    { text: String(m.milestoneNumber || i + 1).padStart(2, '0'), className: 'wd-ps-t__no' },
+                    {
+                      text: String(m.milestoneNumber || i + 1).padStart(2, '0'),
+                      className: 'wd-ps-t__no',
+                    },
                     { text: m.title || 'Milestone', className: 'wd-ps-t__title' },
                     {
                       text: (
                         <>
-                          {has(m.description) && <span className="wd-ps-t__desc">{m.description}</span>}
-                          {has(m.releaseTrigger) && <span className="wd-ps-t__trig">{m.releaseTrigger}</span>}
-                          {facts.length > 0 && <span className="wd-ps-t__facts">{facts.join(' · ')}</span>}
+                          {has(m.description) && (
+                            <span className="wd-ps-t__desc">{m.description}</span>
+                          )}
+                          {has(m.releaseTrigger) && (
+                            <span className="wd-ps-t__trig">{m.releaseTrigger}</span>
+                          )}
+                          {facts.length > 0 && (
+                            <span className="wd-ps-t__facts">{facts.join(' · ')}</span>
+                          )}
                         </>
                       ),
                     },
-                    { text: pct(m.percentage), className: 'wd-ps-t__share' },
+                    {
+                      text: (
+                        <>
+                          <span className="wd-ps-pct">{pct(m.percentage)}</span>
+                          {shareAmount(m, contract) > 0 && (
+                            <b className="wd-ps-amt">{money(shareAmount(m, contract))}</b>
+                          )}
+                        </>
+                      ),
+                      className: 'wd-ps-t__share',
+                    },
                   ],
                 };
               }),
@@ -352,7 +431,15 @@ export function buildScheduleWordSections(schedule) {
                   '',
                   { text: 'TOTAL CONTRACT VALUE', className: 'wd-ps-t__total' },
                   '',
-                  { text: pct(totalPct), className: 'wd-ps-t__share wd-ps-t__share--total' },
+                  {
+                    text: (
+                      <>
+                        <span className="wd-ps-pct">{pct(totalPct)}</span>
+                        {contract > 0 && <b className="wd-ps-amt">{money(contract)}</b>}
+                      </>
+                    ),
+                    className: 'wd-ps-t__share wd-ps-t__share--total',
+                  },
                 ],
               },
             ],
@@ -380,10 +467,12 @@ export function buildScheduleWordSections(schedule) {
     });
 
   /* Terms & Conditions + acceptance */
-  const terms = htmlToTerms(schedule.terms_content_snapshot ?? schedule.termsTemplate?.content_html);
+  const terms = htmlToTerms(
+    schedule.terms_content_snapshot ?? schedule.termsTemplate?.content_html,
+  );
   const architect =
-    schedule.project?.team_members?.find((m) => /principal/i.test(m.role_label || ''))?.user?.name ||
-    schedule.project?.team_members?.find((m) => m.is_primary)?.user?.name;
+    schedule.project?.team_members?.find((m) => /principal/i.test(m.role_label || ''))?.user
+      ?.name || schedule.project?.team_members?.find((m) => m.is_primary)?.user?.name;
   sections.push({
     title: 'Terms & Conditions',
     unnumbered: true,
@@ -400,8 +489,9 @@ export function buildScheduleWordSections(schedule) {
       )),
       <div key="acc" className="wd-ps-acc">
         <p>
-          The Client confirms having read and accepted the milestones, percentages and terms set out in this
-          schedule, which forms an integral part of the Plan of Action and the signed Agreement for this project.
+          The Client confirms having read and accepted the milestones, percentages and terms set out
+          in this schedule, which forms an integral part of the Plan of Action and the signed
+          Agreement for this project.
         </p>
       </div>,
       <div key="sign" className="wd-ps-sign">
@@ -417,7 +507,10 @@ export function buildScheduleWordSections(schedule) {
           label="Accepted by the client"
           lines={[
             'Client Signature',
-            { label: 'Name ·', value: schedule.acceptedByClient ? schedule.project?.client?.name : '' },
+            {
+              label: 'Name ·',
+              value: schedule.acceptedByClient ? schedule.project?.client?.name : '',
+            },
             { label: 'Date ·', value: schedule.acceptedAt ? fmtDate(schedule.acceptedAt) : '' },
           ]}
         />

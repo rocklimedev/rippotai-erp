@@ -54,7 +54,11 @@ export const HUB_SOURCES: HubSource[] = [
     table: 'documents',
     typeCodes: ['PRE_PITCH_PROPOSAL'],
   },
-  { key: 'pre-design:business-proposal', table: 'business_proposals' },
+  {
+    key: 'pre-design:business-proposal',
+    table: 'documents',
+    typeCodes: ['PRE_BUSINESS_PROPOSAL'],
+  },
   {
     key: 'pre-design:concept-design',
     table: 'documents',

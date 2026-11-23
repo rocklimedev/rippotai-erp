@@ -107,6 +107,13 @@ export const UPLOAD_DOCUMENTS = {
     typeCodes: ['PRE_PITCH_PROPOSAL'],
     listPath: '/design/pre-design',
   },
+  'pre-design:business-proposal': {
+    key: 'pre-design:business-proposal',
+    name: 'Business Proposal',
+    target: 'DOCUMENT',
+    typeCodes: ['PRE_BUSINESS_PROPOSAL'],
+    listPath: '/design/pre-design',
+  },
   'pre-design:concept-design': {
     key: 'pre-design:concept-design',
     name: 'Concept Design 01 – 3D',
@@ -126,12 +133,12 @@ export const BUSINESS_PROPOSAL = form(
   '/crm/business-proposal/:id',
 );
 
-/** Pre Design stage: 5 slots, in order. */
+/** Pre Design stage: 5 slots, in order — every one is an upload. */
 export const PRE_DESIGN_SLOTS = [
   upload('pre-design:existing-layout'),
   upload('pre-design:proposed-layout'),
   upload('pre-design:pitch-presentation'),
-  BUSINESS_PROPOSAL,
+  upload('pre-design:business-proposal'),
   upload('pre-design:concept-design'),
 ];
 
@@ -159,7 +166,6 @@ export const PROJECT_DOCUMENTS = [
     stagePath: (projectId) => `/design/pre-design/${projectId}`,
   },
   upload('contract'),
-  upload('agreement'),
   form(
     'payment-schedule',
     'Payment Schedule',
@@ -184,6 +190,7 @@ export const PROJECT_DOCUMENTS = [
   upload('design'),
   upload('material-palette'),
   upload('tender-drawings'),
+  upload('agreement'),
   form(
     'procurement-sheet',
     'Procurement Sheet',

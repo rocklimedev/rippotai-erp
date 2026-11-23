@@ -31,36 +31,32 @@ export const DOCUMENT_SEQUENCE = [
     '/crm/forms/scope-of-work',
   ]),
   page('pre-design', 'Pre Design', '/design/pre-design'),
-  create('business-proposal', 'Business Proposal', '/crm/forms/business-proposal', [
-    '/crm/business-proposal',
-    '/crm/forms/business-proposal',
-  ]),
-  create(
-    'planner-consultancy',
-    'Project Planner Consultancy',
-    '/projects/planner/create',
-    ['/projects/planner'],
-    { view: 'Consultancy' },
-  ),
-  create('planner-pmc', 'Project Planner PMC', '/projects/planner/create', [], {
-    view: 'PMC',
-  }),
-  create('planner-procurement', 'Project Planner Procurement', '/projects/planner/create', [], {
-    view: 'Vendor & Procurement',
-  }),
+  page('contract', 'Contract', '/design/contract'),
   create('payment-schedule', 'Payment Schedule', '/ledger/forms/payment-schedule', [
     '/ledger/payment-schedule',
     '/ledger/forms/payment-schedule',
   ]),
-  page('contract', 'Contract', '/design/contract'),
-  page('agreement', 'Agreement', '/build/agreement'),
   create('plan-of-action', 'Plan of Action', '/crm/forms/plan-of-action', [
     '/crm/plan-of-action',
     '/crm/forms/plan-of-action',
   ]),
+  create(
+    'planner-consultancy',
+    'Project Planner Design',
+    '/projects/planner/create',
+    ['/projects/planner'],
+    { view: 'Design' },
+  ),
+  create('planner-pmc', 'Project Planner Build', '/projects/planner/create', [], {
+    view: 'Build',
+  }),
+  create('planner-procurement', 'Project Planner Procurement', '/projects/planner/create', [], {
+    view: 'Procurement',
+  }),
   page('design', 'Design', '/design/design'),
   page('material-palette', 'Material Palette', '/design/material-palette'),
   page('tender-drawings', 'Tender Drawings', '/design/tender-drawings'),
+  page('agreement', 'Agreement', '/build/agreement'),
   create(
     'material-procurement-sheet',
     'Procurement Sheet',
@@ -104,7 +100,6 @@ const listRoutes = {
   'client-brief': '/crm/brief/all',
   'site-recce': '/crm/recce/all',
   'scope-of-work': '/crm/scope-of-work/all',
-  'business-proposal': '/crm/business-proposal/all',
   'planner-consultancy': '/projects/planner/list',
   'planner-pmc': '/projects/planner/list',
   'planner-procurement': '/projects/planner/list',

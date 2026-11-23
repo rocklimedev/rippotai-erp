@@ -47,6 +47,7 @@ export class MaterialProcurementService {
           procurementNo,
           status: dto.status ?? MaterialProcurementStatus.DRAFT,
           remarks: dto.remarks ?? null,
+          sheets: dto.sheets ?? null,
           createdById: userId ?? null,
         },
         {
@@ -224,7 +225,10 @@ export class MaterialProcurementService {
     }
 
     await this.sequelize.transaction(async (transaction) => {
-      await this.itemModel.destroy({ where: { procurementId: id }, transaction });
+      await this.itemModel.destroy({
+        where: { procurementId: id },
+        transaction,
+      });
       await procurement.destroy({ transaction });
     });
 
@@ -283,6 +287,8 @@ export class MaterialProcurementService {
       area: item.area ?? null,
 
       location: item.location ?? null,
+
+      sheetName: item.sheetName?.trim() || null,
 
       // --------------------------------------------------------
       // MEASUREMENTS

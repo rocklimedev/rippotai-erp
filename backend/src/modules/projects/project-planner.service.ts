@@ -48,6 +48,7 @@ import { ProjectProcurementItem } from './models/project_procurement_items.model
 import { PlannerTaskTemplate } from './models/planner-task-template.model';
 import { WORKBOOK_TEMPLATE } from './planner-workbook-template';
 import { buildPlannerWorkbook } from './planner-excel';
+import { EvidenceRow, evidenceFor } from './planner-evidence';
 
 @Injectable()
 export class ProjectPlannerService {
@@ -1260,6 +1261,17 @@ export class ProjectPlannerService {
       ],
     });
 
+    // Uploaded documents / drawings complete matching Design rows (with the upload date).
+    const evidenceRows = await this.projectEvidence(projectId);
+    const plainPlanners = planners.map((planner) => {
+      const plain: any = planner.get({ plain: true });
+      plain.items = (plain.items || []).map((item: any) => ({
+        ...item,
+        evidence: evidenceFor(item, evidenceRows),
+      }));
+      return plain;
+    });
+
     return {
       project: {
         id: project.id,
@@ -1273,10 +1285,87 @@ export class ProjectPlannerService {
         timeline_status: project.timeline_status,
       },
 
-      planners,
+      planners: plainPlanners,
 
       locations: this.buildLocationTree(locations),
     };
+  }
+
+  private plannerModule(module?: string) {
+    const m = String(module || '').toUpperCase();
+    if (m !== ProjectPhaseModule.CONSULTANCY && m !== ProjectPhaseModule.PMC)
+      throw new BadRequestException(
+        'module must be CONSULTANCY (Design) or PMC (Build)',
+      );
+    return m as ProjectPhaseModule;
+  }
+
+  async listPlannerPhases(module?: string) {
+    const where: any = { deleted_at: null };
+    if (module) where.module = this.plannerModule(module);
+    else
+      where.module = [ProjectPhaseModule.CONSULTANCY, ProjectPhaseModule.PMC];
+    return this.phaseModel.findAll({ where, order: [['sort_order', 'ASC']] });
+  }
+
+  async createPlannerPhase(module?: string, title?: string) {
+    const mod = this.plannerModule(module);
+    const name = String(title || '')
+      .trim()
+      .toUpperCase();
+    if (!name) throw new BadRequestException('Phase name is required');
+    if (name.length > 255)
+      throw new BadRequestException('Phase name is too long');
+    return this.sequelize.transaction(async (transaction) => {
+      const existing = await this.phaseModel.findOne({
+        where: { module: mod, title: name, deleted_at: null } as any,
+        transaction,
+      });
+      if (existing) return existing;
+      const all = await this.phaseModel.findAll({
+        where: { module: mod } as any,
+        transaction,
+        paranoid: false,
+      });
+      const number =
+        Math.max(0, ...all.map((p) => Number(p.phase_number) || 0)) + 1;
+      const last = await this.phaseModel.max('sort_order', { transaction });
+      const prefix = mod === ProjectPhaseModule.CONSULTANCY ? 'D' : 'B';
+      let code = `${prefix}${number}`;
+      while (all.some((p) => p.phase_code === code))
+        code = `${code}X`.slice(0, 20);
+      return this.phaseModel.create(
+        {
+          module: mod,
+          phase_number: number,
+          phase_code: code,
+          title: name,
+          sort_order: (Number(last) || 0) + 1,
+        },
+        { transaction },
+      );
+    });
+  }
+
+  /** Every uploaded document and drawing of a project with its type, phase and date. */
+  private async projectEvidence(projectId: string): Promise<EvidenceRow[]> {
+    try {
+      const [docs] = await this.sequelize.query(
+        `SELECT dt.phase_code, dt.name, d.title, d.created_at
+           FROM documents d
+           JOIN document_types dt ON dt.id = d.document_type_id
+          WHERE d.project_id = :projectId
+         UNION ALL
+         SELECT COALESCE(dt.phase_code, dr.phase_code) AS phase_code, dt.name, dr.title, dr.created_at
+           FROM drawings dr
+           LEFT JOIN document_types dt ON dt.id = dr.document_type_id
+          WHERE dr.project_id = :projectId`,
+        { replacements: { projectId } },
+      );
+      return docs as EvidenceRow[];
+    } catch {
+      return [];
+    }
   }
 
   /** PROJECT PLANNER TEMPLATE.xlsx filled with this project's planners. */

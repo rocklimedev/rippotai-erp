@@ -1,7 +1,6 @@
-// Quotations can start directly or from a finalised vendor comparison.
-import { FileText, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/inos';
+// Build › Procurement › Quotation — the shared document list. New quotations start from a
+// Vendor Comparison Sheet (finalise a vendor → Create Quotation).
+import { FileText } from 'lucide-react';
 import { DocumentListPage } from '@/components/doc-list';
 import { usePermission } from '@/hooks/use-permission';
 import {
@@ -12,7 +11,6 @@ import {
 const LIST = '/procurement/quotations';
 
 export default function QuotationList() {
-  const nav = useNavigate();
   const { data, isLoading, error } = useGetProcurementQuotationsQuery({});
   const [remove] = useDeleteProcurementQuotationMutation();
   const canCreate = usePermission('procurement-quotations', 'create');
@@ -42,14 +40,7 @@ export default function QuotationList() {
       editTo={(row) => `${LIST}/${row.id}/edit`}
       onDelete={(row) => remove(row.id).unwrap()}
       createTo="/procurement/vendors/rate-comparison"
-      createLabel="New Vendor Comparison"
-      headerActions={
-        canCreate && (
-          <Button icon={Plus} onClick={() => nav(`${LIST}/new`)}>
-            Create Idle Quotation
-          </Button>
-        )
-      }
+      createLabel="New from Vendor Comparison"
       canCreate={canCreate}
       canEdit={canEdit}
       canDelete={canDelete}

@@ -1,7 +1,7 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { Plus, Pencil, Trash2, FileText, RefreshCw, SearchX, PenTool } from "lucide-react";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { Plus, Pencil, Trash2, FileText, RefreshCw, SearchX, PenTool } from 'lucide-react';
 
 import {
   Page,
@@ -12,21 +12,20 @@ import {
   ToolbarSpacer,
   SearchInput,
   Segmented,
-  Tabs,
   Pill,
   Field,
   TextInput,
   SelectInput,
   ChoiceGroup,
-} from "@/components/inos";
+} from '@/components/inos';
 
 import {
   useGetDocumentTypesQuery,
   useCreateDocumentTypeMutation,
   useUpdateDocumentTypeMutation,
   useDeleteDocumentTypeMutation,
-} from "../../api/documents/document.api";
-import { useGetProjectPhasesQuery } from "../../api/projects/project.api";
+} from '../../api/documents/document.api';
+import { useGetProjectPhasesQuery } from '../../api/projects/project.api';
 import {
   AdminModal,
   ModalActions,
@@ -36,34 +35,33 @@ import {
   adminCrumbs,
   humanize,
   plural,
-} from "../settings/_admin-ui";
+} from '../settings/_admin-ui';
 
 const EMPTY_FORM = {
-  name: "",
-  code: "",
-  description: "",
-  phaseCode: "",
-  projectPhaseId: "",
-  targetType: "DOCUMENT",
+  name: '',
+  code: '',
+  description: '',
+  phaseCode: '',
+  projectPhaseId: '',
+  targetType: 'DOCUMENT',
   isActive: true,
 };
 
 const TARGETS = [
-  { value: "DOCUMENT", label: "Document", icon: FileText },
-  { value: "DRAWING", label: "Drawing", icon: PenTool },
+  { value: 'DOCUMENT', label: 'Document', icon: FileText },
+  { value: 'DRAWING', label: 'Drawing', icon: PenTool },
 ];
 
 const toCode = (s) =>
-  String(s || "")
+  String(s || '')
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 
 const DocumentTypes = () => {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [kindFilter, setKindFilter] = useState("all");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -82,14 +80,11 @@ const DocumentTypes = () => {
   const phases = Array.isArray(phasesData) ? phasesData : [];
   const phaseById = useMemo(() => Object.fromEntries(phases.map((p) => [p.id, p])), [phases]);
 
-  const [createDocumentType, { isLoading: isCreating }] =
-    useCreateDocumentTypeMutation();
+  const [createDocumentType, { isLoading: isCreating }] = useCreateDocumentTypeMutation();
 
-  const [updateDocumentType, { isLoading: isUpdating }] =
-    useUpdateDocumentTypeMutation();
+  const [updateDocumentType, { isLoading: isUpdating }] = useUpdateDocumentTypeMutation();
 
-  const [deleteDocumentType, { isLoading: isDeleting }] =
-    useDeleteDocumentTypeMutation();
+  const [deleteDocumentType, { isLoading: isDeleting }] = useDeleteDocumentTypeMutation();
 
   const allTypes = Array.isArray(documentTypes) ? documentTypes : [];
   const activeCount = allTypes.filter((t) => t.isActive !== false).length;
@@ -99,20 +94,19 @@ const DocumentTypes = () => {
     const value = search.trim().toLowerCase();
 
     return list.filter((item) => {
-      if (kindFilter !== "all" && (item.targetType || "DOCUMENT") !== kindFilter) return false;
       const active = item.isActive !== false;
-      if (statusFilter === "active" && !active) return false;
-      if (statusFilter === "inactive" && active) return false;
+      if (statusFilter === 'active' && !active) return false;
+      if (statusFilter === 'inactive' && active) return false;
       if (!value) return true;
       return [item.name, item.code, item.description, item.phaseCode, item.targetType]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(value));
     });
-  }, [documentTypes, search, statusFilter, kindFilter]);
+  }, [documentTypes, search, statusFilter]);
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ ...EMPTY_FORM, targetType: kindFilter === "DRAWING" ? "DRAWING" : "DOCUMENT" });
+    setForm(EMPTY_FORM);
     setCodeTouched(false);
     setErrors({});
     setShowModal(true);
@@ -122,16 +116,14 @@ const DocumentTypes = () => {
     setEditingId(item.id);
 
     setForm({
-      name: item.name || "",
-      code: item.code || "",
-      description: item.description || "",
-      phaseCode: item.phaseCode || "",
-      projectPhaseId: item.projectPhaseId || "",
-      targetType: item.targetType || "DOCUMENT",
+      name: item.name || '',
+      code: item.code || '',
+      description: item.description || '',
+      phaseCode: item.phaseCode || '',
+      projectPhaseId: item.projectPhaseId || '',
+      targetType: item.targetType || 'DOCUMENT',
       isActive:
-        item.isActive === undefined || item.isActive === null
-          ? true
-          : Boolean(item.isActive),
+        item.isActive === undefined || item.isActive === null ? true : Boolean(item.isActive),
     });
     setCodeTouched(true);
     setErrors({});
@@ -149,11 +141,12 @@ const DocumentTypes = () => {
   const setField = (name, value) => {
     setForm((prev) => {
       const next = { ...prev, [name]: value };
-      if (name === "name" && !codeTouched) next.code = toCode(value);
-      if (name === "projectPhaseId") next.phaseCode = phaseById[value]?.phase_code || phaseById[value]?.code || "";
+      if (name === 'name' && !codeTouched) next.code = toCode(value);
+      if (name === 'projectPhaseId')
+        next.phaseCode = phaseById[value]?.phase_code || phaseById[value]?.code || '';
       return next;
     });
-    if (name === "code") setCodeTouched(true);
+    if (name === 'code') setCodeTouched(true);
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
@@ -163,9 +156,9 @@ const DocumentTypes = () => {
     event.preventDefault();
 
     const next = {};
-    if (!form.name.trim()) next.name = "Document type name is required.";
-    if (!form.code.trim()) next.code = "A short code is required.";
-    if (!form.projectPhaseId) next.projectPhaseId = "Choose the phase this document belongs to.";
+    if (!form.name.trim()) next.name = 'Document type name is required.';
+    if (!form.code.trim()) next.code = 'A short code is required.';
+    if (!form.projectPhaseId) next.projectPhaseId = 'Choose the phase this document belongs to.';
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -189,11 +182,11 @@ const DocumentTypes = () => {
           data: payload,
         }).unwrap();
 
-        toast.success("Document type updated successfully");
+        toast.success('Document type updated successfully');
       } else {
         await createDocumentType(payload).unwrap();
 
-        toast.success("Document type created successfully");
+        toast.success('Document type created successfully');
       }
 
       setShowModal(false);
@@ -202,29 +195,25 @@ const DocumentTypes = () => {
     } catch (error) {
       const msg = error?.data?.message;
       toast.error(
-        (Array.isArray(msg) ? msg.join(" ") : msg) ||
+        (Array.isArray(msg) ? msg.join(' ') : msg) ||
           error?.message ||
-          "Unable to save document type",
+          'Unable to save document type',
       );
     }
   };
 
   const handleDelete = async (item) => {
-    const confirmed = (await appConfirm(
+    const confirmed = await appConfirm(
       `Delete document type "${item.name}"? This action cannot be undone.`,
-    ));
+    );
 
     if (!confirmed) return;
 
     try {
       await deleteDocumentType(item.id).unwrap();
-      toast.success("Document type deleted successfully");
+      toast.success('Document type deleted successfully');
     } catch (error) {
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Unable to delete document type",
-      );
+      toast.error(error?.data?.message || error?.message || 'Unable to delete document type');
     }
   };
 
@@ -233,7 +222,7 @@ const DocumentTypes = () => {
   return (
     <Page>
       <PageHeader
-        crumbs={adminCrumbs("Document types")}
+        crumbs={adminCrumbs('Document types')}
         title="Document types"
         subtitle="The kinds of documents and drawings each project phase expects — briefs, recce reports, GFC drawings and more."
         actions={
@@ -243,30 +232,20 @@ const DocumentTypes = () => {
         }
       />
 
-      <Tabs
-        value={kindFilter}
-        onChange={setKindFilter}
-        options={[
-          { value: "all", label: "All", count: allTypes.length },
-          { value: "DOCUMENT", label: "Documents", count: allTypes.filter((item) => (item.targetType || "DOCUMENT") === "DOCUMENT").length },
-          { value: "DRAWING", label: "Drawings", count: allTypes.filter((item) => item.targetType === "DRAWING").length },
-        ]}
-      />
-
       <Toolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search name, code or phase" />
         <Segmented
           value={statusFilter}
           onChange={setStatusFilter}
           options={[
-            { value: "all", label: `All · ${allTypes.length}` },
-            { value: "active", label: `Active · ${activeCount}` },
-            { value: "inactive", label: `Inactive · ${allTypes.length - activeCount}` },
+            { value: 'all', label: `All · ${allTypes.length}` },
+            { value: 'active', label: `Active · ${activeCount}` },
+            { value: 'inactive', label: `Inactive · ${allTypes.length - activeCount}` },
           ]}
         />
         <ToolbarSpacer />
         <Button variant="ghost" icon={RefreshCw} onClick={() => refetch()} disabled={isFetching}>
-          {isFetching ? "Refreshing…" : "Refresh"}
+          {isFetching ? 'Refreshing…' : 'Refresh'}
         </Button>
       </Toolbar>
 
@@ -291,16 +270,27 @@ const DocumentTypes = () => {
                 <TableEmpty
                   cols={6}
                   icon={FileText}
-                  title={isError ? "Couldn't load document types" : "No document types yet"}
+                  title={isError ? "Couldn't load document types" : 'No document types yet'}
                   text={
                     isError
                       ? "The documents service didn't respond. Try refreshing."
-                      : "Define what each phase should produce — e.g. Site recce report under 02 Recce — and projects will track them automatically."
+                      : 'Define what each phase should produce — e.g. Site recce report under 02 Recce — and projects will track them automatically.'
                   }
-                  action={!isError && <Button variant="soft" icon={Plus} onClick={openCreate}>Add document type</Button>}
+                  action={
+                    !isError && (
+                      <Button variant="soft" icon={Plus} onClick={openCreate}>
+                        Add document type
+                      </Button>
+                    )
+                  }
                 />
               ) : filteredDocumentTypes.length === 0 ? (
-                <TableEmpty cols={6} icon={SearchX} title="No matching document types" text="Try a different search or filter." />
+                <TableEmpty
+                  cols={6}
+                  icon={SearchX}
+                  title="No matching document types"
+                  text="Try a different search or filter."
+                />
               ) : (
                 filteredDocumentTypes.map((item) => {
                   const phase = phaseById[item.projectPhaseId];
@@ -310,25 +300,60 @@ const DocumentTypes = () => {
                       <td>
                         <div className="adm-cell-main">
                           <span className="inos-icon-tile inos-icon-tile--sm">
-                            {item.targetType === "DRAWING" ? <PenTool aria-hidden /> : <FileText aria-hidden />}
+                            {item.targetType === 'DRAWING' ? (
+                              <PenTool aria-hidden />
+                            ) : (
+                              <FileText aria-hidden />
+                            )}
                           </span>
                           <div style={{ minWidth: 0 }}>
-                            <div className="adm-cell-title">{item.name || "Untitled"}</div>
+                            <div className="adm-cell-title">{item.name || 'Untitled'}</div>
                           </div>
                         </div>
                       </td>
-                      <td>{item.code ? <span className="adm-code">{item.code}</span> : <span className="muted">—</span>}</td>
-                      <td className="adm-cell-2 adm-hide-sm">{phase?.title || item.phaseName || item.phaseCode || <span className="muted">—</span>}</td>
+                      <td>
+                        {item.code ? (
+                          <span className="adm-code">{item.code}</span>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                      </td>
+                      <td className="adm-cell-2 adm-hide-sm">
+                        {phase?.title || item.phaseName || item.phaseCode || (
+                          <span className="muted">—</span>
+                        )}
+                      </td>
                       <td className="adm-hide-sm">
-                        {item.targetType ? <Pill tone={item.targetType === "DRAWING" ? "lilac" : "info"} dot={false}>{humanize(item.targetType)}</Pill> : <span className="muted">—</span>}
+                        {item.targetType ? (
+                          <Pill tone={item.targetType === 'DRAWING' ? 'lilac' : 'info'} dot={false}>
+                            {humanize(item.targetType)}
+                          </Pill>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
                       </td>
                       <td>
-                        <Pill tone={active ? "ok" : "mute"}>{active ? "Active" : "Inactive"}</Pill>
+                        <Pill tone={active ? 'ok' : 'mute'}>{active ? 'Active' : 'Inactive'}</Pill>
                       </td>
                       <td className="actions">
                         <div className="adm-icon-btns">
-                          <Button variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(item)} title="Edit" aria-label={`Edit ${item.name}`} />
-                          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => handleDelete(item)} disabled={isDeleting} title="Delete" aria-label={`Delete ${item.name}`} />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={Pencil}
+                            onClick={() => openEdit(item)}
+                            title="Edit"
+                            aria-label={`Edit ${item.name}`}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={Trash2}
+                            onClick={() => handleDelete(item)}
+                            disabled={isDeleting}
+                            title="Delete"
+                            aria-label={`Delete ${item.name}`}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -338,7 +363,11 @@ const DocumentTypes = () => {
             </tbody>
           </table>
         </div>
-        {allTypes.length > 0 && <div className="adm-table-foot">{plural(filteredDocumentTypes.length, "document type")} shown</div>}
+        {allTypes.length > 0 && (
+          <div className="adm-table-foot">
+            {plural(filteredDocumentTypes.length, 'document type')} shown
+          </div>
+        )}
       </Card>
 
       <AdminModal
@@ -348,15 +377,29 @@ const DocumentTypes = () => {
         onClose={closeModal}
         busy={saving}
         icon={FileText}
-        title={editingId ? "Edit document type" : "Add document type"}
+        title={editingId ? 'Edit document type' : 'Add document type'}
         subtitle="Document types sit under a project phase and appear in every project's checklist."
         width={620}
         testId="doc-type-modal"
-        footer={<ModalActions onCancel={closeModal} submitting={saving} submitLabel={editingId ? "Save changes" : "Add document type"} />}
+        footer={
+          <ModalActions
+            onCancel={closeModal}
+            submitting={saving}
+            submitLabel={editingId ? 'Save changes' : 'Add document type'}
+          />
+        }
       >
         <div className="inos-form-grid">
           <Field label="Name" required full error={errors.name} htmlFor="dt-name">
-            <TextInput id="dt-name" name="name" autoFocus value={form.name} invalid={!!errors.name} onChange={handleChange} placeholder="e.g. Site recce report" />
+            <TextInput
+              id="dt-name"
+              name="name"
+              autoFocus
+              value={form.name}
+              invalid={!!errors.name}
+              onChange={handleChange}
+              placeholder="e.g. Site recce report"
+            />
           </Field>
 
           <Field label="Project phase" required error={errors.projectPhaseId} htmlFor="dt-phase">
@@ -366,7 +409,7 @@ const DocumentTypes = () => {
               value={form.projectPhaseId}
               invalid={!!errors.projectPhaseId}
               onChange={handleChange}
-              placeholder={phases.length ? "Choose a phase" : "No phases yet"}
+              placeholder={phases.length ? 'Choose a phase' : 'No phases yet'}
             >
               {phases.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -376,12 +419,31 @@ const DocumentTypes = () => {
             </SelectInput>
           </Field>
 
-          <Field label="Code" required error={errors.code} htmlFor="dt-code" hint="Filled in from the name.">
-            <TextInput id="dt-code" name="code" value={form.code} invalid={!!errors.code} onChange={handleChange} placeholder="e.g. SITE_RECCE_REPORT" className="adm-upper" />
+          <Field
+            label="Code"
+            required
+            error={errors.code}
+            htmlFor="dt-code"
+            hint="Filled in from the name."
+          >
+            <TextInput
+              id="dt-code"
+              name="code"
+              value={form.code}
+              invalid={!!errors.code}
+              onChange={handleChange}
+              placeholder="e.g. SITE_RECCE_REPORT"
+              className="adm-upper"
+            />
           </Field>
 
           <Field label="Kind" full>
-            <ChoiceGroup name="Kind" value={form.targetType} onChange={(v) => setField("targetType", v)} options={TARGETS} />
+            <ChoiceGroup
+              name="Kind"
+              value={form.targetType}
+              onChange={(v) => setField('targetType', v)}
+              options={TARGETS}
+            />
           </Field>
 
           <div className="span-full">
@@ -389,7 +451,7 @@ const DocumentTypes = () => {
               label="Active"
               hint="Inactive types stay on record but aren't offered for new projects."
               checked={form.isActive}
-              onChange={(v) => setField("isActive", v)}
+              onChange={(v) => setField('isActive', v)}
             />
           </div>
         </div>

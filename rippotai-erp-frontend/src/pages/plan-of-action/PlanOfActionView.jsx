@@ -5,9 +5,7 @@ import { useRecordInfo } from '@/components/record-context/useRecordInfo';
 // Plan of Action — a filled copy of the user's PLAN OF ACTION TEMPLATE.docx (Word family of the
 // print kit): logo cover, How the Execution runs (stats + phase overlap chart), PLAN OF ACTION
 // phase table, Terms & Conditions; gold footer rule on every page.
-import { useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Edit3, Trash2, Download, CheckCircle2, FileText } from 'lucide-react';
@@ -248,7 +246,6 @@ export function buildPoaSections(poa, phases) {
 
 export function PlanOfActionView() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState('preview');
   const recordInfo = useRecordInfo('plan-of-action', id);
   const nav = useNavigate();
   const docRef = useRef(null);
@@ -350,13 +347,12 @@ export function PlanOfActionView() {
               variant="primary"
               icon={Download}
               loading={downloading}
-              onClick={() => {
-                flushSync(() => setActiveTab('preview'));
+              onClick={() =>
                 download(pdfFileName('Plan-of-Action', projectName, version), {
                   title: `Plan of Action — ${projectName}`,
                   label: 'plan of action',
-                });
-              }}
+                })
+              }
             >
               Download PDF
             </Button>
@@ -364,43 +360,33 @@ export function PlanOfActionView() {
         }
       />
       <RecordContext type="plan-of-action" id={id} />
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList aria-label="Plan of action views">
-          <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-          <TabsTrigger value="history">VERSION HISTORY</TabsTrigger>
-        </TabsList>
-        <TabsContent value="preview" forceMount hidden={activeTab !== 'preview'}>
-          <DocumentPreview>
-            <PrintDocument
-              ref={docRef}
-              variant="word"
-              className="wd-poa"
-              docType="Plan of Action"
-              footerLabel={'\u200b'}
-              bodyHeight={241}
-              numbered={false}
-              title={projectName}
-              wordCover={{
-                title: 'PLAN OF ACTION',
-                className: 'wd-poa-cover',
-                logoWidth: 70,
-                logoTop: 48,
-                rowsTop: 236.5,
-                rows: coverRows({
-                  project: projectName,
-                  address: project.site_location,
-                  client: cl.name,
-                  ...people,
-                }),
-              }}
-              sections={sections}
-            />
-          </DocumentPreview>
-        </TabsContent>
-        <TabsContent value="history">
-          <VersionHistory type="plan-of-action" id={id} />
-        </TabsContent>
-      </Tabs>
+      <DocumentPreview>
+        <PrintDocument
+          ref={docRef}
+          variant="word"
+          className="wd-poa"
+          docType="Plan of Action"
+          footerLabel={'\u200b'}
+          bodyHeight={241}
+          numbered={false}
+          title={projectName}
+          wordCover={{
+            title: 'PLAN OF ACTION',
+            className: 'wd-poa-cover',
+            logoWidth: 70,
+            logoTop: 48,
+            rowsTop: 236.5,
+            rows: coverRows({
+              project: projectName,
+              address: project.site_location,
+              client: cl.name,
+              ...people,
+            }),
+          }}
+          sections={sections}
+        />
+      </DocumentPreview>
+      <VersionHistory type="plan-of-action" id={id} />
     </Page>
   );
 }

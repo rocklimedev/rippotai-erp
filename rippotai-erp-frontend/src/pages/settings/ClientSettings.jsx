@@ -1,7 +1,6 @@
 import { appConfirm } from '@/lib/app-dialog';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { Building2, SearchX, UserPlus } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
@@ -29,7 +28,6 @@ import ClientActionsMenu from '../../components/clients/ClientActionsMenu';
 import { AdminAccessDenied, SkeletonRows, TableEmpty, adminCrumbs, plural } from './_admin-ui';
 
 export default function ClientSettings() {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
@@ -266,7 +264,6 @@ export default function ClientSettings() {
 
                       <td className="actions">
                         <ClientActionsMenu
-                          onView={() => navigate(`/clients/${client.id}`)}
                           client={client}
                           isDeleted={deleted}
                           saving={savingId === client.id}

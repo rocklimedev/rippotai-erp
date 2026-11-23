@@ -1,7 +1,3 @@
-// Project planner — the current workbook view as an A4 document in the Word template family of the
-// print kit (same cover, "01  Title" headings, thin rules and footer label as the Client Brief /
-// Scope of Work / Plan of Action documents). No PDF reference exists for the planner; it follows
-// the family. Status grids become plain text per location (only locations with a status listed).
 import React, { forwardRef, useMemo } from 'react';
 import {
   PrintDocument,
@@ -10,10 +6,9 @@ import {
   useProjectPeople,
   has,
   fmtDate,
-  humanize,
 } from '../print-document';
 import './planner-document.css';
-import { workbookRows } from './plannerWorkbookFormat';
+import { VIEW_COLUMNS, normalizeView, rowState, viewCounts, viewRows } from './plannerModel';
 
 const ACRONYMS = new Set([
   'AC',
@@ -66,8 +61,6 @@ function pruneColumns(table) {
 // Imported sheets sometimes store the text "NULL" for an empty cell — never print it.
 const clean = (v) => (has(v) && String(v).trim().toLowerCase() !== 'null' ? v : '');
 
-const MODULES = { CONSULTANCY: 'Consultancy', PMC: 'Project management (PMC)' };
-
 export const plannerFileName = (projectName, view) =>
   `Project-Planner_${String(projectName || 'project').replace(/[^\w-]+/g, '-')}_${String(
     view || 'overview',
@@ -75,161 +68,110 @@ export const plannerFileName = (projectName, view) =>
     .toLowerCase()
     .replace(/[^\w]+/g, '-')}.pdf`;
 
+const fmtDay = (d) => (d ? fmtDate(d, { short: true }) : '');
+
 const PlannerDocument = forwardRef(function PlannerDocument(
-  { overview, view = 'Overview', project: projectInfo },
+  { overview, view = 'Design', project: projectInfo },
   ref,
 ) {
+  const sheet = normalizeView(view);
   const project = { ...(projectInfo || {}), ...(overview?.project || {}) };
   const people = useProjectPeople(project.id);
-  const floors = useMemo(
-    () => (overview?.locations || []).filter((l) => l.type === 'FLOOR'),
-    [overview],
-  );
-  const columns = useMemo(
-    () =>
-      view === 'Overview' ? floors.flatMap((f) => (f.children?.length ? f.children : [f])) : floors,
-    [floors, view],
-  );
 
-  const { sections, stats } = useMemo(() => {
-    if (!overview) return { sections: [], stats: {} };
-    const all = workbookRows(overview.planners);
-    const isVendor = view === 'Vendor & Procurement';
-    const rows =
-      view === 'Overview'
-        ? all
-        : all.filter((i) => i.phase?.module === (view === 'Consultancy' ? 'CONSULTANCY' : 'PMC'));
-    const floorOf = (loc) => {
-      const parent = floors.find((f) => (f.children || []).some((c) => c.id === loc.id));
-      return parent ? `${parent.name} · ${loc.name}` : loc.name;
+  const { sections, counts, total } = useMemo(() => {
+    if (!overview) return { sections: [], counts: {}, total: 0 };
+    const rows = viewRows(overview, sheet);
+    const cols = VIEW_COLUMNS[sheet];
+    const dateText = (it) => {
+      const st = rowState(it);
+      return st.auto ? `${fmtDay(st.evidence.date)}\nUploaded` : fmtDay(st.date);
     };
-    const statusText = (item) => {
-      const set = columns
-        .map((loc) => {
-          const rel = (item.locations || []).find(
-            (r) => r.location_id === loc.id || r.location?.id === loc.id,
-          );
-          return rel?.status ? `${floorOf(loc)} — ${humanize(rel.status)}` : '';
-        })
-        .filter(has);
-      if (set.length) return set.join('\n');
-      return item.status && item.status !== 'NOT_STARTED' ? humanize(item.status) : '';
-    };
-
-    if (isVendor) {
-      const proc = (overview.planners || [])
-        .flatMap((p) => p.procurement_items || [])
-        .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
-      const d = (v) => fmtDate(v, { short: true });
-      const range = (a, b) => (a && b ? `${d(a)} – ${d(b)}` : d(a) || d(b));
-      const group = (type, title) => {
-        const list = proc.filter((p) => p.item_type === type);
-        if (!list.length) return null;
-        return {
-          table: pruneColumns({
-            skin: 'word',
-            className: 'wd-table--open wd-pl-t',
-            headNode: <div className="wd-pl-phase">{title}</div>,
-            contLabel: title,
-            cols: ['No.', 'Category', 'Vendor', 'Milestones', 'Remarks'],
-            template: '9mm 42mm 34mm 1fr 34mm',
-            allowSplit: list.length >= 3,
-            items: list.map((p, i) => ({
-              key: p.id,
-              cells: [
-                { text: String(i + 1), strong: false },
-                titleCase(p.category_name),
-                p.vendor_name || p.vendor?.name || '',
-                {
-                  text: [
-                    p.estimate_finalised_at
-                      ? `Estimate finalised ${d(p.estimate_finalised_at)}`
-                      : '',
-                    p.planned_start_date || p.planned_end_date
-                      ? `Work ${range(p.planned_start_date, p.planned_end_date)}`
-                      : '',
-                    p.purchase_date ? `Purchased ${d(p.purchase_date)}` : '',
-                    p.received_at_site_date ? `At site ${d(p.received_at_site_date)}` : '',
-                  ]
-                    .filter(has)
-                    .join('\n'),
-                  strong: false,
-                },
-                { text: p.remarks || '', strong: false },
-              ],
-            })),
-          }),
-        };
-      };
-      return {
-        stats: {
-          lines: proc.length,
-          vendors: new Set(proc.map((p) => p.vendor_name || p.vendor?.name).filter(has)).size,
-        },
-        sections: [
-          {
-            title: 'Vendor & procurement',
-            blocks: [
-              group('LABOUR', 'Labour contractors'),
-              group('MATERIAL', 'Material vendors'),
-            ].filter(Boolean),
-          },
-        ],
-      };
-    }
-
-    // group: module → phase
-    const modules = [];
-    rows.forEach((item) => {
-      const m = item.phase?.module || 'OTHER';
-      let mod = modules.find((x) => x.key === m);
-      if (!mod) modules.push((mod = { key: m, phases: [] }));
-      const pid = item.phase_id || item.phase?.id || 'none';
-      let ph = mod.phases.find((x) => x.id === pid);
-      if (!ph) mod.phases.push((ph = { id: pid, title: item.phase?.title || 'Other', items: [] }));
-      ph.items.push(item);
-    });
+    const stateText = (it) => rowState(it).label;
     let n = 0;
-    const secs = modules.map((mod) => ({
-      title: MODULES[mod.key] || titleCase(mod.key),
-      blocks: mod.phases.map((ph) => ({
-        table: pruneColumns({
-          skin: 'word',
-          className: 'wd-table--open wd-pl-t',
-          headNode: <div className="wd-pl-phase">{titleCase(ph.title)}</div>,
-          contLabel: titleCase(ph.title),
-          cols: ['No.', 'Work', 'Status', 'Remarks'],
-          template: '9mm 1fr 52mm 38mm',
-          allowSplit: ph.items.length >= 3,
-          items: ph.items.map((it) => ({
-            key: it.id,
-            cells: [
-              { text: String(++n), strong: false },
-              {
-                text: titleCase(it.work_name || clean(it.details)),
-                sub: it.work_name ? titleCase(clean(it.details)) : '',
-                strong: true,
-              },
-              { text: statusText(it), strong: false },
-              { text: it.remarks || '', strong: false },
-            ],
-          })),
-        }),
-      })),
-    }));
-    const applicable = rows.filter((i) => i.status !== 'NOT_APPLICABLE');
-    return {
-      stats: {
-        tasks: rows.length,
-        completed: applicable.filter((i) => i.status === 'COMPLETED').length,
-        inProgress: applicable.filter((i) => i.status === 'IN_PROGRESS').length,
-      },
-      sections: secs,
-    };
-  }, [overview, view, columns, floors]);
+    const table = (title, list, cells, headers, template) => ({
+      table: pruneColumns({
+        skin: 'word',
+        className: 'wd-table--open wd-pl-t',
+        headNode: <div className="wd-pl-phase">{title}</div>,
+        contLabel: title,
+        cols: headers,
+        template,
+        allowSplit: list.length >= 3,
+        items: list.map((it) => ({ key: it.id, cells: cells(it) })),
+      }),
+    });
+    let secs;
+    if (sheet === 'Procurement') {
+      const cell = (it) => [
+        { text: String(++n), strong: false },
+        { text: titleCase(it.category_name), strong: true },
+        { text: it.vendor_name || it.vendor?.name || '', strong: false },
+        { text: dateText(it), strong: false },
+        { text: stateText(it), strong: false },
+        { text: it.remarks || '', strong: false },
+      ];
+      const headers = ['No.', 'Name', titleCase(cols.c), 'Date', 'Status', 'Remarks'];
+      const tpl = '9mm 1fr 40mm 24mm 20mm 34mm';
+      secs = [
+        {
+          title: 'Procurement',
+          blocks: [
+            rows.some((r) => r.item_type === 'LABOUR') &&
+              table(
+                titleCase(cols.a),
+                rows.filter((r) => r.item_type === 'LABOUR'),
+                cell,
+                headers,
+                tpl,
+              ),
+            rows.some((r) => r.item_type === 'MATERIAL') &&
+              table(
+                titleCase(cols.b),
+                rows.filter((r) => r.item_type === 'MATERIAL'),
+                cell,
+                headers,
+                tpl,
+              ),
+          ].filter(Boolean),
+        },
+      ];
+    } else {
+      const phases = [];
+      rows.forEach((it) => {
+        const pid = it.phase_id || it.phase?.id || 'none';
+        let ph = phases.find((x) => x.id === pid);
+        if (!ph) phases.push((ph = { id: pid, title: it.phase?.title || 'Other', items: [] }));
+        ph.items.push(it);
+      });
+      secs = [
+        {
+          title: `${sheet} planner`,
+          blocks: phases.map((ph) =>
+            table(
+              titleCase(ph.title),
+              ph.items,
+              (it) => [
+                { text: String(++n), strong: false },
+                {
+                  text: titleCase(it.work_name || clean(it.details)),
+                  sub: it.work_name ? titleCase(clean(it.details)) : '',
+                  strong: true,
+                },
+                { text: dateText(it), strong: false },
+                { text: stateText(it), strong: false },
+                { text: it.remarks || '', strong: false },
+              ],
+              ['No.', titleCase(cols.b), 'Date', 'Status', 'Remarks'],
+              '9mm 1fr 24mm 20mm 38mm',
+            ),
+          ),
+        },
+      ];
+    }
+    return { sections: secs, counts: viewCounts(rows), total: rows.length };
+  }, [overview, sheet]);
 
   if (!overview) return null;
-  const locations = columns.map((c) => c.name);
   const today = new Date().toISOString().slice(0, 10);
   const summary = {
     title: 'Summary',
@@ -241,24 +183,15 @@ const PlannerDocument = forwardRef(function PlannerDocument(
           { label: 'Project', value: project.name },
           { label: 'Client', value: project.client?.name },
           { label: 'Site', value: project.site_location },
-          { label: 'Sheet', value: view },
+          { label: 'Planner', value: sheet },
           { label: 'Status as on', value: fmtDate(today) },
-          { label: 'Tasks', value: stats.tasks != null ? String(stats.tasks) : '' },
-          ...(stats.lines != null
-            ? [
-                { label: 'Procurement lines', value: String(stats.lines || 0) },
-                { label: 'Vendors', value: String(stats.vendors || 0) },
-              ]
-            : [
-                { label: 'Completed', value: String(stats.completed || 0) },
-                { label: 'In progress', value: String(stats.inProgress || 0) },
-              ]),
+          { label: 'Rows', value: String(total) },
+          { label: 'Completed', value: String(counts.completed || 0) },
+          { label: 'Late', value: String(counts.late || 0) },
+          { label: 'Due / pending', value: String((counts.due || 0) + (counts.pending || 0)) },
         ]}
       />,
-      locations.length > 0 && (
-        <WFields key="l" cols={1} items={[{ label: 'Locations', value: locations.join(', ') }]} />
-      ),
-    ].filter(Boolean),
+    ],
   };
   return (
     <PrintDocument
@@ -270,7 +203,7 @@ const PlannerDocument = forwardRef(function PlannerDocument(
       title={project.name}
       wordCover={{
         title: 'PROJECT PLANNER',
-        subtitle: view,
+        subtitle: sheet,
         className: 'wd-cover--stacked',
         rowsTop: 240,
         rows: coverRows({

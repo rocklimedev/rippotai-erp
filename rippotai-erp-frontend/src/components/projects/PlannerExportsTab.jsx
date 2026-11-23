@@ -30,7 +30,7 @@ export function PlannerExportsTab({ projectId, plannerId, module, moduleLabel })
   const project = projectRes?.data || projectRes;
 
   const items = unwrapArray(itemsRes);
-  const view = module === 'CONSULTANCY' ? 'Consultancy' : module === 'PMC' ? 'PMC' : 'Overview';
+  const view = module === 'PMC' ? 'Build' : 'Design';
   const overview = useMemo(
     () => ({ project, locations: unwrapArray(locationsRes), planners: [{ items }] }),
     [project, locationsRes, items],
