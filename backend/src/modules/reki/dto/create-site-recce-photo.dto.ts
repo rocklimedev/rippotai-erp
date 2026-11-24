@@ -16,6 +16,10 @@ export class CreateSiteReccePhotoDto {
 
   @IsOptional()
   @IsString()
+  marking_image_url?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(255)
   layout_file_name?: string;
 

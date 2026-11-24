@@ -293,22 +293,14 @@ export function PlanOfActionForm() {
 
   // Preselect the project when opened from a project (?project_id=…)
   const [searchParams] = useSearchParams();
-  const [projectId, setProjectId] = useState(
-    () => searchParams.get('project_id') || searchParams.get('projectId') || '',
-  );
-  useRefill({
-    type: 'plan-of-action',
-    label: 'Plan of Action',
-    projectId,
-    enabled: !isEditMode,
-    editPath: (id) => `/crm/forms/plan-of-action/${id}/edit`,
-  });
+  const entryProjectId = searchParams.get('project_id') || searchParams.get('projectId') || '';
 
   /* ============================================================
      FORM STATE
   ============================================================ */
 
-  const draftKey = `${SAVE_KEY}.${isEditMode ? id : projectId || 'new'}`;
+  // Selecting a project edits the current draft. The entry URL identifies its storage slot.
+  const draftKey = `${SAVE_KEY}.${isEditMode ? id : entryProjectId || 'new'}`;
   const [values, setValues, draftStorage] = useAutoSave(draftKey, {
     Overview: {
       title: 'Plan of Action',
@@ -320,6 +312,16 @@ export function PlanOfActionForm() {
 
     phases: [],
     terms_template_id: '',
+  });
+  const projectId = values.projectId ?? entryProjectId;
+  const changeProject = (nextProjectId) =>
+    setValues((current) => ({ ...current, projectId: nextProjectId }));
+  useRefill({
+    type: 'plan-of-action',
+    label: 'Plan of Action',
+    projectId,
+    enabled: !isEditMode,
+    editPath: (id) => `/crm/forms/plan-of-action/${id}/edit`,
   });
   const prefill = useSharedProjectData(projectId, 'plan', values, setValues, !isEditMode);
 
@@ -354,11 +356,7 @@ export function PlanOfActionForm() {
     }
 
     const mapped = mapPlanOfActionToForm(existingPlanOfAction);
-
-    setProjectId(mapped.projectId);
-
-
-    setValues(mapped.values);
+    setValues({ ...mapped.values, projectId: mapped.projectId });
   }, [isEditMode, existingPlanOfAction, setValues]);
 
   /* ============================================================
@@ -1367,7 +1365,7 @@ Any variation in scope shall be treated as extra work.`,
       onFieldChange={handleFieldChange}
       projects={projects}
       projectId={projectId}
-      onProjectChange={setProjectId}
+      onProjectChange={changeProject}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
       renderSection={renderSection}

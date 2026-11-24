@@ -67,6 +67,7 @@ const EMPTY_PHOTO = {
   photo_url: '',
   photo_file_name: '',
   layout_image_url: '',
+  marking_image_url: '',
   layout_file_name: '',
   standing_position: '',
   camera_direction: '',
@@ -484,9 +485,7 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
 // ============================================================
 
 function PhotoEditor({ photo, rooms, onChange, onCancel, onSave, onFileUpload, embedded = false }) {
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
-  const [uploadingLayout, setUploadingLayout] = useState(false);
+  const [uploading, setUploading] = useState(null);
 
   const update = (key, value) => {
     onChange({
@@ -496,44 +495,25 @@ function PhotoEditor({ photo, rooms, onChange, onCancel, onSave, onFileUpload, e
   };
 
   const uploadFile = async (file, type) => {
-    if (!file || !onFileUpload) return;
-
-    const isPhoto = type === 'photo';
+    if (!file || !onFileUpload || uploading) return;
+    const urlField = type === 'photo' ? 'photo_url' : `${type}_image_url`;
 
     try {
-      if (isPhoto) {
-        setUploadingPhoto(true);
-      } else {
-        setUploadingLayout(true);
-      }
-
+      setUploading(type);
       const url = await onFileUpload(file, type);
-
       if (!url) return;
 
-      if (isPhoto) {
-        onChange((prev) => ({
-          ...prev,
-          photo_url: url,
-          photo_file_name: file.name,
-        }));
-      } else {
-        onChange((prev) => ({
-          ...prev,
-          layout_image_url: url,
-          layout_file_name: file.name,
-        }));
-      }
+      onChange((prev) => ({
+        ...prev,
+        [urlField]: url,
+        ...(type !== 'marking' && { [`${type}_file_name`]: file.name }),
+      }));
     } catch (error) {
       console.error(`Failed to upload ${type}:`, error);
 
-      await appAlert(`Failed to upload ${isPhoto ? 'photo' : 'layout'}. Please try again.`);
+      await appAlert(`Failed to upload ${type} image. Please try again.`);
     } finally {
-      if (isPhoto) {
-        setUploadingPhoto(false);
-      } else {
-        setUploadingLayout(false);
-      }
+      setUploading(null);
     }
   };
 
@@ -575,8 +555,8 @@ function PhotoEditor({ photo, rooms, onChange, onCancel, onSave, onFileUpload, e
           )}
           <UploadButton
             label={photo.photo_url ? 'Replace photo' : 'Upload photo'}
-            busy={uploadingPhoto}
-            disabled={uploadingPhoto || !onFileUpload}
+            busy={uploading === 'photo'}
+            disabled={Boolean(uploading) || !onFileUpload}
             accept="image/*"
             onFile={(file) => uploadFile(file, 'photo')}
           />
@@ -594,11 +574,31 @@ function PhotoEditor({ photo, rooms, onChange, onCancel, onSave, onFileUpload, e
           )}
           <UploadButton
             label={photo.layout_image_url ? 'Replace layout' : 'Upload layout'}
-            busy={uploadingLayout}
-            disabled={uploadingLayout || !onFileUpload}
+            busy={uploading === 'layout'}
+            disabled={Boolean(uploading) || !onFileUpload}
             accept="image/*,.pdf"
             onFile={(file) => uploadFile(file, 'layout')}
           />
+        </Field>
+
+        <Field label="Shot marking image" hint="Appears as a small image at the right edge of the shot.">
+          {photo.marking_image_url && (
+            <Preview label="Current marking" url={photo.marking_image_url} />
+          )}
+          <div className="flex flex-wrap gap-2">
+            <UploadButton
+              label={photo.marking_image_url ? 'Replace marking' : 'Upload marking'}
+              busy={uploading === 'marking'}
+              disabled={Boolean(uploading) || !onFileUpload}
+              accept="image/*"
+              onFile={(file) => uploadFile(file, 'marking')}
+            />
+            {photo.marking_image_url && (
+              <Button type="button" variant="ghost" disabled={Boolean(uploading)} onClick={() => update('marking_image_url', '')}>
+                Remove marking
+              </Button>
+            )}
+          </div>
         </Field>
 
         <Field label="Notes" full>
@@ -619,7 +619,7 @@ function PhotoEditor({ photo, rooms, onChange, onCancel, onSave, onFileUpload, e
           <Button
             variant="primary"
             onClick={onSave}
-            disabled={!photo?.room_id || !photo?.shot_number || uploadingPhoto || uploadingLayout}
+            disabled={!photo?.room_id || !photo?.shot_number || Boolean(uploading)}
           >
             {photo?.id ? 'Update shot' : 'Add shot'}
           </Button>
@@ -1049,11 +1049,14 @@ export function SiteRecceSectionForm({
                     </IconButton>
                   }
                 >
-                  {(photo.photo_url || photo.layout_image_url) && (
+                  {(photo.photo_url || photo.layout_image_url || photo.marking_image_url) && (
                     <div className="crmf-thumbs">
                       {photo.photo_url && <Preview label="Actual photo" url={photo.photo_url} />}
                       {photo.layout_image_url && (
                         <Preview label="Layout" url={photo.layout_image_url} />
+                      )}
+                      {photo.marking_image_url && (
+                        <Preview label="Marking" url={photo.marking_image_url} />
                       )}
                     </div>
                   )}

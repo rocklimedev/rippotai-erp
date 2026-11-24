@@ -291,6 +291,7 @@ export class SiteRecceService {
           shot_number: shotNumber,
 
           layout_image_url: photoDto?.layout_image_url ?? null,
+          marking_image_url: photoDto?.marking_image_url ?? null,
 
           photo_url: photoDto?.photo_url ?? null,
 

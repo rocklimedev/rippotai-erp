@@ -105,12 +105,14 @@ test("photos uploaded during room creation attach to that room and preserve othe
         id: "new-photo",
         photo_url: "https://cdn/photo.jpg",
         layout_image_url: "https://cdn/layout.jpg",
+        marking_image_url: "https://cdn/marking.jpg",
       },
     ],
   });
   assert.equal(saved.rooms[1].id, "new-room");
   assert.equal(saved.rooms[1]._photos, undefined);
   assert.equal(saved.photos[1].room_id, "new-room");
+  assert.equal(saved.photos[1].marking_image_url, "https://cdn/marking.jpg");
   assert.equal(saved.photos[0], oldPhoto);
   assert.equal(saved.rooms[1].room_type_other, "Study");
 });
