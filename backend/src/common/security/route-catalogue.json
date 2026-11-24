@@ -5401,6 +5401,16 @@
   },
   {
     "module": "rbac",
+    "controller": "AccessMatrixController",
+    "handler": "setFrontendRoute",
+    "method": "PATCH",
+    "path": "/role-access/:role_id/frontend-routes",
+    "permission": "role-permissions:assign",
+    "public": false,
+    "file": "src/modules/rbac/access-matrix.controller.ts"
+  },
+  {
+    "module": "rbac",
     "controller": "AppsController",
     "handler": "create",
     "method": "POST",

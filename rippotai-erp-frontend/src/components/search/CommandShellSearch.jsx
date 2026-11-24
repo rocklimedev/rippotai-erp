@@ -22,18 +22,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
-import { APP_META, APP_MENUS } from '@/config/appNav';
+import { APP_META, APP_MENUS, navigationPath } from '@/config/appNav';
+import { useAuth } from '@/context/AuthContext';
+import { canOpenFrontendRoute } from '@/lib/frontend-route-access';
+import { filterMenus } from '@/lib/permissions';
 import { useGlobalSearchQuery } from '@/api/meta/search.api';
 import { pathForEntity } from './search-routes';
-
-// ============================================================
-// Resolve a slug against the app's base route.
-// ============================================================
-
-function resolvePath(base, slug) {
-  if (!slug) return base;
-  return (slug.startsWith('/') ? slug : `${base}/${slug}`).replace(/\/edit-dashboard$/, '?edit=1');
-}
 
 // ============================================================
 // Pick an icon based on menu label.
@@ -97,9 +91,8 @@ export default function CommandShellSearch({ currentApp }) {
 
   const inputRef = useRef(null);
   const nav = useNavigate();
-
+  const { user } = useAuth();
   const meta = APP_META[currentApp] || {};
-  const base = meta.base || '/';
 
   const trimmedQuery = query.trim();
 
@@ -122,8 +115,9 @@ export default function CommandShellSearch({ currentApp }) {
   const searchResults = useMemo(() => {
     const hits = searchData?.results ?? [];
     return hits
-      .filter((hit) => pathForEntity(hit))
-      .map((hit) => ({
+      .map((hit) => ({ hit, path: pathForEntity(hit) }))
+      .filter(({ path }) => path && canOpenFrontendRoute(user, path))
+      .map(({ hit, path }) => ({
         id: `search-${hit.entity_type}-${hit.id}`,
         entityId: hit.id,
         entity_type: hit.entity_type,
@@ -132,11 +126,11 @@ export default function CommandShellSearch({ currentApp }) {
         type: ENTITY_LABEL[hit.entity_type] || hit.entity_type,
         score: hit.score,
         meta: hit.meta,
-        path: pathForEntity(hit),
+        path,
         icon: ENTITY_ICON[hit.entity_type] || Search,
         isSearchHit: true,
       }));
-  }, [searchData]);
+  }, [searchData, user]);
 
   // ============================================================
   // OPEN WITH CMD / CTRL + K
@@ -176,21 +170,21 @@ export default function CommandShellSearch({ currentApp }) {
         id: 'quick-dashboard',
         label: 'Go to Dashboard',
         icon: Home,
-        action: () => nav('/dashboard'),
+        path: '/dashboard',
       },
       {
         id: 'quick-settings',
         label: 'Open Settings',
         icon: SettingsIcon,
-        action: () => nav('/settings'),
+        path: '/settings',
       },
     ];
 
     const groups = {
-      'Quick Actions': common,
+      'Quick Actions': common.filter(({ path }) => canOpenFrontendRoute(user, path)),
     };
 
-    const menuGroups = APP_MENUS[currentApp] || [];
+    const menuGroups = filterMenus(APP_MENUS[currentApp] || [], currentApp, user, navigationPath);
 
     menuGroups.forEach((group) => {
       const items = [];
@@ -200,7 +194,7 @@ export default function CommandShellSearch({ currentApp }) {
           id: `${currentApp}-${group.label}-${group.slug}`,
           label: group.label,
           icon: iconFor(group.label, group.slug),
-          action: () => nav(resolvePath(base, group.slug)),
+          path: navigationPath(currentApp, group.slug),
         });
       }
 
@@ -210,7 +204,7 @@ export default function CommandShellSearch({ currentApp }) {
             id: `${currentApp}-${group.label}-${item.slug}`,
             label: item.label,
             icon: iconFor(item.label, item.slug),
-            action: () => nav(resolvePath(base, item.slug)),
+            path: navigationPath(currentApp, item.slug),
           });
         });
       }
@@ -221,7 +215,7 @@ export default function CommandShellSearch({ currentApp }) {
     });
 
     return groups;
-  }, [currentApp, base, nav]);
+  }, [currentApp, user]);
 
   // ============================================================
   // FILTER COMMANDS
@@ -262,9 +256,7 @@ export default function CommandShellSearch({ currentApp }) {
   // ============================================================
 
   const executeCommand = (item) => {
-    if (item.action) {
-      item.action();
-    } else if (item.path) {
+    if (item.path) {
       nav(item.path);
     }
 

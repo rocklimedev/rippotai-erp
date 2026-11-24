@@ -23,7 +23,9 @@ import {
   TextInput,
   Pill,
 } from '@/components/inos';
-import { ACCESS_LEVELS, hasPermission } from '@/lib/permissions';
+import { ACCESS_LEVELS, appForPath, hasPermission, routeRequirement } from '@/lib/permissions';
+import { getFrontendRoutePatterns } from '@/lib/frontend-route-access';
+import FrontendRouteRestrictions from './FrontendRouteRestrictions';
 import {
   AdminAccessDenied,
   AdminModal,
@@ -42,6 +44,37 @@ const LEVEL_TONE = {
   mixed: 'warn',
 };
 const LEVEL_LABEL = Object.fromEntries(ACCESS_LEVELS.map((l) => [l.key, l.label]));
+
+// Use explicit groups for pages whose route does not identify a document resource.
+const ROUTE_GROUPS = [
+  [/^\/console\/(users|roles-permissions)(\/|$)/, 'admin.users'],
+  [/^\/console\/(company-profile|estimate-signature)(\/|$)/, 'admin.settings'],
+  [/^\/console\/(project-phases|document-types|project-structure|terms-and-conditions)(\/|$)/, 'admin.masters'],
+  [/^\/console\/activity(\/|$)/, 'admin.activity'],
+  [/^\/console\/super-admin(\/|$)/, 'admin.system'],
+  [/^\/tasks\/notes(\/|$)/, 'tasks.notes'],
+  [/^\/tasks(\/|$)/, 'tasks.tasks'],
+  [/^\/projects(?:\/(?:new|:[^/]+)(?:\/|$)|$)/, 'projects.register'],
+];
+
+function routesByPermissionGroup(app, parts, restrictions) {
+  const groups = new Map();
+  const paths = [...new Set([...getFrontendRoutePatterns(), ...restrictions])].sort();
+  for (const path of paths) {
+    if ((appForPath(path) ?? 'dashboard') !== app.code) continue;
+    const explicit = ROUTE_GROUPS.find(([pattern]) => pattern.test(path))?.[1];
+    const resource = routeRequirement(path)?.resource;
+    const part = parts.find(({ key }) => key === explicit)
+      ?? parts.find(({ permissions }) =>
+        resource && permissions.some(({ name }) => name.startsWith(`${resource}:`)),
+      )
+      ?? (parts.length === 1 ? parts[0] : null);
+    const key = part?.key ?? 'other';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(path);
+  }
+  return groups;
+}
 
 function LevelSelect({ value, onChange, available, disabled, label, testId }) {
   const options = ACCESS_LEVELS.filter((l) => !available || available.includes(l.key));
@@ -102,7 +135,7 @@ export default function RolesPermissions() {
     ? pickedRoleId
     : (roles[0]?.id ?? null);
 
-  const { data: access, isFetching: loadingAccess } = useGetRoleAccessQuery(selectedRoleId, {
+  const { currentData: access, isFetching: loadingAccess } = useGetRoleAccessQuery(selectedRoleId, {
     skip: !canRead || !selectedRoleId,
   });
   const [setRoleAccess] = useSetRoleAccessMutation();
@@ -327,6 +360,9 @@ export default function RolesPermissions() {
                   const a = accessByApp[app.code];
                   const expanded = Boolean(open[app.code]);
                   const meaningful = app.parts.filter((p) => p.permissions.length);
+                  const groupedRoutes = expanded
+                    ? routesByPermissionGroup(app, meaningful, access?.role.frontend_route_restrictions ?? [])
+                    : null;
                   return (
                     <div key={app.code} className="rp-app" data-testid={`rp-app-${app.code}`}>
                       <div className="rp-row rp-row--app">
@@ -359,54 +395,94 @@ export default function RolesPermissions() {
                         />
                       </div>
                       {expanded && (
-                        <div role="group" aria-label={`${app.name} documents`}>
+                        <div role="group" aria-label={`${app.name} documents and frontend routes`}>
                           {meaningful.map((part) => {
                             const pa = a?.parts.find((x) => x.key === part.key);
+                            const paths = groupedRoutes.get(part.key);
+                            const routesOpen = Boolean(open[part.key]);
+                            const PartLabel = paths?.length ? 'button' : 'span';
                             return (
-                              <div
-                                key={part.key}
-                                className="rp-row rp-row--part"
-                                data-testid={`rp-part-${part.key}`}
-                              >
-                                <span className="rp-name">
-                                  <span>
-                                    {part.name}
-                                    {part.kind === 'document' && (
-                                      <span className="rp-tag">Document</span>
-                                    )}
-                                    {pa?.custom && (
-                                      <span
-                                        className="rp-tag rp-tag--warn"
-                                        title={`Granted individually: ${(pa?.granted || []).join(', ')}`}
-                                      >
-                                        Custom
-                                      </span>
-                                    )}
-                                  </span>
-                                  <span
-                                    className="rp-sub"
-                                    title={part.permissions.map((p) => p.name).join(', ')}
+                              <div key={part.key}>
+                                <div
+                                  className="rp-row rp-row--part"
+                                  data-testid={`rp-part-${part.key}`}
+                                >
+                                  <PartLabel
+                                    className={paths?.length ? 'rp-toggle text-left' : 'rp-name'}
+                                    {...(paths?.length && {
+                                      type: 'button',
+                                      'aria-expanded': routesOpen,
+                                      onClick: () => setOpen((o) => ({ ...o, [part.key]: !routesOpen })),
+                                    })}
                                   >
-                                    {part.description ||
-                                      plural(part.permissions.length, 'permission')}
-                                  </span>
-                                </span>
-                                <LevelSelect
-                                  label={`${part.name} access level`}
-                                  testId={`rp-level-${part.key}`}
-                                  value={pa?.level || 'none'}
-                                  available={pa?.available}
-                                  disabled={
-                                    !canAssign ||
-                                    !pa ||
-                                    busyKey === part.key ||
-                                    busyKey === app.code
-                                  }
-                                  onChange={(lvl) => setPart(part, lvl)}
-                                />
+                                    {paths?.length > 0 && (
+                                      <ChevronRight size={16} className={routesOpen ? 'rp-chev rp-chev--open' : 'rp-chev'} aria-hidden />
+                                    )}
+                                    <span className="rp-name">
+                                      <span>
+                                        {part.name}
+                                        {part.kind === 'document' && (
+                                          <span className="rp-tag">Document</span>
+                                        )}
+                                        {pa?.custom && (
+                                          <span
+                                            className="rp-tag rp-tag--warn"
+                                            title={`Granted individually: ${(pa?.granted || []).join(', ')}`}
+                                          >
+                                            Custom
+                                          </span>
+                                        )}
+                                      </span>
+                                      <span
+                                        className="rp-sub"
+                                        title={part.permissions.map((p) => p.name).join(', ')}
+                                      >
+                                        {part.description && `${part.description} · `}
+                                        {plural(part.permissions.length, 'permission')}
+                                        {paths?.length > 0 && ` · ${plural(paths.length, 'route')}`}
+                                      </span>
+                                    </span>
+                                  </PartLabel>
+                                  <LevelSelect
+                                    label={`${part.name} access level`}
+                                    testId={`rp-level-${part.key}`}
+                                    value={pa?.level || 'none'}
+                                    available={pa?.available}
+                                    disabled={
+                                      !canAssign ||
+                                      !pa ||
+                                      busyKey === part.key ||
+                                      busyKey === app.code
+                                    }
+                                    onChange={(lvl) => setPart(part, lvl)}
+                                  />
+                                </div>
+                                {routesOpen && paths?.length > 0 && (
+                                  <FrontendRouteRestrictions
+                                    key={selectedRoleId}
+                                    groupName={part.name}
+                                    paths={paths}
+                                    access={access}
+                                    canAssign={canAssign}
+                                    loading={loadingAccess}
+                                  />
+                                )}
                               </div>
                             );
                           })}
+                          {groupedRoutes.has('other') && (
+                            <details className="px-4 py-2">
+                              <summary>Other {app.name} routes</summary>
+                              <FrontendRouteRestrictions
+                                key={selectedRoleId}
+                                groupName={app.name}
+                                paths={groupedRoutes.get('other')}
+                                access={access}
+                                canAssign={canAssign}
+                                loading={loadingAccess}
+                              />
+                            </details>
+                          )}
                         </div>
                       )}
                     </div>

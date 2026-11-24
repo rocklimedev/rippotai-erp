@@ -8,6 +8,7 @@ function resolveChildren(children = [], dynamicSections, basePath) {
       key={child.path ?? "index"}
       index={child.index}
       path={child.path}
+      handle={{ restrictable: true }}
       element={<RouteAccessGate>{child.element}</RouteAccessGate>}
     />
   ));
@@ -38,6 +39,7 @@ function resolveChildren(children = [], dynamicSections, basePath) {
         <Route
           key={r.path}
           path={r.path}
+          handle={{ restrictable: true }}
           element={<RouteAccessGate>{r.element}</RouteAccessGate>}
         />
       )),
@@ -120,6 +122,7 @@ export function generateRoutes(routes) {
           <Route
             key={route.path}
             path={route.path}
+            handle={{ restrictable: true }}
             element={
               <Protected blockRoles={route.blockRoles}>
                 <RouteAccessGate>{route.element}</RouteAccessGate>

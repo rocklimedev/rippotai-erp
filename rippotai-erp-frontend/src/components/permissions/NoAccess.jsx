@@ -7,7 +7,12 @@ const LEVEL_LABEL = Object.fromEntries(ACCESS_LEVELS.map((l) => [l.key, l.label]
 const VERB = { read: 'open', update: 'edit', create: 'create', delete: 'remove' };
 
 /** Polite page shown when the role does not include the needed access. */
-export default function NoAccess({ what = 'this page', action = 'read', need }) {
+export default function NoAccess({
+  what = 'this page',
+  action = 'read',
+  need,
+  help = 'If you need it, ask an administrator to update your role in Roles & permissions.',
+}) {
   const navigate = useNavigate();
   const verb = VERB[action] || 'open';
   return (
@@ -16,7 +21,7 @@ export default function NoAccess({ what = 'this page', action = 'read', need }) 
         <EmptyState
           icon={Lock}
           title="You don't have access to this"
-          text={`Your role doesn't allow you to ${verb} ${what}${need ? ` (needs “${LEVEL_LABEL[need] || need}”)` : ''}. If you need it, ask an administrator to update your role in Roles & permissions.`}
+          text={`Your role doesn't allow you to ${verb} ${what}${need ? ` (needs “${LEVEL_LABEL[need] || need}”)` : ''}. ${help}`}
           action={
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <Button onClick={() => navigate(-1)}>Go back</Button>

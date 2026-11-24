@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Put } from '@nestjs/common';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { AccessMatrixService } from './access-matrix.service';
@@ -26,6 +26,16 @@ export class AccessMatrixController {
   @Get(':role_id')
   getForRole(@Param('role_id') roleId: string) {
     return this.access.getForRole(roleId);
+  }
+
+  @RequirePermission('role-permissions:assign')
+  @Patch(':role_id/frontend-routes')
+  setFrontendRoute(
+    @Param('role_id') roleId: string,
+    @Body() dto: { pattern?: unknown; restricted?: unknown },
+    @CurrentUser() actor: any,
+  ) {
+    return this.access.setFrontendRoute(roleId, dto?.pattern, dto?.restricted, actor);
   }
 
   @RequirePermission('role-permissions:assign')

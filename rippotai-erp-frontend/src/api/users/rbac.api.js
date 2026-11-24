@@ -204,6 +204,15 @@ export const rbacApi = baseApi.injectEndpoints({
       query: (code) => `/role-access/app/${code}`,
       providesTags: ["RolePermissions"],
     }),
+    setFrontendRouteRestriction: builder.mutation({
+      query: ({ roleId, pattern, restricted }) => ({
+        url: `/role-access/${roleId}/frontend-routes`,
+        method: "PATCH",
+        body: { pattern, restricted },
+      }),
+      invalidatesTags: (_result, error, { roleId }) =>
+        error ? [] : [{ type: "RolePermissions", id: roleId }],
+    }),
     setRoleAccess: builder.mutation({
       query: ({ roleId, apps, parts }) => ({
         url: `/role-access/${roleId}`,
@@ -257,5 +266,6 @@ export const {
   useGetRoleAccessCatalogueQuery,
   useGetRoleAccessQuery,
   useGetAppRoleAccessQuery,
+  useSetFrontendRouteRestrictionMutation,
   useSetRoleAccessMutation,
 } = rbacApi;

@@ -149,7 +149,7 @@ export class AuthTokensService {
             {
               model: Role,
               as: 'role',
-              attributes: ['id', 'name'],
+              attributes: ['id', 'name', 'frontend_route_restrictions'],
               ...(includePermissions
                 ? {
                     include: [

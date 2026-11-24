@@ -1,6 +1,7 @@
 // Single source for client-side permission checks. The backend is the real
 // enforcement (PermissionsGuard); this only hides what the user cannot use.
 import { APP_META, AUTOMATION_APP_ENABLED, navigationAppFor } from '@/config/appNav';
+import { canOpenFrontendRoute } from './frontend-route-access';
 
 export const ACCESS_LEVELS = [
   { key: 'none', label: 'No access', short: 'None', description: 'Hidden. Cannot be opened.' },
@@ -185,7 +186,9 @@ export function documentAccess(user, resource) {
 export function filterMenus(menus = [], app, user, toPath) {
   const allowed = (slug) => {
     if (!slug) return true;
-    const path = toPath(app, slug).split('?')[0];
+    const destination = toPath(app, slug);
+    if (!canOpenFrontendRoute(user, destination)) return false;
+    const path = destination.split('?')[0];
     const target = appForPath(path);
     if (target && !canOpenApp(user, target)) return false;
     const req = routeRequirement(path);
@@ -194,6 +197,10 @@ export function filterMenus(menus = [], app, user, toPath) {
     return documentAccess(user, req.resource)[flag];
   };
   return menus
-    .map((g) => (g.items ? { ...g, items: g.items.filter((it) => allowed(it.slug)) } : g))
-    .filter((g) => (g.items ? g.items.length > 0 || g.slug : allowed(g.slug)));
+    .map((g) => ({
+      ...g,
+      slug: allowed(g.slug) ? g.slug : undefined,
+      ...(g.items && { items: g.items.filter((it) => allowed(it.slug)) }),
+    }))
+    .filter((g) => g.items?.length || g.slug);
 }
