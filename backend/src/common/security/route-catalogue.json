@@ -52,6 +52,16 @@
   {
     "module": "auth",
     "controller": "AuthController",
+    "handler": "renew",
+    "method": "POST",
+    "path": "/auth/renew",
+    "permission": "account:renew",
+    "public": false,
+    "file": "src/modules/auth/auth.controller.ts"
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
     "handler": "requestEmailVerification",
     "method": "POST",
     "path": "/auth/request-email-verification",
@@ -755,6 +765,16 @@
     "handler": "renameVersion",
     "method": "PATCH",
     "path": "/boqs/versions/:versionId",
+    "permission": "boq:update",
+    "public": false,
+    "file": "src/modules/boqs/boq.controller.ts"
+  },
+  {
+    "module": "boqs",
+    "controller": "BoqController",
+    "handler": "reorderCategories",
+    "method": "PATCH",
+    "path": "/boqs/:id/categories/reorder",
     "permission": "boq:update",
     "public": false,
     "file": "src/modules/boqs/boq.controller.ts"

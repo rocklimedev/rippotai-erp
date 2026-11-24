@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 960 routes, 929 staff routes and 381 assignable staff capabilities.
+There are 962 routes, 930 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -66,6 +66,7 @@ There are 960 routes, 929 staff routes and 381 assignable staff capabilities.
 | auth | `POST /auth/login` | AuthController.login | `auth:login` | public |
 | auth | `POST /auth/logout` | AuthController.logout | `account:logout` | account (scoped) |
 | auth | `GET /auth/me` | AuthController.me | `account:read` | account (scoped) |
+| auth | `POST /auth/renew` | AuthController.renew | `account:renew` | account (scoped) |
 | auth | `POST /auth/request-email-verification` | AuthController.requestEmailVerification | `auth:request-email-verification` | public |
 | auth | `POST /auth/reset-password` | AuthController.resetPassword | `auth:reset-password` | public |
 | auth | `POST /auth/signup` | AuthController.signup | `auth:signup` | public |
@@ -137,6 +138,7 @@ There are 960 routes, 929 staff routes and 381 assignable staff capabilities.
 | boqs | `DELETE /boqs/:id/items/:itemId` | BoqController.removeItem | `boq:delete` | staff |
 | boqs | `DELETE /boqs/:id/miscellaneous/:miscId` | BoqController.removeMiscellaneous | `boq:delete` | staff |
 | boqs | `PATCH /boqs/versions/:versionId` | BoqController.renameVersion | `boq:update` | staff |
+| boqs | `PATCH /boqs/:id/categories/reorder` | BoqController.reorderCategories | `boq:update` | staff |
 | boqs | `POST /boqs/:id/items/reorder` | BoqController.reorderItems | `boq:update` | staff |
 | boqs | `POST /boqs/:id/miscellaneous/reorder` | BoqController.reorderMiscellaneous | `boq:update` | staff |
 | boqs | `POST /boqs/:id/submit-for-approval` | BoqController.submitForApproval | `boq:submit` | staff |

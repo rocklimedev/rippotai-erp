@@ -27,6 +27,7 @@ import { CreateBoqMiscellaneousDto } from './dto/create-boq-miscellaneous.dto';
 import { UpdateBoqMiscellaneousDto } from './dto/update-boq-miscellaneous.dto';
 import { ReorderMiscellaneousDto } from './dto/reorder-miscellaneous.dto';
 import { ReorderItemsDto } from './dto/reorder-items.dto';
+import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
 import { BulkUpdateItemsDto } from './dto/bulk-update-items.dto';
 import {
   ApproveBoqDto,
@@ -250,6 +251,16 @@ export class BoqController {
   ) {
     return this.boqService.applyTerms(id, dto, req.user?.id);
   }
+  @RequirePermission('boq:update')
+  @Patch(':id/categories/reorder')
+  reorderCategories(
+    @Param('id') id: string,
+    @Body() dto: ReorderCategoriesDto,
+    @CurrentUser() user?: User,
+  ) {
+    return this.boqService.reorderCategories(id, dto.ordered_ids, user?.id);
+  }
+
   @RequirePermission('boq:update')
   @Patch(':id/categories/:categoryId')
   updateCategory(

@@ -224,6 +224,8 @@ export class BoqService {
       ],
       order: [
         [{ model: BoqCategory, as: 'categories' }, 'sort_order', 'ASC'],
+        [{ model: BoqCategory, as: 'categories' }, 'created_at', 'ASC'],
+        [{ model: BoqCategory, as: 'categories' }, 'id', 'ASC'],
         [
           { model: BoqCategory, as: 'categories' },
           { model: BoqItem, as: 'items' },
@@ -1051,11 +1053,16 @@ export class BoqService {
           );
 
     const category = await this.sequelize.transaction(async (t) => {
+      await this.lockEditableBoq(boqId, t);
+      const lastOrder = await this.categoryModel.max('sort_order', {
+        where: { boq_id: boqId },
+        transaction: t,
+      });
       const cat = await this.categoryModel.create(
         {
           boq_id: boqId,
           name,
-          sort_order: dto.sort_order ?? 0,
+          sort_order: dto.sort_order ?? (Number.isFinite(lastOrder) ? Number(lastOrder) + 1 : 0),
         } as BoqCategory,
         { transaction: t },
       );
@@ -1297,6 +1304,35 @@ export class BoqService {
     return this.findOne(boqId);
   }
 
+  async reorderCategories(boqId: string, orderedIds: string[], actorId?: string) {
+    await this.sequelize.transaction(async (transaction) => {
+      await this.lockEditableBoq(boqId, transaction);
+      const categories = await this.categoryModel.findAll({
+        where: { boq_id: boqId },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      const byId = new Map(categories.map((category) => [category.id, category]));
+      const ids = new Set(orderedIds);
+      if (orderedIds.length !== categories.length || ids.size !== categories.length ||
+          orderedIds.some((categoryId) => !byId.has(categoryId))) {
+        throw new BadRequestException('The BOQ categories changed. Reload the BOQ and try again.');
+      }
+      for (const [sort_order, categoryId] of orderedIds.entries()) {
+        const category = byId.get(categoryId)!;
+        if (category.sort_order !== sort_order) await category.update({ sort_order }, { transaction });
+      }
+    });
+
+    await this.activity.log({
+      boq_id: boqId,
+      user_id: actorId,
+      action: BoqActivityAction.UPDATED,
+      target: 'Categories reordered',
+    });
+    return this.findOne(boqId);
+  }
+
   async reorderItems(boqId: string, dto: ReorderItemsDto, actorId?: string) {
     const boq = await this.getOrThrow(boqId);
     this.assertEditable(boq);
@@ -1532,6 +1568,12 @@ export class BoqService {
     const boq = await this.boqModel.findByPk(id);
     if (!boq) throw new NotFoundException('BOQ not found');
     return boq;
+  }
+
+  private async lockEditableBoq(id: string, transaction: Transaction) {
+    const boq = await this.boqModel.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!boq) throw new NotFoundException('BOQ not found');
+    this.assertEditable(boq);
   }
 
   private async getCategoryOrThrow(boqId: string, categoryId: string) {

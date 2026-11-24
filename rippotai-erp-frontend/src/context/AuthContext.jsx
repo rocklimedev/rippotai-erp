@@ -4,6 +4,7 @@ import {
   useSignupMutation,
   useLogoutMutation,
   useLazyMeQuery,
+  useRenewSessionMutation,
 } from '../api/auth/auth.api';
 import { useUpdateUserMutation } from '../api/users/user.api';
 
@@ -15,6 +16,8 @@ import {
   persistIdentity,
   clearStoredSession,
   recordSessionActivity,
+  renewStoredSession,
+  tokenNeedsRenewal,
 } from '../lib/session';
 import { clearLocalDrafts } from '../lib/draft-storage';
 
@@ -30,6 +33,7 @@ export function AuthProvider({ children }) {
   const [signupMutation] = useSignupMutation();
   const [logoutMutation] = useLogoutMutation();
   const [triggerMe] = useLazyMeQuery();
+  const [renewSession] = useRenewSessionMutation();
   const [updateUserMutation] = useUpdateUserMutation();
 
   const persistSession = (token, userData) => {
@@ -68,24 +72,36 @@ export function AuthProvider({ children }) {
 
         persistIdentity(userData);
         setUser(userData);
+        setReady(true);
         return userData;
       } catch (err) {
         if (getSessionToken() !== token) {
           if (throwOnError) throw err;
           return;
         }
-        console.error(err);
-        clearSession();
+        if (err?.status === 401 || err?.originalStatus === 401) clearSession();
         if (throwOnError) throw err;
-      } finally {
-        setReady(true);
       }
     },
     [triggerMe, clearSession],
   );
 
   useEffect(() => {
-    refresh();
+    let cancelled = false;
+    let retry;
+    const restore = async () => {
+      try {
+        await refresh({ throwOnError: true });
+      } catch {
+        if (!cancelled && getSessionToken()) retry = setTimeout(restore, 5_000);
+        else if (!cancelled) setReady(true);
+      }
+    };
+    void restore();
+    return () => {
+      cancelled = true;
+      clearTimeout(retry);
+    };
   }, [refresh]);
 
   useEffect(() => {
@@ -99,20 +115,38 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!user?.id) return;
-    const activity = recordSessionActivity;
+    let pending = false;
+    const renewIfNeeded = async () => {
+      const token = getSessionToken();
+      if (pending || !tokenNeedsRenewal(token)) return;
+      pending = true;
+      try {
+        const renewed = await renewSession(token).unwrap();
+        renewStoredSession(token, renewed.token);
+      } catch {
+        // Retry transient failures on the next check while the token is valid.
+      } finally {
+        pending = false;
+      }
+    };
+    const activity = () => {
+      recordSessionActivity();
+      void renewIfNeeded();
+    };
     const events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
     events.forEach((event) => window.addEventListener(event, activity, { passive: true }));
-    const timer = setInterval(() => getSessionToken(), 15_000);
+    const timer = setInterval(renewIfNeeded, 15_000);
     const visible = () => {
-      if (!document.hidden) getSessionToken();
+      if (!document.hidden) void renewIfNeeded();
     };
     document.addEventListener('visibilitychange', visible);
+    void renewIfNeeded();
     return () => {
       events.forEach((event) => window.removeEventListener(event, activity));
       document.removeEventListener('visibilitychange', visible);
       clearInterval(timer);
     };
-  }, [user?.id]);
+  }, [user?.id, renewSession]);
 
   /**
    * Login

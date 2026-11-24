@@ -42,9 +42,9 @@ export function AddUnitModal({ open, onClose, onCreated }) {
       onClose(false);
     } catch (e) {
       if (e?.status === 409 || e?.originalStatus === 409) {
-        toast.error("A unit with that code already exists");
+        toast.error(e?.data?.message || "A unit with that code already exists.");
       } else {
-        toast.error("Failed to add unit");
+        toast.error(e?.data?.message || "Failed to add unit");
       }
     }
   };

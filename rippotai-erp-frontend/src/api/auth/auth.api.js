@@ -41,6 +41,13 @@ export const authApi = baseApi.injectEndpoints({
       query: () => '/auth/me',
       providesTags: ['AuthUser'],
     }),
+    renewSession: builder.mutation({
+      query: (token) => ({
+        url: '/auth/renew',
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    }),
 
     // =========================
     // AUTH TOKENS CONTROLLER
@@ -108,6 +115,7 @@ export const {
   useLogoutMutation,
   useMeQuery,
   useLazyMeQuery,
+  useRenewSessionMutation,
   useGetAuthTokensByUserQuery,
   useRevokeAuthTokenMutation,
   useRevokeAllAuthTokensForUserMutation,

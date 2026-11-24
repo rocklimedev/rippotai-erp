@@ -50,7 +50,7 @@ import {
   EmptyState,
   Progress,
 } from '@/components/inos';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 // ------------------------------------------------------------
 // LIVE API — every number on screen comes from CommandCenterService
@@ -421,9 +421,37 @@ export function PhaseDetailCard({
           style={documentsOnly ? { gridTemplateColumns: '1fr' } : undefined}
         >
           <div>
-            <p className="cc-detail-head">
-              <FileText aria-hidden /> Documents
-            </p>
+            <div className="cc-documents-head">
+              <p className="cc-detail-head">
+                <FileText aria-hidden /> Documents
+              </p>
+              {!documentsOnly && !isError && (
+                <Dialog key={`${project.id}:${phase.id}`}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="soft" size="sm" icon={ShieldCheck}>
+                      Gates
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent aria-describedby={undefined} className="max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Gates · {phaseTitle(phase.name)}</DialogTitle>
+                    </DialogHeader>
+                    {detail.gates?.length ? (
+                      detail.gates.map((gate) => (
+                        <GateChecklist
+                          key={gate.gateCode}
+                          projectId={project.id}
+                          gate={gate}
+                          onFlash={onFlash}
+                        />
+                      ))
+                    ) : (
+                      <p className="cc-muted cc-gate-none">No sign-off gate is configured for this phase.</p>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
             <ul className="cc-checklist">
               {docs.map((d) => {
                 const ok = d.status === 'UPLOADED' || d.status === 'approved';
@@ -598,21 +626,6 @@ export function PhaseDetailCard({
         </div>
       )}
 
-      {!documentsOnly &&
-        detail &&
-        !isError &&
-        (detail.gates?.length ? (
-          detail.gates.map((gate) => (
-            <GateChecklist
-              key={`${project.id}:${gate.gateCode}`}
-              projectId={project.id}
-              gate={gate}
-              onFlash={onFlash}
-            />
-          ))
-        ) : (
-          <p className="cc-muted cc-gate-none">No sign-off gate is configured for this phase.</p>
-        ))}
       <div className="cc-phase-detail__foot">
         <Button
           variant="ghost"

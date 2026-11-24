@@ -4,11 +4,17 @@
 // Date red = Late (past date, not completed) · green = Completed.
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
+import { Button } from '@/components/inos';
+import { appConfirm } from '@/lib/app-dialog';
 import {
+  useDeletePlannerItemMutation,
+  useDeleteProcurementItemMutation,
   useUpdatePlannerItemMutation,
   useUpdateProcurementItemMutation,
 } from '../../api/documents/project-planner.api';
-import { STATUS_OPTIONS, VIEW_COLUMNS, rowState, viewRows } from './plannerModel';
+import { STATUS_OPTIONS, VIEW_COLUMNS, mainPlanner, rowState, viewRows } from './plannerModel';
+import { PlannerNewRow } from './PlannerNewRow';
 import './PlannerWorkbook.css';
 
 const fmt = (d) =>
@@ -64,10 +70,40 @@ function EditCell({ value, type = 'text', title, save, className }) {
 export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
   const [updateItem] = useUpdatePlannerItemMutation();
   const [updateProcurement] = useUpdateProcurementItemMutation();
+  const [deleteItem, { isLoading: deletingItem }] = useDeletePlannerItemMutation();
+  const [deleteProcurement, { isLoading: deletingProcurement }] = useDeleteProcurementItemMutation();
   const [saving, setSaving] = useState('');
   const isProc = view === 'Procurement';
   const cols = VIEW_COLUMNS[view] || VIEW_COLUMNS.Design;
   const rows = viewRows(overview, view);
+  const showRowActions = editable && Boolean(mainPlanner(overview));
+
+  const remove = async (item) => {
+    const name = item.work_name || item.category_name || 'this row';
+    if (!(await appConfirm(`Remove “${name}” from the planner?`))) return;
+    try {
+      await (isProc ? deleteProcurement : deleteItem)(item.id).unwrap();
+      await refresh();
+      toast.success('Row removed');
+    } catch (error) {
+      toast.error(error?.data?.message || 'Could not remove row');
+    }
+  };
+
+  const rowActions = (item, index) => showRowActions && (
+    <td className="planner-row-action">
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        icon={Trash2}
+        disabled={deletingItem || deletingProcurement}
+        aria-label={`Remove row ${index + 1}`}
+        title="Remove row"
+        onClick={() => void remove(item)}
+      />
+    </td>
+  );
 
   const save = async (item, data) => {
     await (isProc ? updateProcurement : updateItem)({ id: item.id, data }).unwrap();
@@ -181,7 +217,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
 
   return (
     <div className="planner-sheet-scroll">
-      <section className="planner-sheet" style={{ minWidth: 1130 }} data-sheet={view}>
+      <section className="planner-sheet" style={{ minWidth: showRowActions ? 1230 : 1130 }} data-sheet={view}>
         <header>
           <strong>RIPPŌTAI</strong>
           <h2>{`${view.toUpperCase()} — PROJECT PLANNER`}</h2>
@@ -193,6 +229,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
             {[48, 116, 186, 146, 142, 142, 122, 158].map((width, index) => (
               <col key={index} style={{ width }} />
             ))}
+            {showRowActions && <col className="planner-row-action" style={{ width: 100 }} />}
           </colgroup>
           <thead>
             <tr>
@@ -204,6 +241,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
               <th>END</th>
               <th>STATUS</th>
               <th>REMARKS</th>
+              {showRowActions && <th className="planner-row-action" scope="col">ROW</th>}
             </tr>
           </thead>
           <tbody>
@@ -221,6 +259,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                     <td>{dateCell(item, st)}</td>
                     <td>{statusCell(item, st)}</td>
                     <td>{field(item, 'remarks')}</td>
+                    {rowActions(item, index)}
                   </tr>
                 );
               const start = index === 0 || rows[index - 1].phase_id !== item.phase_id;
@@ -240,17 +279,21 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                   <td>{dateCell(item, st)}</td>
                   <td>{statusCell(item, st)}</td>
                   <td>{field(item, 'remarks')}</td>
+                  {rowActions(item, index)}
                 </tr>
               );
             })}
+            {showRowActions && (
+              <PlannerNewRow key={view} overview={overview} view={view} refresh={refresh} />
+            )}
           </tbody>
         </table>
 
-        {!rows.length && (
+        {!rows.length && !showRowActions && (
           <p className="planner-empty">
             {isProc
-              ? 'No procurement rows yet — add labour contractors and material vendors below.'
-              : 'No rows yet — initialise the planner or add rows below.'}
+              ? 'No procurement rows yet.'
+              : 'No rows yet.'}
           </p>
         )}
       </section>

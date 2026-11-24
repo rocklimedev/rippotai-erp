@@ -28,7 +28,6 @@ import {
   viewCounts,
   viewRows,
 } from '../../components/projects/plannerModel';
-import { PlannerRowActions } from '../../components/projects/PlannerRowActions';
 import { downloadPlannerPdf } from '../../components/projects/plannerWorkbookPdf';
 
 // ============================================================
@@ -301,12 +300,6 @@ export function ProjectPlannerWorkspace() {
 
           <PlannerWorkbook key={projectId} overview={overview} view={view} refresh={refetch} />
 
-          <PlannerRowActions
-            key={`${projectId}:${view}`}
-            overview={overview}
-            view={view}
-            refresh={refetch}
-          />
           {pdfBusy && (
             <div style={OFFSCREEN_STYLE} aria-hidden>
               <PlannerDocument

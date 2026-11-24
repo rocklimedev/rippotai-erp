@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from '@/modules/auth/auth.service';
@@ -33,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         errorType: error instanceof Error ? error.name : 'UnknownError',
         databaseCode: (error as any)?.original?.code,
       });
-      throw new UnauthorizedException('Token validation failed');
+      throw new ServiceUnavailableException('Session validation is temporarily unavailable');
     }
   }
 }

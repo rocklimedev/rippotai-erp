@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import * as jwt from 'jsonwebtoken';
 import { AuthService } from './auth.service';
 import {
   AuthTokensService,
@@ -77,6 +78,31 @@ describe('Authenticated request database cost', () => {
 
   const joined = (call: any) =>
     call[0].include[0].include[0].include !== undefined;
+
+  it('extends a live session without replacing its revocation identifier', async () => {
+    const previousSecret = process.env.JWT_SECRET;
+    process.env.JWT_SECRET = 'test-session-signing-secret';
+    try {
+      const user = { id: 'user', email: 'staff@example.com', role: 'STAFF', role_id: 'staff' };
+      const original = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, {
+        expiresIn: 120,
+        jwtid: payload.jti,
+      });
+      const renewed = await auth.renew(original, user);
+      const claims = jwt.verify(renewed.token, process.env.JWT_SECRET) as jwt.JwtPayload;
+      expect(claims.jti).toBe(payload.jti);
+      expect(claims.exp).toBe(Date.now() / 1000 + 86400);
+      expect(session.expires_at).toEqual(new Date(claims.exp! * 1000));
+      expect(model.update.mock.calls[0][1].where.revoked_at[Op.is]).toBeNull();
+
+      jest.advanceTimersByTime(120_000);
+      await expect(auth.renew(original, user)).rejects.toThrow('Invalid or expired session');
+      expect(model.update).toHaveBeenCalledTimes(1);
+    } finally {
+      if (previousSecret === undefined) delete process.env.JWT_SECRET;
+      else process.env.JWT_SECRET = previousSecret;
+    }
+  });
 
   it('uses one joined SELECT on a cold cache, then one lighter SELECT and no writes per warm request', async () => {
     const first = await auth.getCurrentUserFromPayload(payload);

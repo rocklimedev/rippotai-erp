@@ -145,6 +145,15 @@ export const boqApi = baseApi.injectEndpoints({
       ],
     }),
 
+    reorderBoqCategories: builder.mutation({
+      query: ({ boqId, orderedIds }) => ({
+        url: `/boqs/${boqId}/categories/reorder`,
+        method: "PATCH",
+        body: { ordered_ids: orderedIds },
+      }),
+      invalidatesTags: (_result, _error, { boqId }) => [{ type: "BOQ", id: boqId }],
+    }),
+
     updateBoqCategory: builder.mutation({
       query: ({ boqId, categoryId, ...body }) => ({
         url: `/boqs/${boqId}/categories/${categoryId}`,
@@ -553,6 +562,7 @@ export const {
   useRenameBoqVersionMutation,
   useLazyCompareBoqVersionsQuery,
   useAddBoqCategoryMutation,
+  useReorderBoqCategoriesMutation,
   useUpdateBoqCategoryMutation,
   useDeleteBoqCategoryMutation,
   useAddBoqItemMutation,
