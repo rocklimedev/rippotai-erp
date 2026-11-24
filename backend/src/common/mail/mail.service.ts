@@ -114,6 +114,18 @@ export class MailService {
     await this.send(email, 'Verify your email address', html);
   }
 
+  async sendVerificationCode(email: string, code: string, expiresInMinutes: number): Promise<void> {
+    const grouped = code.match(/.{1,4}/g)!.join('-');
+    await this.send(email, 'Your Rippotai verification code', `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto">
+        <h2>Verify your email</h2>
+        <p>Enter this code on the Rippotai verification screen.</p>
+        <p style="font-size:22px;font-family:monospace"><strong>${grouped}</strong></p>
+        <p>This code expires in ${expiresInMinutes} minutes.</p>
+      </div>
+    `);
+  }
+
   async sendPasswordResetEmail(
     email: string,
     name: string,

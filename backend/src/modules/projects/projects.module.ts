@@ -31,6 +31,7 @@ import { AuthorityController } from './authority.controller';
 import { AuthorityService } from './authority.service';
 
 import { TeamMember } from '../users/models/team-member.model';
+import { User } from '../users/models/user.model';
 
 // ============================================================
 // COMMAND CENTER MODELS
@@ -67,6 +68,7 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
       Milestone,
       ProjectPhase,
       TeamMember,
+      User,
 
       // --------------------------------------------------------
       // COMMAND CENTER — GATES

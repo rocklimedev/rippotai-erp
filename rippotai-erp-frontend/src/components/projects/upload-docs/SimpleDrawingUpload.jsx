@@ -23,6 +23,7 @@ import {
   uploadRevision,
 } from '@/pages/design-studio/drawingUtils';
 import { asList, useProjectsList } from './uploadDocs';
+import UploadTypePicker from './UploadTypePicker';
 import './simple-drawing-upload.css';
 
 const MAX_BYTES = 500 * 1024 * 1024;
@@ -53,6 +54,8 @@ export default function SimpleDrawingUpload({
 
   const [projectId, setProjectId] = useState(fixedProject || '');
   const [nameInput, setName] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [creatingCategory, setCreatingCategory] = useState(false);
   const name = nameInput ?? (fixedTypeRow?.name || initialType?.name || '');
   const [issueDate, setIssueDate] = useState(today());
   const [drawnBy, setDrawnBy] = useState(user?.id || '');
@@ -69,7 +72,7 @@ export default function SimpleDrawingUpload({
   );
   const [createDrawing] = useCreateDrawingMutation();
   const [updateDrawing] = useUpdateDrawingMutation();
-  const busy = progress !== null;
+  const busy = progress !== null || creatingCategory;
 
   // Default names (the phase's drawing list) + names already used in this project for this document.
   const suggestions = useMemo(() => {
@@ -89,7 +92,9 @@ export default function SimpleDrawingUpload({
     return out;
   }, [types, rows, projectId]);
 
-  const matchedType = fixedTypeRow || types.find((t) => norm(t.name) === norm(name)) || null;
+  const matchedType = cfg.phaseCode
+    ? selectedCategory || types.find((t) => norm(t.name) === norm(name))
+    : fixedTypeRow || types.find((t) => norm(t.name) === norm(name));
   const existing = useMemo(() => {
     if (!projectId || !name.trim()) return null;
     return (
@@ -125,7 +130,7 @@ export default function SimpleDrawingUpload({
 
   const submit = async () => {
     setTried(true);
-    if (!projectId || !name.trim() || !file) return;
+    if (busy || !projectId || !name.trim() || !file) return;
     setProgress(0);
     onBusyChange?.(true);
     try {
@@ -200,6 +205,26 @@ export default function SimpleDrawingUpload({
             ))}
           </SelectInput>
         </Field>
+        {cfg.phaseCode && (
+          <UploadTypePicker
+            label="Drawing category"
+            placeholder="Select a category"
+            types={types}
+            value={matchedType?.id || ''}
+            onSelect={(_, category) => {
+              setSelectedCategory(category);
+              setName(category?.name || '');
+            }}
+            phaseCode={cfg.phaseCode}
+            targetType="DRAWING"
+            disabled={busy}
+            onCreatingChange={(creating) => {
+              setCreatingCategory(creating);
+              onBusyChange?.(creating);
+            }}
+            testId="sdu-category"
+          />
+        )}
         <Field
           label="Document name"
           required
@@ -241,7 +266,7 @@ export default function SimpleDrawingUpload({
             onChange={(e) => setIssueDate(e.target.value)}
           />
         </Field>
-        <span />
+        {!cfg.phaseCode && <span />}
         <Field label="Drawn by">
           <SelectInput value={drawnBy} disabled={busy} onChange={(e) => setDrawnBy(e.target.value)}>
             <option value="">—</option>
@@ -304,10 +329,11 @@ export default function SimpleDrawingUpload({
           variant="primary"
           icon={CloudUpload}
           onClick={submit}
-          loading={busy}
+          loading={progress !== null}
+          disabled={creatingCategory}
           data-testid="sdu-submit"
         >
-          {busy ? `Uploading ${progress}%` : existing ? 'Upload new revision' : 'Upload drawing'}
+          {progress !== null ? `Uploading ${progress}%` : existing ? 'Upload new revision' : 'Upload drawing'}
         </Button>
       </div>
     </div>

@@ -32,7 +32,6 @@ import {
   ChevronUp,
   ChevronDown,
   ListOrdered,
-  Users,
   FileText,
   AlertCircle,
 } from 'lucide-react';
@@ -46,28 +45,13 @@ import {
   SelectInput,
   prettyStatus,
 } from '@/components/inos';
-import { RowCard, IconButton, AddRowButton, EmptyRows } from '@/components/forms/crm-form-ui';
+import { RowCard, IconButton, EmptyRows } from '@/components/forms/crm-form-ui';
 
-import { useGetUsersQuery } from '../../api/users/user.api';
 import {
   useGetTermsTemplatesQuery,
   useCreateTermsTemplateMutation,
   useUpdateTermsTemplateContentMutation,
 } from '../../api/meta/terms.api';
-import { useGetTeamsQuery, useGetTeamMembersQuery } from '../../api/users/team.api';
-
-/* ============================================================
-   ROLE SUGGESTIONS
-============================================================ */
-
-const ROLE_SUGGESTIONS = [
-  'Principal Architect',
-  'Project Lead',
-  'Design Lead',
-  'Site Supervisor',
-  'Site Engineer',
-];
-
 /* ============================================================
    HELPERS
 ============================================================ */
@@ -125,10 +109,6 @@ const mapPlanOfActionToForm = (plan) => {
 
         phases: [],
 
-        team_id: '',
-
-        team_members: [],
-
         terms_template_id: '',
       },
     };
@@ -182,27 +162,6 @@ const mapPlanOfActionToForm = (plan) => {
         };
       }),
 
-      /* ======================================================
-         ADMIN TEAM
-      ====================================================== */
-
-      team_id: plan.team_id || plan.team_members?.find((member) => member.team_id)?.team_id || '',
-
-      /* ======================================================
-         TEAM MEMBERS
-      ====================================================== */
-
-      team_members: (plan.team_members || []).map((member) => ({
-        id: crypto.randomUUID(),
-
-        team_id: member.team_id || '',
-
-        user_id: member.user_id || '',
-
-        role_label: member.role_label || '',
-
-        is_primary: Boolean(member.is_primary),
-      })),
 
       terms_template_id: plan.terms_template_id || '',
     },
@@ -256,23 +215,6 @@ export function PlanOfActionForm() {
     search: phaseSearch,
   });
 
-  const { data: users = [] } = useGetUsersQuery();
-  const { data: teams = [], isLoading: isLoadingTeams } = useGetTeamsQuery();
-
-  const [selectedTeamId, setSelectedTeamId] = useState('');
-
-  const {
-    data: teamMembersResponse,
-    isLoading: isLoadingTeamMembers,
-    isFetching: isFetchingTeamMembers,
-  } = useGetTeamMembersQuery(selectedTeamId, {
-    skip: !selectedTeamId,
-  });
-
-  const teamMembers = Array.isArray(teamMembersResponse)
-    ? teamMembersResponse
-    : teamMembersResponse?.data || teamMembersResponse?.items || [];
-
   const { data: termsTemplates = [], refetch: refetchTermsTemplates } = useGetTermsTemplatesQuery();
 
   const [createTermsTemplate, { isLoading: isCreatingTerms }] = useCreateTermsTemplateMutation();
@@ -321,10 +263,6 @@ export function PlanOfActionForm() {
     },
 
     phases: [],
-    team_id: '',
-
-    team_members: [],
-
     terms_template_id: '',
   });
   const prefill = useSharedProjectData(projectId, 'plan', values, setValues, !isEditMode);
@@ -363,7 +301,6 @@ export function PlanOfActionForm() {
 
     setProjectId(mapped.projectId);
 
-    setSelectedTeamId(mapped.values.team_id || '');
 
     setValues(mapped.values);
   }, [isEditMode, existingPlanOfAction, setValues]);
@@ -628,8 +565,6 @@ export function PlanOfActionForm() {
             >
               {availablePhases.map((phase) => (
                 <option key={phase.id} value={phase.id}>
-                  {phase.phase_code}
-                  {' — '}
                   {phase.title}
                 </option>
               ))}
@@ -753,282 +688,6 @@ export function PlanOfActionForm() {
               </RowCard>
             ))}
           </div>
-        )}
-      </>
-    );
-  };
-
-  /* ============================================================
-     TEAM SECTION
-  ============================================================ */
-
-  const renderTeamSection = () => {
-    const members = values.team_members || [];
-
-    /* ========================================================
-     TEAM CHANGE
-  ======================================================== */
-
-    const handleTeamChange = (teamId) => {
-      setSelectedTeamId(teamId);
-
-      setValues((prev) => ({
-        ...prev,
-
-        team_id: teamId,
-
-        /*
-         * Members belong to the selected Admin Team.
-         * Changing the team therefore clears the old
-         * member selection.
-         */
-        team_members: [],
-      }));
-    };
-
-    /* ========================================================
-     ADD
-  ======================================================== */
-
-    const addMember = () => {
-      if (!selectedTeamId) {
-        toast.error('Please select an Admin Team first.');
-        return;
-      }
-
-      setValues((prev) => ({
-        ...prev,
-
-        team_members: [
-          ...(prev.team_members || []),
-
-          {
-            id: crypto.randomUUID(),
-
-            team_id: selectedTeamId,
-
-            user_id: '',
-
-            role_label: '',
-
-            is_primary: false,
-          },
-        ],
-      }));
-    };
-
-    /* ========================================================
-     UPDATE
-  ======================================================== */
-
-    const updateMember = (index, field, value) => {
-      setValues((prev) => {
-        const newMembers = [...(prev.team_members || [])];
-
-        newMembers[index] = {
-          ...newMembers[index],
-          [field]: value,
-        };
-
-        /*
-         * Only one primary contact is allowed.
-         */
-        if (field === 'is_primary' && value === true) {
-          return {
-            ...prev,
-
-            team_members: newMembers.map((member, memberIndex) => ({
-              ...member,
-              is_primary: memberIndex === index,
-            })),
-          };
-        }
-
-        return {
-          ...prev,
-
-          team_members: newMembers,
-        };
-      });
-    };
-
-    /* ========================================================
-     REMOVE
-  ======================================================== */
-
-    const removeMember = (index) => {
-      setValues((prev) => ({
-        ...prev,
-
-        team_members: (prev.team_members || []).filter((_, i) => i !== index),
-      }));
-    };
-
-    /* ========================================================
-     TEAM MEMBER USER HELPERS
-  ======================================================== */
-
-    const getMemberUser = (teamMember) => {
-      return teamMember?.user || teamMember?.User || null;
-    };
-
-    const getMemberUserName = (teamMember) => {
-      const user = getMemberUser(teamMember);
-
-      return (
-        user?.name ||
-        user?.full_name ||
-        user?.display_name ||
-        user?.email ||
-        teamMember?.user_id ||
-        'Unknown User'
-      );
-    };
-
-    /* ========================================================
-     RENDER
-  ======================================================== */
-
-    return (
-      <>
-        <datalist id="role-options">
-          {ROLE_SUGGESTIONS.map((role) => (
-            <option key={role} value={role} />
-          ))}
-        </datalist>
-
-        <div className="inos-form-grid">
-          <Field
-            label="Admin team"
-            required
-            hint={
-              selectedTeamId
-                ? 'Only members of this team can be assigned. Changing it clears the list below.'
-                : 'Choose a team first, then assign its members.'
-            }
-          >
-            <SelectInput
-              value={selectedTeamId}
-              onChange={(e) => handleTeamChange(e.target.value)}
-              disabled={isLoadingTeams}
-              placeholder={isLoadingTeams ? 'Loading teams…' : 'Select admin team'}
-            >
-              {teams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
-        </div>
-
-        {!selectedTeamId ? null : isLoadingTeamMembers ? (
-          <p className="inos-hint">Loading team members…</p>
-        ) : teamMembers.length === 0 ? (
-          <EmptyRows
-            icon={Users}
-            title="No members in this team"
-            text="Add people to the admin team before assigning them to this plan."
-          />
-        ) : (
-          <>
-            {members.length === 0 ? (
-              <EmptyRows
-                icon={Users}
-                title="No one assigned yet"
-                text="Assign the people who will run this project and mark one as the primary contact."
-              />
-            ) : (
-              <div className="crmf-rows">
-                {members.map((member, index) => {
-                  const missingUser = !member.user_id;
-                  const missingRole = !member.role_label;
-
-                  /*
-                   * Prevent selecting the same Admin Team member
-                   * twice in the POA.
-                   */
-                  const alreadySelectedUserIds = members
-                    .filter((_, memberIndex) => memberIndex !== index)
-                    .map((item) => item.user_id)
-                    .filter(Boolean);
-
-                  const selectedMember = teamMembers.find((tm) => tm.user_id === member.user_id);
-
-                  return (
-                    <RowCard
-                      key={member.id}
-                      index={index + 1}
-                      title={selectedMember ? getMemberUserName(selectedMember) : 'New member'}
-                      meta={member.is_primary ? 'Primary contact' : member.role_label || undefined}
-                      onRemove={() => removeMember(index)}
-                      removeLabel="Remove member"
-                    >
-                      <div className="inos-form-grid">
-                        <Field
-                          label="Team member"
-                          required
-                          error={missingUser ? 'Select a team member.' : undefined}
-                        >
-                          <SelectInput
-                            value={member.user_id}
-                            invalid={missingUser}
-                            onChange={(e) => updateMember(index, 'user_id', e.target.value)}
-                            placeholder="Select team member"
-                          >
-                            {teamMembers.map((teamMember) => {
-                              const userId = teamMember.user_id;
-
-                              const isAlreadySelected = alreadySelectedUserIds.includes(userId);
-
-                              return (
-                                <option
-                                  key={teamMember.id}
-                                  value={userId}
-                                  disabled={isAlreadySelected}
-                                >
-                                  {getMemberUserName(teamMember)}
-                                </option>
-                              );
-                            })}
-                          </SelectInput>
-                        </Field>
-
-                        <Field
-                          label="Role"
-                          required
-                          error={missingRole ? 'Enter a role.' : undefined}
-                        >
-                          <TextInput
-                            list="role-options"
-                            value={member.role_label}
-                            invalid={missingRole}
-                            onChange={(e) => updateMember(index, 'role_label', e.target.value)}
-                            placeholder="e.g. Project Lead"
-                          />
-                        </Field>
-                      </div>
-
-                      <label className="crmf-check">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(member.is_primary)}
-                          onChange={(e) => updateMember(index, 'is_primary', e.target.checked)}
-                        />
-                        Primary contact for the client
-                      </label>
-                    </RowCard>
-                  );
-                })}
-              </div>
-            )}
-
-            {teamMembers.length > members.length && (
-              <AddRowButton onClick={addMember}>
-                {members.length ? 'Add another member' : 'Add first member'}
-              </AddRowButton>
-            )}
-          </>
         )}
       </>
     );
@@ -1366,10 +1025,6 @@ Any variation in scope shall be treated as extra work.`,
       return renderPhasesSection();
     }
 
-    if (section.type === 'team') {
-      return renderTeamSection();
-    }
-
     if (section.type === 'terms') {
       return renderTermsSection();
     }
@@ -1425,34 +1080,6 @@ Any variation in scope shall be treated as extra work.`,
     }
 
     const overview = values.Overview || {};
-
-    /* ======================================================
-       TEAM VALIDATION
-    ====================================================== */
-
-    const rawMembers = values.team_members || [];
-
-    const incompleteMembers = rawMembers.filter((member) => !(member.user_id && member.role_label));
-
-    if (incompleteMembers.length > 0) {
-      return toast.error(
-        `${incompleteMembers.length} team member${
-          incompleteMembers.length > 1 ? 's are' : ' is'
-        } missing a person or role. Fill both fields or remove the row before saving.`,
-      );
-    }
-
-    /*
-     * Prevent the same user from being added
-     * more than once to the POA.
-     */
-    const memberUserIds = rawMembers.map((member) => member.user_id);
-
-    const uniqueMemberUserIds = new Set(memberUserIds);
-
-    if (uniqueMemberUserIds.size !== memberUserIds.length) {
-      return toast.error('A team member cannot be added more than once.');
-    }
 
     /* ======================================================
        PAYLOAD
@@ -1522,27 +1149,6 @@ Any variation in scope shall be treated as extra work.`,
         gantt_start_offset_days: toNumberOrUndefined(phase.gantt_start_offset_days) ?? 0,
 
         gantt_duration_days: toNumberOrUndefined(phase.gantt_duration_days) ?? 0,
-      })),
-
-      /* ====================================================
-         TEAM
-      ==================================================== */
-
-      /*
-       * IMPORTANT:
-       *
-       * Do NOT send team_id here.
-       *
-       * Backend TeamService resolves the user's
-       * Admin Team automatically and stores that
-       * team_id on the owner-scoped team_members row.
-       */
-      team_members: rawMembers.map(({ id: localId, user_id, role_label, is_primary }) => ({
-        user_id,
-
-        role_label,
-
-        is_primary: Boolean(is_primary),
       })),
     };
 
@@ -1665,11 +1271,6 @@ Any variation in scope shall be treated as extra work.`,
       done: (values.phases || []).length > 0,
       count: (values.phases || []).length,
     },
-    Team: {
-      description: 'Choose the admin team and assign who works on this project.',
-      done: (values.team_members || []).some((m) => m.user_id && m.role_label),
-      count: (values.team_members || []).length,
-    },
     'Terms & Conditions': {
       description:
         'Attach a terms template. Templates are versioned, so saved documents keep their wording.',
@@ -1706,8 +1307,8 @@ Any variation in scope shall be treated as extra work.`,
       subtitle={
         <>
           {isEditMode
-            ? 'Update the phases, team and terms. Saving updates the plan of action document.'
-            : 'Set out how the project will run — phases, durations, team and terms. Produces the plan of action document.'}
+            ? 'Update the phases and terms. Saving updates the plan of action document.'
+            : 'Set out how the project will run — phases, durations and terms. Produces the plan of action document.'}
           <PrefillNotice prefill={prefill} />
         </>
       }

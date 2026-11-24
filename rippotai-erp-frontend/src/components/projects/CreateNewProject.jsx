@@ -4,6 +4,7 @@ import { UserPlus } from 'lucide-react';
 
 import { Button, Field, TextInput, SelectInput, TextArea, ChoiceGroup } from '@/components/inos';
 import { Modal } from './_projects-ui';
+import ProjectCreationTeam from './ProjectCreationTeam';
 
 import { useCreateProjectMutation } from '../../api/projects/project.api';
 import { useGetProjectTypesQuery } from '../../api/projects/project-type.api';
@@ -17,6 +18,7 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
   const [priority, setPriority] = useState('MEDIUM');
   const [expectedCompletionDate, setExpectedCompletionDate] = useState('');
   const [description, setDescription] = useState('');
+  const [team, setTeam] = useState([]);
 
   // Inline "new client" mini-form state
   const [showNewClient, setShowNewClient] = useState(false);
@@ -48,6 +50,7 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
     setPriority('MEDIUM');
     setExpectedCompletionDate('');
     setDescription('');
+    setTeam([]);
     setShowNewClient(false);
     setNewClientName('');
     setNewClientEmail('');
@@ -123,6 +126,7 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
         priority,
         expected_completion_date: expectedCompletionDate || undefined,
         description: description || undefined,
+        team_members: team,
       }).unwrap();
 
       toast.success('Project created.');
@@ -275,6 +279,11 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
             placeholder="Short brief for the team"
           />
         </Field>
+
+        <fieldset className="span-full inos-form-grid">
+          <legend className="inos-label">Team</legend>
+          <ProjectCreationTeam members={team} onChange={setTeam} disabled={busy} />
+        </fieldset>
       </form>
     </Modal>
   );

@@ -151,7 +151,7 @@ export class TeamService {
         sort_order: dto.sort_order ?? 0,
 
         created_by: actingUserId ?? null,
-      } as any,
+      },
 
       {
         transaction,
@@ -1205,9 +1205,9 @@ export class TeamService {
       };
     }
 
-    // team_id is guaranteed to be a string because TeamMember
-    // defines it as allowNull: false.
-    const teamIds = memberships.map((member) => member.team_id);
+    const teamIds = memberships.flatMap((member) =>
+      member.team_id ? [member.team_id] : [],
+    );
 
     // ============================================================
     // GET SECTION ACCESS FOR ALL USER TEAMS

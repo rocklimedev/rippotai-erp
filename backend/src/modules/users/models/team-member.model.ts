@@ -15,7 +15,7 @@ import { TeamMemberOwnerType } from '@/common/enums/team.enums';
 export interface TeamMemberAttributes {
   id: string;
 
-  team_id: string;
+  team_id: string | null;
   user_id: string;
 
   owner_type: TeamMemberOwnerType | null;
@@ -70,9 +70,9 @@ export class TeamMember
   @Index('idx_team_members_team_id')
   @Column({
     type: DataType.CHAR(36),
-    allowNull: false,
+    allowNull: true,
   })
-  declare team_id: string;
+  declare team_id: string | null;
 
   @BelongsTo(() => Team, {
     foreignKey: 'team_id',

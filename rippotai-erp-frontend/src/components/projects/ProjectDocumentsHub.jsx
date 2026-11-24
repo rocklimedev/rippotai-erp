@@ -33,14 +33,15 @@ const hubRow = (doc, entry, project) => ({
 });
 
 function UploadAction({ doc, project, existing, onDone }) {
-  const { types } = useFlowTypes(UPLOAD_DOCUMENTS[doc.key]);
+  const cfg = UPLOAD_DOCUMENTS[doc.key];
+  const { types } = useFlowTypes(cfg);
   return (
     <UploadDocModal
-      cfg={UPLOAD_DOCUMENTS[doc.key]}
+      cfg={cfg}
       types={types}
       rows={existing ? [existing] : []}
       projectId={project.id}
-      typeId={existing?.typeId || (types.length === 1 ? types[0].id : undefined)}
+      typeId={existing?.typeId || (cfg.key !== 'design' && types.length === 1 ? types[0].id : undefined)}
       onClose={onDone}
     />
   );

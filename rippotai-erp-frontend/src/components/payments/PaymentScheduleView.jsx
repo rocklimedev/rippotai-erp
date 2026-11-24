@@ -15,7 +15,7 @@ import {
   titleCase,
   WSign,
   coverRows,
-  projectPeople,
+  useProjectPeople,
 } from '@/components/print-document';
 import './payment-schedule-document.css';
 
@@ -523,6 +523,7 @@ export function buildScheduleWordSections(schedule) {
 const PaymentScheduleView = forwardRef(function PaymentScheduleView({ schedule }, ref) {
   const sections = useMemo(() => buildScheduleWordSections(schedule), [schedule]);
   const project = schedule.project || {};
+  const people = useProjectPeople(project.id || schedule.projectId || schedule.project_id);
   const client = project.client || {};
   return (
     <PrintDocument
@@ -545,7 +546,7 @@ const PaymentScheduleView = forwardRef(function PaymentScheduleView({ schedule }
           project: project.name,
           address: project.site_location,
           client: client.name,
-          ...projectPeople(project.team_members),
+          ...people,
         }),
       }}
       sections={sections}

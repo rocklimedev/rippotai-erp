@@ -605,6 +605,8 @@ export class ProjectBriefsService {
           relationshipToClient: current.relationshipToClient,
           referredBySource: current.referredBySource,
           briefDate: current.briefDate,
+          principalArchitect: current.principalArchitect,
+          projectLead: current.projectLead,
           siteAddress: current.siteAddress,
           projectTypeId: current.projectTypeId,
           projectCategory: current.projectCategory,

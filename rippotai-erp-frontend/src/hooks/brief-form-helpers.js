@@ -128,6 +128,8 @@ export const normalizeProjectBrief = (brief) => {
     relationshipToClient: brief.relationshipToClient ?? "",
     referredBySource: brief.referredBySource ?? "",
     briefDate: brief.briefDate ?? "",
+    principalArchitect: brief.principalArchitect ?? "",
+    projectLead: brief.projectLead ?? "",
 
     // ========================================================
     // SITE
@@ -272,6 +274,8 @@ export const buildProjectBriefPayload = (projectId, values) => {
     relationshipToClient: values.relationshipToClient || null,
     referredBySource: values.referredBySource || null,
     briefDate: values.briefDate || null,
+    principalArchitect: values.principalArchitect || null,
+    projectLead: values.projectLead || null,
 
     // SITE
     siteAddress: values.siteAddress || null,

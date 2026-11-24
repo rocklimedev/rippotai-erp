@@ -152,7 +152,7 @@ export default function UsersSettings() {
       if (statusFilter === 'inactive' && active) return false;
       if (statusFilter === 'unverified' && emailVerified(u)) return false;
       if (!q) return true;
-      return [u.name, u.email, u.job_title, u.role?.name]
+      return [u.name, u.email, u.job_title, u.role_label, u.role?.name]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
@@ -293,7 +293,7 @@ export default function UsersSettings() {
                               )}
                             </div>
                             <div className="adm-cell-sub">
-                              {u.job_title || humanize(u.role?.name) || 'Team member'}
+                              {u.role_label || u.job_title || humanize(u.role?.name) || 'Team member'}
                             </div>
                           </div>
                         </div>

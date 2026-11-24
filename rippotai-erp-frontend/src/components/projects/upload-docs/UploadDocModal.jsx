@@ -10,6 +10,7 @@ import {
   useCreateDocumentMutation,
 } from '@/api/documents/document.api';
 import SimpleDrawingUpload from './SimpleDrawingUpload';
+import UploadTypePicker from './UploadTypePicker';
 import { useProjectsList } from './uploadDocs';
 
 const MAX = 500 * 1024 * 1024;
@@ -24,15 +25,16 @@ export default function UploadDocModal({
 }) {
   const { projects, byId } = useProjectsList();
   const [projectId, setProjectId] = useState(fixedProject || '');
-  const [chosenType, setTypeId] = useState(fixedType || '');
+  const [chosenType, setTypeId] = useState(fixedType ?? null);
+  const [selectedType, setSelectedType] = useState(null);
   // Types may arrive after the modal opens; a single type is picked automatically.
-  const typeId = chosenType || fixedType || (types.length === 1 ? types[0].id : '');
+  const typeId = chosenType ?? (types.length === 1 ? types[0].id : '');
   const [file, setFile] = useState(null);
   const [remarks, setRemarks] = useState('');
   const [busy, setBusy] = useState(false);
   const [createDocument] = useCreateDocumentMutation();
   const [addVersion] = useAddDocumentVersionMutation();
-  const type = types.find((t) => t.id === typeId);
+  const type = types.find((t) => t.id === typeId) || selectedType;
   const project = byId[projectId];
   const existing = useMemo(
     () =>
@@ -42,7 +44,7 @@ export default function UploadDocModal({
   const isDrawing = cfg.target === 'DRAWING';
 
   const submit = async () => {
-    if (!projectId || !typeId || !file) return;
+    if (busy || !projectId || !typeId || !file) return;
     if (file.size > MAX) {
       toast.error('File size cannot exceed 500 MB');
       return;
@@ -83,7 +85,7 @@ export default function UploadDocModal({
       <Field label="Project" required>
         <SelectInput
           value={projectId}
-          disabled={!!fixedProject}
+          disabled={!!fixedProject || busy}
           onChange={(e) => setProjectId(e.target.value)}
           data-testid="upload-doc-project"
         >
@@ -95,7 +97,24 @@ export default function UploadDocModal({
           ))}
         </SelectInput>
       </Field>
-      {types.length > 1 && (
+      {cfg.key === 'design' && !fixedType ? (
+        <UploadTypePicker
+          label="Document"
+          placeholder="Select"
+          required
+          types={types}
+          value={typeId}
+          onSelect={(id, option) => {
+            setTypeId(id);
+            setSelectedType(option);
+          }}
+          phaseCode={cfg.phaseCode}
+          targetType={cfg.target}
+          disabled={busy}
+          onCreatingChange={setBusy}
+          testId="upload-doc-type"
+        />
+      ) : types.length > 1 && (
         <Field label="Document" required>
           <SelectInput
             value={typeId}
@@ -168,6 +187,7 @@ export default function UploadDocModal({
         <input
           type="file"
           className="inos-input"
+          disabled={busy}
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           data-testid="upload-doc-file"
         />

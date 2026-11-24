@@ -54,4 +54,4 @@ export {
   WSign,
 } from './word';
 export { coverRows, padRows, checkedLabels } from './word-helpers';
-export { projectPeople, useProjectPeople } from './project-people';
+export { useProjectPeople } from './project-people';

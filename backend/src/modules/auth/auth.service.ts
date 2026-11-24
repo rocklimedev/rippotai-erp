@@ -157,10 +157,11 @@ export class AuthService {
       throw new UnauthorizedException('Token expired');
     }
 
+    const emailVerified = !!authToken.user && hasVerifiedEmail(authToken.user);
     if (
       !authToken.user ||
       authToken.user.is_active !== true ||
-      !hasVerifiedEmail(authToken.user)
+      !emailVerified
     ) {
       throw new UnauthorizedException(
         'Active account with verified email required.',
@@ -176,6 +177,7 @@ export class AuthService {
       id: authToken.user?.id,
       name: authToken.user?.name,
       email: authToken.user?.email,
+      email_verified: emailVerified,
       role: authToken.user?.role?.name,
       role_id: authToken.user?.role_id,
       roleId: authToken.user?.role_id ?? null,

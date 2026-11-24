@@ -76,6 +76,12 @@ export class ProjectBrief extends Model<ProjectBrief> {
   @Column(DataType.DATEONLY)
   declare briefDate: string | null;
 
+  @Column(DataType.STRING)
+  declare principalArchitect: string | null;
+
+  @Column(DataType.STRING)
+  declare projectLead: string | null;
+
   // =========================================================
   // SITE
   // =========================================================
