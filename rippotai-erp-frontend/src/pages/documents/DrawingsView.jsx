@@ -1,8 +1,9 @@
 // Design Studio → single drawing: large preview, details, status and full revision history.
 import { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { backLabel } from '@/components/projects/upload-docs/uploadDocs';
 import { toast } from 'sonner';
-import { CloudUpload, ImageOff } from 'lucide-react';
+import { ImageOff } from 'lucide-react';
 
 import { Page, PageHeader, Card, Button, EmptyState } from '@/components/inos';
 import { useGetDrawingByIdQuery, useUpdateDrawingMutation } from '../../api/documents/drawing.api';
@@ -30,6 +31,7 @@ export default function DrawingsView() {
   const { id } = useParams();
   const recordInfo = useRecordInfo('drawing', id);
   const nav = useNavigate();
+  const [params] = useSearchParams();
   const { data: drawing, isLoading, isError } = useGetDrawingByIdQuery(id, { skip: !id });
   const { data: projects = [] } = useGetProjectsQuery({});
   const { data: users = [] } = useGetUsersQuery({});
@@ -41,10 +43,10 @@ export default function DrawingsView() {
   const userName = (uid) => userList.find((u) => u.id === uid)?.name || null;
   const project = projects.find((p) => p.id === drawing?.projectId);
 
+  const back = params.get('back');
   const crumbs = [
-    { label: 'Design Studio', to: '/design-studio' },
-    { label: 'Drawings', to: '/design-studio/all' },
-    { label: drawing?.drawingNumber || 'Drawing' },
+    back ? { label: backLabel(back), to: back } : { label: 'Drawings', to: '/design-studio/all' },
+    { label: drawing?.title || drawing?.drawingNumber || 'Drawing' },
   ];
 
   if (isLoading) {
@@ -132,21 +134,14 @@ export default function DrawingsView() {
                 Open in new tab
               </OpenFileLink>
             )}
-            <RecordEditDelete kind="drawing" record={drawing} />
-            <Button
-              variant="primary"
-              icon={CloudUpload}
-              onClick={() => nav(`/design-studio/upload?drawing=${drawing.id}`)}
-            >
-              Upload new revision
-            </Button>
+            <RecordEditDelete kind="drawing" record={drawing} backTo={back} />
           </>
         }
       />
       <RecordContext
         type="drawing"
         id={drawing.id}
-        listTo={`/projects/${drawing.projectId}?tab=drawings`}
+        listTo={back || `/projects/${drawing.projectId}?tab=drawings`}
         listLabel="Project drawings"
       />
 

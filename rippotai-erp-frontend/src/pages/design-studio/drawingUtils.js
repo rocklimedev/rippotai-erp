@@ -133,12 +133,14 @@ export const latestRevision = (drawing) => sortedRevisions(drawing)[0] || null;
 
 /** Next revision label after the drawing's latest (A → B, R0 → R1, 3 → 4). */
 export function nextRevisionLabel(drawing) {
+  // Versions start at V0 (first upload), then V1, V2… Older letter revisions keep counting in letters.
+  const labels = sortedRevisions(drawing).map((r) => String(r.revision || ""));
+  if (!labels.length) return "V0";
+  const nums = labels.map((l) => /^V(\d+)$/i.exec(l)).filter(Boolean).map((m) => Number(m[1]));
+  if (nums.length) return `V${Math.max(...nums) + 1}`;
   const last = latestRevision(drawing)?.revision;
-  if (!last) return "A";
-  if (/^[A-Y]$/i.test(last)) return String.fromCharCode(last.toUpperCase().charCodeAt(0) + 1);
-  const m = String(last).match(/^(.*?)(\d+)$/);
-  if (m) return `${m[1]}${Number(m[2]) + 1}`;
-  return `${last}-1`;
+  if (/^[A-Y]$/i.test(last || "")) return String.fromCharCode(last.toUpperCase().charCodeAt(0) + 1);
+  return `V${labels.length}`;
 }
 
 /**

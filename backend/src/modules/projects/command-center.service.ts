@@ -10,6 +10,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { EXECUTION_PHASE, ExecutionWork, executionWorkFor } from './execution-work';
 import { CommandCenterCacheService } from './command-center-cache.service';
 import { GateEngineService } from '../gates/gate-engine.service';
 import {
@@ -130,6 +131,8 @@ interface ProjectRow {
   health: { key: ProjectHealth; label: string };
   daysIdle: number | null;
   lastActivity: Date | null;
+  /** Execution only: Build-planner work going on now. */
+  executionWork?: ExecutionWork;
 }
 
 @Injectable()
@@ -192,7 +195,7 @@ export class CommandCenterService {
   async getPortfolio(
     query: PortfolioQueryDto,
   ): Promise<PortfolioProjectResponseDto[]> {
-    let rows = (await this.getPortfolioReadModel()).rows;
+    let rows = await this.withExecutionWork((await this.getPortfolioReadModel()).rows);
 
     if (query.health && query.health !== HealthFilter.ALL) {
       rows = rows.filter(
@@ -250,9 +253,18 @@ export class CommandCenterService {
     };
   }
   async getProjectPhases(projectId: string): Promise<ProjectPhasesResponseDto> {
-    return this.cache.getOrLoad('project:' + projectId, () =>
+    const row = await this.cache.getOrLoad('project:' + projectId, () =>
       this.buildProjectPhases(projectId),
     );
+    return (await this.withExecutionWork([row as ProjectRow]))[0];
+  }
+
+  /** Execution: attach the Build-planner work going on (fresh, not cached). */
+  private async withExecutionWork<T extends { id: string; currentPhaseCode?: string }>(rows: T[]): Promise<T[]> {
+    const ids = rows.filter((r) => r.currentPhaseCode === EXECUTION_PHASE).map((r) => r.id);
+    if (!ids.length) return rows;
+    const work = await executionWorkFor(this.projectModel.sequelize!, ids).catch(() => new Map<string, ExecutionWork>());
+    return rows.map((r) => (work.has(r.id) ? { ...r, executionWork: work.get(r.id) } : r));
   }
 
   private async buildProjectPhases(

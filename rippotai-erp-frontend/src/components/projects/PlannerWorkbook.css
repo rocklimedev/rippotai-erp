@@ -235,7 +235,7 @@
 .planner-sheet tr.is-late-row td:first-child { box-shadow: inset 3px 0 0 #c0392b; }
 
 /* Add row form: one line on wide screens */
-.planner-add-row { display: grid; grid-template-columns: minmax(170px, 210px) repeat(2, minmax(160px, 1fr)) 150px minmax(140px, 1fr) auto; gap: 8px; align-items: center; }
+.planner-add-row { display: grid; grid-template-columns: minmax(160px, 200px) repeat(2, minmax(150px, 1fr)) 140px 140px minmax(130px, 1fr) auto; gap: 8px; align-items: center; }
 .planner-add-row > * { min-width: 0 !important; width: 100%; }
 .planner-add-row--remove { grid-template-columns: minmax(240px, 420px) auto; justify-content: start; }
 @media (max-width: 1100px) { .planner-add-row { grid-template-columns: 1fr 1fr; } }

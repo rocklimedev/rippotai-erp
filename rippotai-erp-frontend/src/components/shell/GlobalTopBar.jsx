@@ -107,7 +107,7 @@ export function ApprovalsButton() {
   );
 }
 
-export default function GlobalTopBar({ app = 'dashboard', onOpenMenu }) {
+export default function GlobalTopBar({ app = 'dashboard', onOpenMenu, menuHidden = false }) {
   return (
     <header className="inos-topbar" data-testid={`topheader-${app}`}>
       {onOpenMenu && (
@@ -115,7 +115,8 @@ export default function GlobalTopBar({ app = 'dashboard', onOpenMenu }) {
           type="button"
           className="inos-topbar__menu"
           onClick={onOpenMenu}
-          aria-label="Open menu"
+          aria-label={menuHidden ? 'Show menu' : 'Open menu'}
+          title={menuHidden ? 'Show menu' : undefined}
         >
           <Menu size={20} />
         </button>

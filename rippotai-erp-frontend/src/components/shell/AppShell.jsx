@@ -139,11 +139,16 @@ export default function AppShell({ app, children }) {
 
   return (
     <PageTitleProvider app={app} rows={rows} active={active} activeExact={activeExact}>
-      <div className={`inos-shell ${collapsed ? "is-collapsed" : ""}`}>
-        <GlobalTopBar app={app} onOpenMenu={() => setMobileOpen(true)} />
+      {/* The menu is either fully shown or fully hidden (no squeezed icon rail). */}
+      <div className={`inos-shell ${collapsed ? "is-hidden" : ""}`}>
+        <GlobalTopBar
+          app={app}
+          menuHidden={collapsed}
+          onOpenMenu={() => (window.innerWidth >= 1024 && collapsed ? toggle() : setMobileOpen(true))}
+        />
         <AppSidebar
           app={app}
-          collapsed={collapsed && !mobileOpen}
+          collapsed={false}
           onToggle={toggle}
           mobileOpen={mobileOpen}
           onCloseMobile={() => setMobileOpen(false)}

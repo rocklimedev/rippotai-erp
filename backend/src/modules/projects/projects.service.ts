@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { EXECUTION_PHASE, executionWorkFor } from './execution-work';
 import { col, fn, Op, Transaction, where, WhereOptions } from 'sequelize';
 import { ConflictException } from '@nestjs/common';
 import { Project } from './models/projects.model';
@@ -148,7 +149,7 @@ export class ProjectsService {
   // =========================
   // GET ALL
   // =========================
-  findAll(
+  async findAll(
     filters: {
       status?: ProjectStatus;
       includeArchived?: boolean;
@@ -170,7 +171,7 @@ export class ProjectsService {
       where.archived_at = { [Op.is]: null };
     }
 
-    return this.projectModel.findAll({
+    const projects = await this.projectModel.findAll({
       where,
 
       subQuery: false,
@@ -198,6 +199,23 @@ export class ProjectsService {
       paranoid: !filters.includeDeleted,
       order: [['created_at', 'DESC']],
     });
+    await this.attachExecutionWork(projects);
+    return projects;
+  }
+
+  /** Projects in Execution carry the Build-planner work going on (execution_work). */
+  private async attachExecutionWork(projects: Project[]) {
+    const ids = projects.filter((p) => p.current_phase === EXECUTION_PHASE).map((p) => p.id);
+    if (!ids.length) return;
+    try {
+      const work = await executionWorkFor(this.projectModel.sequelize!, ids);
+      projects.forEach((p) => {
+        const w = work.get(p.id);
+        if (w) p.setDataValue('execution_work' as keyof Project, w as never);
+      });
+    } catch {
+      /* the list still works without it */
+    }
   }
 
   // =========================
@@ -296,6 +314,7 @@ export class ProjectsService {
 
     // Attach team to project response
     project.setDataValue('team_members', teamMembers);
+    await this.attachExecutionWork([project]);
 
     return project;
   }

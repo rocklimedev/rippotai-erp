@@ -73,7 +73,7 @@ function subPhases(overview) {
   return out.map((ph) => {
     const keys = ph.rows.map((r) => r.st.key);
     const dates = ph.rows
-      .map((r) => r.st.date)
+      .flatMap((r) => [String(r.planned_start_date || '').slice(0, 10), r.st.date])
       .filter(Boolean)
       .sort();
     const state = keys.every((k) => k === 'completed')

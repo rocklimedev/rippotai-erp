@@ -36,3 +36,10 @@
   gap: 8px;
   margin-top: 16px;
 }
+.sdu-file.is-focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50, #eef3f0); }
+
+.docket-list { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 13px; }
+.docket-list th { text-align: left; font-weight: 600; color: var(--text-3); padding: 6px 8px; border-bottom: 1px solid var(--border, #e4e7e5); }
+.docket-list td { padding: 7px 8px; border-bottom: 1px solid var(--border, #eef0ef); }
+.docket-list td:first-child, .docket-list th:first-child { width: 36px; color: var(--text-3); }
+.docket-list td:last-child, .docket-list th:last-child { width: 80px; text-align: right; }

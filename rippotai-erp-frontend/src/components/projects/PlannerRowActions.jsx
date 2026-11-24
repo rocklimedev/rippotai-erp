@@ -1,5 +1,5 @@
 // Add / remove rows of the Design, Build or Procurement planner.
-// Design: Phase (existing or new) · Drawings & design · Details · Date
+// Design: Phase (existing or new) · Drawings & design · Details · Start · End
 // Build:  Phase (existing or new) · Work · Details · Date
 // Procurement: Labour contractor or Material vendor · Vendor name & phase · Date
 import { useState } from 'react';
@@ -24,6 +24,7 @@ export function PlannerRowActions({ overview, view, refresh }) {
   const [newPhase, setNewPhase] = useState('');
   const [name, setName] = useState('');
   const [details, setDetails] = useState('');
+  const [start, setStart] = useState('');
   const [date, setDate] = useState('');
   const [remarks, setRemarks] = useState('');
   const [type, setType] = useState('LABOUR');
@@ -53,6 +54,7 @@ export function PlannerRowActions({ overview, view, refresh }) {
   const reset = () => {
     setName('');
     setDetails('');
+    setStart('');
     setDate('');
     setRemarks('');
     setNewPhase('');
@@ -70,6 +72,7 @@ export function PlannerRowActions({ overview, view, refresh }) {
             item_type: type,
             category_name: name.trim(),
             vendor_name: details.trim() || undefined,
+            planned_start_date: start || undefined,
             planned_end_date: date || undefined,
             remarks: remarks.trim() || undefined,
             sort_order: nextSort(),
@@ -89,6 +92,7 @@ export function PlannerRowActions({ overview, view, refresh }) {
             phase_id: phase,
             work_name: name.trim(),
             details: details.trim() || undefined,
+            planned_start_date: start || undefined,
             planned_end_date: date || undefined,
             remarks: remarks.trim() || undefined,
             sort_order: nextSort(),
@@ -205,7 +209,18 @@ export function PlannerRowActions({ overview, view, refresh }) {
           />
           <Input
             type="date"
-            aria-label="Date"
+            aria-label="Start date"
+            title="Start date"
+            value={start}
+            disabled={busy}
+            onChange={(e) => setStart(e.target.value)}
+            style={{ width: 150 }}
+          />
+          <Input
+            type="date"
+            aria-label="End date"
+            title="End date"
+            min={start || undefined}
             value={date}
             disabled={busy}
             onChange={(e) => setDate(e.target.value)}

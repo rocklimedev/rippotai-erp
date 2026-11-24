@@ -10,6 +10,12 @@
   background: var(--canvas);
 }
 .inos-shell.is-collapsed { --side-w: var(--side-w-collapsed); }
+/* Hidden menu: the sidebar slides away completely and the page takes the full width. */
+.inos-shell.is-hidden { --side-w: 0px; }
+.inos-shell.is-hidden .inos-side { width: 244px; }
+.inos-shell.is-hidden .inos-side:not(.is-mobile-open) { transform: translateX(-100%); visibility: hidden; }
+.inos-shell.is-hidden .inos-topbar__menu { display: inline-flex; }
+.inos-side { transition: transform 160ms ease; }
 .inos-shell__main {
   margin-left: var(--side-w);
   min-width: 0;

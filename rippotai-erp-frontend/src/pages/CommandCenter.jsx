@@ -689,7 +689,7 @@ function ProjectExecutionBoard({
                   <PhaseStepper phases={row.phases} activeSeq={row.currentPhaseSeq} />
                   <span className="cc-project__phase-label">
                     {activePhase
-                      ? `Phase ${activePhase.phaseNumber} of ${row.phases.length} · ${phaseTitle(activePhase.name)}`
+                      ? `Phase ${activePhase.phaseNumber} of ${row.phases.length} · ${row.executionWork?.label || phaseTitle(activePhase.name)}`
                       : 'Not started'}
                   </span>
                 </span>
@@ -1173,7 +1173,7 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
                     key={row.code}
                     icon={Construction}
                     title={row.name}
-                    meta={`${ph.name} · ${ph.docsDone}/${ph.docsTotal} docs${row.siteQcFailures ? ` · ${row.siteQcFailures} open QC failure${row.siteQcFailures > 1 ? 's' : ''}` : ''}`}
+                    meta={`${row.executionWork?.label || ph.name}${row.executionWork?.late ? ` · ${row.executionWork.late} late` : ''} · ${ph.docsDone}/${ph.docsTotal} docs${row.siteQcFailures ? ` · ${row.siteQcFailures} open QC failure${row.siteQcFailures > 1 ? 's' : ''}` : ''}`}
                     right={
                       row.siteQcFailures ? (
                         <Pill tone="bad" size="sm">

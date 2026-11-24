@@ -28,6 +28,14 @@ import UploadDocListPage from "@/components/projects/upload-docs/UploadDocListPa
 import { PreDesignList, PreDesignProject } from "@/components/projects/upload-docs/PreDesignPages";
 import MaterialPalettePage from "@/components/projects/upload-docs/MaterialPalettePage";
 import ConsentFormPage from "@/components/projects/upload-docs/ConsentFormPage";
+import DocumentView from "@/pages/documents/DocumentView";
+import DrawingsView from "@/pages/documents/DrawingsView";
+
+// Uploaded drawings / documents open inside the app the user is working in.
+const RECORD_PAGES = [
+  { path: "documents/:id", element: <DocumentView /> },
+  { path: "drawings/:id", element: <DrawingsView /> },
+];
 
 function GroupDashboardRedirect({ to }) {
   const { search, hash } = useLocation();
@@ -44,10 +52,12 @@ const FLOW_PAGES = {
     { path: "material-palette", element: <MaterialPalettePage /> },
     { path: "working-drawings", element: <UploadDocListPage key="working-drawings" docKey="working-drawings" /> },
     { path: "tender-drawings", element: <UploadDocListPage key="tender-drawings" docKey="tender-drawings" /> },
+    ...RECORD_PAGES,
   ],
   build: [
     { path: "agreement", element: <UploadDocListPage key="agreement" docKey="agreement" /> },
     { path: "consent-form", element: <ConsentFormPage /> },
+    ...RECORD_PAGES,
   ],
 };
 

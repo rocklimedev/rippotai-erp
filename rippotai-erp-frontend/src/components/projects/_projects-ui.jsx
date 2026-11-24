@@ -154,13 +154,25 @@ export function normalizeCommandCenterPhases(row) {
   }));
 }
 
+/**
+ * Execution stage: the Build-planner work going on (e.g. "Civil Work · Foundation,
+ * Walling") instead of the word "Execution". Accepts a Command Center row
+ * (executionWork) or a project (execution_work). null when not in Execution.
+ */
+export function executionWorkLabel(item) {
+  const w = item?.executionWork || item?.execution_work;
+  return w?.label || null;
+}
+
 /** Progress for a Command Center row: same % and current phase as the Command Center shows. */
 export function commandCenterProgress(row, phases = normalizeCommandCenterPhases(row)) {
   const base = phaseProgress(phases);
   const currentIndex = phases.findIndex((p) => p.phaseNumber === row?.currentPhaseSeq);
+  const current = currentIndex >= 0 ? phases[currentIndex] : base.current;
+  const work = executionWorkLabel(row);
   return {
     ...base,
-    current: currentIndex >= 0 ? phases[currentIndex] : base.current,
+    current: current && work ? { ...current, name: work, late: row.executionWork?.late || 0 } : current,
     currentNumber: currentIndex >= 0 ? currentIndex + 1 : base.currentNumber,
     percent: Math.round(Number(row?.pct) || 0),
     started: (Number(row?.pct) || 0) > 0 || base.started,

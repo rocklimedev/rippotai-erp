@@ -297,6 +297,13 @@ export class PortfolioProjectResponseDto {
   currentPhaseName?: string;
 
   @ApiProperty({
+    required: false,
+    description: 'Execution only: Build-planner work going on now',
+    example: { label: 'Civil Work · Foundation, Walling', phase: 'Civil Work', items: ['Foundation', 'Walling'], late: 0, upcoming: false },
+  })
+  executionWork?: { label: string; phase: string; items: string[]; late: number; upcoming: boolean };
+
+  @ApiProperty({
     example: 1,
     required: false,
     description: 'Open site QC failures (latest attempt FAIL/REWORK)',

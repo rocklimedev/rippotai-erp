@@ -1,6 +1,6 @@
 import { createElement, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUpRight, Check, ChevronDown, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronDown, ChevronsLeft } from 'lucide-react';
 import { MODULE_ICONS } from '@/components/icons/ModuleIcons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { APP_META } from '@/config/appNav';
@@ -140,10 +140,10 @@ export default function AppSidebar({ app, collapsed, onToggle, mobileOpen, onClo
               type="button"
               className="inos-side__collapse"
               onClick={onToggle}
-              aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
-              title={collapsed ? 'Expand menu' : 'Collapse menu'}
+              aria-label="Hide menu"
+              title="Hide menu"
             >
-              {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+              <ChevronsLeft size={16} />
             </button>
           </div>
 
