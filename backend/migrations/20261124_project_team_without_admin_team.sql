@@ -1,0 +1,1 @@
+ALTER TABLE team_members MODIFY COLUMN team_id CHAR(36) NULL;

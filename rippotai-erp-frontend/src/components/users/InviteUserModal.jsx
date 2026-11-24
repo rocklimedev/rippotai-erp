@@ -22,6 +22,7 @@ export default function InviteUserModal({ onClose, user }) {
     password: '',
     phone: user?.phone ?? '',
     job_title: user?.job_title ?? '',
+    role_label: user?.role_label ?? '',
     avatar_url: user?.avatar_url ?? '',
     role_id: user?.role_id ?? user?.role?.id ?? '',
   });
@@ -83,6 +84,7 @@ export default function InviteUserModal({ onClose, user }) {
       email: form.email.trim(),
       phone: form.phone.trim() || null,
       job_title: form.job_title.trim() || null,
+      role_label: form.role_label.trim() || null,
       avatar_url: form.avatar_url.trim() || null,
       role_id: form.role_id,
     };
@@ -248,6 +250,22 @@ export default function InviteUserModal({ onClose, user }) {
             placeholder="e.g. Site engineer"
             onChange={(e) => handleChange('job_title', e.target.value)}
           />
+        </Field>
+
+        <Field label="Document role label" optional htmlFor="iu-document-role"
+          hint="Used on document covers. Access permissions are managed through the account role.">
+          <TextInput
+            id="iu-document-role"
+            list="iu-document-role-options"
+            value={form.role_label}
+            maxLength={150}
+            placeholder="e.g. Principal Architect or Project Lead"
+            onChange={(e) => handleChange('role_label', e.target.value)}
+          />
+          <datalist id="iu-document-role-options">
+            <option value="Principal Architect" />
+            <option value="Project Lead" />
+          </datalist>
         </Field>
 
         <Field

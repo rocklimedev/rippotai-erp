@@ -15,6 +15,7 @@ import {
   ChoiceGroup,
 } from '@/components/inos';
 import { Skeleton } from '@/components/projects/_projects-ui';
+import ProjectCreationTeam from '@/components/projects/ProjectCreationTeam';
 
 import {
   useCreateProjectMutation,
@@ -74,6 +75,7 @@ export default function ProjectNew() {
     description: '',
   });
   const [errors, setErrors] = useState({});
+  const [team, setTeam] = useState([]);
   const [hydrated, setHydrated] = useState(false);
 
   const set = (key, value) => {
@@ -226,7 +228,7 @@ export default function ProjectNew() {
         toast.success('Project updated');
         nav(`/projects/${data?.id || projectId}`);
       } else {
-        const data = await createProject(payload).unwrap();
+        const data = await createProject({ ...payload, team_members: team }).unwrap();
         toast.success('Project created');
         nav(`/projects/${data.id}`);
       }
@@ -540,6 +542,12 @@ export default function ProjectNew() {
             />
           </Field>
         </FormSection>
+
+        {!isEdit && (
+          <FormSection step={4} title="Team">
+            <ProjectCreationTeam members={team} onChange={setTeam} disabled={busy} />
+          </FormSection>
+        )}
 
         <div className="inos-form-actions">
           <span className="inos-form-actions__note">

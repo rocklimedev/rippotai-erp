@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
+import { col, fn, Op, Transaction, where, WhereOptions } from 'sequelize';
 import { ConflictException } from '@nestjs/common';
 import { Project } from './models/projects.model';
-import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
+import {
+  CreateProjectDto,
+  CreateProjectTeamMemberDto,
+  UpdateProjectDto,
+} from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
 
 import { ActivityLogForProjectService } from '../engagement/services/activity-log-project.service';
@@ -14,6 +18,9 @@ import { User } from '@/modules/users/models/user.model';
 import { Role } from '@/modules/rbac/models/role.model';
 import { TeamMember } from '../users/models/team-member.model';
 import { TeamMemberOwnerType } from '@/common/enums/team.enums';
+const normalizeRole = (label?: string | null) =>
+  (label ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -28,6 +35,9 @@ export class ProjectsService {
     private readonly notificationForProjectService: NotificationForProjectService,
 
     private readonly clientsService: ClientsService,
+
+    @InjectModel(User)
+    private readonly userModel: typeof User,
   ) {}
   private slugify(name: string): string {
     return name
@@ -87,104 +97,39 @@ export class ProjectsService {
     // CREATE PROJECT
     // ============================================================
 
-    const project = await this.projectModel.create({
-      ...projectData,
-      slug,
-      created_by: user?.id ?? null,
-    } as any);
-
-    // ============================================================
-    // CREATE PROJECT TEAM ASSIGNMENTS
-    // ============================================================
-
-    if (team_members?.length) {
-      for (const [index, member] of team_members.entries()) {
-        // --------------------------------------------------------
-        // Find the user's actual team membership
-        // --------------------------------------------------------
-
-        const teamMembership = await this.teamMemberModel.findOne({
-          where: {
-            user_id: member.user_id,
-
-            // Only look at actual team memberships
-            // rather than project assignments.
-            owner_type: TeamMemberOwnerType.TEAM,
-            owner_id: {
-              [Op.ne]: null,
-            },
-          },
-        });
-
-        if (!teamMembership) {
-          throw new NotFoundException(
-            `User ${member.user_id} is not assigned to a team`,
-          );
-        }
-
-        // --------------------------------------------------------
-        // Prevent duplicate project assignment
-        // --------------------------------------------------------
-
-        const existing = await this.teamMemberModel.findOne({
-          where: {
-            owner_type: TeamMemberOwnerType.PROJECT,
-            owner_id: project.id,
-            user_id: member.user_id,
-            role_label: member.role_label,
-          },
-        });
-
-        if (existing) {
-          continue;
-        }
-
-        // --------------------------------------------------------
-        // Only one primary member per project + role
-        // --------------------------------------------------------
-
-        if (member.is_primary) {
-          await this.teamMemberModel.update(
-            {
-              is_primary: false,
-            },
-            {
-              where: {
-                owner_type: TeamMemberOwnerType.PROJECT,
-                owner_id: project.id,
-                role_label: member.role_label,
-                is_primary: true,
-              },
-            },
-          );
-        }
-
-        // --------------------------------------------------------
-        // Create project assignment
-        // --------------------------------------------------------
-
-        await this.teamMemberModel.create({
-          team_id: teamMembership.team_id,
-
-          owner_type: TeamMemberOwnerType.PROJECT,
-          owner_id: project.id,
-
-          user_id: member.user_id,
-
-          role_label: member.role_label,
-
-          is_primary: member.is_primary ?? false,
-
-          sort_order: member.sort_order ?? index,
-
-          created_by: user?.id ?? null,
-        });
-      }
+    const members = team_members ?? [];
+    if (
+      members.filter(
+        (member) => normalizeRole(member.role_label) === 'principal architect',
+      ).length > 1
+    ) {
+      throw new ConflictException(
+        'A project can have only one Principal Architect',
+      );
     }
 
-    // ============================================================
-    // ACTIVITY LOG
-    // ============================================================
+    const project = await this.projectModel.sequelize!.transaction(
+      async (transaction) => {
+        const created = await this.projectModel.create(
+          {
+            ...projectData,
+            slug,
+            created_by: user?.id ?? null,
+          } as any,
+          { transaction },
+        );
+
+        for (const [index, member] of members.entries()) {
+          await this.createTeamAssignment(
+            created.id,
+            { ...member, sort_order: member.sort_order ?? index },
+            user,
+            transaction,
+          );
+        }
+        return created;
+      },
+    );
 
     await this.activityLogForProjectService.logProjectCreated(project, user);
 
@@ -489,6 +434,8 @@ export class ProjectsService {
             'email',
             'phone',
             'job_title',
+            'role_label',
+            'is_active',
             'avatar_url',
             'role_id',
           ],
@@ -510,187 +457,224 @@ export class ProjectsService {
     });
   }
 
+  async getDocumentPeople(projectId: string) {
+    const members = (await this.getTeam(projectId)).filter(
+      (member) => member.user?.is_active,
+    );
+    const pick = (matches: (member: TeamMember) => boolean) =>
+      members.find((member) => member.is_primary && matches(member)) ||
+      members.find(matches);
+    const byLabel = (label: string) =>
+      pick((member) => normalizeRole(member.role_label) === label) ||
+      pick((member) => normalizeRole(member.user.role_label) === label);
+
+    const principal = byLabel('principal architect');
+    const lead =
+      byLabel('project lead') ||
+      pick((member) =>
+        /project (manager|lead)|project head/i.test(member.role_label ?? ''),
+      );
+
+    let architect = principal?.user.name;
+    if (!architect) {
+      const defaults = await this.userModel.findAll({
+        attributes: ['name'],
+        where: {
+          is_active: true,
+          [Op.and]: where(
+            fn('LOWER', col('role_label')),
+            'principal architect',
+          ),
+        },
+        limit: 2,
+      });
+      if (defaults.length === 1) architect = defaults[0].name;
+    }
+    architect ||= (
+      pick((member) =>
+        /principal/i.test(
+          `${member.role_label ?? ''} ${member.user.job_title ?? ''}`,
+        ),
+      ) || pick((member) => /architect/i.test(member.role_label ?? ''))
+    )?.user.name;
+
+    return { architect: architect ?? '', lead: lead?.user.name ?? '' };
+  }
+
   // =========================
   // ADD PROJECT TEAM MEMBER
   // =========================
   async addTeamMember(
     projectId: string,
-    dto: {
-      user_id: string;
-      role_label: string;
-      is_primary?: boolean;
-      sort_order?: number;
-    },
+    dto: CreateProjectTeamMemberDto,
     currentUser?: User,
-  ): Promise<TeamMember> {
-    // ============================================================
-    // VALIDATE PROJECT
-    // ============================================================
-
-    const project = await this.projectModel.findByPk(projectId);
-
-    if (!project) {
-      throw new NotFoundException(`Project ${projectId} not found`);
-    }
-
-    // ============================================================
-    // VALIDATE USER
-    // ============================================================
-
-    const targetUser = await User.findByPk(dto.user_id);
-
-    if (!targetUser) {
-      throw new NotFoundException(`User ${dto.user_id} not found`);
-    }
-
-    // ============================================================
-    // FIND ACTUAL TEAM MEMBERSHIP
-    // ============================================================
-    //
-    // A PROJECT assignment must inherit the team_id from the
-    // user's actual TEAM membership.
-    //
-    // Do NOT create a project assignment without team_id because
-    // team_id is required by the TeamMember model/database.
-    //
-    // ============================================================
-
-    const teamMembership = await this.teamMemberModel.findOne({
-      where: {
-        user_id: dto.user_id,
-
-        // Only the user's real admin/team membership.
-        // Project assignments must NOT be used here.
-        owner_type: TeamMemberOwnerType.TEAM,
-
-        owner_id: {
-          [Op.ne]: null,
-        },
-      },
-    });
-
-    if (!teamMembership) {
-      throw new NotFoundException(
-        `${targetUser.name} is not assigned to an admin team`,
+  ) {
+    return this.projectModel.sequelize!.transaction(async (transaction) => {
+      await this.lockProjectTeam(projectId, transaction);
+      return this.createTeamAssignment(
+        projectId,
+        dto,
+        currentUser,
+        transaction,
       );
-    }
-
-    // ============================================================
-    // CHECK EXISTING PROJECT ASSIGNMENT
-    // ============================================================
-
-    const existing = await this.teamMemberModel.findOne({
-      where: {
-        owner_type: TeamMemberOwnerType.PROJECT,
-        owner_id: projectId,
-        user_id: dto.user_id,
-        role_label: dto.role_label,
-      },
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        `${targetUser.name} is already assigned to this project with the role "${dto.role_label}"`,
-      );
-    }
-
-    // ============================================================
-    // ONLY ONE PRIMARY MEMBER PER PROJECT + ROLE
-    // ============================================================
-
-    if (dto.is_primary) {
-      await this.teamMemberModel.update(
-        {
-          is_primary: false,
-        },
-        {
-          where: {
-            owner_type: TeamMemberOwnerType.PROJECT,
-            owner_id: projectId,
-            role_label: dto.role_label,
-            is_primary: true,
-          },
-        },
-      );
-    }
-
-    // ============================================================
-    // CREATE PROJECT ASSIGNMENT
-    // ============================================================
-
-    return this.teamMemberModel.create({
-      // IMPORTANT:
-      // Project member inherits team_id from the user's actual
-      // TEAM membership.
-      team_id: teamMembership.team_id,
-
-      owner_type: TeamMemberOwnerType.PROJECT,
-      owner_id: projectId,
-
-      user_id: dto.user_id,
-
-      role_label: dto.role_label,
-
-      is_primary: dto.is_primary ?? false,
-
-      sort_order: dto.sort_order ?? 0,
-
-      created_by: currentUser?.id ?? null,
     });
   }
 
-  // =========================
-  // UPDATE PROJECT TEAM MEMBER
-  // =========================
+  private async lockProjectTeam(projectId: string, transaction: Transaction) {
+    const project = await this.projectModel.findByPk(projectId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!project) throw new NotFoundException('Project not found');
+  }
+
+  private async assertAvailablePrincipal(
+    projectId: string,
+    roleLabel: string | null,
+    transaction: Transaction,
+    except?: string,
+  ) {
+    if (normalizeRole(roleLabel) !== 'principal architect') return;
+    const members = await this.teamMemberModel.findAll({
+      where: { owner_type: TeamMemberOwnerType.PROJECT, owner_id: projectId },
+      attributes: ['id', 'role_label'],
+      transaction,
+    });
+    if (
+      members.some(
+        (member) =>
+          member.id !== except &&
+          normalizeRole(member.role_label) === 'principal architect',
+      )
+    ) {
+      throw new ConflictException(
+        'A project can have only one Principal Architect',
+      );
+    }
+  }
+
+  private async createTeamAssignment(
+    projectId: string,
+    dto: CreateProjectTeamMemberDto,
+    actor: User | undefined,
+    transaction: Transaction,
+  ): Promise<TeamMember> {
+    const person = await this.userModel.findByPk(dto.user_id, {
+      include: [Role],
+      transaction,
+    });
+    if (!person?.is_active || person.role?.name?.toUpperCase() === 'CLIENT') {
+      throw new NotFoundException(
+        'Choose an active staff user for the project team',
+      );
+    }
+    const role = normalizeRole(dto.role_label);
+    const roleLabel =
+      role === 'principal architect'
+        ? 'Principal Architect'
+        : role === 'project lead'
+          ? 'Project Lead'
+          : dto.role_label;
+    await this.assertAvailablePrincipal(projectId, roleLabel, transaction);
+
+    const membership = await this.teamMemberModel.findOne({
+      where: {
+        user_id: dto.user_id,
+        [Op.or]: [
+          { owner_type: null, owner_id: null },
+          { owner_type: TeamMemberOwnerType.TEAM, owner_id: { [Op.ne]: null } },
+        ],
+      },
+      transaction,
+    });
+    if (
+      !membership &&
+      role !== 'principal architect' &&
+      role !== 'project lead'
+    ) {
+      throw new NotFoundException(
+        person.name + ' is not assigned to an admin team',
+      );
+    }
+
+    const assignment = {
+      owner_type: TeamMemberOwnerType.PROJECT,
+      owner_id: projectId,
+      role_label: roleLabel,
+    };
+    const existing = await this.teamMemberModel.findOne({
+      where: { ...assignment, user_id: dto.user_id },
+      transaction,
+    });
+    if (existing)
+      throw new ConflictException(
+        person.name + ' already has this project role',
+      );
+
+    if (dto.is_primary) {
+      await this.teamMemberModel.update(
+        { is_primary: false },
+        {
+          where: { ...assignment, is_primary: true },
+          transaction,
+        },
+      );
+    }
+    return this.teamMemberModel.create(
+      {
+        ...assignment,
+        team_id: membership?.team_id ?? null,
+        user_id: dto.user_id,
+        is_primary: dto.is_primary ?? false,
+        sort_order: dto.sort_order ?? 0,
+        created_by: actor?.id ?? null,
+      },
+      { transaction },
+    );
+  }
+
   async updateTeamMember(
     projectId: string,
     teamMemberId: string,
-    dto: {
-      role_label?: string;
-      is_primary?: boolean;
-      sort_order?: number;
-    },
+    dto: { role_label?: string; is_primary?: boolean; sort_order?: number },
   ): Promise<TeamMember> {
-    const member = await this.teamMemberModel.findOne({
-      where: {
-        id: teamMemberId,
+    return this.projectModel.sequelize!.transaction(async (transaction) => {
+      await this.lockProjectTeam(projectId, transaction);
+      const assignment = {
         owner_type: TeamMemberOwnerType.PROJECT,
         owner_id: projectId,
-      },
-    });
+      };
+      const member = await this.teamMemberModel.findOne({
+        where: { ...assignment, id: teamMemberId },
+        transaction,
+      });
+      if (!member) throw new NotFoundException('Project team member not found');
 
-    if (!member) {
-      throw new NotFoundException(
-        `Project team member ${teamMemberId} not found`,
-      );
-    }
-
-    const newRoleLabel = dto.role_label ?? member.role_label;
-
-    if (dto.is_primary === true) {
-      await this.teamMemberModel.update(
-        {
-          is_primary: false,
-        },
-        {
-          where: {
-            owner_type: TeamMemberOwnerType.PROJECT,
-            owner_id: projectId,
-            role_label: newRoleLabel,
-            is_primary: true,
-            id: {
-              [Op.ne]: teamMemberId,
+      const roleLabel = dto.role_label ?? member.role_label;
+      if (dto.role_label !== undefined) {
+        await this.assertAvailablePrincipal(
+          projectId,
+          roleLabel,
+          transaction,
+          teamMemberId,
+        );
+      }
+      if (dto.is_primary === true) {
+        await this.teamMemberModel.update(
+          { is_primary: false },
+          {
+            where: {
+              ...assignment,
+              role_label: roleLabel,
+              is_primary: true,
+              id: { [Op.ne]: teamMemberId },
             },
+            transaction,
           },
-        },
-      );
-    }
-
-    await member.update({
-      ...dto,
+        );
+      }
+      return member.update(dto, { transaction });
     });
-
-    return member;
   }
 
   // =========================

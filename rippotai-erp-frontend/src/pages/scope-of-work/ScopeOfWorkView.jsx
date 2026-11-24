@@ -26,7 +26,7 @@ import {
   WSign,
   coverRows,
   padRows,
-  projectPeople,
+  useProjectPeople,
 } from '@/components/print-document';
 import { resolveSite } from '@/components/brief-document/site-options';
 import { ProjectTypeGrid, SiteConditionGrid } from '@/components/brief-document/SiteOptionGrids';
@@ -389,6 +389,7 @@ export function ScopeOfWorkView() {
   const docRef = useRef(null);
   const { download, downloading } = usePdfDownload(docRef);
   const { data: sow, isFetching, isError } = useGetScopeOfWorkByIdQuery(id, { skip: !id });
+  const people = useProjectPeople(sow?.projectId || sow?.project?.id);
   const [deleteScopeOfWork, { isLoading: deleting }] = useDeleteScopeOfWorkMutation();
   const { data: briefRes } = useGetLatestProjectBriefQuery(sow?.projectId, {
     skip: !sow?.projectId,
@@ -491,7 +492,7 @@ export function ScopeOfWorkView() {
               project: projectName,
               address: project.site_location,
               client: client.name,
-              ...projectPeople(project.team_members),
+              ...people,
             }).map((row, i) => (i === 2 ? row.map((f) => ({ ...f, gold: true })) : row)),
           }}
           sections={sections}

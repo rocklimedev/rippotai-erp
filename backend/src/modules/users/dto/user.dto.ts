@@ -32,6 +32,11 @@ export class CreateUserDto {
   @MaxLength(150)
   job_title?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  role_label?: string | null;
+
   // role is assignable on create (e.g. by an admin) but never editable
   // by the user themselves from the profile screen
   @IsOptional()
@@ -41,7 +46,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
-
 }
 
 // Fields a user is allowed to change from the "Profile Settings" screen.
@@ -98,11 +102,15 @@ export class UpdateUserDto {
   job_title?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  role_label?: string | null;
+
+  @IsOptional()
   @IsUUID()
   role_id?: string;
 
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
-
 }

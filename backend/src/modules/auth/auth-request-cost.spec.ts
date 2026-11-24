@@ -80,6 +80,7 @@ describe('Authenticated request database cost', () => {
 
   it('uses one joined SELECT on a cold cache, then one lighter SELECT and no writes per warm request', async () => {
     const first = await auth.getCurrentUserFromPayload(payload);
+    expect(first.email_verified).toBe(true);
     expect(first.permissions).toEqual(['users:read']);
     expect(model.findOne).toHaveBeenCalledTimes(1);
     expect(joined(model.findOne.mock.calls[0])).toBe(true);

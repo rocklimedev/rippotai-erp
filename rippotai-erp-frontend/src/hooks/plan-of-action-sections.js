@@ -23,6 +23,5 @@ export const POA_SECTIONS = [
   },
 
   { title: "Phases", type: "phases" },
-  { title: "Team", type: "team" },
   { title: "Terms & Conditions", type: "terms" },
 ];

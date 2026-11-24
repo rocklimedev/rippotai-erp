@@ -24,6 +24,7 @@ export interface UserAttributes {
   password_hash: string;
   phone: string | null;
   job_title: string | null;
+  role_label: string | null;
   avatar_url: string | null;
   role_id: string | null;
   is_active: boolean;
@@ -36,6 +37,7 @@ export interface UserCreationAttributes extends Optional<
   | 'id'
   | 'phone'
   | 'job_title'
+  | 'role_label'
   | 'avatar_url'
   | 'role_id'
   | 'is_active'
@@ -109,6 +111,9 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
     allowNull: true,
   })
   declare job_title: string | null;
+
+  @Column({ type: DataType.STRING(150), allowNull: true })
+  declare role_label: string | null;
 
   @Column({
     type: DataType.TEXT,

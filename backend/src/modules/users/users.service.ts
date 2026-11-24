@@ -36,6 +36,10 @@ const ALLOWED_AVATAR_MIME = [
   'image/webp',
 ];
 
+function normalizeRoleLabel(value: string | null): string | null {
+  return value?.trim().replace(/\s+/g, ' ') || null;
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -77,6 +81,7 @@ export class UsersService {
         password_hash,
         phone: dto.phone ?? null,
         job_title: dto.job_title ?? null,
+        role_label: normalizeRoleLabel(dto.role_label ?? null),
         role_id: dto.role_id ?? null,
         is_active: dto.is_active ?? true,
         created_by: actor.id,
@@ -170,6 +175,7 @@ export class UsersService {
       name: dto.name,
       phone: dto.phone,
       job_title: dto.job_title,
+      role_label: dto.role_label === undefined ? undefined : normalizeRoleLabel(dto.role_label),
       is_active: dto.is_active,
       role_id: dto.role_id,
     };
@@ -213,6 +219,7 @@ export class UsersService {
             name: locked.name,
             phone: locked.phone,
             job_title: locked.job_title,
+            role_label: locked.role_label,
             role_id: locked.role_id,
             is_active: locked.is_active,
           });

@@ -80,7 +80,7 @@ export class AuthController {
   @Post('request-email-verification')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   requestEmailVerification(@Body() dto: RequestEmailVerificationDto) {
-    return this.emailVerification.request(dto.email);
+    return this.emailVerification.request(dto.email, dto.delivery);
   }
 
   @RequirePermission('auth:verify-email')
@@ -89,7 +89,7 @@ export class AuthController {
   @Post('verify-email')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.emailVerification.verify(dto.token);
+    return this.emailVerification.verify(dto.token, dto.email);
   }
   @RequirePermission('account:read')
   @Get('me')

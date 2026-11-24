@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
   ValidateNested,
 } from 'class-validator';
 
@@ -268,6 +269,16 @@ export class CreateProjectBriefDto {
   @IsOptional()
   @IsDateString()
   briefDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  principalArchitect?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  projectLead?: string | null;
 
   // Site
 

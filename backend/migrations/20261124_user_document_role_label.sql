@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN role_label VARCHAR(150) NULL;

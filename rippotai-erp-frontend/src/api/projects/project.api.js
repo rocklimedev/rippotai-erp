@@ -140,6 +140,14 @@ export const projectsApi = baseApi.injectEndpoints({
       ],
     }),
 
+    getProjectDocumentPeople: builder.query({
+      query: (projectId) => `/projects/${projectId}/document-people`,
+      providesTags: (result, error, projectId) => [
+        { type: "ProjectTeam", id: projectId },
+        "Users",
+      ],
+    }),
+
     // =========================
     // Add Project Team Member
     // POST /projects/:id/team
@@ -358,6 +366,7 @@ export const {
   // ============================================================
 
   useGetProjectTeamQuery,
+  useGetProjectDocumentPeopleQuery,
   useAddProjectTeamMemberMutation,
   useUpdateProjectTeamMemberMutation,
   useRemoveProjectTeamMemberMutation,

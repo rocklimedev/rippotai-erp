@@ -5142,6 +5142,16 @@
   {
     "module": "projects",
     "controller": "ProjectsController",
+    "handler": "getDocumentPeople",
+    "method": "GET",
+    "path": "/projects/:id/document-people",
+    "permission": "projects:read",
+    "public": false,
+    "file": "src/modules/projects/projects.controller.ts"
+  },
+  {
+    "module": "projects",
+    "controller": "ProjectsController",
     "handler": "getFull",
     "method": "GET",
     "path": "/projects/full",

@@ -202,6 +202,12 @@ export class ProjectsController {
     return this.projectsService.getTeam(projectId);
   }
 
+  @RequirePermission('projects:read')
+  @Get(':id/document-people')
+  getDocumentPeople(@Param('id', ParseUUIDPipe) projectId: string) {
+    return this.projectsService.getDocumentPeople(projectId);
+  }
+
   @RequirePermission('projects:update')
   @Patch(':id/team/:teamMemberId')
   updateTeamMember(

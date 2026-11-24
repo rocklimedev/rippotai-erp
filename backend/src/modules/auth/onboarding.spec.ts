@@ -42,7 +42,7 @@ describe('Closed signup and verified email onboarding', () => {
     touchLastUsed: jest.fn(),
     update: jest.fn(),
   };
-  const mail = { sendVerificationEmail: jest.fn() };
+  const mail = { sendVerificationEmail: jest.fn(), sendVerificationCode: jest.fn() };
   const transaction: any = { LOCK: { UPDATE: 'UPDATE' } };
   // Serialize transactions as a database row lock would, so concurrent replay
   // exercises the service's consume-after-validation flow.
@@ -142,6 +142,7 @@ describe('Closed signup and verified email onboarding', () => {
       revoked_at: null,
     }));
     mail.sendVerificationEmail.mockResolvedValue(undefined);
+    mail.sendVerificationCode.mockResolvedValue(undefined);
   });
 
   function verificationToken(patch: any = {}) {
@@ -158,6 +159,39 @@ describe('Closed signup and verified email onboarding', () => {
     issued.push(token);
     return token;
   }
+
+  it('emails a short-lived code and verifies it once for the intended address', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/request-email-verification')
+      .send({ email: user.email, delivery: 'code' })
+      .expect(201);
+
+    const [recipient, code, minutes] = mail.sendVerificationCode.mock.calls[0];
+    expect(recipient).toBe(user.email);
+    expect(code).toMatch(/^[2-9A-HJ-NP-Z]{16}$/);
+    expect(minutes).toBe(10);
+    expect(issued[0].token).toBe(digest(code));
+    expect(new Date(issued[0].expires_at).getTime()).toBeLessThanOrEqual(Date.now() + 600_000);
+
+    const verify = (email?: string) => request(app.getHttpServer())
+      .post('/auth/verify-email')
+      .send({ token: code, email });
+    await verify().expect(400);
+    await verify('other@example.com').expect(400);
+    expect(user.email_verified_at).toBeNull();
+    await verify(user.email).expect(201);
+    expect(user.email_verified_address).toBe(user.email);
+    await verify(user.email).expect(400);
+    expect(sessions.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects an expired verification code', async () => {
+    await verification.request(user.email, 'code');
+    const [, code] = mail.sendVerificationCode.mock.calls[0];
+    issued[0].expires_at = new Date(Date.now() - 1);
+    await expect(verification.verify(code, user.email)).rejects.toThrow('invalid or expired');
+    expect(user.email_verified_at).toBeNull();
+  });
 
   it('rejects uninvited public signup even with a supplied staff role or verification fields', async () => {
     await request(app.getHttpServer())

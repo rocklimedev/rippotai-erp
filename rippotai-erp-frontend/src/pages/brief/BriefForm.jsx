@@ -82,7 +82,7 @@ export function BriefForm() {
 
   const handleProjectCreated = (project) => {
     refetchProjects();
-    setProjectId(project.id);
+    changeProject(project.id);
   };
 
   // ==========================================================
@@ -123,6 +123,11 @@ export function BriefForm() {
   useRefill({ type: "client-brief", label: "Client Brief", projectId, enabled: !isEditMode, editPath: (id) => `/crm/brief/${id}/edit` });
 
   const [values, setValues] = useState({});
+  const changeProject = (nextProjectId) => {
+    if (nextProjectId === projectId) return;
+    setProjectId(nextProjectId);
+    setValues((current) => ({ ...current, principalArchitect: "", projectLead: "" }));
+  };
 
   const [initialized, setInitialized] = useState(false);
 
@@ -429,7 +434,7 @@ export function BriefForm() {
         ]}
         submitLabel={isEditMode ? "Update brief" : "Save brief"}
         projectId={projectId}
-        onProjectChange={setProjectId}
+        onProjectChange={changeProject}
         onAddProject={() => setShowNewProjectModal(true)}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting || projectsLoading || briefLoading}

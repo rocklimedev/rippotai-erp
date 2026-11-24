@@ -40,6 +40,7 @@ import {
 import { useGetProjectsQuery } from "@/api/projects/project.api";
 import { useGetUsersQuery } from "@/api/users/user.api";
 import { useGetDocumentTypesQuery } from "@/api/documents/document.api";
+import UploadTypePicker from "@/components/projects/upload-docs/UploadTypePicker";
 
 import { FileThumb, ProjectPicker } from "./DrawingBits";
 import {
@@ -93,7 +94,8 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
   const [selected, setSelected] = useState([]);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { onBusyChange?.(busy); }, [busy, onBusyChange]);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  useEffect(() => { onBusyChange?.(busy || creatingCategory); }, [busy, creatingCategory, onBusyChange]);
   const [triedSubmit, setTriedSubmit] = useState(false);
   const inputRef = useRef(null);
   const presetUsed = useRef(false);
@@ -300,6 +302,7 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
   const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== "" && v !== null && v !== undefined));
 
   const uploadAll = async () => {
+    if (busy || creatingCategory) return;
     setTriedSubmit(true);
     if (!projectId) {
       toast.error("Choose the project these drawings belong to");
@@ -721,17 +724,27 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
               <Field label="Project" required error={triedSubmit && !projectId ? "Choose a project" : null} hint="Applies to the whole batch">
                 {target ? <TextInput value={target.projectName || projectId} disabled /> : <ProjectPicker id="ds-project" projects={projects} value={projectId} onChange={setProjectId} invalid={triedSubmit && !projectId} />}
               </Field>
-              <Field label="Checklist drawing type" required={!!target} optional={!target}>
-                {target ? <TextInput value={target.name} disabled /> : (
-                  <SelectInput {...bindText("documentTypeId")}>
-                    <option value="">No checklist item</option>
-                    {drawingTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
-                  </SelectInput>
-                )}
-              </Field>
+              {target ? (
+                <Field label="Checklist drawing type" required>
+                  <TextInput value={target.name} disabled />
+                </Field>
+              ) : (
+                <UploadTypePicker
+                  label="Drawing category"
+                  placeholder={valueOf("documentTypeId") === MIXED ? "Mixed" : "No checklist item"}
+                  types={drawingTypes}
+                  value={bindText("documentTypeId").value}
+                  onSelect={(id) => setField("documentTypeId", id)}
+                  phaseCode={bindText("phaseCode").value}
+                  targetType="DRAWING"
+                  required={false}
+                  disabled={busy}
+                  onCreatingChange={setCreatingCategory}
+                />
+              )}
               <div className="ds-grid2">
                 <Field label="Phase" htmlFor="ds-phase">
-                  <SelectInput id="ds-phase" {...bindText("phaseCode")} placeholder={valueOf("phaseCode") === MIXED ? "Mixed" : undefined}>
+                  <SelectInput id="ds-phase" {...bindText("phaseCode")} disabled={creatingCategory} placeholder={valueOf("phaseCode") === MIXED ? "Mixed" : undefined}>
                     {target?.phaseCode && !PHASES.some((phase) => phase.value === target.phaseCode) && <option value={target.phaseCode}>{target.phaseName || target.phaseCode}</option>}
                     {PHASES.map((p) => (
                       <option key={p.value} value={p.value}>
@@ -851,7 +864,7 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
         </aside>
       </div>
 
-      {embedded && <Button variant="ghost" disabled={busy} onClick={onCancel}>Cancel</Button>}
+      {embedded && <Button variant="ghost" disabled={busy || creatingCategory} onClick={onCancel}>Cancel</Button>}
       <div className="ds-actionbar">
         <FormActions
           note={
@@ -872,7 +885,7 @@ export default function DrawingUploadPage({ embedded = false, target, onCancel, 
           }
           submitLabel={ready.length > 1 ? `Upload ${ready.length} drawings` : "Upload drawing"}
           submitting={busy}
-          submitDisabled={!ready.length || busy}
+          submitDisabled={!ready.length || busy || creatingCategory}
           onSubmit={uploadAll}
         />
       </div>
