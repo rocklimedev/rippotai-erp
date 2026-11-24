@@ -10,7 +10,14 @@ import { PlanOfActionSectionForm } from '../../components/plan-of-action/PlanOfA
 import { useAutoSave } from '../../hooks/use-autosave';
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 
-import { useGetProjectsQuery, useGetProjectPhasesQuery } from '../../api/projects/project.api';
+import {
+  useCreateProjectPhaseMutation,
+  useGetProjectsQuery,
+  useGetProjectPhasesQuery,
+} from '../../api/projects/project.api';
+import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
+import { AdminModal, ModalActions } from '../settings/_admin-ui';
 
 import {
   useCreatePlanOfActionMutation,
@@ -172,7 +179,56 @@ const mapPlanOfActionToForm = (plan) => {
    COMPONENT
 ============================================================ */
 
+function CreatePhaseModal({ onClose, onCreated }) {
+  const [createPhase, { isLoading }] = useCreateProjectPhaseMutation();
+  const [error, setError] = useState('');
+
+  async function submit(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isLoading) return;
+
+    const fields = new FormData(event.currentTarget);
+    const title = fields.get('title').trim();
+    if (!title) {
+      setError('Enter a phase name.');
+      return;
+    }
+
+    setError('');
+    try {
+      const phase = await createPhase({ title }).unwrap();
+      onCreated(phase);
+      toast.success('Phase created and added to the plan.');
+    } catch (err) {
+      setError(err?.data?.message || 'Could not create the phase.');
+    }
+  }
+
+  return (
+    <AdminModal
+      as="form"
+      title="Create new phase"
+      subtitle="Save a reusable phase to the library and add it to this plan."
+      icon={Plus}
+      onClose={onClose}
+      onSubmit={submit}
+      busy={isLoading}
+      footer={<ModalActions onCancel={onClose} submitting={isLoading} submitLabel="Create phase" />}
+    >
+      <div className="inos-form-grid">
+        <Field label="Phase name" htmlFor="poa-new-phase-title" required full>
+          <TextInput id="poa-new-phase-title" name="title" maxLength={255} required />
+        </Field>
+      </div>
+      {error && <p role="alert" className="inos-error">{error}</p>}
+    </AdminModal>
+  );
+}
+
 export function PlanOfActionForm() {
+  const { user } = useAuth();
+  const [creatingPhase, setCreatingPhase] = useState(false);
   const navigate = useNavigate();
 
   /*
@@ -369,67 +425,36 @@ export function PlanOfActionForm() {
     ======================================================== */
 
     const addPhase = (phase) => {
-      if (!phase?.id) {
-        return;
-      }
+      if (!phase?.id) return;
 
-      if (isSelected(phase.id)) {
-        return;
-      }
-
-      const nextOrder = selectedPhases.length + 1;
-
-      setValues((prev) => ({
-        ...prev,
-
-        phases: [
-          ...(prev.phases || []),
-
-          {
-            /*
-             * Local UI ID only.
-             */
-            id: crypto.randomUUID(),
-
-            /*
-             * IMPORTANT:
-             * Existing reusable ProjectPhase ID.
-             */
-            project_phase_id: phase.id,
-
-            /*
-             * Master phase data
-             */
-            phase_number: nextOrder,
-
-            phase_code: phase.phase_code || '',
-
-            title: phase.title || '',
-
-            description: phase.description ?? '',
-
-            /*
-             * POA-specific configuration
-             */
-            duration_min_days: '',
-
-            duration_max_days: '',
-
-            parallel_work_note: '',
-
-            inclusion_note: '',
-            details: '', // ← add
-            gantt_start_offset_days: 0,
-
-            gantt_duration_days: 0,
-
-            /*
-             * Ordering
-             */
-            sort_order: nextOrder,
-          },
-        ],
-      }));
+      const localId = crypto.randomUUID();
+      setValues((prev) => {
+        const phases = prev.phases || [];
+        if (phases.some((entry) => entry.project_phase_id === phase.id)) return prev;
+        const nextOrder = phases.length + 1;
+        return {
+          ...prev,
+          phases: [
+            ...phases,
+            {
+              id: localId,
+              project_phase_id: phase.id,
+              phase_number: nextOrder,
+              phase_code: phase.phase_code || '',
+              title: phase.title || '',
+              description: phase.description ?? '',
+              duration_min_days: '',
+              duration_max_days: '',
+              parallel_work_note: '',
+              inclusion_note: '',
+              details: '',
+              gantt_start_offset_days: 0,
+              gantt_duration_days: 0,
+              sort_order: nextOrder,
+            },
+          ],
+        };
+      });
     };
 
     /* ========================================================
@@ -571,6 +596,23 @@ export function PlanOfActionForm() {
             </SelectInput>
           </Field>
         </div>
+
+        {hasPermission(user, 'projects-phases', 'create') && (
+          <div className="mt-3">
+            <Button type="button" variant="secondary" icon={Plus} disabled={isSubmitting} onClick={() => setCreatingPhase(true)}>
+              Create new phase
+            </Button>
+          </div>
+        )}
+        {creatingPhase && (
+          <CreatePhaseModal
+            onClose={() => setCreatingPhase(false)}
+            onCreated={(phase) => {
+              addPhase(phase);
+              setCreatingPhase(false);
+            }}
+          />
+        )}
 
         {selectedPhases.length === 0 ? (
           <EmptyRows

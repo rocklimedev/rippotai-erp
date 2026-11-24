@@ -1,12 +1,14 @@
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateProjectPhaseDto {
+  @IsOptional()
   @IsInt()
   @Min(1)
-  phase_number: number;
+  phase_number?: number;
 
+  @IsOptional()
   @IsString()
-  phase_code: string;
+  phase_code?: string;
 
   @IsString()
   title: string;

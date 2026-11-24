@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, UniqueConstraintError } from 'sequelize';
+import { ProjectPhaseModule } from '@/common/enums/project-planner.enum';
 
 import { ProjectPhase } from './models/project-phase.model';
 import { CreateProjectPhaseDto } from './dto/create-project-phase.dto';
@@ -18,7 +19,11 @@ export class ProjectPhaseService {
   // ============================================================
 
   async create(dto: CreateProjectPhaseDto) {
-    const phase = await this.projectPhaseModel.create({
+    if (dto.phase_number == null && dto.phase_code == null) return this.createNumberedPhase(dto);
+    if (dto.phase_number == null || dto.phase_code == null)
+      throw new BadRequestException('Provide both the phase number and code, or omit both.');
+
+    return this.projectPhaseModel.create({
       phase_number: dto.phase_number,
       phase_code: dto.phase_code,
       title: dto.title,
@@ -26,7 +31,35 @@ export class ProjectPhaseService {
       sort_order: dto.sort_order ?? dto.phase_number,
     } as ProjectPhase);
 
-    return phase;
+  }
+
+  private async createNumberedPhase(dto: CreateProjectPhaseDto) {
+    const module = ProjectPhaseModule.DOCUMENTS;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      // Soft-deleted rows still occupy their unique numbers and codes.
+      const phases = await this.projectPhaseModel.findAll({
+        where: { module },
+        attributes: ['phase_number', 'phase_code'],
+        paranoid: false,
+      });
+      let number = phases.reduce((max, phase) => Math.max(max, phase.phase_number), 0) + 1;
+      const codes = new Set(phases.map((phase) => phase.phase_code.toUpperCase()));
+      while (codes.has(`P${number}`)) number++;
+
+      try {
+        return await this.projectPhaseModel.create({
+          module,
+          phase_number: number,
+          phase_code: `P${number}`,
+          title: dto.title,
+          description: dto.description ?? null,
+          sort_order: dto.sort_order ?? number,
+        });
+      } catch (error) {
+        if (!(error instanceof UniqueConstraintError)) throw error;
+      }
+    }
+    throw new ConflictException('Could not allocate a phase number. Try again.');
   }
 
   // ============================================================

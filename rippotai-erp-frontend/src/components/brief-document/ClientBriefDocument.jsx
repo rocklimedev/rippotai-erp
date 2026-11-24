@@ -677,6 +677,7 @@ const ClientBriefDocument = forwardRef(function ClientBriefDocument({ brief, cap
       title={project.name || 'Project'}
       wordCover={{
         title: 'CLIENT BRIEF',
+        className: 'wd-cover--client-brief',
         rows: coverRows({
           project: project.name,
           address: brief.siteAddress || project.site_location,
