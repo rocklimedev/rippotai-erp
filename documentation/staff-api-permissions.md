@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 958 routes, 927 staff routes and 381 assignable staff capabilities.
+There are 959 routes, 928 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -281,6 +281,7 @@ There are 958 routes, 927 staff routes and 381 assignable staff capabilities.
 | documents | `POST /drawings/:id/revisions` | DrawingsController.addRevision | `drawings:create` | staff |
 | documents | `POST /drawings/:id/approve` | DrawingsController.approve | `documents:approve` | staff |
 | documents | `POST /drawings` | DrawingsController.create | `drawings:create` | staff |
+| documents | `GET /drawings/docket` | DrawingsController.docket | `drawings:read` | staff |
 | documents | `GET /drawings/:id/revisions/:revisionId/download` | DrawingsController.downloadRevision | `drawings:read` | staff |
 | documents | `GET /drawings` | DrawingsController.findAll | `drawings:read` | staff |
 | documents | `GET /drawings/:id` | DrawingsController.findOne | `drawings:read` | staff |
