@@ -1,13 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, createRoutesFromElements } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext"; // adjust if your auth export differs
 import { Toaster } from "sonner";
 import { UpgradeModalHost } from "@/lib/planGuards";
 import { RootRedirect } from "@/lib/route.helpers";
 import { generateRoutes } from "@/router/generate-routes";
 import masterRoutes from "@/router";
+import { setFrontendRouteCatalogue } from "@/lib/frontend-route-access";
 
 import { CliqChatProvider } from "./components/cliq/context";
 import { SessionNavigation } from './components/auth/SessionNavigation';
+
+const appRoutes = generateRoutes(masterRoutes);
+setFrontendRouteCatalogue(createRoutesFromElements(appRoutes));
 
 /** Inner shell so we can read auth and pass currentCliqUserId */
 function AppShell() {
@@ -23,7 +27,7 @@ function AppShell() {
         <UpgradeModalHost />
         <Routes>
           <Route path="/" element={<RootRedirect />} />
-          {generateRoutes(masterRoutes)}
+          {appRoutes}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

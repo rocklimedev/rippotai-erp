@@ -38,6 +38,9 @@ export class Role extends Model<Role> {
   })
   declare description: string | null;
 
+  @Column({ type: DataType.JSON, allowNull: true })
+  declare frontend_route_restrictions: string[] | null;
+
   // ✅ FIXED RELATION (UUID based)
   @HasMany(() => User, {
     foreignKey: 'role_id',

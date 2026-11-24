@@ -129,7 +129,7 @@ export class AccessMatrixService {
 
   async getForRole(roleId: string) {
     const role = await this.roleModel.findByPk(roleId, {
-      attributes: ['id', 'name', 'description', 'scope'],
+      attributes: ['id', 'name', 'description', 'scope', 'frontend_route_restrictions'],
     });
     if (!role) throw new NotFoundException('Role not found');
     const [{ byPart }, grants, appRows] = await Promise.all([
@@ -179,6 +179,50 @@ export class AccessMatrixService {
       protected: PROTECTED_ROLES.includes(role.name),
       apps,
     };
+  }
+
+  async setFrontendRoute(roleId: string, pattern: unknown, restricted: unknown, actor: any) {
+    requireActor(actor, 'role-permissions:assign');
+    const route = typeof pattern === 'string' ? pattern.trim().toLowerCase() : '';
+    if (
+      typeof restricted !== 'boolean' ||
+      route.length > 250 ||
+      !/^\/[a-z0-9_-]+(?:\/(?:[a-z0-9_-]+|:[a-z0-9_-]+))*(?:\/\*)?$/.test(route)
+    ) {
+      throw new BadRequestException('Enter an absolute route such as /tasks/:id/edit.');
+    }
+    return this.sequelize.transaction(async (transaction) => {
+      const role = await this.roleModel.findByPk(roleId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!role) throw new NotFoundException('Role not found');
+      if (PROTECTED_ROLES.includes(role.name)) {
+        throw new ForbiddenException('Administrator roles keep their frontend route access.');
+      }
+      const routes = new Set(role.frontend_route_restrictions ?? []);
+      if (routes.has(route) === restricted) return [...routes];
+      if (restricted && routes.size >= 500) {
+        throw new BadRequestException('This role already has 500 route restrictions.');
+      }
+      if (restricted) routes.add(route);
+      else routes.delete(route);
+      const restrictions = [...routes].sort();
+      await role.update({ frontend_route_restrictions: restrictions }, { transaction });
+      await this.activity.create(
+        {
+          user_id: actor.id,
+          user_email: actor.email,
+          user_role: actor.roleName,
+          action: ActivityAction.USER_PERMISSION_UPDATED,
+          entity_type: 'Role',
+          entity_id: roleId,
+          changes: { operation: 'frontend_route_restriction', route, restricted },
+        } as any,
+        { transaction },
+      );
+      return restrictions;
+    });
   }
 
   /** One app's level for every role (per-app "Roles and permissions" page). */

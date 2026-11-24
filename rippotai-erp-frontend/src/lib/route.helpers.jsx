@@ -1,4 +1,6 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { canOpenFrontendRoute } from "@/lib/frontend-route-access";
+import NoAccess from "@/components/permissions/NoAccess";
 import { useAuth } from "@/context/AuthContext";
 import { allSlugsFor } from "@/config/appNav";
 import SectionPage from "@/pages/SectionPage";
@@ -11,6 +13,7 @@ import AppRolesPage from "@/pages/workspace/AppRolesPage";
  */
 export function Protected({ children, blockRoles }) {
   const { user, ready } = useAuth();
+  const { pathname } = useLocation();
 
   if (!ready)
     return (
@@ -24,6 +27,8 @@ export function Protected({ children, blockRoles }) {
   if (!user) return <Navigate to="/login" replace />;
   if (blockRoles && blockRoles.includes(user.role))
     return <Navigate to="/dashboard" replace />;
+  if (!canOpenFrontendRoute(user, pathname))
+    return <NoAccess help="Contact your administrator if you need access to this page." />;
 
   return children;
 }
