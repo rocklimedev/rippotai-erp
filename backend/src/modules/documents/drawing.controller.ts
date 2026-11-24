@@ -48,6 +48,25 @@ export class DrawingsController {
     });
   }
 
+  /** Docket PDF: latest version of every drawing in a project's drawing category. */
+  @RequirePermission('drawings:read')
+  @Get('docket')
+  async docket(
+    @Query('projectId', ParseUUIDPipe) projectId: string,
+    @Query('documentTypeId', ParseUUIDPipe) documentTypeId: string,
+    @Query('inline') inline: string | undefined,
+    @Res() res: Response,
+  ) {
+    const { buffer, filename } = await this.drawingsService.buildDocket(projectId, documentTypeId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `${inline === '1' ? 'inline' : 'attachment'}; filename="${filename}"`,
+    );
+    res.setHeader('Content-Length', String(buffer.length));
+    res.end(buffer);
+  }
+
   @RequirePermission('drawings:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

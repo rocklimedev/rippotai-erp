@@ -64,6 +64,7 @@ import {
   normalizeCommandCenterPhases,
   commandCenterProgress,
   phaseProgress,
+  executionWorkLabel,
 } from '@/components/projects/_projects-ui';
 import { useGetCommandCenterPortfolioQuery } from '@/api/projects/command-center.api';
 
@@ -227,6 +228,7 @@ const getProjectInfo = (project, phaseTree) => {
   );
 
   const phaseName =
+    executionWorkLabel(project) ||
     progress.current?.name ||
     getFallbackPhaseName(project) ||
     (progress.total && progress.done === progress.total

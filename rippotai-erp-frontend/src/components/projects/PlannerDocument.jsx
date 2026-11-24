@@ -84,7 +84,9 @@ const PlannerDocument = forwardRef(function PlannerDocument(
     const cols = VIEW_COLUMNS[sheet];
     const dateText = (it) => {
       const st = rowState(it);
-      return st.auto ? `${fmtDay(st.evidence.date)}\nUploaded` : fmtDay(st.date);
+      if (st.auto) return `${fmtDay(st.evidence.date)}\nUploaded`;
+      const start = fmtDay(String(it.planned_start_date || '').slice(0, 10));
+      return [start, fmtDay(st.date)].filter(Boolean).join(' – ');
     };
     const stateText = (it) => rowState(it).label;
     let n = 0;
@@ -110,8 +112,8 @@ const PlannerDocument = forwardRef(function PlannerDocument(
         { text: stateText(it), strong: false },
         { text: it.remarks || '', strong: false },
       ];
-      const headers = ['No.', 'Name', titleCase(cols.c), 'Date', 'Status', 'Remarks'];
-      const tpl = '9mm 1fr 40mm 24mm 20mm 34mm';
+      const headers = ['No.', 'Name', titleCase(cols.c), 'Start – End', 'Status', 'Remarks'];
+      const tpl = '9mm 1fr 36mm 34mm 18mm 30mm';
       secs = [
         {
           title: 'Procurement',
@@ -161,8 +163,8 @@ const PlannerDocument = forwardRef(function PlannerDocument(
                 { text: stateText(it), strong: false },
                 { text: it.remarks || '', strong: false },
               ],
-              ['No.', titleCase(cols.b), 'Date', 'Status', 'Remarks'],
-              '9mm 1fr 24mm 20mm 38mm',
+              ['No.', titleCase(cols.b), 'Start – End', 'Status', 'Remarks'],
+              '9mm 1fr 34mm 18mm 34mm',
             ),
           ),
         },

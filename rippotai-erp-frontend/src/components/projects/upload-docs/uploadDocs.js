@@ -10,6 +10,7 @@ import { authenticatedFetch } from "@/lib/http-client";
 import { API_URL } from "@/lib/config";
 import { latestRevision, sortedRevisions } from "@/pages/design-studio/drawingUtils";
 import { openInNewTab } from "@/components/record-context/openFile";
+import { UPLOAD_DOCUMENTS } from "@/config/projectDocuments";
 
 export const asList = (v) =>
   Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : Array.isArray(v?.data) ? v.data : Array.isArray(v?.results) ? v.results : [];
@@ -89,7 +90,7 @@ export function useUploadRows(cfg, projectId) {
   return { rows, types, isLoading: typesLoading || q.isLoading, isFetching: q.isFetching, refetch: q.refetch };
 }
 
-async function saveBlob(path, fallbackName) {
+export async function saveBlob(path, fallbackName) {
   const res = await authenticatedFetch(`${API_URL}${path}`);
   if (!res.ok) {
     let msg = "Could not download the file.";
@@ -148,7 +149,26 @@ export async function downloadDocumentVersion(documentId, version) {
   }
 }
 
-export const viewPathFor = (row) => (row.kind === "drawing" ? `/design-studio/${row.id}` : `/projects/documents/${row.id}`);
+/**
+ * Page of one uploaded drawing / document, opened inside the app the user is in
+ * (Design or Build) with `?back=` pointing at the list it came from.
+ */
+export const viewPathFor = (row, back) => {
+  const app = String(back || "").startsWith("/build") ? "/build" : row.kind === "drawing" || String(back || "").startsWith("/design") ? "/design" : null;
+  const path = row.kind === "drawing" ? `${app || "/design"}/drawings/${row.id}` : app ? `${app}/documents/${row.id}` : `/projects/documents/${row.id}`;
+  return back ? `${path}?back=${encodeURIComponent(back)}` : path;
+};
+
+/** Name of the list a `?back=` link returns to (Tender Drawings, Contract, Pre Design…). */
+export function backLabel(back) {
+  if (!back) return null;
+  const path = String(back).split("?")[0];
+  if (path.startsWith("/design/pre-design")) return "Pre Design";
+  const hit = Object.values(UPLOAD_DOCUMENTS).find((c) => c.listPath === path);
+  if (hit) return hit.name;
+  if (path.startsWith("/projects/")) return "Project";
+  return "Back";
+}
 
 export function formatDay(d) {
   if (!d) return "—";
@@ -156,3 +176,21 @@ export function formatDay(d) {
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
+
+/** The upload config a saved record belongs to (for Edit from its own page). */
+export function cfgForRecord(kind, record) {
+  const code = record?.documentType?.code;
+  const phase = record?.documentType?.phaseCode || record?.phaseCode;
+  const target = kind === 'drawing' ? 'DRAWING' : 'DOCUMENT';
+  const all = Object.values(UPLOAD_DOCUMENTS);
+  return (
+    all.find((c) => c.target === target && c.typeCodes?.includes(code)) ||
+    all.find((c) => c.target === target && c.phaseCode && c.phaseCode === phase && !(c.excludeCodes || []).includes(code)) || {
+      key: `${target}:${phase || 'other'}`,
+      name: record?.documentType?.name || (kind === 'drawing' ? 'Drawing' : 'Document'),
+      target,
+      phaseCode: phase,
+    }
+  );
+}
+

@@ -1,11 +1,7 @@
-import { useParams } from 'react-router-dom';
-import { CloudUpload } from 'lucide-react';
-import { toast } from 'sonner';
-import { useDispatch } from 'react-redux';
-import { recordContextApi } from '@/api/doc-flow/record-context.api';
-import { useAddDocumentVersionMutation, useGetDocumentQuery } from '@/api/documents/document.api';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { backLabel } from '@/components/projects/upload-docs/uploadDocs';
+import { useGetDocumentQuery } from '@/api/documents/document.api';
 import { Page, PageHeader, Card, EmptyState } from '@/components/inos';
-import { useDocumentAccess } from '@/hooks/use-permission';
 import DrawingPreview from '../design-studio/DrawingPreview';
 import { fileKind } from '../design-studio/drawingUtils';
 import RecordContext from '@/components/record-context/RecordContext';
@@ -14,46 +10,11 @@ import OpenFileLink from '@/components/record-context/OpenFileLink';
 import { useRecordInfo } from '@/components/record-context/useRecordInfo';
 import RecordEditDelete from '@/components/record-context/RecordEditDelete';
 
-/** Upload a new version of the document (primary header action). */
-function UploadVersion({ documentId }) {
-  const [addVersion, { isLoading }] = useAddDocumentVersionMutation();
-  const dispatch = useDispatch();
-  const upload = async (file) => {
-    if (!file) return;
-    try {
-      await addVersion({ documentId, data: {}, file }).unwrap();
-      toast.success('New version uploaded');
-      dispatch(
-        recordContextApi.util.invalidateTags([
-          { type: 'RecordContext', id: `document:${documentId}` },
-        ]),
-      );
-    } catch (e) {
-      toast.error(e?.data?.message || 'Upload failed');
-    }
-  };
-  return (
-    <label
-      className="inos-btn inos-btn--primary"
-      style={{ cursor: 'pointer' }}
-      data-testid="document-new-version"
-    >
-      <CloudUpload aria-hidden />
-      <span>{isLoading ? 'Uploading…' : 'Upload new version'}</span>
-      <input
-        type="file"
-        hidden
-        disabled={isLoading}
-        onChange={(e) => upload(e.target.files?.[0])}
-      />
-    </label>
-  );
-}
-
 export default function DocumentView() {
   const { id } = useParams();
+  const [params] = useSearchParams();
+  const back = params.get('back');
   const recordInfo = useRecordInfo('document', id);
-  const access = useDocumentAccess('documents');
   const { currentData: document, isLoading, isError } = useGetDocumentQuery(id);
   const kind = fileKind({ name: document?.filename, mime: document?.mime });
   const hasFile = !!(document?.storageFilename || document?.url);
@@ -62,6 +23,7 @@ export default function DocumentView() {
   return (
     <Page>
       <PageHeader
+        crumbs={back ? [{ label: backLabel(back), to: back }, { label: document?.title || title }] : undefined}
         title={title}
         info={recordInfo}
         actions={
@@ -76,10 +38,7 @@ export default function DocumentView() {
                 Open in new tab
               </OpenFileLink>
             )}
-            {document?.id && <RecordEditDelete kind="document" record={document} />}
-            {document?.id && (access.canCreate || access.canEdit) && (
-              <UploadVersion documentId={document.id} />
-            )}
+            {document?.id && <RecordEditDelete kind="document" record={document} backTo={back} />}
           </>
         }
       />
@@ -88,6 +47,7 @@ export default function DocumentView() {
           type="document"
           id={id}
           listTo={
+            back ||
             document.projectId
               ? `/projects/${encodeURIComponent(document.projectId)}?tab=documents`
               : undefined

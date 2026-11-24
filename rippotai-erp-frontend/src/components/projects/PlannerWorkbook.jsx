@@ -119,6 +119,8 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
     }
   };
 
+  const startCell = (item) => <div className="planner-date">{field(item, 'planned_start_date', 'date')}</div>;
+
   const dateCell = (item, st) => {
     const tone = st.key === 'late' ? 'is-late' : st.key === 'completed' ? 'is-done' : '';
     if (st.auto)
@@ -188,7 +190,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
 
         <table>
           <colgroup>
-            {[50, 150, 220, 210, 150, 130, 220].map((width, index) => (
+            {[48, 116, 186, 146, 142, 142, 122, 158].map((width, index) => (
               <col key={index} style={{ width }} />
             ))}
           </colgroup>
@@ -198,7 +200,8 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
               <th>{cols.a}</th>
               <th>{cols.b}</th>
               <th>{cols.c}</th>
-              <th>DATE</th>
+              <th>START</th>
+              <th>END</th>
               <th>STATUS</th>
               <th>REMARKS</th>
             </tr>
@@ -214,6 +217,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                     <td>{item.item_type === 'LABOUR' ? field(item, 'category_name') : ''}</td>
                     <td>{item.item_type === 'MATERIAL' ? field(item, 'category_name') : ''}</td>
                     <td>{field(item, 'vendor_name')}</td>
+                    <td>{startCell(item)}</td>
                     <td>{dateCell(item, st)}</td>
                     <td>{statusCell(item, st)}</td>
                     <td>{field(item, 'remarks')}</td>
@@ -232,6 +236,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                   )}
                   <td>{field(item, 'work_name')}</td>
                   <td>{field(item, 'details')}</td>
+                  <td>{startCell(item)}</td>
                   <td>{dateCell(item, st)}</td>
                   <td>{statusCell(item, st)}</td>
                   <td>{field(item, 'remarks')}</td>

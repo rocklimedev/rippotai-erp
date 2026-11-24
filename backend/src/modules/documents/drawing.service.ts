@@ -16,6 +16,8 @@ import { CreateDrawingRevisionDto } from './dto/create-drawing-revision.dto';
 import { CdnService } from '../cdn/cdn.service';
 import { GateEngineService } from '../gates/gate-engine.service';
 
+import { buildDocketPdf, docketEntries } from './drawing-docket';
+
 const DRAWING_INCLUDES = [
   { model: DocumentType },
   { model: DocumentRequirement },
@@ -260,25 +262,41 @@ export class DrawingsService {
 
   // ---- Helpers ----
 
-  private computeNextRevisionLabel(drawing: Drawing): string {
-    const revisions = drawing.revisions ?? [];
-
-    if (revisions.length === 0) {
-      return 'A';
-    }
-
-    const letters = revisions
-      .map((r) => r.revision)
-      .filter((label) => /^[A-Z]$/.test(label))
-      .sort();
-
-    const last = letters[letters.length - 1];
-
-    if (!last) {
-      return `Rev-${revisions.length + 1}`;
-    }
-
-    const nextCharCode = last.charCodeAt(0) + 1;
-    return String.fromCharCode(nextCharCode);
+  /**
+   * Drawing versions: the first upload is V0, then V1, V2…
+   * Older drawings that used letters (A, B…) keep counting in letters.
+   */
+  /** One PDF with the latest version of every drawing of a project's trade (drawing category). */
+  async buildDocket(projectId: string, documentTypeId: string) {
+    const drawings = await this.drawingModel.findAll({
+      where: { projectId, documentTypeId },
+      include: DRAWING_INCLUDES,
+    });
+    const entries = docketEntries(drawings.map((d) => d.get({ plain: true }) as any));
+    if (!entries.length) throw new NotFoundException('No uploaded drawings in this category yet');
+    const type = await this.documentTypeModel.findByPk(documentTypeId);
+    const [rows] = await this.drawingModel.sequelize!.query('SELECT name FROM projects WHERE id = :id', {
+      replacements: { id: projectId },
+    });
+    const project = String((rows as any[])[0]?.name || 'Project');
+    const trade = String(type?.name || 'Drawings');
+    const bytes = await buildDocketPdf(entries, { project, trade }, (f) => this.cdnService.downloadFile(f));
+    const filename = `${trade}-docket-${project}`.replace(/[^\w-]+/g, '-').replace(/-+/g, '-') + '.pdf';
+    return { buffer: Buffer.from(bytes), filename, count: entries.length };
   }
+
+  private computeNextRevisionLabel(drawing: Drawing): string {
+    const labels = (drawing.revisions ?? []).map((r) => String(r.revision || ''));
+    if (labels.length === 0) return 'V0';
+    const numbered = labels
+      .map((l) => /^V(\d+)$/i.exec(l))
+      .filter(Boolean)
+      .map((m) => Number(m![1]));
+    if (numbered.length) return `V${Math.max(...numbered) + 1}`;
+    const letters = labels.filter((l) => /^[A-Y]$/.test(l)).sort();
+    const last = letters[letters.length - 1];
+    if (last) return String.fromCharCode(last.charCodeAt(0) + 1);
+    return `V${labels.length}`;
+  }
+
 }

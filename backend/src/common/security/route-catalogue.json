@@ -2202,6 +2202,16 @@
   {
     "module": "documents",
     "controller": "DrawingsController",
+    "handler": "docket",
+    "method": "GET",
+    "path": "/drawings/docket",
+    "permission": "drawings:read",
+    "public": false,
+    "file": "src/modules/documents/drawing.controller.ts"
+  },
+  {
+    "module": "documents",
+    "controller": "DrawingsController",
     "handler": "downloadRevision",
     "method": "GET",
     "path": "/drawings/:id/revisions/:revisionId/download",

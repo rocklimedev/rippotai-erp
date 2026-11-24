@@ -190,14 +190,14 @@ function SlotCard({ slot, row, types, rows, onUpload, onRevisions }) {
                 Approve
               </Button>
             )}
-            <Button size="sm" variant="ghost" icon={Eye} onClick={() => nav(viewPathFor(row))}>
+            <Button size="sm" variant="ghost" icon={Eye} onClick={() => nav(viewPathFor(row, `/design/pre-design/${row.projectId}`))}>
               View
             </Button>
             <Button
               size="sm"
               variant="ghost"
               icon={History}
-              onClick={() => (row.kind === 'drawing' ? nav(viewPathFor(row)) : onRevisions(row))}
+              onClick={() => (row.kind === 'drawing' ? nav(viewPathFor(row, `/design/pre-design/${row.projectId}`)) : onRevisions(row))}
             >
               Revisions
             </Button>
