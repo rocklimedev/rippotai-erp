@@ -4,6 +4,36 @@ export const ACCESS_LIFETIME_MS = 24 * 60 * 60 * 1000;
 export const IDLE_TIMEOUT_MS = ACCESS_LIFETIME_MS;
 let sessionChannel;
 
+function tokenPayload(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+  } catch {
+    return null;
+  }
+}
+
+function sameSession(first, second) {
+  if (!first || !second) return false;
+  if (first === second) return true;
+  const prior = tokenPayload(first);
+  const next = tokenPayload(second);
+  return Boolean(prior?.jti && prior.jti === next?.jti && prior.sub === next.sub);
+}
+
+export function tokenNeedsRenewal(token, now = Date.now()) {
+  const remaining = Number(tokenPayload(token)?.exp) * 1000 - now;
+  return remaining > 0 && remaining <= 10 * 60_000;
+}
+
+export function renewStoredSession(previous, token, storage = sessionStorage, broadcast = true) {
+  const current = storage.getItem('bc_token');
+  if (!sameSession(current, previous) || !sameSession(current, token)) return false;
+  if (!(tokenPayload(token)?.exp > tokenPayload(current)?.exp)) return false;
+  storage.setItem('bc_token', token);
+  if (broadcast) sessionChannel?.postMessage({ type: 'renew', previous, token });
+  return true;
+}
+
 export function recordSessionActivity() {
   if (!getSessionToken()) return;
   const activity = String(Date.now());
@@ -41,7 +71,9 @@ export function connectSessionTabs(channel, storage = sessionStorage, waitMs = 5
         clearTimeout(timer);
         finish();
       }
-    } else if (data.type === 'activity' && data.token === storage.getItem('bc_token')) {
+    } else if (data.type === 'renew') {
+      renewStoredSession(data.previous, data.token, storage, false);
+    } else if (data.type === 'activity' && sameSession(data.token, storage.getItem('bc_token'))) {
       const activity = Number(data.activity);
       if (
         Number.isFinite(activity) &&
@@ -50,7 +82,7 @@ export function connectSessionTabs(channel, storage = sessionStorage, waitMs = 5
       ) {
         storage.setItem('bc_activity', String(activity));
       }
-    } else if (data.type === 'logout' && data.token === storage.getItem('bc_token')) {
+    } else if (data.type === 'logout' && sameSession(data.token, storage.getItem('bc_token'))) {
       acceptingSession = false;
       clearStoredSession(storage, localStorage, false);
     }
@@ -97,7 +129,7 @@ export function getSessionToken(storage = sessionStorage, now = Date.now()) {
   const token = storage.getItem('bc_token');
   if (!token) return null;
   try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const payload = tokenPayload(token);
     const expiry = payload.exp * 1000;
     const issued = payload.iat * 1000;
     const activity = Number(storage.getItem('bc_activity'));

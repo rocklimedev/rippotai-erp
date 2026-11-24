@@ -234,8 +234,10 @@
 .planner-sheet .planner-state.is-pending { background: #f1f3f2; color: #4c5c56; }
 .planner-sheet tr.is-late-row td:first-child { box-shadow: inset 3px 0 0 #c0392b; }
 
-/* Add row form: one line on wide screens */
-.planner-add-row { display: grid; grid-template-columns: minmax(160px, 200px) repeat(2, minmax(150px, 1fr)) 140px 140px minmax(130px, 1fr) auto; gap: 8px; align-items: center; }
-.planner-add-row > * { min-width: 0 !important; width: 100%; }
-.planner-add-row--remove { grid-template-columns: minmax(240px, 420px) auto; justify-content: start; }
-@media (max-width: 1100px) { .planner-add-row { grid-template-columns: 1fr 1fr; } }
+.planner-sheet .planner-new-row td { background: var(--brand-50); }
+.planner-new-row select + input { margin-top: 6px; }
+.planner-sheet .planner-row-action { text-align: center; }
+@media print {
+  .planner-sheet .planner-new-row,
+  .planner-sheet .planner-row-action { display: none; }
+}

@@ -6,6 +6,8 @@ import {
   initializeSession,
   clearStoredSession,
   connectSessionTabs,
+  renewStoredSession,
+  tokenNeedsRenewal,
 } from "./session.js";
 
 function storage() {
@@ -28,6 +30,26 @@ function token(lifetime = 86400) {
   const iat = Math.floor(Date.now() / 1000);
   return `header.${btoa(JSON.stringify({ iat, exp: iat + lifetime }))}.signature`;
 }
+test('renews the same live session without resetting user activity or drafts', () => {
+  const now = Math.floor(Date.now() / 1000);
+  const makeToken = (jti, exp) =>
+    `header.${btoa(JSON.stringify({ jti, sub: 'staff', iat: exp - 86400, exp }))}.signature`;
+  const old = makeToken('current', now + 60);
+  const next = makeToken('current', now + 86400);
+  persistSession(old, { id: 'staff' });
+  const activity = sessionStorage.getItem('bc_activity');
+  localStorage.setItem('bc.draft.staff.form', 'draft');
+
+  assert.equal(tokenNeedsRenewal(old), true);
+  assert.equal(tokenNeedsRenewal(next), false);
+  assert.equal(renewStoredSession(old, next), true);
+  assert.equal(getSessionToken(), next);
+  assert.equal(sessionStorage.getItem('bc_activity'), activity);
+  assert.equal(localStorage.getItem('bc.draft.staff.form'), 'draft');
+  assert.equal(renewStoredSession(old, makeToken('other', now + 86401)), false);
+  clearStoredSession();
+  assert.equal(renewStoredSession(old, next), false);
+});
 test("stores only an ID and keeps credentials out of localStorage", () => {
   const jwt = token();
   persistSession(jwt, {

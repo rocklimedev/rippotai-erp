@@ -41,6 +41,31 @@ export class AuthTokensService {
     private readonly authTokenModel: typeof AuthToken,
   ) {}
 
+  async extendActiveSession(tokenHash: string, userId: string, now: Date, expiresAt: Date) {
+    const [updated] = await this.authTokenModel.update(
+      { expires_at: expiresAt },
+      {
+        where: {
+          token_hash: tokenHash,
+          user_id: userId,
+          revoked_at: { [Op.is]: null },
+          expires_at: { [Op.gt]: now, [Op.lt]: expiresAt },
+        },
+      },
+    );
+    if (updated) return true;
+    // Another tab may already have extended this same session.
+    return Boolean(await this.authTokenModel.findOne({
+      attributes: ['id'],
+      where: {
+        token_hash: tokenHash,
+        user_id: userId,
+        revoked_at: { [Op.is]: null },
+        expires_at: { [Op.gte]: expiresAt },
+      },
+    }));
+  }
+
   private isAdmin(actor: CurrentUserPayload): boolean {
     if (!actor?.id?.trim())
       throw new UnauthorizedException('Authenticated actor required');

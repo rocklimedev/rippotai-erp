@@ -4,11 +4,12 @@ import { LibraryService } from './library.service';
 describe('BOQ reusable category items', () => {
   function setup() {
     const service: any = Object.create(BoqService.prototype);
-    const transaction = {};
+    const transaction = { LOCK: { UPDATE: 'UPDATE' } };
     const row = { id: 'row', name: 'New item', update: jest.fn() };
     Object.assign(service, {
       getOrThrow: jest.fn().mockResolvedValue({}),
       assertEditable: jest.fn(),
+      boqModel: { findByPk: jest.fn().mockResolvedValue({ id: 'boq' }) },
       getCategoryOrThrow: jest
         .fn()
         .mockResolvedValue({ id: 'cat', name: 'Civil' }),
@@ -18,6 +19,8 @@ describe('BOQ reusable category items', () => {
       },
       categoryModel: {
         create: jest.fn().mockResolvedValue({ id: 'cat', name: 'Civil' }),
+        max: jest.fn().mockResolvedValue(3),
+        findAll: jest.fn(),
       },
       sequelize: { transaction: jest.fn((fn) => fn(transaction)) },
       library: {
@@ -90,11 +93,31 @@ describe('BOQ reusable category items', () => {
       }),
       { transaction },
     );
+    expect(service.categoryModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({ sort_order: 4 }),
+      { transaction },
+    );
   });
   it('honours an explicitly empty category', async () => {
     const { service } = setup();
     await service.addCategory('boq', { name: 'Civil', include_items: false });
     expect(service.itemModel.create).not.toHaveBeenCalled();
+  });
+  it('saves the requested category order and rejects a stale or foreign category list', async () => {
+    const { service, transaction } = setup();
+    const civil = { id: 'civil', sort_order: 0, update: jest.fn() };
+    const finishes = { id: 'finishes', sort_order: 1, update: jest.fn() };
+    service.categoryModel.findAll.mockResolvedValue([civil, finishes]);
+
+    await expect(service.reorderCategories('boq', ['finishes', 'foreign'])).rejects.toThrow(
+      'The BOQ categories changed',
+    );
+    expect(civil.update).not.toHaveBeenCalled();
+    expect(finishes.update).not.toHaveBeenCalled();
+
+    await service.reorderCategories('boq', ['finishes', 'civil']);
+    expect(finishes.update).toHaveBeenCalledWith({ sort_order: 0 }, { transaction });
+    expect(civil.update).toHaveBeenCalledWith({ sort_order: 1 }, { transaction });
   });
   it('does not silently succeed when the shared library save fails', async () => {
     const { service } = setup();

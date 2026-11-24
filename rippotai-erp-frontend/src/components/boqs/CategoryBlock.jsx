@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronDown,
   ChevronRight,
   MoreHorizontal,
@@ -40,6 +42,10 @@ export function CategoryBlock({
   onOpenDetail,
   onAddItem,
   onDeleteCat,
+  moveControls,
+  moveUp,
+  moveDown,
+  moving,
   onReorderItems,
   onToggleHide,
   onLockedEdit,
@@ -90,6 +96,30 @@ export function CategoryBlock({
               title="Select all in category"
               className="ml-1"
             />
+            {moveControls && (
+              <div className="flex shrink-0 items-center gap-1" role="group" aria-label={`Rearrange ${cat.name}`}>
+                <button
+                  type="button"
+                  className="rounded border p-1 hover:bg-[#EAEEF0] disabled:opacity-40"
+                  aria-label={`Move category ${cat.name} up`}
+                  title="Move category up"
+                  disabled={moving || !moveUp}
+                  onClick={moveUp}
+                >
+                  <ArrowUp size={16} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className="rounded border p-1 hover:bg-[#EAEEF0] disabled:opacity-40"
+                  aria-label={`Move category ${cat.name} down`}
+                  title="Move category down"
+                  disabled={moving || !moveDown}
+                  onClick={moveDown}
+                >
+                  <ArrowDown size={16} aria-hidden />
+                </button>
+              </div>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button

@@ -100,6 +100,14 @@ export class AuthController {
     return { user: { ...req.user, access: summarizeAccess(permissions) } };
   }
 
+  @RequirePermission('account:renew')
+  @Post('renew')
+  @Header('Cache-Control', 'no-store')
+  @UseGuards(JwtAuthGuard)
+  renew(@Req() req: RequestWithUser) {
+    return this.authService.renew(req.headers.authorization!.slice(7), req.user);
+  }
+
   @RequirePermission('account:logout')
   @Post('logout')
   @UseGuards(JwtAuthGuard)

@@ -47,6 +47,7 @@ import {
   useUpdateBoqMutation,
   useDeleteBoqMutation,
   useAddBoqCategoryMutation,
+  useReorderBoqCategoriesMutation,
   useDeleteBoqCategoryMutation,
   useAddBoqItemMutation,
   useUpdateBoqItemMutation,
@@ -81,10 +82,12 @@ export default function BoqWorkspace() {
   const nav = useNavigate();
   const { user } = useAuth();
 
-  const { data: boq, isLoading } = useGetBoqByIdQuery(id);
+  const { data: boq, isLoading, refetch } = useGetBoqByIdQuery(id);
   const [updateBoq] = useUpdateBoqMutation();
   const [deleteBoq] = useDeleteBoqMutation();
   const [addCategory] = useAddBoqCategoryMutation();
+  const [reorderCategories] = useReorderBoqCategoriesMutation();
+  const [reorderingCategories, setReorderingCategories] = useState(false);
   const [deleteCategory] = useDeleteBoqCategoryMutation();
   const [addItem] = useAddBoqItemMutation();
   const [updateItem, { isLoading: isSavingItem }] = useUpdateBoqItemMutation();
@@ -121,6 +124,7 @@ export default function BoqWorkspace() {
   const [pickerFor, setPickerFor] = useState(null);
 
   const disabled = isBoqDisabled(boq);
+  const canReorderCategories = !disabled && user?.permissions?.includes('boq:update');
   const { isOwner, canSubmit, canApprove } = getBoqAccess(boq, user);
   const onLockedEdit = useCallback(() => setLockedOpen(true), []);
 
@@ -288,6 +292,21 @@ export default function BoqWorkspace() {
       }).unwrap();
     } catch {
       toast.error('Duplicate failed');
+    }
+  };
+
+  const moveCategory = async (index, direction) => {
+    const next = index + direction;
+    if (!canReorderCategories || reorderingCategories || next < 0 || next >= boq.categories.length) return;
+    const orderedIds = arrayMove(boq.categories, index, next).map((category) => category.id);
+    setReorderingCategories(true);
+    try {
+      await reorderCategories({ boqId: id, orderedIds }).unwrap();
+      await refetch();
+    } catch (error) {
+      toast.error(error?.data?.message || 'Could not rearrange categories.');
+    } finally {
+      setReorderingCategories(false);
     }
   };
 
@@ -662,6 +681,11 @@ export default function BoqWorkspace() {
                 <span className="text-[12px] text-[#6B7B7C]">
                   {boq.categories.length} categories · {boq.items.length} line items
                 </span>
+                {boq.categories.length > 0 && !canReorderCategories && (
+                  <span className="text-[12px] text-[#6B7B7C]">
+                    {disabled ? 'Category order is locked.' : 'BOQ edit permission is required to move categories.'}
+                  </span>
+                )}
               </div>
             </section>
 
@@ -729,6 +753,10 @@ export default function BoqWorkspace() {
                           onOpenDetail={setDetailItem}
                           onAddItem={handleAddItem}
                           onDeleteCat={handleDeleteCategory}
+                          moveControls
+                          moveUp={canReorderCategories && index > 0 ? () => void moveCategory(index, -1) : undefined}
+                          moveDown={canReorderCategories && index < boq.categories.length - 1 ? () => void moveCategory(index, 1) : undefined}
+                          moving={reorderingCategories}
                           onReorderItems={handleReorderItems}
                           onToggleHide={toggleHide}
                           onLockedEdit={onLockedEdit}

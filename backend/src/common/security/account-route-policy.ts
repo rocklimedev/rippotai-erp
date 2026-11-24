@@ -4,6 +4,7 @@ import { ExecutionContext } from '@nestjs/common';
 // remains mandatory in the controller/service (and in the profile guard).
 export const ACCOUNT_ROUTES: Readonly<Record<string, string>> = Object.freeze({
   'AuthController.me': 'account:read',
+  'AuthController.renew': 'account:renew',
   'AuthController.logout': 'account:logout',
   'AuthController.changePassword': 'account:change-password',
   'AuthTokensController.findAllForUser': 'sessions:read-own',

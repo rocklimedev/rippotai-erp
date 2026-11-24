@@ -1,6 +1,8 @@
 # Browser session policy
 
-Access JWTs and their revocable database sessions expire after 24 hours.
+Access JWTs are valid for up to 24 hours. The browser requests renewal during
+the last 10 minutes, while the current JWT and its database session are valid.
+Renewal issues a new JWT for the same revocable session and extends its expiry.
 The API rejects a session after 24 hours without an authenticated request,
 using `last_used_at` (or creation time for a session not yet used). JWTs with a
 longer lifetime, including previously issued seven-day tokens, are rejected.
@@ -20,8 +22,9 @@ Legacy localStorage tokens and identity objects are discarded on startup.
 background requests would otherwise keep the server session active.
 Expiry/logout clears drafts and the RTK Query cache.
 
-This implements a one-day lifetime and idle timeout. It does not implement
-refresh cookies or automatic renewal: users must sign in again after expiry.
+Live tabs receive the replacement token. Renewal preserves the recorded time
+of user input, so 24 hours of inactivity still requires signing in again.
+Sessions that have already expired require a new sign-in.
 SessionStorage is still readable by same-origin JavaScript, so the frontend
 production build includes a CSP that blocks inline/eval scripts. The policy is
 generated from `VITE_BACKEND_URL`; additional API/CDN fetch origins can be listed

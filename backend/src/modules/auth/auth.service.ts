@@ -262,6 +262,34 @@ export class AuthService {
     } catch {}
   }
 
+  async renew(token: string, user: { id: string; email: string; role: string; role_id: string }) {
+    let payload: jwt.JwtPayload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload;
+    } catch {
+      throw new UnauthorizedException('Invalid or expired session');
+    }
+    const now = Date.now();
+    if (!payload.jti || payload.sub !== user.id || !payload.exp)
+      throw new UnauthorizedException('Invalid session');
+    if (payload.exp * 1000 - now > 15 * 60_000) return { token };
+
+    const issuedAt = Math.floor(now / 1000);
+    const expiresAt = new Date((issuedAt + ACCESS_TOKEN_SECONDS) * 1000);
+    const tokenHash = createHash('sha256').update(payload.jti).digest('hex');
+    const active = await this.authTokensService.extendActiveSession(
+      tokenHash, user.id, new Date(now), expiresAt,
+    );
+    if (!active) throw new UnauthorizedException('Session expired. Sign in again.');
+    return {
+      token: jwt.sign(
+        { sub: user.id, email: user.email, role: user.role, role_id: user.role_id, type: 'access', iat: issuedAt },
+        process.env.JWT_SECRET!,
+        { expiresIn: ACCESS_TOKEN_SECONDS, jwtid: payload.jti },
+      ),
+    };
+  }
+
   /**
    * Change Password (authenticated user, knows their current password)
    */
