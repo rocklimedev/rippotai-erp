@@ -150,6 +150,7 @@ const mapBackendToFormValues = (data) => {
             : String(photo.shot_number),
 
         layout_image_url: photo.layout_image_url || '',
+        marking_image_url: photo.marking_image_url || '',
         layout_file_name: photo.layout_file_name || '',
 
         photo_url: photo.photo_url || '',
@@ -356,6 +357,7 @@ const buildRoomsPayload = (rooms, photos) => {
       .filter((photo) => String(photo.room_id) === String(room.id))
       .map((photo) => ({
         layout_image_url: strOrUndefined(photo.layout_image_url),
+        marking_image_url: strOrUndefined(photo.marking_image_url),
 
         layout_file_name: strOrUndefined(photo.layout_file_name),
 

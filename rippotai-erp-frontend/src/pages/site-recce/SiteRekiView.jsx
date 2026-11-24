@@ -103,9 +103,18 @@ function ShotRow({ photo, index }) {
       </div>
       <div>
         <div className="wd-sr-shot__photo-head">PHOTO {n}</div>
-        {has(photo?.photo_url) && (
-          <div className="wd-sr-shot__img">
-            <PrivateImage src={photo.photo_url} alt={`Photo ${n}`} />
+        {(has(photo?.photo_url) || has(photo?.marking_image_url)) && (
+          <div className="wd-sr-shot__photo-content">
+            {has(photo?.photo_url) && (
+              <div className="wd-sr-shot__img">
+                <PrivateImage src={photo.photo_url} alt={`Photo ${n}`} />
+              </div>
+            )}
+            {has(photo?.marking_image_url) && (
+              <div className="wd-sr-shot__marking">
+                <PrivateImage src={photo.marking_image_url} alt={`Shot ${n} marking`} />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -368,7 +377,7 @@ export function buildRecceSections(recce) {
   ];
   rooms.forEach((room, ri) => {
     const photos = bySort(room.photos, 'shot_number').filter(
-      (p) => has(p.photo_url) || has(p.layout_image_url) || has(p.standing_position),
+      (p) => has(p.photo_url) || has(p.layout_image_url) || has(p.marking_image_url) || has(p.standing_position),
     );
     const d = roomFeetInchesDraft(room);
     const type =

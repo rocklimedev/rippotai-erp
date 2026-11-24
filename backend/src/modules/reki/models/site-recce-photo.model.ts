@@ -86,6 +86,9 @@ export class SiteReccePhoto extends Model<SiteReccePhoto> {
   })
   declare layout_image_url: string | null;
 
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare marking_image_url: string | null;
+
   // ============================================================
   // ACTUAL PHOTO
   // ============================================================
