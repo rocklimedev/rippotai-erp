@@ -75,6 +75,10 @@
   grid-template-columns: 42.8mm 1fr;
   align-items: end;
 }
+.wd-cover--client-brief .wd-cover__row--wide .wd-cover__field {
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 3mm;
+}
 .pd-doc .wd-cover__label {
   display: block;
   font-size: 5pt;
