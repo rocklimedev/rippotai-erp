@@ -484,7 +484,9 @@ export class RecordContextService {
     // Newest first; a record's created/updated event yields to a review or
     // upload at the same moment.
     // Drop documents whose type was switched off (e.g. Scope of Approval).
-    const docIds = [...new Set(events.filter((e) => e.type === 'document').map((e) => e.id))];
+    const docIds = [
+      ...new Set(events.filter((e) => e.type === 'document').map((e) => e.id)),
+    ];
     if (docIds.length) {
       const hidden = await this.select<any>(
         `SELECT d.id FROM documents d JOIN document_types t ON t.id = d.document_type_id
@@ -493,7 +495,8 @@ export class RecordContextService {
       ).catch(() => []);
       const off = new Set(hidden.map((h: any) => h.id));
       for (let i = events.length - 1; i >= 0; i--)
-        if (events[i].type === 'document' && off.has(events[i].id)) events.splice(i, 1);
+        if (events[i].type === 'document' && off.has(events[i].id))
+          events.splice(i, 1);
     }
     events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
     const seen = new Set<string>();

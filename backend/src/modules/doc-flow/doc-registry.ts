@@ -169,19 +169,33 @@ export const DOC_TYPES: DocType[] = [
         param: 'plannerId',
       },
       // Row edits are what change a planner: each add / edit / remove keeps a version.
-      { controller: 'ProjectPlannerController', path: 'planners/:plannerId/items', param: 'plannerId', methods: ['POST'] },
-      { controller: 'ProjectPlannerController', path: 'planners/:plannerId/procurement', param: 'plannerId', methods: ['POST'] },
-      ...(['planner-items/:itemId', 'procurement-items/:itemId'] as const).map((path) => ({
+      {
         controller: 'ProjectPlannerController',
-        path,
-        param: 'itemId',
-        by: 'child' as const,
-        child: {
-          table: path.startsWith('planner') ? 'project_planner_items' : 'project_procurement_items',
-          parentCol: 'planner_id',
-        },
-        methods: ['PATCH', 'DELETE'] as ('PATCH' | 'DELETE')[],
-      })),
+        path: 'planners/:plannerId/items',
+        param: 'plannerId',
+        methods: ['POST'],
+      },
+      {
+        controller: 'ProjectPlannerController',
+        path: 'planners/:plannerId/procurement',
+        param: 'plannerId',
+        methods: ['POST'],
+      },
+      ...(['planner-items/:itemId', 'procurement-items/:itemId'] as const).map(
+        (path) => ({
+          controller: 'ProjectPlannerController',
+          path,
+          param: 'itemId',
+          by: 'child' as const,
+          child: {
+            table: path.startsWith('planner')
+              ? 'project_planner_items'
+              : 'project_procurement_items',
+            parentCol: 'planner_id',
+          },
+          methods: ['PATCH', 'DELETE'] as ('PATCH' | 'DELETE')[],
+        }),
+      ),
     ],
   },
   {
@@ -210,7 +224,9 @@ export const DOC_TYPES: DocType[] = [
     },
     ownerCol: 'created_by',
     versionCol: 'revision',
-    snapshot: [{ controller: 'BudgetGuideController', path: ':id', param: 'id' }],
+    snapshot: [
+      { controller: 'BudgetGuideController', path: ':id', param: 'id' },
+    ],
   },
   {
     key: 'consent-form',
@@ -271,7 +287,9 @@ export const DOC_TYPES: DocType[] = [
     deletedCol: 'deleted_at',
     versionCol: 'version',
     versionChain: true,
-    children: [{ table: 'boq_items', fk: 'boq_category_id', via: 'boq_categories' }],
+    children: [
+      { table: 'boq_items', fk: 'boq_category_id', via: 'boq_categories' },
+    ],
     snapshot: [{ controller: 'BoqController', path: ':id', param: 'id' }],
   },
   {
@@ -282,7 +300,10 @@ export const DOC_TYPES: DocType[] = [
     projectCol: 'project_id',
     statusCol: 'status',
     statusMap: {
-      approve: { to: 'APPROVED', set: { approved_by: 'user', approved_at: 'now' } },
+      approve: {
+        to: 'APPROVED',
+        set: { approved_by: 'user', approved_at: 'now' },
+      },
       revise: 'DRAFT',
       reject: 'REJECTED',
       archive: 'CANCELLED',
@@ -326,7 +347,9 @@ export const DOC_TYPES: DocType[] = [
       reject: lower('DRAFT', ['PENDING_APPROVAL']),
     },
     ownerCol: 'created_by',
-    snapshot: [{ controller: 'WorkOrdersController', path: ':id', param: 'id' }],
+    snapshot: [
+      { controller: 'WorkOrdersController', path: ':id', param: 'id' },
+    ],
   },
   {
     key: 'site-inventory',
@@ -433,7 +456,11 @@ export const DOC_TYPES: DocType[] = [
 const BY_KEY = new Map(DOC_TYPES.map((d) => [d.key, d]));
 export const docType = (key: string) => BY_KEY.get(key);
 
-export function snapshotTargetFor(controller: string, path: string, method = 'PATCH') {
+export function snapshotTargetFor(
+  controller: string,
+  path: string,
+  method = 'PATCH',
+) {
   for (const d of DOC_TYPES)
     for (const s of d.snapshot ?? [])
       if (

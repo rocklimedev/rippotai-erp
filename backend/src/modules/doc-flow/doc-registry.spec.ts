@@ -14,16 +14,31 @@ function controllers(dir: string, out = ''): string {
 
 describe('document flow registry', () => {
   const source = controllers(join(__dirname, '..'));
-  it.each(DOC_TYPES.map((d) => [d.key, d]))('%s maps to a catalogue part and real save routes', (_k, d: any) => {
-    expect(findPart(d.part)).toBeDefined();
-    for (const s of d.snapshot ?? []) {
-      expect(source).toContain(`class ${s.controller}`);
-      expect(source).toMatch(new RegExp(`@(Put|Patch|Post)\\('${s.path.replace(/[/:]/g, (m) => '\\' + m)}'\\)`));
-    }
-  });
+  it.each(DOC_TYPES.map((d) => [d.key, d]))(
+    '%s maps to a catalogue part and real save routes',
+    (_k, d: any) => {
+      expect(findPart(d.part)).toBeDefined();
+      for (const s of d.snapshot ?? []) {
+        expect(source).toContain(`class ${s.controller}`);
+        expect(source).toMatch(
+          new RegExp(
+            `@(Put|Patch|Post)\\('${s.path.replace(/[/:]/g, (m) => '\\' + m)}'\\)`,
+          ),
+        );
+      }
+    },
+  );
   it('reviewers need every permission of the part (Full access)', () => {
-    const owned = ['boq:read', 'boq:update', 'boq:create', 'boq:delete', 'boq:approve'];
+    const owned = [
+      'boq:read',
+      'boq:update',
+      'boq:create',
+      'boq:delete',
+      'boq:approve',
+    ];
     expect(computePartLevel(owned, new Set(owned)).level).toBe('full');
-    expect(computePartLevel(owned, new Set(owned.slice(0, 3))).level).not.toBe('full');
+    expect(computePartLevel(owned, new Set(owned.slice(0, 3))).level).not.toBe(
+      'full',
+    );
   });
 });

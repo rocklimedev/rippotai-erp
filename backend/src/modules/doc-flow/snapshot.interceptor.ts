@@ -27,7 +27,11 @@ export class DocumentSnapshotInterceptor implements NestInterceptor {
     if (!['PUT', 'PATCH', 'POST', 'DELETE'].includes(request.method))
       return next.handle();
     const path = Reflect.getMetadata(PATH_METADATA, context.getHandler());
-    const hit = snapshotTargetFor(context.getClass().name, String(path ?? ''), request.method);
+    const hit = snapshotTargetFor(
+      context.getClass().name,
+      String(path ?? ''),
+      request.method,
+    );
     const key = hit && request.params?.[hit.target.param];
     if (!hit || !key) return next.handle();
     return from(
