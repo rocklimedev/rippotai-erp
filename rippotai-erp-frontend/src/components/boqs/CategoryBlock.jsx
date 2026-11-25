@@ -4,6 +4,7 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronRight,
+  GripVertical,
   MoreHorizontal,
   Plus,
   Trash2,
@@ -25,7 +26,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
   arrayMove,
+  useSortable,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { formatINR } from "@/lib/format";
 import { ItemRow } from "./ItemRow";
 
@@ -49,7 +52,20 @@ export function CategoryBlock({
   onReorderItems,
   onToggleHide,
   onLockedEdit,
+  // Drag the category (header) row by its ⋮⋮ handle — set by the BOQ workspace.
+  sortableId,
+  dragDisabled,
+  hideItems,
 }) {
+  const {
+    attributes: dragAttributes,
+    listeners: dragListeners,
+    setNodeRef: setDragRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: sortableId || `cat-${cat.id}`, disabled: !sortableId || dragDisabled });
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
@@ -64,9 +80,37 @@ export function CategoryBlock({
 
   return (
     <>
-      <tr className="boq-category-row" data-testid={`category-row-${cat.code}`}>
-        <td colSpan={9}>
+      <tr
+        ref={setDragRef}
+        className="boq-category-row"
+        data-testid={`category-row-${cat.code}`}
+        style={{
+          transform: CSS.Translate.toString(transform),
+          transition,
+          position: "relative",
+          zIndex: isDragging ? 5 : undefined,
+          opacity: isDragging ? 0.85 : undefined,
+          boxShadow: isDragging ? "0 6px 18px rgba(31,69,59,0.18)" : undefined,
+        }}
+      >
+        <td colSpan={10}>
           <div className="flex items-center gap-3">
+            {sortableId && (
+              <button
+                type="button"
+                ref={setActivatorNodeRef}
+                className="boq-cat-grip rounded p-1 text-[#6B7B7C] hover:bg-[#EAEEF0] disabled:opacity-40"
+                style={{ cursor: dragDisabled ? "not-allowed" : isDragging ? "grabbing" : "grab", touchAction: "none" }}
+                aria-label={`Drag to move category ${cat.name}`}
+                title={dragDisabled ? "BOQ is locked" : "Drag to move this category"}
+                disabled={dragDisabled}
+                data-testid={`cat-grip-${cat.code}`}
+                {...dragAttributes}
+                {...dragListeners}
+              >
+                <GripVertical size={16} aria-hidden />
+              </button>
+            )}
             <button
               onClick={() => setCollapsed((c) => !c)}
               className="p-1 rounded hover:bg-[#B5C4B6]"
@@ -144,7 +188,7 @@ export function CategoryBlock({
           </div>
         </td>
       </tr>
-      {!collapsed && (
+      {!collapsed && !hideItems && (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -185,10 +229,10 @@ export function CategoryBlock({
           </SortableContext>
         </DndContext>
       )}
-      {!collapsed && items.length === 0 && (
+      {!collapsed && !hideItems && items.length === 0 && (
         <tr>
           <td
-            colSpan={9}
+            colSpan={10}
             className="text-center py-6 text-[12.5px] text-[#B5C4B6]"
           >
             No items in this category.{" "}

@@ -60,3 +60,20 @@
 .pdb-late__date { margin-left: auto; color: #a32a20; font-weight: 600; font-size: 12px; }
 
 .pdb-search { display: grid; gap: 14px; }
+
+/* Execution = one phase; its list is the Build-planner work */
+.pdb-exec { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 14px; background: var(--surface); }
+.pdb-exec__head { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--surface-2); font-size: 12.5px; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--line); }
+.pdb-exec__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pdb-exec__table th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.pdb-exec__table td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.pdb-exec__table tr:last-child td { border-bottom: 0; }
+.pdb-exec__no { width: 36px; color: var(--text-3); }
+.pdb-exec__work { display: block; font-weight: 600; color: var(--text); }
+.pdb-exec__phase { display: block; font-size: 11.5px; color: var(--text-3); margin-top: 1px; }
+.pdb-exec__dates { white-space: nowrap; color: var(--text-2, #4d5a55); width: 150px; }
+.pdb-exec__state { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pdb-exec__table tr.is-completed .pdb-exec__state { background: #e3f3e9; color: #17603a; }
+.pdb-exec__table tr.is-late { background: #fff6f5; }
+.pdb-exec__table tr.is-late .pdb-exec__state { background: #fbe3e1; color: #a32a20; }
+.pdb-exec__table tr.is-upcoming .pdb-exec__state { background: var(--surface-2); color: var(--text-3); }

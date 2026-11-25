@@ -176,6 +176,8 @@ export default function CreateMaterialProcurementSheet() {
   // ============================================================
 
   const existing = existingResponse?.data ?? existingResponse;
+  // Submitted sheets stay editable: save keeps their status, no second submit.
+  const alreadySubmitted = isEdit && !!existing?.status && existing.status !== 'DRAFT';
 
   // ============================================================
   // STATE
@@ -612,7 +614,8 @@ export default function CreateMaterialProcurementSheet() {
   if (isEdit && existingLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Edit Material Procurement" description="Loading procurement sheet..." />
+        <PageHeader
+        eyebrow="Procurement" title="Edit Material Procurement" description="Loading procurement sheet..." />
 
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -630,6 +633,7 @@ export default function CreateMaterialProcurementSheet() {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
+        eyebrow="Procurement"
         title={isEdit ? 'Edit Material Procurement' : 'Create Material Procurement'}
         description={
           <>
@@ -657,13 +661,15 @@ export default function CreateMaterialProcurementSheet() {
         <div className="flex gap-2">
           <Button variant="outline" disabled={busy} onClick={handleSave}>
             <Save className="mr-2 h-4 w-4" />
-            {creating || updating ? 'Saving...' : 'Save Draft'}
+            {creating || updating ? 'Saving...' : (alreadySubmitted ? 'Save changes' : 'Save Draft')}
           </Button>
 
-          <Button disabled={busy} onClick={handleSubmit}>
-            <Send className="mr-2 h-4 w-4" />
-            {submitting ? 'Submitting...' : 'Save & Submit'}
-          </Button>
+          {!alreadySubmitted && (
+            <Button disabled={busy} onClick={handleSubmit}>
+              <Send className="mr-2 h-4 w-4" />
+              {submitting ? 'Submitting...' : 'Save & Submit'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1102,14 +1108,15 @@ export default function CreateMaterialProcurementSheet() {
         <Button variant="outline" disabled={busy} onClick={handleSave}>
           <Save className="mr-2 h-4 w-4" />
 
-          {creating || updating ? 'Saving...' : 'Save Draft'}
+          {creating || updating ? 'Saving...' : (alreadySubmitted ? 'Save changes' : 'Save Draft')}
         </Button>
 
-        <Button disabled={busy} onClick={handleSubmit}>
-          <Send className="mr-2 h-4 w-4" />
-
-          {submitting ? 'Submitting...' : 'Save & Submit'}
-        </Button>
+        {!alreadySubmitted && (
+          <Button disabled={busy} onClick={handleSubmit}>
+            <Send className="mr-2 h-4 w-4" />
+            {submitting ? 'Submitting...' : 'Save & Submit'}
+          </Button>
+        )}
       </div>
       {sheetDialog && (
         <Modal

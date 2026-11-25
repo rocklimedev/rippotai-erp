@@ -174,12 +174,10 @@ describe('Independent vendor comparisons', () => {
     input.snapshot.trades[0].vendors[0].items[0].quantity = 0;
     await expect(service.create(input, 'u')).resolves.toBeDefined();
   });
-  it('allows incomplete drafts but not finalised incomplete quotes', async () => {
+  it('allows incomplete quotes, finalised or not', async () => {
     const input = body();
     input.snapshot.trades[0].vendors[0].items[0].rate = null;
-    await expect(service.create(input, 'u')).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(service.create(input, 'u')).resolves.toBeDefined();
     input.snapshot.trades[0].finalised_vendor_id = '';
     await expect(service.create(input, 'u')).resolves.toBeDefined();
   });

@@ -50,6 +50,8 @@ export default function DocumentListPage({
   projectId: fixedProjectId,
   emptyText,
   nameColumn,
+  // Optional second filter on row.group (e.g. drawing name on Tender / Working lists).
+  groupFilter,
 }) {
   const nav = useNavigate();
   const location = useLocation();
@@ -62,6 +64,7 @@ export default function DocumentListPage({
   const [archived, setArchived] = useState(false);
   const [history, setHistory] = useState(null);
   const [sort, setSort] = useState('new');
+  const [group, setGroup] = useState('');
 
   const { data: meta = {} } = useGetDocMetaQuery(type, { skip: !type });
   const { data: caps } = useGetDocCapabilitiesQuery(type, { skip: !type });
@@ -110,11 +113,21 @@ export default function DocumentListPage({
     return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [mapped]);
 
+  const groups = useMemo(() => {
+    if (!groupFilter) return [];
+    const scoped = mapped.filter((r) => !project || r.projectId === project);
+    return [...new Set(scoped.map((r) => r.group).filter(Boolean))].sort((a, b) =>
+      String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true }),
+    );
+  }, [mapped, groupFilter, project]);
+  const activeGroup = groups.includes(group) ? group : '';
+
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();
     return mapped
       .filter((r) => (archived ? isArchived(r, r.meta) : !isArchived(r, r.meta)))
       .filter((r) => !project || r.projectId === project)
+      .filter((r) => !activeGroup || r.group === activeGroup)
       .filter(
         (r) =>
           !term ||
@@ -139,7 +152,7 @@ export default function DocumentListPage({
         const d = new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
         return sort === 'old' ? -d : d;
       });
-  }, [mapped, q, project, archived, sort]);
+  }, [mapped, q, project, archived, sort, activeGroup]);
 
   const go = (to, fn, row) => (fn ? fn(row) : to && nav(typeof to === 'function' ? to(row) : to));
   const createAction =
@@ -170,6 +183,22 @@ export default function DocumentListPage({
               {projects.map(([id, name]) => (
                 <option key={id} value={id}>
                   {name}
+                </option>
+              ))}
+            </select>
+          )}
+          {groupFilter && (
+            <select
+              className="inos-select dl-group"
+              value={activeGroup}
+              onChange={(e) => setGroup(e.target.value)}
+              aria-label={groupFilter}
+              data-testid="doc-list-group"
+            >
+              <option value="">{groupFilter}</option>
+              {groups.map((g) => (
+                <option key={g} value={g}>
+                  {g}
                 </option>
               ))}
             </select>

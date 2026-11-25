@@ -80,3 +80,8 @@ export function viewCounts(rows) {
   rows.forEach((r) => (c[rowState(r).key] += 1));
   return c;
 }
+
+/** Execution = the Build planner's work, each with its state (completed / late / due / pending). */
+export function executionTasks(overview) {
+  return viewRows(overview, 'Build').map((r) => ({ ...r, st: rowState(r) }));
+}

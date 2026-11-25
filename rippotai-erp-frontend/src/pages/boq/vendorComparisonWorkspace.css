@@ -781,3 +781,9 @@ p.vc-hint[role="alert"] {
     margin-inline-start: 0;
   }
 }
+
+.vc-incomplete {
+  color: #9a6a12;
+  font-size: 12px;
+  font-weight: 500;
+}

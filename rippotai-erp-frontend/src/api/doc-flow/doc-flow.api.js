@@ -25,6 +25,19 @@ export const docFlowApi = baseApi.enhanceEndpoints({ addTagTypes: ["DocReviews"]
       query: ({ type, projectId }) => ({ url: "/document-reviews/existing", params: { entity_type: type, project_id: projectId } }),
       keepUnusedDataFor: 0,
     }),
+    // Make an earlier revision current again (the current state is kept as a revision).
+    restoreDocRevision: builder.mutation({
+      query: ({ type, snapshotId }) => ({
+        url: `/document-reviews/revisions/${snapshotId}/restore`,
+        method: "POST",
+        params: { entity_type: type },
+      }),
+      invalidatesTags: (r, e, { type, id }) => [
+        { type: "DocReviews", id: `meta:${type}` },
+        { type: "DocReviews", id: `${type}:${id}` },
+        { type: "DocReviews", id: `rows:${type}` },
+      ],
+    }),
     reviewDocument: builder.mutation({
       query: (body) => ({ url: "/document-reviews", method: "POST", body }),
       invalidatesTags: (r, e, { entity_type, entity_id }) => [
@@ -40,7 +53,9 @@ export const {
   useGetDocCapabilitiesQuery,
   useGetDocRowsQuery,
   useGetDocReviewsQuery,
+  useGetDocRevisionQuery,
   useLazyGetDocRevisionQuery,
+  useRestoreDocRevisionMutation,
   useLazyGetDocExistingQuery,
   useReviewDocumentMutation,
 } = docFlowApi;

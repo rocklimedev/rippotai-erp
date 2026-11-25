@@ -40,7 +40,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { arrayMove } from '@dnd-kit/sortable';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 
 import {
   useGetBoqByIdQuery,
@@ -293,6 +307,22 @@ export default function BoqWorkspace() {
     } catch {
       toast.error('Duplicate failed');
     }
+  };
+
+  // Category rows are dragged by their ⋮⋮ handle; items stay hidden while a category moves.
+  const [draggingCategory, setDraggingCategory] = useState(false);
+  const categorySensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const catKey = (cid) => `boq-cat:${cid}`;
+  const onCategoryDragEnd = ({ active, over }) => {
+    setDraggingCategory(false);
+    if (!over || active.id === over.id) return;
+    const from = boq.categories.findIndex((c) => catKey(c.id) === active.id);
+    const to = boq.categories.findIndex((c) => catKey(c.id) === over.id);
+    if (from < 0 || to < 0) return;
+    void moveCategory(from, to - from);
   };
 
   const moveCategory = async (index, direction) => {
@@ -734,6 +764,18 @@ export default function BoqWorkspace() {
                       </tr>
                     </thead>
                     <tbody>
+                      <DndContext
+                        sensors={categorySensors}
+                        collisionDetection={closestCenter}
+                        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+                        onDragStart={() => setDraggingCategory(true)}
+                        onDragCancel={() => setDraggingCategory(false)}
+                        onDragEnd={onCategoryDragEnd}
+                      >
+                      <SortableContext
+                        items={(boq.categories || []).map((c) => catKey(c.id))}
+                        strategy={verticalListSortingStrategy}
+                      >
                       {boq.categories?.map((cat, index) => (
                         <CategoryBlock
                           key={cat.id}
@@ -753,15 +795,17 @@ export default function BoqWorkspace() {
                           onOpenDetail={setDetailItem}
                           onAddItem={handleAddItem}
                           onDeleteCat={handleDeleteCategory}
-                          moveControls
-                          moveUp={canReorderCategories && index > 0 ? () => void moveCategory(index, -1) : undefined}
-                          moveDown={canReorderCategories && index < boq.categories.length - 1 ? () => void moveCategory(index, 1) : undefined}
+                          sortableId={catKey(cat.id)}
+                          dragDisabled={!canReorderCategories || reorderingCategories}
+                          hideItems={draggingCategory}
                           moving={reorderingCategories}
                           onReorderItems={handleReorderItems}
                           onToggleHide={toggleHide}
                           onLockedEdit={onLockedEdit}
                         />
                       ))}
+                      </SortableContext>
+                      </DndContext>
                     </tbody>
                   </table>
                 </div>

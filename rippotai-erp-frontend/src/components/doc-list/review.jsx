@@ -8,6 +8,7 @@ import { ChevronDown, History, MessageSquare, X } from "lucide-react";
 import { Button, Pill } from "@/components/inos";
 import { useGetDocReviewsQuery, useReviewDocumentMutation } from "@/api/doc-flow/doc-flow.api";
 import { REVIEW_ACTIONS, REVIEW_STATE, fmtDateTime } from "./doc-utils";
+import RevisionViewer from "./RevisionViewer";
 import "./doc-list.css";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
@@ -247,6 +248,7 @@ export function HistoryDrawer({ type, id, name, version, canReview, onClose, ear
   const [tab, setTab] = useState(initialTab);
   const { data, isFetching } = useGetDocReviewsQuery({ type, id }, { skip: !id });
   const [action, setAction] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const revisions = data?.revisions ?? [];
   return (
     <Overlay onClose={onClose} side>
@@ -305,12 +307,27 @@ export function HistoryDrawer({ type, id, name, version, canReview, onClose, ear
                   Saved {fmtDateTime(r.created_at)}
                   {r.user_name ? ` · replaced by ${r.user_name}` : ""}
                 </span>
+                <span className="dl-revisions__actions">
+                  <button type="button" className="dl-link" onClick={() => setViewing(r)} data-testid="revision-view">
+                    View
+                  </button>
+                </span>
               </li>
             ))}
             {!revisions.length && !earlier.length && <p className="dl-empty">No earlier versions. Saving this document again keeps the previous one here.</p>}
           </ol>
         )}
       </div>
+      {viewing && (
+        <RevisionViewer
+          type={type}
+          id={id}
+          name={name}
+          revision={viewing}
+          onClose={() => setViewing(null)}
+          onRestored={() => window.location.reload()}
+        />
+      )}
       {action && (
         <ReviewDialog type={type} id={id} name={name} action={action} onClose={() => setAction(null)} onDone={() => setAction(null)} />
       )}

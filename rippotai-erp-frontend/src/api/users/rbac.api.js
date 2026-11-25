@@ -40,7 +40,7 @@ export const rbacApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Roles", "RoleApps"],
+      invalidatesTags: (_result, error) => error ? [] : ["Roles", "RoleApps", "RolePermissions"],
     }),
 
     deleteRole: builder.mutation({

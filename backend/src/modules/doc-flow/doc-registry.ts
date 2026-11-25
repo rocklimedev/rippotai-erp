@@ -42,9 +42,15 @@ export interface DocType {
     controller: string;
     path: string;
     param: string;
-    by?: 'id' | 'project';
+    // 'child': the param is a child row id — the document is found through child.parentCol.
+    by?: 'id' | 'project' | 'child';
+    child?: { table: string; parentCol: string };
+    methods?: ('PUT' | 'PATCH' | 'POST' | 'DELETE')[];
   }[];
   projectLevel?: boolean;
+  // Child rows without a foreign key (or one level down, `via` another child table)
+  // that belong to a revision — captured in snapshots and put back on restore.
+  children?: { table: string; fk: string; via?: string }[];
   // Generic rows endpoint (types without a flat list API).
   nameCol?: string;
   rowsWhere?: string;
@@ -162,6 +168,20 @@ export const DOC_TYPES: DocType[] = [
         path: 'planners/:plannerId',
         param: 'plannerId',
       },
+      // Row edits are what change a planner: each add / edit / remove keeps a version.
+      { controller: 'ProjectPlannerController', path: 'planners/:plannerId/items', param: 'plannerId', methods: ['POST'] },
+      { controller: 'ProjectPlannerController', path: 'planners/:plannerId/procurement', param: 'plannerId', methods: ['POST'] },
+      ...(['planner-items/:itemId', 'procurement-items/:itemId'] as const).map((path) => ({
+        controller: 'ProjectPlannerController',
+        path,
+        param: 'itemId',
+        by: 'child' as const,
+        child: {
+          table: path.startsWith('planner') ? 'project_planner_items' : 'project_procurement_items',
+          parentCol: 'planner_id',
+        },
+        methods: ['PATCH', 'DELETE'] as ('PATCH' | 'DELETE')[],
+      })),
     ],
   },
   {
@@ -229,6 +249,7 @@ export const DOC_TYPES: DocType[] = [
       reject: lower('DRAFT', ['SUBMITTED']),
     },
     ownerCol: 'created_by_id',
+    children: [{ table: 'material_procurement_items', fk: 'procurement_id' }],
     snapshot: [
       { controller: 'MaterialProcurementController', path: ':id', param: 'id' },
     ],
@@ -250,6 +271,7 @@ export const DOC_TYPES: DocType[] = [
     deletedCol: 'deleted_at',
     versionCol: 'version',
     versionChain: true,
+    children: [{ table: 'boq_items', fk: 'boq_category_id', via: 'boq_categories' }],
     snapshot: [{ controller: 'BoqController', path: ':id', param: 'id' }],
   },
   {
@@ -411,10 +433,14 @@ export const DOC_TYPES: DocType[] = [
 const BY_KEY = new Map(DOC_TYPES.map((d) => [d.key, d]));
 export const docType = (key: string) => BY_KEY.get(key);
 
-export function snapshotTargetFor(controller: string, path: string) {
+export function snapshotTargetFor(controller: string, path: string, method = 'PATCH') {
   for (const d of DOC_TYPES)
     for (const s of d.snapshot ?? [])
-      if (s.controller === controller && s.path === path)
+      if (
+        s.controller === controller &&
+        s.path === path &&
+        (s.methods ?? ['PUT', 'PATCH', 'POST']).includes(method as any)
+      )
         return { doc: d, target: s };
   return undefined;
 }

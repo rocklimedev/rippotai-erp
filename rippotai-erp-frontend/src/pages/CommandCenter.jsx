@@ -7,7 +7,11 @@ import { downloadDocument } from '../hooks/shared';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { usePollingInterval, canBackgroundPoll } from '@/hooks/use-polling-interval';
-import GateChecklist from '@/components/command-center/GateChecklist';
+import PhaseGateButton from '@/components/command-center/PhaseGateButton';
+import ProcurementPanel from '@/components/command-center/ProcurementPanel';
+import ClientCollections from '@/components/command-center/ClientCollections';
+import ExecutionTaskList from '@/components/projects/ExecutionTaskList';
+import { useGetProjectPlannerOverviewQuery } from '@/api/documents/project-planner.api';
 import AuthorityPanel from '@/components/command-center/AuthorityPanel';
 import { isSuperAuthority } from '@/components/command-center/authority';
 import { useEffect, useMemo, useState } from 'react';
@@ -18,22 +22,16 @@ import {
   ChevronDown,
   CircleCheck,
   CloudOff,
-  Clock3,
-  Construction,
-  FileCheck2,
   FileText,
   FolderSearch,
-  History,
   IndianRupee,
-  ListChecks,
+  Package,
   Loader2,
-  MessageCircle,
   Plus,
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
   UploadCloud,
-  Users,
 } from 'lucide-react';
 
 import {
@@ -50,7 +48,7 @@ import {
   EmptyState,
   Progress,
 } from '@/components/inos';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // ------------------------------------------------------------
 // LIVE API — every number on screen comes from CommandCenterService
@@ -63,12 +61,7 @@ import {
   useGetCommandCenterPortfolioQuery,
   useGetProjectPhaseDetailQuery,
   useGetCommandCenterActionsQuery,
-  useGetCommandCenterDocumentsQuery,
-  useCompleteCommandCenterTaskMutation,
   useGetCommandCenterCommercialQuery,
-  useGetCommandCenterTeamWorkloadQuery,
-  useGetCommandCenterActivityQuery,
-  useGetCommandCenterTasksQuery,
 } from '../api/projects/command-center.api';
 
 // ------------------------------------------------------------
@@ -92,17 +85,12 @@ const REFRESH_TAGS = [
   'CommandCenterPortfolio',
   'CommandCenterProjectPhases',
   'CommandCenterActions',
-  'CommandCenterDocuments',
-  'CommandCenterTasks',
   'CommandCenterCommercial',
-  'CommandCenterTeamWorkload',
-  'CommandCenterActivity',
   'CommandCenterGates',
+  'ProcurementQuotations',
+  'ClientCollections',
 ];
 
-// The backend's team-workload rollup only returns { role, count }.
-// Local role -> display name map purely for presentation.
-const PEOPLE_BY_ROLE = {};
 
 // ------------------------------------------------------------
 // HELPERS
@@ -156,42 +144,6 @@ function timeAgo(dateLike) {
   return `${diffDay}d ago`;
 }
 
-// Turns an ActivityLog row into the {type, title, detail, time} shape
-// ActivityTimeline renders.
-function mapActivityLog(row) {
-  const action = normalizeKey(row.action);
-  const ICON_TYPE = {
-    FILE_UPLOADED: 'DOC',
-    GATE_CLEARED: 'GATE_APPROVED',
-    GATE_REOPENED: 'GATE_APPROVED',
-    DOCUMENT_UPLOADED: 'DOC',
-    DOCUMENT_APPROVED: 'DOC',
-    DOCUMENT_REJECTED: 'DOC',
-    TASK_COMPLETED: 'TASK',
-    TASK_FAILED: 'TASK',
-    GATE_APPROVED: 'GATE_APPROVED',
-    GATE_OVERRIDDEN: 'GATE_APPROVED',
-  };
-  const TITLE = {
-    FILE_UPLOADED: row.changes?.status === 'rejected' ? 'Document rejected' : 'Document updated',
-    GATE_CLEARED: 'Gate cleared',
-    GATE_REOPENED: 'Gate reopened',
-    DOCUMENT_UPLOADED: 'Document uploaded',
-    DOCUMENT_APPROVED: 'Document approved',
-    DOCUMENT_REJECTED: 'Document rejected',
-    TASK_COMPLETED: 'Task completed',
-    TASK_FAILED: 'Task failed QC',
-    GATE_APPROVED: 'Gate approved',
-    GATE_OVERRIDDEN: 'Gate force-approved',
-  };
-  return {
-    type: ICON_TYPE[action] || (action.endsWith('_CREATED') ? 'PROJECT_CREATED' : 'SCAN'),
-    title: TITLE[action] || sentence(action),
-    detail: row.entity_label || row.user_email || '',
-    time: timeAgo(row.created_at),
-  };
-}
-
 // Phase state -> pastel tone (drives stepper dots, pills and legend)
 const STATE_TONE = {
   COMPLETE: 'ok',
@@ -231,8 +183,6 @@ const phaseTitle = (name) => {
 };
 const gateTitle = (code) => sentence(code);
 
-const isDone = (s) => s === 'DONE' || s === 'Done';
-const isFailed = (s) => s === 'FAILED' || s === 'Failed';
 
 // ------------------------------------------------------------
 // SMALL UI PIECES (local to this module)
@@ -361,7 +311,6 @@ function PhaseLegend() {
 export function PhaseDetailCard({
   project,
   phase,
-  canUpdateTasks,
   onOpen,
   onFlash,
   documentsOnly = false,
@@ -378,21 +327,11 @@ export function PhaseDetailCard({
     { projectId: project.id || project.code, phaseId: phase.id },
     { skip: !(project?.id || project?.code) || !phase?.id },
   );
-
-  const [completeTask, { isLoading: completingTask }] = useCompleteCommandCenterTaskMutation();
-
-  const handleTaskStatus = async (taskDefinitionId, status) => {
-    try {
-      await completeTask({
-        projectId: project.code,
-        taskDefinitionId,
-        body: { status },
-      }).unwrap();
-      onFlash?.(`Task marked ${status.toLowerCase()}.`);
-    } catch (e) {
-      onFlash?.(e?.data?.message || "Couldn't update the task.");
-    }
-  };
+  // Execution is one phase: its list is the Build planner's work.
+  const isExecution = phase?.code === '08_EXECUTION';
+  const { data: plannerRes } = useGetProjectPlannerOverviewQuery(project?.id, {
+    skip: !isExecution || documentsOnly || !project?.id,
+  });
 
   // Search: only this phase's documents whose name matches; hide the phase when none do.
   const term = String(filter || '')
@@ -412,44 +351,26 @@ export function PhaseDetailCard({
   return (
     <div className="cc-phase-detail">
       {title && <h3 className="cc-detail-head">{title}</h3>}
-      {isLoading && <LoadingRow label="Loading documents and checks…" />}
+      {isLoading && <LoadingRow label="Loading documents…" />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
 
+      {isExecution && !documentsOnly && !term && (
+        <ExecutionTaskList overview={plannerRes?.data || plannerRes} projectId={project.id} />
+      )}
       {detail && (
-        <div
-          className="cc-detail-grid"
-          style={documentsOnly ? { gridTemplateColumns: '1fr' } : undefined}
-        >
+        <div className="cc-detail-grid" style={{ gridTemplateColumns: '1fr' }}>
           <div>
             <div className="cc-documents-head">
               <p className="cc-detail-head">
                 <FileText aria-hidden /> Documents
               </p>
               {!documentsOnly && !isError && (
-                <Dialog key={`${project.id}:${phase.id}`}>
-                  <DialogTrigger asChild>
-                    <Button type="button" variant="soft" size="sm" icon={ShieldCheck}>
-                      Gates
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent aria-describedby={undefined} className="max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Gates · {phaseTitle(phase.name)}</DialogTitle>
-                    </DialogHeader>
-                    {detail.gates?.length ? (
-                      detail.gates.map((gate) => (
-                        <GateChecklist
-                          key={gate.gateCode}
-                          projectId={project.id}
-                          gate={gate}
-                          onFlash={onFlash}
-                        />
-                      ))
-                    ) : (
-                      <p className="cc-muted cc-gate-none">No sign-off gate is configured for this phase.</p>
-                    )}
-                  </DialogContent>
-                </Dialog>
+                <PhaseGateButton
+                  key={`${project.id}:${phase.id}`}
+                  projectId={project.id}
+                  gates={detail.gates}
+                  onFlash={onFlash}
+                />
               )}
             </div>
             <ul className="cc-checklist">
@@ -560,69 +481,6 @@ export function PhaseDetailCard({
               )}
             </ul>
           </div>
-          {!documentsOnly && (
-            <div>
-              <p className="cc-detail-head">
-                <ListChecks aria-hidden /> Execution and QC checks
-              </p>
-              <ul className="cc-checklist">
-                {detail.tasks.map((t) => (
-                  <li key={t.id}>
-                    <span
-                      className={cn(
-                        'cc-bullet',
-                        isDone(t.status)
-                          ? 'cc-dot--ok'
-                          : isFailed(t.status)
-                            ? 'cc-dot--bad'
-                            : 'cc-dot--mute',
-                      )}
-                    />
-                    <span className="cc-checklist__name">
-                      <span className="cc-truncate">{t.name}</span>
-                      {t.type === 'QC' && (
-                        <Pill tone="lilac" size="sm" dot={false}>
-                          QC
-                        </Pill>
-                      )}
-                    </span>
-                    <span className="cc-checklist__side">
-                      <Pill
-                        size="sm"
-                        tone={isDone(t.status) ? 'ok' : isFailed(t.status) ? 'bad' : 'warn'}
-                      >
-                        {sentence(t.status)}
-                      </Pill>
-                      {canUpdateTasks && !isDone(t.status) && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={completingTask}
-                            onClick={() => handleTaskStatus(t.id, 'DONE')}
-                          >
-                            Mark done
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="cc-btn-bad"
-                            disabled={completingTask}
-                            onClick={() => handleTaskStatus(t.id, 'FAILED')}
-                          >
-                            Fail
-                          </Button>
-                        </>
-                      )}
-                    </span>
-                  </li>
-                ))}
-                {detail.tasks.length === 0 && (
-                  <li className="cc-muted">No checks configured for this phase.</li>
-                )}
-              </ul>
-            </div>
-          )}
         </div>
       )}
 
@@ -741,8 +599,7 @@ function ProjectExecutionBoard({
                       <div className="cc-phase__text">
                         <p className="cc-phase__name">{phaseTitle(phase.name)}</p>
                         <p className="cc-phase__meta">
-                          Docs {phase.docsDone}/{phase.docsTotal} · Checks {phase.tasksDone}/
-                          {phase.tasksTotal}
+                          Docs {phase.docsDone}/{phase.docsTotal}
                           {phase.gate?.code ? ` · Gate: ${gateTitle(phase.gate.code)}` : ''}
                         </p>
                       </div>
@@ -852,208 +709,6 @@ function ActionRequired({ onOpen }) {
 }
 
 // ------------------------------------------------------------
-// DOCUMENT CONTROL — GET /command-center/documents,
-// POST /command-center/projects/:id/documents/upload
-// ------------------------------------------------------------
-
-function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
-  const { data, isLoading, isError, error, refetch } = useGetCommandCenterDocumentsQuery(
-    undefined,
-    { refetchOnMountOrArgChange: 60 },
-  );
-  const docStats = data?.stats || { required: 0, uploaded: 0, missing: 0 };
-  const missingDocs = data?.missingDocs || [];
-
-  return (
-    <Card
-      flush
-      title="Document control"
-      subtitle="Mandatory evidence in open phases"
-      actions={
-        <Button
-          variant="ghost"
-          size="sm"
-          iconRight={ArrowRight}
-          onClick={() => onOpen(ROUTES.documents)}
-        >
-          Open documents
-        </Button>
-      }
-    >
-      <Figures
-        items={[
-          { label: 'Required now', value: docStats.required },
-          { label: 'Evidence satisfied', value: docStats.uploaded, tone: 'ok' },
-          { label: 'Missing', value: docStats.missing, tone: docStats.missing ? 'bad' : undefined },
-        ]}
-      />
-
-      {isLoading && <LoadingRow />}
-      {isError && <ErrorRow error={error} onRetry={refetch} />}
-      {!isLoading && !isError && missingDocs.length > 0 && (
-        <div className="cc-list">
-          {missingDocs.map((doc, i) => (
-            <div key={i} className="cc-row">
-              <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--bad">
-                <FileText aria-hidden />
-              </span>
-              <button
-                type="button"
-                className="cc-row__text cc-row__text--link"
-                onClick={() =>
-                  doc.evidence?.source === 'DATABASE'
-                    ? onOpen(doc.evidence.actionUrl || ROUTES.documentsProject(doc.projectId))
-                    : onViewEvidence({
-                        targetType: doc.targetType,
-                        documentTypeId: doc.id,
-                        name: doc.name,
-                        projectId: doc.projectId,
-                        projectName: doc.project,
-                        projectCode: doc.code,
-                        phaseCode: doc.phaseCode,
-                        phaseName: doc.phase,
-                        role: doc.role,
-                      })
-                }
-              >
-                <span className="cc-row__title">
-                  <span className="cc-truncate">{doc.name}</span>
-                </span>
-                <span className="cc-row__meta">
-                  {doc.project} · {doc.phase} · Owner {doc.role}
-                </span>
-              </button>
-              <Pill tone="bad" size="sm">
-                Missing
-              </Pill>
-              {doc.evidence?.source === 'UPLOAD' && doc.evidence.recordId && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    onViewEvidence({
-                      targetType: doc.targetType,
-                      documentTypeId: doc.id,
-                      name: doc.name,
-                      projectId: doc.projectId,
-                      projectName: doc.project,
-                      projectCode: doc.code,
-                      phaseCode: doc.phaseCode,
-                      phaseName: doc.phase,
-                      role: doc.role,
-                    })
-                  }
-                >
-                  {doc.evidence.status?.toLowerCase() === 'approved' ? 'View' : 'View & approve'}
-                </Button>
-              )}
-              <Button
-                variant="soft"
-                size="sm"
-                icon={doc.evidence?.source === 'DATABASE' ? ArrowRight : UploadCloud}
-                title={
-                  doc.targetType === 'DRAWING'
-                    ? 'Upload drawings for this checklist item'
-                    : undefined
-                }
-                onClick={() =>
-                  doc.evidence?.source === 'DATABASE'
-                    ? onOpen(doc.evidence.actionUrl)
-                    : onUploadDoc({
-                        targetType: doc.targetType,
-                        phaseCode: doc.phaseCode,
-                        projectId: doc.projectId,
-                        documentTypeId: doc.id,
-                        name: doc.name,
-                        role: doc.role,
-                        projectCode: doc.code,
-                        projectName: doc.project,
-                        phaseName: doc.phase,
-                      })
-                }
-              >
-                {doc.evidence?.source === 'DATABASE'
-                  ? 'Open source'
-                  : doc.targetType === 'DRAWING'
-                    ? 'Upload drawing'
-                    : 'Upload'}
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-      {!isLoading && !isError && missingDocs.length === 0 && (
-        <EmptyState
-          icon={FileCheck2}
-          title="Nothing missing right now"
-          text="All mandatory documents for the open phases are on file."
-        />
-      )}
-    </Card>
-  );
-}
-
-// ------------------------------------------------------------
-// EXECUTION & QC CHECKS — GET /command-center/tasks
-// ------------------------------------------------------------
-
-function TaskQCPanel({ onOpen }) {
-  const { data, isLoading, isError, error, refetch } = useGetCommandCenterTasksQuery(undefined, {
-    refetchOnMountOrArgChange: 60,
-  });
-  const openTasks = data || [];
-
-  return (
-    <Card
-      flush
-      title="Execution and QC checks"
-      subtitle="Pending or failed checklist items across projects"
-      actions={
-        !isLoading &&
-        !isError &&
-        openTasks.length > 0 && <Pill tone="warn">{openTasks.length} open</Pill>
-      }
-    >
-      {isLoading && <LoadingRow />}
-      {isError && <ErrorRow error={error} onRetry={refetch} />}
-      {!isLoading && !isError && openTasks.length > 0 && (
-        <div className="cc-list">
-          {openTasks.map((t, i) => (
-            <ListRow
-              key={i}
-              icon={isFailed(t.status) ? ShieldAlert : ListChecks}
-              tone={isFailed(t.status) ? 'bad' : undefined}
-              title={t.name}
-              tag={
-                t.type === 'QC' && (
-                  <Pill tone="lilac" size="sm" dot={false}>
-                    QC
-                  </Pill>
-                )
-              }
-              meta={`${t.project} · ${t.phase} · Owner ${t.role}`}
-              right={
-                <Pill tone={isFailed(t.status) ? 'bad' : 'warn'} size="sm">
-                  {sentence(t.status)}
-                </Pill>
-              }
-              onClick={() => onOpen(t.href || ROUTES.taskProject(t.projectId || t.code))}
-            />
-          ))}
-        </div>
-      )}
-      {!isLoading && !isError && openTasks.length === 0 && (
-        <EmptyState
-          icon={ShieldCheck}
-          title="All checks clear"
-          text="No pending or failed execution and QC items right now."
-        />
-      )}
-    </Card>
-  );
-}
-
-// ------------------------------------------------------------
 // COMMERCIAL — GET /command-center/commercial
 // ------------------------------------------------------------
 
@@ -1111,239 +766,7 @@ function CommercialPanel({ onOpen }) {
           </div>
         </>
       )}
-    </Card>
-  );
-}
-
-// ------------------------------------------------------------
-// SITE EXECUTION — derived client-side from the already-loaded
-// portfolio rows: projects whose current phase is 08 Execution or
-// 09 Handover. QC failures = open site QC sign-off failures
-// (row.siteQcFailures, from Site Operations) or a failed QC task.
-// ------------------------------------------------------------
-
-const SITE_PHASE_NUMBERS = [8, 9];
-
-function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
-  const inSitePhase = rows.filter((r) => SITE_PHASE_NUMBERS.includes(r.currentPhaseSeq));
-  const stalled = inSitePhase.filter((r) =>
-    r.phases.some(
-      (ph) => SITE_PHASE_NUMBERS.includes(ph.phaseNumber) && normalizeKey(ph.state) === 'STALLED',
-    ),
-  );
-  const qcFailed = rows.filter(
-    (r) =>
-      (r.siteQcFailures || 0) > 0 ||
-      r.phases.some(
-        (ph) =>
-          SITE_PHASE_NUMBERS.includes(ph.phaseNumber) && normalizeKey(ph.state) === 'QC_FAILED',
-      ),
-  );
-
-  return (
-    <Card
-      flush
-      title="Site execution"
-      subtitle="Projects in execution or handover"
-      actions={
-        <Button
-          variant="ghost"
-          size="sm"
-          iconRight={ArrowRight}
-          onClick={() => onOpen(ROUTES.tasks)}
-        >
-          Open execution
-        </Button>
-      }
-    >
-      {isLoading && <LoadingRow />}
-      {isError && <ErrorRow error={error} onRetry={refetch} />}
-
-      {!isLoading && !isError && (
-        <>
-          <Figures
-            items={[
-              { label: 'Projects on site', value: inSitePhase.length },
-              {
-                label: 'Projects with QC failures',
-                value: qcFailed.length,
-                tone: qcFailed.length ? 'bad' : undefined,
-              },
-              {
-                label: 'Stalled on site',
-                value: stalled.length,
-                tone: stalled.length ? 'peach' : undefined,
-              },
-            ]}
-          />
-          {inSitePhase.length > 0 ? (
-            <div className="cc-list">
-              {inSitePhase.map((row) => {
-                const ph = row.phases.find((x) => x.phaseNumber === row.currentPhaseSeq);
-                if (!ph) return null;
-                return (
-                  <ListRow
-                    key={row.code}
-                    icon={Construction}
-                    title={row.name}
-                    meta={`${row.executionWork?.label || ph.name}${row.executionWork?.late ? ` · ${row.executionWork.late} late` : ''} · ${ph.docsDone}/${ph.docsTotal} docs${row.siteQcFailures ? ` · ${row.siteQcFailures} open QC failure${row.siteQcFailures > 1 ? 's' : ''}` : ''}`}
-                    right={
-                      row.siteQcFailures ? (
-                        <Pill tone="bad" size="sm">
-                          QC failed
-                        </Pill>
-                      ) : (
-                        <Pill tone={stateTone(ph.state)} size="sm">
-                          {stateLabel(ph.state)}
-                        </Pill>
-                      )
-                    }
-                    onClick={() => onOpen(ROUTES.taskProject(row.id))}
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Construction}
-              title="No project on site yet"
-              text="Projects appear here once they reach civil, MEP or finishes."
-            />
-          )}
-        </>
-      )}
-    </Card>
-  );
-}
-
-// ------------------------------------------------------------
-// TEAM WORKLOAD — GET /command-center/team-workload
-// ------------------------------------------------------------
-
-function TeamWorkload({ onOpen }) {
-  const { data, isLoading, isError, error, refetch } = useGetCommandCenterTeamWorkloadQuery(
-    undefined,
-    { refetchOnMountOrArgChange: 60 },
-  );
-  const roleLoad = data || [];
-  const maxCount = Math.max(1, ...roleLoad.map((r) => r.count));
-  const loadTone = (count) => (count >= 3 ? 'bad' : count > 0 ? 'warn' : 'ok');
-
-  return (
-    <Card flush title="Team workload" subtitle="Open items by role this week">
-      {isLoading && <LoadingRow />}
-      {isError && <ErrorRow error={error} onRetry={refetch} />}
-      {!isLoading && !isError && roleLoad.length > 0 && (
-        <div className="cc-list">
-          {roleLoad.map((r) => (
-            <button
-              type="button"
-              key={r.role}
-              className="cc-row cc-row--link cc-load"
-              onClick={() => onOpen(ROUTES.tasks)}
-            >
-              <span className="inos-icon-tile inos-icon-tile--sm">
-                <Users aria-hidden />
-              </span>
-              <span className="cc-row__text">
-                <span className="cc-row__title">{r.role}</span>
-                <span className="cc-row__meta">{PEOPLE_BY_ROLE[r.role] || 'Unassigned'}</span>
-              </span>
-              <span className="cc-load__bar">
-                <Progress
-                  value={(r.count / maxCount) * 100}
-                  tone={loadTone(r.count) === 'ok' ? undefined : loadTone(r.count)}
-                />
-              </span>
-              <Pill tone={loadTone(r.count)} size="sm">
-                {r.count} open
-              </Pill>
-            </button>
-          ))}
-        </div>
-      )}
-      {!isLoading && !isError && roleLoad.length === 0 && (
-        <EmptyState
-          icon={Users}
-          title="No open work right now"
-          text="Open documents and checks will be grouped here by role."
-        />
-      )}
-    </Card>
-  );
-}
-
-// ------------------------------------------------------------
-// ACTIVITY — GET /command-center/activity
-// ------------------------------------------------------------
-
-function ActivityTimeline() {
-  const { data, isLoading, isError, error, refetch } = useGetCommandCenterActivityQuery(
-    { limit: 20 },
-    { refetchOnMountOrArgChange: 60 },
-  );
-  const activities = (data || []).map(mapActivityLog);
-
-  const iconFor = (type) => {
-    if (type === 'SCAN') return RefreshCw;
-    if (type === 'GATE_APPROVED') return ShieldCheck;
-    if (type === 'PROJECT_CREATED') return Plus;
-    if (type === 'MESSAGE') return MessageCircle;
-    if (type === 'DOC') return FileText;
-    return ListChecks;
-  };
-  const toneFor = (type) =>
-    type === 'GATE_APPROVED'
-      ? 'ok'
-      : type === 'DOC'
-        ? 'info'
-        : type === 'TASK'
-          ? 'lilac'
-          : undefined;
-
-  return (
-    <Card
-      flush
-      title="Live activity"
-      subtitle="Latest 20 events from the activity log"
-      actions={<Pill tone="ok">Live</Pill>}
-    >
-      {isLoading && <LoadingRow />}
-      {isError && <ErrorRow error={error} onRetry={refetch} />}
-      {!isLoading && !isError && activities.length > 0 && (
-        <ol className="cc-timeline">
-          {activities.map((a, index) => {
-            const Icon = iconFor(a.type);
-            const tone = toneFor(a.type);
-            return (
-              <li key={index} className="cc-timeline__item">
-                <span
-                  className={cn(
-                    'inos-icon-tile inos-icon-tile--sm',
-                    tone && `inos-icon-tile--${tone}`,
-                  )}
-                >
-                  <Icon aria-hidden />
-                </span>
-                <div className="cc-timeline__body">
-                  <div className="cc-timeline__top">
-                    <span className="cc-row__title">{a.title}</span>
-                    <span className="cc-muted cc-nowrap">{a.time}</span>
-                  </div>
-                  {a.detail && <span className="cc-row__meta">{a.detail}</span>}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      )}
-      {!isLoading && !isError && activities.length === 0 && (
-        <EmptyState
-          icon={History}
-          title="No activity yet"
-          text="Uploads, gate sign-offs and check updates will stream in here."
-        />
-      )}
+      <ClientCollections />
     </Card>
   );
 }
@@ -1391,12 +814,8 @@ export function UploadDocumentModal({ target, onClose, onUploaded }) {
 const TABS = [
   { id: 'portfolio', label: 'Portfolio', icon: BriefcaseBusiness },
   { id: 'actions', label: 'Action required', icon: AlertCircle },
-  { id: 'documents', label: 'Document control', icon: FileText },
-  { id: 'execution', label: 'Site execution', icon: Construction },
-  { id: 'qc', label: 'Execution & QC checks', icon: ListChecks },
+  { id: 'procurement', label: 'Procurement', icon: Package },
   { id: 'commercial', label: 'Commercial', icon: IndianRupee },
-  { id: 'team', label: 'Team workload', icon: Users },
-  { id: 'activity', label: 'Live activity', icon: History },
 ];
 
 // Shown only to the super authority (ADMIN / SUPERADMIN); the API enforces it too.
@@ -1495,24 +914,14 @@ export default function CommandCenter() {
     { skip: activeTab !== 'portfolio', refetchOnMountOrArgChange: 60 },
   );
 
-  // ---- Portfolio, unfiltered (Site Execution + tab badges) ----
-  const { data: allRows = [] } = useGetCommandCenterPortfolioQuery(
-    {},
-    { skip: activeTab !== 'execution', refetchOnMountOrArgChange: 60 },
-  );
-
   // ---- Other tabs, each backed by its own endpoint ----
   useEffect(() => {
     if (!pollingInterval) return;
     const tagsByTab = {
       portfolio: ['CommandCenterPortfolio', 'CommandCenterProjectPhases', 'CommandCenterGates'],
-      execution: ['CommandCenterPortfolio'],
       actions: ['CommandCenterActions'],
-      documents: ['CommandCenterDocuments'],
-      qc: ['CommandCenterTasks'],
-      commercial: ['CommandCenterCommercial'],
-      team: ['CommandCenterTeamWorkload'],
-      activity: ['CommandCenterActivity'],
+      procurement: ['ProcurementQuotations'],
+      commercial: ['CommandCenterCommercial', 'ClientCollections'],
     };
     const timer = setInterval(() => {
       if (canBackgroundPoll())
@@ -1546,9 +955,8 @@ export default function CommandCenter() {
   const tabCounts = useMemo(
     () => ({
       portfolio: kpi.live,
-      documents: kpi.docsMissing,
     }),
-    [kpi.live, kpi.docsMissing],
+    [kpi.live],
   );
 
   const updatedLabel = updatedAt
@@ -1628,33 +1036,6 @@ export default function CommandCenter() {
           }}
         />
         <StatTile
-          label="Stalled phases"
-          value={kpiValue(kpi.stalled)}
-          meta="7+ days without activity"
-          icon={<Clock3 />}
-          tone="peach"
-          active={activeTab === 'actions'}
-          onClick={() => setActiveTab('actions')}
-        />
-        <StatTile
-          label="QC failures"
-          value={kpiValue(kpi.failed)}
-          meta={kpi.siteQcFailed ? `${kpi.siteQcFailed} open on site` : 'Failed checklist items'}
-          icon={<ShieldAlert />}
-          tone="bad"
-          active={activeTab === 'qc'}
-          onClick={() => setActiveTab('qc')}
-        />
-        <StatTile
-          label="Documents pending"
-          value={kpiValue(kpi.docsMissing)}
-          meta="Mandatory, in open phases"
-          icon={<FileText />}
-          tone="info"
-          active={activeTab === 'documents'}
-          onClick={() => setActiveTab('documents')}
-        />
-        <StatTile
           label="Portfolio value"
           value={kpiLoading && kpi.value == null ? '—' : formatINR(kpi.value)}
           meta="Across active projects"
@@ -1726,29 +1107,12 @@ export default function CommandCenter() {
         {/* ACTION REQUIRED TAB */}
         {activeTab === 'actions' && <ActionRequired onOpen={navigate} />}
 
-        {/* DOCUMENT CONTROL TAB */}
-        {activeTab === 'documents' && (
-          <DocumentControl
-            onOpen={navigate}
-            onUploadDoc={setUploadTarget}
-            onViewEvidence={setEvidenceTarget}
-          />
-        )}
-
-        {/* SITE EXECUTION TAB */}
-        {activeTab === 'execution' && <SiteExecution rows={allRows} onOpen={navigate} />}
-
-        {/* EXECUTION & QC CHECKS TAB */}
-        {activeTab === 'qc' && <TaskQCPanel onOpen={navigate} />}
+        {/* PROCUREMENT TAB */}
+        {activeTab === 'procurement' && <ProcurementPanel onOpen={navigate} />}
 
         {/* COMMERCIAL TAB */}
         {activeTab === 'commercial' && <CommercialPanel onOpen={navigate} />}
 
-        {/* TEAM WORKLOAD TAB */}
-        {activeTab === 'team' && <TeamWorkload onOpen={navigate} />}
-
-        {/* LIVE ACTIVITY TAB */}
-        {activeTab === 'activity' && <ActivityTimeline />}
       </div>
 
       {uploadTarget && (

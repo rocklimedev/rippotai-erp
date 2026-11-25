@@ -1792,6 +1792,16 @@
   {
     "module": "doc-flow",
     "controller": "DocumentReviewsController",
+    "handler": "restore",
+    "method": "POST",
+    "path": "/document-reviews/revisions/:id/restore",
+    "permission": "documents:read",
+    "public": false,
+    "file": "src/modules/doc-flow/doc-flow.controller.ts"
+  },
+  {
+    "module": "doc-flow",
+    "controller": "DocumentReviewsController",
     "handler": "review",
     "method": "POST",
     "path": "/document-reviews",
@@ -3968,6 +3978,36 @@
     "permission": "onedrive:upload",
     "public": false,
     "file": "src/modules/microsoft/microsoft-onedrive.controller.ts"
+  },
+  {
+    "module": "payments",
+    "controller": "ClientCollectionsController",
+    "handler": "create",
+    "method": "POST",
+    "path": "/client-collections",
+    "permission": "payment-schedules:update",
+    "public": false,
+    "file": "src/modules/payments/collections/client-collections.controller.ts"
+  },
+  {
+    "module": "payments",
+    "controller": "ClientCollectionsController",
+    "handler": "remove",
+    "method": "DELETE",
+    "path": "/client-collections/:id",
+    "permission": "payment-schedules:update",
+    "public": false,
+    "file": "src/modules/payments/collections/client-collections.controller.ts"
+  },
+  {
+    "module": "payments",
+    "controller": "ClientCollectionsController",
+    "handler": "summary",
+    "method": "GET",
+    "path": "/client-collections/summary",
+    "permission": "payment-schedules:read",
+    "public": false,
+    "file": "src/modules/payments/collections/client-collections.controller.ts"
   },
   {
     "module": "payments",

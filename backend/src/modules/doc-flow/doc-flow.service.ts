@@ -21,6 +21,7 @@ import {
   DocType,
   REVIEW_ACTIONS,
   ReviewAction,
+  DOC_TYPES,
 } from './doc-registry';
 
 export type Actor = {
@@ -48,7 +49,7 @@ const ACTION_LABEL: Record<ReviewAction, string> = {
 export class DocFlowService {
   private readonly logger = new Logger(DocFlowService.name);
   private owned = new Map<string, { at: number; perms: string[] }>();
-  private children = new Map<string, { table: string; fk: string }[]>();
+  private children = new Map<string, { table: string; fk: string; via?: string }[]>();
 
   constructor(
     private readonly sequelize: Sequelize,
@@ -120,9 +121,22 @@ export class DocFlowService {
             AND REFERENCED_COLUMN_NAME = 'id'`,
         { replacements: { table }, type: QueryTypes.SELECT },
       );
-    const list = rows
-      .filter((r) => SAFE.test(r.table_name) && SAFE.test(r.column_name))
-      .map((r) => ({ table: r.table_name, fk: r.column_name }));
+    // Other documents and history/log tables that merely point at this one are not
+    // part of its content (a BOQ's comparisons, estimates, versions, activity…).
+    const docTables = new Set(DOC_TYPES.map((t) => t.table));
+    const history = /(_versions|_activities|_activity|_logs|_revisions|_reviews)$/;
+    const declared = DOC_TYPES.find((t) => t.table === table)?.children ?? [];
+    const list: { table: string; fk: string; via?: string }[] = [
+      ...rows
+        .filter((r) => SAFE.test(r.table_name) && SAFE.test(r.column_name))
+        .filter((r) => !docTables.has(r.table_name) && !history.test(r.table_name) && r.table_name !== 'budget_estimates')
+        .map((r) => ({ table: r.table_name, fk: r.column_name })),
+      ...declared.filter(
+        (c) => SAFE.test(c.table) && SAFE.test(c.fk) && (!c.via || SAFE.test(c.via)) && !rows.some((r) => r.table_name === c.table && !c.via),
+      ),
+    ];
+    // direct children first, then rows one level down (`via`)
+    list.sort((a, b) => Number(!!a.via) - Number(!!b.via));
     this.children.set(table, list);
     return list;
   }
@@ -378,7 +392,22 @@ export class DocFlowService {
   /* ------------------------------------------------------------ snapshots */
 
   /** Captures the current state of a document before a save (called by the interceptor). */
-  async captureBefore(d: DocType, key: string, by: 'id' | 'project' = 'id') {
+  async captureBefore(
+    d: DocType,
+    key: string,
+    by: 'id' | 'project' | 'child' = 'id',
+    child?: { table: string; parentCol: string },
+  ) {
+    if (by === 'child') {
+      if (!child || !SAFE.test(child.table) || !SAFE.test(child.parentCol)) return undefined;
+      const [link] = await this.sequelize.query<any>(
+        `SELECT ${q(child.parentCol)} AS pid FROM ${q(child.table)} WHERE id = :key LIMIT 1`,
+        { replacements: { key }, type: QueryTypes.SELECT },
+      );
+      if (!link?.pid) return undefined;
+      key = link.pid;
+      by = 'id';
+    }
     const where =
       by === 'project' && d.projectCol
         ? `${q(d.projectCol)} = :key ${d.deletedCol ? `AND ${q(d.deletedCol)} IS NULL` : ''} ORDER BY updated_at DESC`
@@ -390,6 +419,16 @@ export class DocFlowService {
     if (!row) return undefined;
     const data: Record<string, any> = { [d.table]: row };
     for (const c of await this.childTables(d.table)) {
+      if (c.via) {
+        const parents = ((data[c.via] as any[]) || []).map((p) => p.id).filter(Boolean);
+        data[c.table] = parents.length
+          ? await this.sequelize.query(
+              `SELECT * FROM ${q(c.table)} WHERE ${q(c.fk)} IN (:parents) LIMIT 5000`,
+              { replacements: { parents }, type: QueryTypes.SELECT },
+            )
+          : [];
+        continue;
+      }
       data[c.table] = await this.sequelize.query(
         `SELECT * FROM ${q(c.table)} WHERE ${q(c.fk)} = :id LIMIT 2000`,
         { replacements: { id: row.id }, type: QueryTypes.SELECT },
@@ -403,9 +442,10 @@ export class DocFlowService {
     d: DocType,
     captured: { row: any; data: any },
     actor?: Actor,
+    force = false,
   ) {
     const { row, data } = captured;
-    const [recent] = await this.sequelize.query<any>(
+    const [recent] = force ? [] : await this.sequelize.query<any>(
       `SELECT id FROM document_snapshots
         WHERE entity_type = :type AND entity_id = :id
           AND created_at > NOW() - INTERVAL 60 SECOND LIMIT 1`,
@@ -451,5 +491,125 @@ export class DocFlowService {
           { replacements: { next: version + 1, id: row.id } },
         );
     }
+  }
+
+  /* ------------------------------------------------------------ restore */
+
+  /**
+   * Make an earlier version current again: the present state is kept as a new
+   * revision first, then the document row and its child rows (items, lines…)
+   * are put back as they were in the snapshot. Rows added after that version
+   * are removed when nothing else depends on them. All or nothing.
+   */
+  async restore(actor: Actor, type: string, snapshotId: string) {
+    const d = this.type(type);
+    if (LEVEL_RANK[await this.levelOf(actor, d)] < LEVEL_RANK.edit)
+      throw new ForbiddenException(`You can view but not edit ${d.label}.`);
+    const snap = await this.revision(actor, type, snapshotId);
+    const data: Record<string, any> = snap.data || {};
+    const main = data[d.table];
+    if (!main?.id) throw new BadRequestException('This revision has no saved data to restore.');
+    const current = await this.captureBefore(d, main.id);
+    if (!current) throw new NotFoundException(`${d.label} no longer exists.`);
+
+    const ident = /^[A-Za-z0-9_]+$/;
+    const bq = (s: string) => {
+      if (!ident.test(s)) throw new BadRequestException('Unsafe identifier.');
+      return `\`${s}\``;
+    };
+    const columnsOf = async (table: string) =>
+      new Set(
+        (
+          await this.sequelize.query<{ c: string }>(
+            `SELECT COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table`,
+            { replacements: { table }, type: QueryTypes.SELECT },
+          )
+        ).map((r) => r.c),
+      );
+    const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+    const value = (v: any) => {
+      if (v === null || v === undefined) return null;
+      if (typeof v === 'string' && iso.test(v)) return v.replace('T', ' ').replace(/(\.\d+)?Z$/, '');
+      if (typeof v === 'object') return JSON.stringify(v);
+      return v;
+    };
+    const KEEP = new Set(['id', 'created_at', 'createdAt', 'created_by', 'deleted_at', 'deletedAt']);
+    if (d.versionCol) KEEP.add(d.versionCol);
+
+    await this.sequelize.transaction(async (transaction) => {
+      // 1. the document row
+      const cols = await columnsOf(d.table);
+      const sets = Object.keys(main).filter((k) => cols.has(k) && !KEEP.has(k) && ident.test(k));
+      const repl: Record<string, any> = { id: main.id };
+      sets.forEach((k, i) => (repl[`v${i}`] = value(main[k])));
+      if (sets.length)
+        await this.sequelize.query(
+          `UPDATE ${bq(d.table)} SET ${sets.map((k, i) => `${bq(k)} = :v${i}`).join(', ')} WHERE id = :id`,
+          { replacements: repl, transaction },
+        );
+
+      // 2. child rows, parents before children (a child table may point at another)
+      const children = (await this.childTables(d.table)).filter((c) => Array.isArray(data[c.table]));
+      const refs = await this.sequelize.query<{ t: string; r: string }>(
+        `SELECT TABLE_NAME AS t, REFERENCED_TABLE_NAME AS r FROM information_schema.KEY_COLUMN_USAGE
+          WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL`,
+        { type: QueryTypes.SELECT },
+      );
+      const dependsOn = (a: string, b: string) => refs.some((x) => x.t === a && x.r === b && a !== b);
+      const ordered = [...children].sort(
+        (a, b) =>
+          Number(!!a.via) - Number(!!b.via) ||
+          (dependsOn(a.table, b.table) ? 1 : dependsOn(b.table, a.table) ? -1 : 0),
+      );
+      for (const c of ordered) {
+        const ccols = await columnsOf(c.table);
+        const rows: any[] = data[c.table];
+        for (const row of rows) {
+          const keys = Object.keys(row).filter((k) => ccols.has(k) && ident.test(k));
+          if (!keys.includes('id')) continue;
+          const rr: Record<string, any> = {};
+          keys.forEach((k, i) => (rr[`c${i}`] = value(row[k])));
+          await this.sequelize.query(
+            `INSERT INTO ${bq(c.table)} (${keys.map(bq).join(', ')}) VALUES (${keys.map((_, i) => `:c${i}`).join(', ')})
+             ON DUPLICATE KEY UPDATE ${keys.filter((k) => k !== 'id').map((k) => `${bq(k)} = VALUES(${bq(k)})`).join(', ') || 'id = id'}`,
+            { replacements: rr, transaction },
+          );
+        }
+      }
+      // rows added after this version: drop them (children first) unless something else still needs them
+      for (const c of [...ordered].reverse()) {
+        const keep = (data[c.table] as any[]).map((r) => r.id).filter(Boolean);
+        let parentIds: string[] = [main.id];
+        if (c.via) {
+          const viaFk = children.find((x) => x.table === c.via)?.fk;
+          if (!viaFk) continue;
+          parentIds = (
+            await this.sequelize.query<{ id: string }>(
+              `SELECT id FROM ${bq(c.via)} WHERE ${bq(viaFk)} = :pid`,
+              { replacements: { pid: main.id }, type: QueryTypes.SELECT, transaction },
+            )
+          ).map((x) => x.id);
+          if (!parentIds.length) continue;
+        }
+        const extra = await this.sequelize.query<{ id: string }>(
+          `SELECT id FROM ${bq(c.table)} WHERE ${bq(c.fk)} IN (:pids)${keep.length ? ' AND id NOT IN (:keep)' : ''}`,
+          { replacements: { pids: parentIds, keep }, type: QueryTypes.SELECT, transaction },
+        );
+        for (const x of extra) {
+          try {
+            await this.sequelize.query(`DELETE FROM ${bq(c.table)} WHERE id = :id`, {
+              replacements: { id: x.id },
+              transaction,
+            });
+          } catch {
+            /* still referenced elsewhere (e.g. an item on a delivery challan) — keep it */
+          }
+        }
+      }
+    });
+
+    // the state before the restore becomes a revision of its own (and the version moves on)
+    await this.commitSnapshot(d, current, actor, true);
+    return { restored: true, entityId: main.id, fromVersion: snap.version };
   }
 }

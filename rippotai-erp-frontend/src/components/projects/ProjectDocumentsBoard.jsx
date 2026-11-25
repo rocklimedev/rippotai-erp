@@ -1,18 +1,19 @@
 // Projects › Documents: search + project side by side, then the project's
 // stages in one line — Brief | Recce | Pre Design | Planning | Design | Tender |
 // Procurement | Working | Execution | Handover — each one clickable.
-// Procurement = A (vendors & trades) + B (material). Execution shows its
-// sub-phases from the Build planner; anything late in the project planner is
-// marked Late on its stage so the cause of a delay is visible.
+// Procurement = A (vendors & trades) + B (material). Execution is one stage whose
+// list is the Build planner's work (Completed / Late / Upcoming); anything late in
+// the project planner is marked Late on its stage so the cause of a delay is visible.
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AlertTriangle, CalendarClock, FileText, RefreshCw } from 'lucide-react';
+import { AlertTriangle, FileText, RefreshCw } from 'lucide-react';
 import { Button, Card, EmptyState, Pill, SearchInput } from '@/components/inos';
 import { useGetProjectPhasesQuery } from '@/api/projects/command-center.api';
 import { useGetProjectPlannerOverviewQuery } from '@/api/documents/project-planner.api';
 import { PhaseDetailCard, UploadDocumentModal } from '../../pages/CommandCenter';
-import { rowState, viewRows } from './plannerModel';
+import { executionTasks, rowState, viewRows } from './plannerModel';
+import ExecutionTaskList from './ExecutionTaskList';
 import './project-documents-board.css';
 
 /** The stage line, in flow order; `codes` are the document phases behind it. */
@@ -60,46 +61,6 @@ const tidy = (s) =>
     .replace(/\bAnd\b/g, 'and');
 const real = (s) => (s && String(s).trim().toUpperCase() !== 'NULL' ? s : '');
 
-/** Build-planner phases as execution sub-phases with their state. */
-function subPhases(overview) {
-  const rows = viewRows(overview, 'Build');
-  const out = [];
-  rows.forEach((r) => {
-    const id = r.phase_id || r.phase?.id;
-    let ph = out.find((p) => p.id === id);
-    if (!ph) out.push((ph = { id, title: r.phase?.title || 'Other', rows: [] }));
-    ph.rows.push({ ...r, st: rowState(r) });
-  });
-  return out.map((ph) => {
-    const keys = ph.rows.map((r) => r.st.key);
-    const dates = ph.rows
-      .flatMap((r) => [String(r.planned_start_date || '').slice(0, 10), r.st.date])
-      .filter(Boolean)
-      .sort();
-    const state = keys.every((k) => k === 'completed')
-      ? 'completed'
-      : keys.includes('late')
-        ? 'late'
-        : keys.some((k) => k === 'completed' || k === 'due')
-          ? 'due'
-          : 'pending';
-    return {
-      ...ph,
-      state,
-      from: dates[0],
-      to: dates[dates.length - 1],
-      late: ph.rows.filter((r) => r.st.key === 'late'),
-    };
-  });
-}
-
-const STATE_LABEL = {
-  completed: 'Completed',
-  late: 'Late',
-  due: 'In progress',
-  pending: 'Pending',
-};
-
 export default function ProjectDocumentsBoard({ projects = [], projectId }) {
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState('');
@@ -121,7 +82,7 @@ export default function ProjectDocumentsBoard({ projects = [], projectId }) {
   });
   const overview = plannerRes?.data || plannerRes;
   const phases = useMemo(() => project?.phases || [], [project]);
-  const subs = useMemo(() => subPhases(overview), [overview]);
+  const execTasks = useMemo(() => executionTasks(overview), [overview]);
 
   const stages = useMemo(() => {
     const design = viewRows(overview, 'Design').map((r) => ({ ...r, st: rowState(r) }));
@@ -133,7 +94,7 @@ export default function ProjectDocumentsBoard({ projects = [], projectId }) {
       const late = s.procurement
         ? proc.filter((r) => r.st.key === 'late')
         : s.build
-          ? subs.flatMap((p) => p.late)
+          ? execTasks.filter((t) => t.st.key === 'late')
           : s.design
             ? design.filter(
                 (r) =>
@@ -146,9 +107,8 @@ export default function ProjectDocumentsBoard({ projects = [], projectId }) {
       const current = parts.some((p) => p.phaseNumber === project?.currentPhaseSeq);
       return { ...s, parts, done, total, late, complete, current };
     }).filter((s) => s.parts.length);
-  }, [phases, overview, project, subs]);
+  }, [phases, overview, project, execTasks]);
 
-  const nowSub = subs.find((p) => p.state !== 'completed');
   const stage =
     stages.find((s) => s.key === stageKey) || stages.find((s) => s.current) || stages[0];
 
@@ -287,9 +247,6 @@ export default function ProjectDocumentsBoard({ projects = [], projectId }) {
                   title={`${s.label}: ${s.done}/${s.total} documents${s.late.length ? ` · ${s.late.length} late` : ''}`}
                 >
                   {s.label}
-                  {s.key === 'execution' && s.current && nowSub ? (
-                    <em> · {tidy(nowSub.title)}</em>
-                  ) : null}
                   {s.late.length > 0 && <span className="pdb-stage__late">Late</span>}
                 </button>
               </span>
@@ -323,29 +280,11 @@ export default function ProjectDocumentsBoard({ projects = [], projectId }) {
                 )}
               </div>
 
-              {stage.key === 'execution' && subs.length > 0 && (
-                <div className="pdb-subs" aria-label="Execution sub-phases from the Build planner">
-                  {subs.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`pdb-sub is-${p.state} ${p === nowSub ? 'is-now' : ''}`}
-                    >
-                      <span className="pdb-sub__title">{tidy(p.title)}</span>
-                      <span className="pdb-sub__meta">
-                        <CalendarClock size={12} aria-hidden />{' '}
-                        {p.from ? `${fmt(p.from)} – ${fmt(p.to)}` : 'No dates'}
-                      </span>
-                      <span className="pdb-sub__state">
-                        {p === nowSub ? 'Now · ' : ''}
-                        {STATE_LABEL[p.state]}
-                        {p.late.length ? ` (${p.late.length})` : ''}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              {stage.key === 'execution' && (
+                <ExecutionTaskList overview={overview} projectId={activeProjectId} />
               )}
 
-              {lateBox(stage.late, stage)}
+              {stage.key !== 'execution' && lateBox(stage.late, stage)}
 
               {stage.parts.map((p) =>
                 card(p, stage.parts.length > 1 ? PART_TITLE[p.code] || p.name : null),

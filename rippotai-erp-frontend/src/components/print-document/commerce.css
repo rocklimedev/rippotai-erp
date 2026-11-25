@@ -71,3 +71,13 @@
   color: var(--pd-ink);
   overflow-wrap: anywhere;
 }
+
+/* ---------- compact one-sheet documents (Delivery Challan, Quotation): no cover, tight headings ---------- */
+.pd-doc--compact .pd-section-head { margin-bottom: 2.5mm; padding-bottom: 1.2mm; }
+.pd-doc--compact .pd-section-head__title { font-size: 11pt; }
+.pd-doc--compact .pd-block:not(.pd-block--tight) { padding-bottom: 3.5mm; }
+.pd-doc--compact .pd-row { padding: 1.5mm 0; font-size: 9pt; line-height: 1.35; }
+.pd-doc--compact .pd-sign { margin-top: 2mm; }
+.pd-doc--compact .pd-sign__line { height: 11mm; }
+.pd-doc--compact .pd-kv,
+.pd-doc--compact .pd-value { font-size: 9.5pt; }

@@ -50,6 +50,7 @@ export default function UploadDocListPage({ docKey, actions }) {
           status: r.status,
           updatedAt: r.updatedAt,
           search: [r.typeName, r.title].filter(Boolean).join(' '),
+          group: isDrawing ? r.typeName || r.record?.title || null : null,
         })}
         onView={(row) => nav(viewPathFor(row.raw, cfg.listPath))}
         // Edit opens the record page (same form for edit + new version).
@@ -63,6 +64,7 @@ export default function UploadDocListPage({ docKey, actions }) {
         createLabel="Upload"
         // Design and drawing lists hold several documents per project: show which one.
         nameColumn={isDrawing ? 'Drawing' : cfg.phaseCode ? 'Document' : undefined}
+        groupFilter={isDrawing ? 'All drawings' : undefined}
         headerActions={
           <>
             {isDrawing && cfg.phaseCode && (
