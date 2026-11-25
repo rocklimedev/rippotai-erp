@@ -17,7 +17,13 @@ import {
   Layers,
 } from 'lucide-react';
 import { Modal } from '@/components/projects/_projects-ui';
+import ProcurementColumns from '@/components/procurement-sheet/ProcurementColumns';
 import {
+  customColumn, customColumnIndex, EDIT_COLUMNS, placeProcurementColumn,
+  procurementColumnOrder, SHEET_COLUMNS,
+} from '@/components/procurement-sheet/columns';
+import {
+  customValuesOf,
   defaultMaterialsFor,
   freshSheets,
   itemSheet,
@@ -56,6 +62,7 @@ const createEmptyItem = (serialNo = 1, sheetName = '') => ({
 
   // Material Master
   materialId: '',
+  brand: '',
 
   wallArea: '',
   floorArea: '',
@@ -257,6 +264,8 @@ export default function CreateMaterialProcurementSheet() {
               location: item.location || '',
 
               materialId: item.materialId || item.materialMaster?.id || '',
+              brand: item.brand || '',
+              customValues: customValuesOf(item),
 
               wallArea: item.wallArea ?? '',
 
@@ -295,6 +304,22 @@ export default function CreateMaterialProcurementSheet() {
 
   const currentSheet = sheets.find((sheet) => sheet.name === activeSheet) || sheets[0];
   const activeName = currentSheet?.name;
+  const customFields = currentSheet?.customFields ?? [];
+  const columnOrder = procurementColumnOrder(currentSheet);
+  const totalsStart = columnOrder.indexOf('totalArea');
+  const customFieldDialog = sheetDialog?.mode === 'custom-field';
+  const movingField = customFieldDialog && sheetDialog.fieldIndex !== undefined;
+
+  const openCustomField = (fieldIndex) => {
+    const position = columnOrder.indexOf(customColumn(fieldIndex));
+    setSheetDialog({
+      mode: 'custom-field',
+      fieldIndex,
+      name: customFields[fieldIndex] ?? '',
+      side: position === 0 ? 'before' : 'after',
+      anchor: position < 0 ? columnOrder.at(-1) : columnOrder[position === 0 ? 1 : position - 1],
+    });
+  };
 
   const visibleRows = items
     .map((item, index) => ({ item, index }))
@@ -317,11 +342,27 @@ export default function CreateMaterialProcurementSheet() {
 
   const saveSheetDialog = () => {
     const name = String(sheetDialog?.name || '').trim();
-    if (!name) return toast.error('Enter a sheet name.');
+    if (customFieldDialog) {
+      if (!name) return toast.error('Enter a field name.');
+      if (!movingField && customFields.some((field) => field.toLowerCase() === name.toLowerCase())) {
+        return toast.error('A custom field with this name already exists.');
+      }
+      const column = customColumn(sheetDialog.fieldIndex ?? customFields.length);
+      setSheets((current) => current.map((sheet) => (
+        sheet.name === activeName ? {
+          ...sheet,
+          customFields: movingField ? customFields : [...customFields, name],
+          columnOrder: placeProcurementColumn(columnOrder, column, sheetDialog.anchor, sheetDialog.side),
+        } : sheet
+      )));
+      setSheetDialog(null);
+      return;
+    }
+    if (!name) return toast.error('Enter a category name.');
     const clash = sheets.some(
       (sheet) => sheet.name.toLowerCase() === name.toLowerCase() && sheet.name !== sheetDialog.from,
     );
-    if (clash) return toast.error('A sheet with this name already exists.');
+    if (clash) return toast.error('A category with this name already exists.');
     if (sheetDialog.mode === 'new') {
       setSheets((current) => [...current, { name, type: null }]);
     } else {
@@ -463,6 +504,8 @@ export default function CreateMaterialProcurementSheet() {
     sheets: sheets.map((sheet) => ({
       name: sheet.name,
       ...(sheet.type ? { type: sheet.type } : {}),
+      customFields: sheet.customFields,
+      columnOrder: sheet.columnOrder,
     })),
 
     items: items
@@ -471,6 +514,8 @@ export default function CreateMaterialProcurementSheet() {
         serialNo: index + 1,
 
         materialId: item.materialId,
+        brand: item.brand?.trim() || undefined,
+        customValues: item.customValues,
 
         sheetName: sheetOfRow(item),
 
@@ -742,7 +787,7 @@ export default function CreateMaterialProcurementSheet() {
             <CardTitle>Material Procurement Items</CardTitle>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              One sheet per material type. Pick a sheet, then add its materials, quantities and
+              Pick a category tab, then add its materials, quantities and
               prices.
             </p>
           </div>
@@ -753,12 +798,12 @@ export default function CreateMaterialProcurementSheet() {
             disabled={busy}
           >
             <Layers className="mr-2 h-4 w-4" />
-            New sheet
+            Add category
           </Button>
         </CardHeader>
 
         <CardContent>
-          <div className="mps-tabs" role="tablist" aria-label="Material types">
+          <div className="mps-tabs" role="tablist" aria-label="Procurement categories">
             {sheets.map((sheet) => {
               const stat = sheetStats[sheet.name] || { count: 0, amount: 0 };
               return (
@@ -789,7 +834,7 @@ export default function CreateMaterialProcurementSheet() {
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {currentSheet?.type && (
+              {(currentSheet?.type || sheetTypeMaterials.length > 0) && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -800,6 +845,15 @@ export default function CreateMaterialProcurementSheet() {
                   Add default materials
                 </Button>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openCustomField()}
+                disabled={busy || customFields.length >= 20}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add custom field
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -828,6 +882,14 @@ export default function CreateMaterialProcurementSheet() {
             <table className="w-full min-w-[1450px] border-collapse text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
+                  <ProcurementColumns order={columnOrder} standard={EDIT_COLUMNS} renderCustom={(fieldIndex) => (
+                    <th scope="col" className="min-w-[150px] px-3 py-3 text-left font-medium">
+                      <button type="button" disabled={busy} onClick={() => openCustomField(fieldIndex)}
+                        aria-label={`Move ${customFields[fieldIndex]} column`} className="inline-flex items-center gap-2">
+                        {customFields[fieldIndex]} <Pencil className="h-3 w-3" />
+                      </button>
+                    </th>
+                  )}>
                   <th className="w-14 px-3 py-3 text-left font-medium">#</th>
 
                   <th className="min-w-[150px] px-3 py-3 text-left font-medium">Area</th>
@@ -837,6 +899,8 @@ export default function CreateMaterialProcurementSheet() {
                   <th className="min-w-[260px] px-3 py-3 text-left font-medium">
                     Material *
                   </th>
+
+                  <th className="min-w-[150px] px-3 py-3 text-left font-medium">Brand</th>
 
                   <th className="min-w-[120px] px-3 py-3 text-left font-medium">Wall (Sq.ft)</th>
 
@@ -852,6 +916,8 @@ export default function CreateMaterialProcurementSheet() {
 
                   <th className="min-w-[130px] px-3 py-3 text-left font-medium">Amount</th>
 
+                  </ProcurementColumns>
+
                   <th className="w-16 px-3 py-3" />
                 </tr>
               </thead>
@@ -859,21 +925,34 @@ export default function CreateMaterialProcurementSheet() {
               <tbody>
                 {visibleRows.length === 0 && (
                   <tr>
-                    <td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">
+                    <td colSpan={13 + customFields.length} className="px-3 py-10 text-center text-muted-foreground">
                       No materials in {activeName} yet.{' '}
-                      {currentSheet?.type
+                      {currentSheet?.type || sheetTypeMaterials.length > 0
                         ? 'Use “Add default materials” or “Add Material”.'
                         : 'Use “Add Material”.'}
                     </td>
                   </tr>
                 )}
                 {visibleRows.map(({ item, index }, rowIndex) => {
-                  const selectedMaterial = materials.find(
-                    (material) => material.id === item.materialId,
-                  );
+                  const selectedMaterial = materialsById[item.materialId];
 
                   return (
                     <tr key={`material-${index}`} className="border-b last:border-b-0">
+                      <ProcurementColumns order={columnOrder} standard={EDIT_COLUMNS} renderCustom={(fieldIndex) => (
+                        <td className="px-2 py-2">
+                          <Input
+                            aria-label={`${customFields[fieldIndex]} for row ${rowIndex + 1}`}
+                            value={item.customValues?.[fieldIndex] ?? ''}
+                            maxLength={500}
+                            disabled={busy}
+                            onChange={(event) => updateItem(index, 'customValues', customFields.map(
+                              (_, valueIndex) => valueIndex === fieldIndex
+                                ? event.target.value
+                                : item.customValues?.[valueIndex] ?? '',
+                            ))}
+                          />
+                        </td>
+                      )}>
                       {/* SERIAL */}
 
                       <td className="px-3 py-2 align-top font-medium">{rowIndex + 1}</td>
@@ -957,6 +1036,17 @@ export default function CreateMaterialProcurementSheet() {
                         )}
                       </td>
 
+                      <td className="px-2 py-2">
+                        <Input
+                          aria-label={`Brand for row ${rowIndex + 1}`}
+                          value={item.brand ?? ''}
+                          placeholder={selectedMaterial?.brand || 'Optional'}
+                          maxLength={150}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'brand', event.target.value)}
+                        />
+                      </td>
+
                       {/* WALL */}
 
                       <td className="px-2 py-2">
@@ -1038,6 +1128,8 @@ export default function CreateMaterialProcurementSheet() {
                         </div>
                       </td>
 
+                      </ProcurementColumns>
+
                       {/* DELETE */}
 
                       <td className="px-2 py-2">
@@ -1063,26 +1155,23 @@ export default function CreateMaterialProcurementSheet() {
 
               <tfoot>
                 <tr className="bg-muted/30 font-semibold">
-                  <td colSpan={7} className="px-3 py-4 text-right">
+                  <td colSpan={totalsStart} className="px-3 py-4 text-right">
                     <span className="inline-flex items-center gap-2">
                       <Calculator className="h-4 w-4" />
                       Totals · all sheets
                     </span>
                   </td>
 
-                  <td className="px-3 py-4">{totals.totalArea.toFixed(2)}</td>
-
-                  <td className="px-3 py-4">{totals.quantity.toFixed(3)}</td>
-
-                  <td />
-
-                  <td className="px-3 py-4">
-                    ₹{' '}
-                    {totals.amount.toLocaleString('en-IN', {
+                  {columnOrder.slice(totalsStart).map((column) => (
+                    <td key={column} className="px-3 py-4">{{
+                      totalArea: totals.totalArea.toFixed(2),
+                      quantity: totals.quantity.toFixed(3),
+                      amount: `₹ ${totals.amount.toLocaleString('en-IN', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
-                    })}
-                  </td>
+                      })}`,
+                    }[column]}</td>
+                  ))}
 
                   <td />
                 </tr>
@@ -1149,10 +1238,10 @@ export default function CreateMaterialProcurementSheet() {
           onClose={() => setSheetDialog(null)}
           title={
             sheetDialog.mode === 'new'
-              ? 'New sheet'
+              ? 'Add procurement category'
               : sheetDialog.mode === 'rename'
                 ? 'Rename sheet'
-                : 'Delete sheet?'
+                : customFieldDialog ? (movingField ? 'Move custom field' : 'Add custom field') : 'Delete sheet?'
           }
           width={440}
           footer={
@@ -1167,7 +1256,9 @@ export default function CreateMaterialProcurementSheet() {
                 </Button>
               ) : (
                 <Button onClick={saveSheetDialog}>
-                  {sheetDialog.mode === 'new' ? 'Add sheet' : 'Rename'}
+                  {sheetDialog.mode === 'new'
+                    ? 'Add category'
+                    : customFieldDialog ? (movingField ? 'Move field' : 'Add field') : 'Rename'}
                 </Button>
               )}
             </>
@@ -1182,16 +1273,51 @@ export default function CreateMaterialProcurementSheet() {
             </p>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="sheet-name">Material type</Label>
+              <Label htmlFor="sheet-name">
+                {customFieldDialog ? 'Field name' : 'Category name'}
+              </Label>
               <Input
                 id="sheet-name"
                 autoFocus
-                maxLength={120}
+                maxLength={customFieldDialog ? 80 : 120}
                 value={sheetDialog.name}
-                placeholder="e.g. Wallpaper"
+                readOnly={movingField}
+                list={sheetDialog.mode === 'new' ? 'procurement-category-names' : undefined}
+                placeholder={customFieldDialog ? 'e.g. Finish' : 'e.g. Wallpaper'}
                 onChange={(event) => setSheetDialog((d) => ({ ...d, name: event.target.value }))}
                 onKeyDown={(event) => event.key === 'Enter' && saveSheetDialog()}
               />
+              {sheetDialog.mode === 'new' && (
+                <datalist id="procurement-category-names">
+                  {[...new Set(materials.map((material) => material.category?.trim()).filter(Boolean))]
+                    .filter((category) => !sheets.some((sheet) => sheet.name.toLowerCase() === category.toLowerCase()))
+                    .sort((a, b) => a.localeCompare(b))
+                    .map((category) => <option key={category} value={category} />)}
+                </datalist>
+              )}
+              {customFieldDialog && (
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="space-y-1 text-sm">
+                    <span>Placement</span>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3"
+                      value={sheetDialog.side} onChange={(event) => setSheetDialog({ ...sheetDialog, side: event.target.value })}>
+                      <option value="before">Before</option>
+                      <option value="after">After</option>
+                    </select>
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span>Column</span>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3"
+                      value={sheetDialog.anchor} onChange={(event) => setSheetDialog({ ...sheetDialog, anchor: event.target.value })}>
+                      {columnOrder.filter((column) => column !== customColumn(sheetDialog.fieldIndex)).map((column) => (
+                        <option key={column} value={column}>
+                          {SHEET_COLUMNS[column] ?? customFields[customColumnIndex(column)]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
             </div>
           )}
         </Modal>

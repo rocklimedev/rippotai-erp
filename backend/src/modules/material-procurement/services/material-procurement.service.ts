@@ -279,6 +279,7 @@ export class MaterialProcurementService {
       // --------------------------------------------------------
 
       materialId: item.materialId,
+      brand: item.brand?.trim() || null,
 
       // --------------------------------------------------------
       // LOCATION / AREA
@@ -289,6 +290,7 @@ export class MaterialProcurementService {
       location: item.location ?? null,
 
       sheetName: item.sheetName?.trim() || null,
+      customValues: item.customValues?.length ? item.customValues : null,
 
       // --------------------------------------------------------
       // MEASUREMENTS

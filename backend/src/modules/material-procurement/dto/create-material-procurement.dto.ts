@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsEnum,
   IsNumber,
@@ -27,6 +28,20 @@ export class MaterialProcurementSheetDto {
   @IsString()
   @MaxLength(60)
   type?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  customFields?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(32)
+  @IsString({ each: true })
+  @MaxLength(20, { each: true })
+  columnOrder?: string[];
 }
 
 // ============================================================
@@ -49,6 +64,11 @@ export class CreateMaterialProcurementItemDto {
   @IsUUID()
   materialId: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  brand?: string;
+
   // ----------------------------------------------------------
   // LOCATION / AREA
   // ----------------------------------------------------------
@@ -65,6 +85,13 @@ export class CreateMaterialProcurementItemDto {
   @IsString()
   @MaxLength(120)
   sheetName?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(500, { each: true })
+  customValues?: string[];
 
   // ----------------------------------------------------------
   // MEASUREMENTS
