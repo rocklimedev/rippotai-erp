@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Modal } from '@/components/projects/_projects-ui';
-import { itemSheet, sheetsOf } from '@/components/procurement-sheet/sheets';
+import { customValuesOf, itemSheet, sheetsOf } from '@/components/procurement-sheet/sheets';
+import ProcurementColumns from '@/components/procurement-sheet/ProcurementColumns';
+import { customColumnIndex, procurementColumnOrder, RECORD_COLUMNS } from '@/components/procurement-sheet/columns';
 import '@/components/procurement-sheet/procurement-sheet.css';
 import RecordContext from '@/components/record-context/RecordContext';
 import VersionHistory from '@/components/record-context/VersionHistory';
@@ -109,6 +111,7 @@ const resolveItem = (item) => {
     brand: item.brand || master.brand || '—',
     name: item.name || master.name || '—',
     code: item.code || master.material_code || '—',
+    customValues: customValuesOf(item),
     wallArea: item.wallArea,
     floorArea: item.floorArea,
     ceilingArea: item.ceilingArea,
@@ -188,6 +191,10 @@ export default function MaterialProcurementSheetView() {
   const activeName = sheets.some((sheet) => sheet.name === activeSheet)
     ? activeSheet
     : sheets[0]?.name;
+  const activeSheetDefinition = sheets.find((sheet) => sheet.name === activeName);
+  const customFields = activeSheetDefinition?.customFields ?? [];
+  const columnOrder = procurementColumnOrder(activeSheetDefinition, true);
+  const totalsStart = columnOrder.indexOf('totalArea');
   const sheetStats = Object.fromEntries(
     sheets.map((sheet) => [sheet.name, { count: 0, amount: 0 }]),
   );
@@ -208,6 +215,8 @@ export default function MaterialProcurementSheetView() {
     return {
       serialNo: index + 1,
       materialId: item.materialId || item.materialMaster?.id,
+      brand: item.brand || undefined,
+      customValues: customValuesOf(item),
       sheetName,
       area: item.area || undefined,
       location: item.location || undefined,
@@ -237,8 +246,10 @@ export default function MaterialProcurementSheetView() {
         sheets: nextSheets.map((sheet) => ({
           name: sheet.name,
           ...(sheet.type ? { type: sheet.type } : {}),
+          customFields: sheet.customFields,
+          columnOrder: sheet.columnOrder,
         })),
-        items: nextItems,
+        ...(rename || remove ? { items: nextItems } : {}),
       }).unwrap();
       return true;
     } catch (saveError) {
@@ -260,14 +271,14 @@ export default function MaterialProcurementSheetView() {
       return;
     }
     const name = String(sheetDialog.name || '').trim();
-    if (!name) return toast.error('Enter a sheet name.');
+    if (!name) return toast.error('Enter a category name.');
     if (
       sheets.some(
         (sheet) =>
           sheet.name.toLowerCase() === name.toLowerCase() && sheet.name !== sheetDialog.from,
       )
     )
-      return toast.error('A sheet with this name already exists.');
+      return toast.error('A category with this name already exists.');
     const next =
       sheetDialog.mode === 'new'
         ? [...sheets, { name, type: null }]
@@ -277,7 +288,7 @@ export default function MaterialProcurementSheetView() {
       sheetDialog.mode === 'rename' ? { rename: { from: sheetDialog.from, to: name } } : {},
     );
     if (ok) {
-      toast.success(sheetDialog.mode === 'new' ? `${name} sheet added.` : 'Sheet renamed.');
+      toast.success(sheetDialog.mode === 'new' ? `${name} category added.` : 'Category renamed.');
       setActiveSheet(name);
       setSheetDialog(null);
     }
@@ -331,12 +342,11 @@ export default function MaterialProcurementSheetView() {
         'Price',
         'Amount',
       ];
-      const last = headers.length;
       const HEADER = 5;
       const workbook = new ExcelJS.Workbook();
       workbook.creator = 'Rippotai Architecture';
       const imageId = await addMonogram(workbook);
-      const formats = {
+      const standardFormats = {
         8: AREA_FORMAT,
         9: AREA_FORMAT,
         10: AREA_FORMAT,
@@ -345,16 +355,27 @@ export default function MaterialProcurementSheetView() {
         13: INR_FORMAT,
         14: INR_FORMAT,
       };
-      // One worksheet per material-type sheet that has rows.
+      // Include sheets that have rows or custom column definitions.
       const groups = sheets
         .map((sheetDef) => ({
           name: sheetDef.name,
+          customFields: sheetDef.customFields ?? [],
+          columnOrder: procurementColumnOrder(sheetDef, true),
           rows: allItems.filter((item) => sheetOf(item) === sheetDef.name).map(resolveItem),
         }))
-        .filter((group) => group.rows.length);
-      if (!groups.length) groups.push({ name: 'Material Procurement', rows: [] });
+        .filter((group) => group.rows.length || group.customFields.length);
+      if (!groups.length) groups.push({ name: 'Material Procurement', rows: [], customFields: [], columnOrder: RECORD_COLUMNS });
       const usedNames = new Set();
       groups.forEach((group) => {
+        const fromStandard = (values, customValue) => group.columnOrder.map((column) => (
+          column.startsWith('custom-') ? customValue(customColumnIndex(column)) : values[RECORD_COLUMNS.indexOf(column)]
+        ));
+        const columnNumber = (column) => group.columnOrder.indexOf(column) + 1;
+        const groupHeaders = fromStandard(headers, (index) => group.customFields[index]);
+        const last = groupHeaders.length;
+        const formats = Object.fromEntries(Object.entries(standardFormats).map(([index, format]) => (
+          [columnNumber(RECORD_COLUMNS[Number(index) - 1]), format]
+        )));
         let tab =
           group.name
             .replace(/[\\/?*[\]:]/g, ' ')
@@ -363,7 +384,7 @@ export default function MaterialProcurementSheetView() {
         while (usedNames.has(tab.toLowerCase())) tab = `${tab.slice(0, 28)} ${usedNames.size}`;
         usedNames.add(tab.toLowerCase());
         const sheet = workbook.addWorksheet(tab);
-        setWidths(sheet, [8, 14, 14, 18, 14, 24, 12, 13, 13, 15, 15, 12, 14, 16]);
+        setWidths(sheet, fromStandard([8, 14, 14, 18, 14, 24, 12, 13, 13, 15, 15, 12, 14, 16], () => 22));
         writeBrandHeader(sheet, {
           title: `Material Procurement List – ${group.name}`,
           // projectName falls back to the raw project id when the project is not loaded — never print an id.
@@ -375,11 +396,11 @@ export default function MaterialProcurementSheetView() {
           lastCol: last,
           imageId,
         });
-        sheet.getRow(HEADER).values = headers;
-        styleHeaderRow(sheet.getRow(HEADER), 1, last, { right: [8, 9, 10, 11, 12, 13, 14] });
+        sheet.getRow(HEADER).values = groupHeaders;
+        styleHeaderRow(sheet.getRow(HEADER), 1, last, { right: Object.keys(formats).map(Number) });
         group.rows.forEach((item, index) => {
           const row = sheet.getRow(HEADER + 1 + index);
-          row.values = [
+          row.values = fromStandard([
             index + 1,
             item.area,
             item.location,
@@ -394,16 +415,16 @@ export default function MaterialProcurementSheetView() {
             numberValue(item.quantity),
             numberValue(item.price),
             numberValue(item.amount),
-          ];
+          ], (fieldIndex) => item.customValues[fieldIndex] ?? '');
           styleBodyRow(row, 1, last, formats);
-          row.getCell(1).alignment = { vertical: 'top', horizontal: 'center' };
+          row.getCell(columnNumber('serialNo')).alignment = { vertical: 'top', horizontal: 'center' };
         });
         const lastItem = HEADER + group.rows.length;
         const totals = sheet.getRow(lastItem + 1);
-        totals.getCell(10).value = 'Totals';
-        totals.getCell(11).value = group.rows.reduce((t, i) => t + numberValue(i.totalArea), 0);
-        totals.getCell(12).value = group.rows.reduce((t, i) => t + numberValue(i.quantity), 0);
-        totals.getCell(14).value = group.rows.reduce((t, i) => t + numberValue(i.amount), 0);
+        totals.getCell(columnNumber('ceilingArea')).value = 'Totals';
+        totals.getCell(columnNumber('totalArea')).value = group.rows.reduce((t, i) => t + numberValue(i.totalArea), 0);
+        totals.getCell(columnNumber('quantity')).value = group.rows.reduce((t, i) => t + numberValue(i.quantity), 0);
+        totals.getCell(columnNumber('amount')).value = group.rows.reduce((t, i) => t + numberValue(i.amount), 0);
         styleTotalsRow(totals, 1, last, formats);
         finishSheet(sheet, {
           headerRow: HEADER,
@@ -573,7 +594,7 @@ export default function MaterialProcurementSheetView() {
 
         <CardContent className="p-0">
           <div className="px-4 pt-3">
-            <div className="mps-tabs" role="tablist" aria-label="Material types">
+            <div className="mps-tabs" role="tablist" aria-label="Procurement categories">
               {sheets.map((sheet) => (
                 <button
                   key={sheet.name}
@@ -614,7 +635,7 @@ export default function MaterialProcurementSheetView() {
                     onClick={() => setSheetDialog({ mode: 'new', name: '' })}
                   >
                     <Layers className="mr-2 h-4 w-4" />
-                    New sheet
+                    Add category
                   </Button>
                   <Button
                     variant="outline"
@@ -648,7 +669,7 @@ export default function MaterialProcurementSheetView() {
                 {/* Title row (like Excel merged title) */}
                 <tr className="mps-table__title">
                   <th
-                    colSpan={14}
+                    colSpan={14 + customFields.length}
                     className="mps-c"
                   >
                     Material procurement list – {activeName}
@@ -657,6 +678,9 @@ export default function MaterialProcurementSheetView() {
 
                 {/* Column headers – classic Excel look */}
                 <tr className="mps-table__head">
+                  <ProcurementColumns order={columnOrder} standard={RECORD_COLUMNS} renderCustom={(fieldIndex) => (
+                    <th scope="col" className="mps-c">{customFields[fieldIndex]}</th>
+                  )}>
                   <th className="mps-c">
                     S. No.
                   </th>
@@ -699,6 +723,7 @@ export default function MaterialProcurementSheetView() {
                   <th className="mps-c is-num">
                     Amount
                   </th>
+                  </ProcurementColumns>
                 </tr>
               </thead>
 
@@ -706,7 +731,7 @@ export default function MaterialProcurementSheetView() {
                 {resolvedItems.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={14}
+                      colSpan={14 + customFields.length}
                       className="mps-c mps-empty"
                     >
                       No materials in {activeName} yet.
@@ -722,6 +747,9 @@ export default function MaterialProcurementSheetView() {
                           : 'mps-row is-alt'
                       }
                     >
+                      <ProcurementColumns order={columnOrder} standard={RECORD_COLUMNS} renderCustom={(fieldIndex) => (
+                        <td className="mps-c">{item.customValues[fieldIndex] || '—'}</td>
+                      )}>
                       <td className="mps-c mps-sno">
                         {index + 1}
                       </td>
@@ -756,6 +784,7 @@ export default function MaterialProcurementSheetView() {
                       <td className="mps-c is-num is-strong">
                         {formatNumber(item.amount, 2)}
                       </td>
+                      </ProcurementColumns>
                     </tr>
                   ))
                 )}
@@ -765,21 +794,18 @@ export default function MaterialProcurementSheetView() {
               <tfoot>
                 <tr className="mps-table__total">
                   <td
-                    colSpan={10}
+                    colSpan={totalsStart}
                     className="mps-c is-num"
                   >
                     Totals · {activeName}
                   </td>
-                  <td className="mps-c is-num">
-                    {formatNumber(sheetArea)}
-                  </td>
-                  <td className="mps-c is-num">
-                    {formatNumber(sheetQuantity, 3)}
-                  </td>
-                  <td className="mps-c" />
-                  <td className="mps-c is-num">
-                    {formatCurrency(sheetAmount)}
-                  </td>
+                  {columnOrder.slice(totalsStart).map((column) => (
+                    <td key={column} className="mps-c is-num">{{
+                      totalArea: formatNumber(sheetArea),
+                      quantity: formatNumber(sheetQuantity, 3),
+                      amount: formatCurrency(sheetAmount),
+                    }[column]}</td>
+                  ))}
                 </tr>
               </tfoot>
             </table>
@@ -810,7 +836,7 @@ export default function MaterialProcurementSheetView() {
           onClose={() => !savingSheets && setSheetDialog(null)}
           title={
             sheetDialog.mode === 'new'
-              ? 'New sheet'
+              ? 'Add procurement category'
               : sheetDialog.mode === 'rename'
                 ? 'Rename sheet'
                 : 'Delete sheet?'
@@ -833,7 +859,7 @@ export default function MaterialProcurementSheetView() {
                 {savingSheets
                   ? 'Saving…'
                   : sheetDialog.mode === 'new'
-                    ? 'Add sheet'
+                    ? 'Add category'
                     : sheetDialog.mode === 'rename'
                       ? 'Rename'
                       : 'Delete sheet'}
@@ -850,7 +876,7 @@ export default function MaterialProcurementSheetView() {
             </p>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="view-sheet-name">Material type</Label>
+              <Label htmlFor="view-sheet-name">Category name</Label>
               <Input
                 id="view-sheet-name"
                 autoFocus

@@ -59,9 +59,16 @@ const parse = (v) => {
 const clean = (list) => {
   const seen = new Set();
   return list
-    .map((s) => ({ name: String(s?.name || "").trim(), type: s?.type || null }))
+    .map((s) => ({
+      name: String(s?.name || "").trim(),
+      type: s?.type || null,
+      customFields: parse(s?.customFields),
+      columnOrder: parse(s?.columnOrder),
+    }))
     .filter((s) => s.name && !seen.has(s.name.toLowerCase()) && seen.add(s.name.toLowerCase()));
 };
+
+export const customValuesOf = (item) => parse(item.customValues);
 
 const nameForType = (sheets, type) => sheets.find((s) => s.type === type)?.name;
 
@@ -98,8 +105,10 @@ export function sheetsOf(procurement, materialsById = {}) {
 
 export const freshSheets = () => DEFAULT_SHEETS.map((s) => ({ ...s }));
 
-/** Materials of the Material Master that belong to a sheet's type. */
+/** Materials that match a built-in sheet type or a custom category name. */
 export function defaultMaterialsFor(sheet, materials) {
-  if (!sheet?.type) return [];
-  return materials.filter((m) => materialType(m) === sheet.type);
+  if (!sheet?.name) return [];
+  if (sheet.type) return materials.filter((material) => materialType(material) === sheet.type);
+  const category = sheet.name.trim().toLowerCase();
+  return materials.filter((material) => material.category?.trim().toLowerCase() === category);
 }

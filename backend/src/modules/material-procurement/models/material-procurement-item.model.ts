@@ -17,10 +17,12 @@ export interface MaterialProcurementItemCreationAttributes {
   procurementId: string;
   materialId: string;
   serialNo: number;
+  brand?: string | null;
 
   area?: string | null;
   location?: string | null;
   sheetName?: string | null;
+  customValues?: string[] | null;
 
   wallArea?: number | null;
   floorArea?: number | null;
@@ -98,6 +100,12 @@ export class MaterialProcurementItem extends Model<
   })
   declare serialNo: number;
 
+  @Column({
+    type: DataType.STRING(150),
+    allowNull: true,
+  })
+  declare brand: string | null;
+
   // ============================================================
   // LOCATION / AREA
   // ============================================================
@@ -120,6 +128,9 @@ export class MaterialProcurementItem extends Model<
     allowNull: true,
   })
   declare sheetName: string | null;
+
+  @Column({ type: DataType.JSON, allowNull: true })
+  declare customValues: string[] | null;
 
   // ============================================================
   // AREA MEASUREMENTS

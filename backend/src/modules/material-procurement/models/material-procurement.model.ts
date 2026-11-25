@@ -103,12 +103,17 @@ export class MaterialProcurement extends Model<
   })
   declare remarks: string | null;
 
-  // Material-type sheets in display order: [{ name, type }].
+  // Material-type sheets and their custom columns, in display order.
   @Column({
     type: DataType.JSON,
     allowNull: true,
   })
-  declare sheets: { name: string; type?: string | null }[] | null;
+  declare sheets: {
+    name: string;
+    type?: string | null;
+    customFields?: string[];
+    columnOrder?: string[];
+  }[] | null;
 
   // ============================================================
   // CREATED BY
