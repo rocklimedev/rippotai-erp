@@ -68,6 +68,7 @@ const createEmptyItem = (serialNo = 1, sheetName = '') => ({
   floorArea: '',
   ceilingArea: '',
   totalArea: '',
+  manualTotalArea: '',
 
   quantity: '',
   price: '',
@@ -88,20 +89,27 @@ const toNumber = (value) => {
 // CALCULATE ITEM
 // ============================================================
 
-const calculateItem = (item) => {
+const calculateTotalArea = (item) => {
   const wallArea = toNumber(item.wallArea);
   const floorArea = toNumber(item.floorArea);
   const ceilingArea = toNumber(item.ceilingArea);
+  return wallArea || floorArea || ceilingArea ? (wallArea + floorArea + ceilingArea).toFixed(2) : '';
+};
 
-  const totalArea = wallArea + floorArea + ceilingArea;
+const savedManualTotalArea = (item) => {
+  if (item.totalArea == null) return '';
+  const manual = item.isTotalAreaManual ?? (toNumber(item.totalArea) !== toNumber(calculateTotalArea(item)));
+  return manual ? String(item.totalArea) : '';
+};
 
+const calculateItem = (item) => {
   const quantity = toNumber(item.quantity);
   const price = toNumber(item.price);
 
   return {
     ...item,
 
-    totalArea: wallArea || floorArea || ceilingArea ? totalArea.toFixed(2) : '',
+    totalArea: item.manualTotalArea || calculateTotalArea(item),
 
     amount: quantity || price ? (quantity * price).toFixed(2) : '',
   };
@@ -273,7 +281,7 @@ export default function CreateMaterialProcurementSheet() {
 
               ceilingArea: item.ceilingArea ?? '',
 
-              totalArea: item.totalArea ?? '',
+              manualTotalArea: savedManualTotalArea(item),
 
               quantity: item.quantity ?? '',
 
@@ -530,6 +538,7 @@ export default function CreateMaterialProcurementSheet() {
         ceilingArea: item.ceilingArea === '' ? undefined : toNumber(item.ceilingArea),
 
         totalArea: item.totalArea === '' ? undefined : toNumber(item.totalArea),
+        isTotalAreaManual: Boolean(item.manualTotalArea),
 
         quantity: toNumber(item.quantity),
 
@@ -565,6 +574,11 @@ export default function CreateMaterialProcurementSheet() {
     if (missingMaterial) {
       toast.error('Please select a material for every item.');
 
+      return false;
+    }
+
+    if (validItems.some((item) => toNumber(item.manualTotalArea) < 0)) {
+      toast.error('Enter a total area of zero or more.');
       return false;
     }
 
@@ -1089,9 +1103,17 @@ export default function CreateMaterialProcurementSheet() {
                       {/* TOTAL AREA */}
 
                       <td className="px-2 py-2">
-                        <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 font-medium">
-                          {item.totalArea || '—'}
-                        </div>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          aria-label={`Total area for row ${rowIndex + 1}`}
+                          aria-describedby="procurement-total-area-hint"
+                          value={item.manualTotalArea ?? ''}
+                          placeholder={item.totalArea || 'Auto'}
+                          disabled={busy}
+                          onChange={(event) => updateItem(index, 'manualTotalArea', event.target.value)}
+                        />
                       </td>
 
                       {/* QUANTITY */}
@@ -1182,8 +1204,8 @@ export default function CreateMaterialProcurementSheet() {
           {/* ADD */}
 
           <div className="mt-4 flex justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              Total area and amount are calculated automatically. Details come from the selected material.
+            <p id="procurement-total-area-hint" className="text-xs text-muted-foreground">
+              Enter a Total Area manually or leave it blank to use Wall, Floor and Ceiling combined.
             </p>
 
             <Button variant="outline" onClick={addItem} disabled={busy}>

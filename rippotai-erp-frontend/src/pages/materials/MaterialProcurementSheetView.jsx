@@ -224,6 +224,7 @@ export default function MaterialProcurementSheetView() {
       floorArea: num(item.floorArea),
       ceilingArea: num(item.ceilingArea),
       totalArea: num(item.totalArea),
+      isTotalAreaManual: item.isTotalAreaManual ?? undefined,
       quantity: Number(item.quantity || 0),
       price: Number(item.price || 0),
       amount: Number(item.amount || 0),

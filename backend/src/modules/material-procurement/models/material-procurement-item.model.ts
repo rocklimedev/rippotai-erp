@@ -28,6 +28,7 @@ export interface MaterialProcurementItemCreationAttributes {
   floorArea?: number | null;
   ceilingArea?: number | null;
   totalArea?: number | null;
+  isTotalAreaManual?: boolean | null;
 
   quantity?: number;
   price?: number;
@@ -159,6 +160,9 @@ export class MaterialProcurementItem extends Model<
     allowNull: true,
   })
   declare totalArea: number | null;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: true })
+  declare isTotalAreaManual: boolean | null;
 
   // ============================================================
   // QUANTITY / PRICE
