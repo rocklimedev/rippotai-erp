@@ -24,6 +24,8 @@
 .inos-shell__content { padding: 24px 32px 48px; min-width: 0; }
 .inos-shell__page { min-width: 0; }
 .inos-autohead { max-width: 1360px; margin: 0 auto 20px; }
+/* Pages that don't use the centred <Page> column are full width: keep the heading on their left edge. */
+.inos-shell__content:not(:has(.inos-page)) .inos-autohead { max-width: none; }
 /* App dashboards are full width: align the breadcrumb + title with the widgets (dashboard header has 16px side padding). */
 .inos-shell__content:has([data-testid^="app-dashboard-"]) .inos-autohead { max-width: none; padding: 0 16px; margin-bottom: 8px; }
 

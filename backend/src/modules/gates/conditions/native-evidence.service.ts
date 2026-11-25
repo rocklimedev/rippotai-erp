@@ -22,6 +22,8 @@ interface NativeSource {
   version?: boolean;
   filter?: string;
   fields?: string;
+  /** created-at column when the table uses camelCase timestamps */
+  createdCol?: string;
   accepted: string[];
   approved: string[];
   check?: (row: Record<string, any>) => boolean;
@@ -143,6 +145,76 @@ export const NATIVE_EVIDENCE: Readonly<Record<string, NativeSource>> = {
   VENDOR_ESTIMATE: estimate,
   VENDOR_BOQ: boq,
   EXEC_FINAL_BOQ: { ...boq, accepted: ['APPROVED'] },
+  // INOS documents that are records, not uploads: the record itself is the evidence.
+  MAT_MATERIAL_REQUIREMENT: {
+    table: 'material_procurements',
+    label: 'Procurement sheet',
+    route: '/procurement/material-procurement/list',
+    accepted: ['SUBMITTED', 'IN_PROGRESS', 'PROCURED'],
+    approved: ['SUBMITTED', 'IN_PROGRESS', 'PROCURED'],
+  },
+  MAT_MATERIAL_RATES_SHEET: {
+    table: 'vendor_rate_comparisons',
+    label: 'Vendor comparison sheet',
+    route: '/procurement/vendors/rate-comparison',
+    fields: "'SAVED' AS status",
+    accepted: ['SAVED'],
+    approved: ['SAVED'],
+  },
+  MAT_PURCHASE_ORDERS: {
+    table: 'purchase_orders',
+    label: 'Purchase order',
+    route: '/procurement/purchase-orders',
+    accepted: ['APPROVED', 'SENT', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CLOSED'],
+    approved: ['APPROVED', 'SENT', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CLOSED'],
+  },
+  MAT_DELIVERY_CHALLANS: {
+    table: 'delivery_challans',
+    label: 'Delivery challan',
+    route: '/procurement/delivery-challans',
+    createdCol: 'createdAt',
+    accepted: ['RECEIVED', 'PARTIALLY_ACCEPTED'],
+    approved: ['RECEIVED', 'PARTIALLY_ACCEPTED'],
+  },
+  MAT_SITE_INVENTORY_REGISTER: {
+    table: 'inventory_transactions',
+    label: 'Site inventory',
+    route: '/inventory/site-inventory/all',
+    fields: "'RECORDED' AS status",
+    accepted: ['RECORDED'],
+    approved: ['RECORDED'],
+  },
+  EXEC_QC_CHECKLIST_TEMPLATE: {
+    table: 'quality_checklists',
+    label: 'Checklist',
+    route: '/site-operations/checklists',
+    deleted: true,
+    accepted: ['IN_PROGRESS', 'PASSED'],
+    approved: ['PASSED'],
+  },
+  EXEC_DAILY_PROGRESS_REPORT: {
+    table: 'daily_site_reports',
+    label: 'Daily site report',
+    route: '/site-operations/daily-reports',
+    accepted: ['SUBMITTED'],
+    approved: ['SUBMITTED'],
+  },
+  EXEC_ARCHITECT_SITE_VISIT_SCHEDULE: {
+    table: 'visit_assignments',
+    label: 'Architect site visit schedule',
+    route: '/site-operations/visit-assignments',
+    fields: "'SCHEDULED' AS status",
+    accepted: ['SCHEDULED'],
+    approved: ['SCHEDULED'],
+  },
+  HANDOVER_SNAG_LIST: {
+    table: 'snag_lists',
+    label: 'Snag list',
+    route: '/site-operations/snag-lists',
+    fields: "'RECORDED' AS status",
+    accepted: ['RECORDED'],
+    approved: ['RECORDED'],
+  },
 };
 
 @Injectable()
@@ -163,7 +235,7 @@ export class NativeEvidenceService {
         ? "payment_schedule_id = (SELECT id FROM payment_schedules WHERE project_id = :projectId AND deleted_at IS NULL AND status IN ('ACTIVE','COMPLETED') ORDER BY created_at DESC, id DESC LIMIT 1)"
         : 'project_id = :projectId';
     const rows = await this.sequelize.query<Record<string, any>>(
-      `SELECT id, ${config.fields ?? 'status'} FROM ${config.table} WHERE ${projectFilter}${config.deleted ? ' AND deleted_at IS NULL' : ''}${config.filter ? ` AND ${config.filter}` : ''} ORDER BY ${config.version ? 'version DESC, ' : ''}created_at DESC, id DESC LIMIT 1`,
+      `SELECT id, ${config.fields ?? 'status'} FROM ${config.table} WHERE ${projectFilter}${config.deleted ? ' AND deleted_at IS NULL' : ''}${config.filter ? ` AND ${config.filter}` : ''} ORDER BY ${config.version ? 'version DESC, ' : ''}${config.createdCol ?? 'created_at'} DESC, id DESC LIMIT 1`,
       { replacements: { projectId }, type: QueryTypes.SELECT },
     );
     const row = rows[0];
@@ -193,6 +265,10 @@ export class NativeEvidenceService {
               budget_estimates: `/ledger/budget-estimate/${row.id}`,
               boqs: `/ledger/boq/${row.id}`,
               project_planners: `/projects/${encodeURIComponent(projectId)}`,
+              material_procurements: `/procurement/material-procurement/${row.id}`,
+              vendor_rate_comparisons: `/procurement/vendors/rate-comparison/${row.id}/edit`,
+              purchase_orders: `/procurement/purchase-orders/${row.id}`,
+              delivery_challans: `/procurement/delivery-challans/${row.id}`,
             } as Record<string, string>
           )[config.table] ?? config.route)
         : config.route,

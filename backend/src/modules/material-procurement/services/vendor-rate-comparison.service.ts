@@ -143,11 +143,11 @@ export class VendorRateComparisonService {
               item.quantity === null ||
               (numeric(item.quantity) && item.quantity >= 0)
             ) ||
-            !(item.rate === null || numeric(item.rate)) ||
-            (item.rate === null && trade.finalised_vendor_id === vendor.id)
+            !(item.rate === null || numeric(item.rate))
           )
+            // An incomplete quote (some rates blank) can still be finalised.
             throw new BadRequestException(
-              'Quote lines need a description, non-negative quantity and a valid rate; finalised quotes must be complete',
+              'Quote lines need a description, non-negative quantity and a valid rate',
             );
           itemIds.add(item.id);
           if (trade.items !== undefined) {

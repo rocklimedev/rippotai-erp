@@ -3,11 +3,12 @@
 import { appConfirm } from '@/lib/app-dialog';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronRight, Lock, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { ChevronRight, Lock, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
   useGetRolesQuery,
   useCreateRoleMutation,
+  useUpdateRoleMutation,
   useDeleteRoleMutation,
   useGetRoleAccessCatalogueQuery,
   useGetRoleAccessQuery,
@@ -20,6 +21,7 @@ import {
   Button,
   EmptyState,
   Field,
+  TextArea,
   TextInput,
   Pill,
 } from '@/components/inos';
@@ -121,6 +123,7 @@ export default function RolesPermissions() {
   const { user } = useAuth();
   const canRead = hasPermission(user, 'role-permissions', 'read');
   const canAssign = hasPermission(user, 'role-permissions', 'assign');
+  const canEditRole = hasPermission(user, 'rbac', 'update');
 
   const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(undefined, {
     skip: !canRead,
@@ -140,10 +143,13 @@ export default function RolesPermissions() {
   });
   const [setRoleAccess] = useSetRoleAccessMutation();
   const [createRole, { isLoading: creatingRole }] = useCreateRoleMutation();
+  const [updateRole, { isLoading: updatingRole }] = useUpdateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleOpen, setNewRoleOpen] = useState(false);
   const [newRoleError, setNewRoleError] = useState('');
+  const [roleDraft, setRoleDraft] = useState(null);
+  const [editRoleError, setEditRoleError] = useState('');
 
   const accessByApp = useMemo(
     () => Object.fromEntries((access?.apps || []).map((a) => [a.code, a])),
@@ -162,6 +168,8 @@ export default function RolesPermissions() {
   );
   const selectedRole = roles.find((r) => r.id === selectedRoleId);
   const isProtected = Boolean(access?.protected);
+  const canEditSelectedRole = canEditRole && !isProtected
+    && !['ADMIN', 'SUPERADMIN'].includes(selectedRole?.name);
 
   const save = async (key, body, label) => {
     setBusyKey(key);
@@ -198,6 +206,40 @@ export default function RolesPermissions() {
       setSelectedRoleId(data.id);
     } catch (err) {
       toast.error(err?.data?.message || err?.data?.detail || 'Failed to create role');
+    }
+  };
+
+  const openRoleEditor = (role) => {
+    setEditRoleError('');
+    setRoleDraft({ id: role.id, name: role.name, description: role.description ?? '' });
+  };
+
+  const handleUpdateRole = async (e) => {
+    e.preventDefault();
+    if (!roleDraft || updatingRole) return;
+
+    const name = roleDraft.name.trim();
+    if (!name) {
+      setEditRoleError('Give the role a name.');
+      return;
+    }
+    if (['ADMIN', 'SUPERADMIN'].includes(name.toUpperCase())) {
+      setEditRoleError('This name is reserved for an administrator role.');
+      return;
+    }
+
+    try {
+      await updateRole({
+        id: roleDraft.id,
+        name,
+        description: roleDraft.description.trim(),
+      }).unwrap();
+      toast.success('Role updated');
+      setRoleSearch('');
+      setRoleDraft(null);
+    } catch (err) {
+      const message = err?.data?.message || err?.data?.detail;
+      setEditRoleError(Array.isArray(message) ? message.join(' ') : message || 'Failed to update role.');
     }
   };
 
@@ -320,7 +362,7 @@ export default function RolesPermissions() {
                 'Set an access level per app. Expand an app to fine-tune individual documents.'
               }
               actions={
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                   {isProtected && (
                     <Pill
                       tone="brand"
@@ -328,6 +370,17 @@ export default function RolesPermissions() {
                     >
                       <Lock size={12} aria-hidden /> Administrator
                     </Pill>
+                  )}
+                  {canEditSelectedRole && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon={Pencil}
+                      onClick={() => openRoleEditor(selectedRole)}
+                      data-testid="edit-role-btn"
+                    >
+                      Edit role
+                    </Button>
                   )}
                   {canAssign && !isProtected && (
                     <Button
@@ -534,6 +587,50 @@ export default function RolesPermissions() {
             placeholder="e.g. Site Supervisor"
           />
         </Field>
+      </AdminModal>
+      <AdminModal
+        open={Boolean(roleDraft)}
+        as="form"
+        onSubmit={handleUpdateRole}
+        onClose={() => setRoleDraft(null)}
+        busy={updatingRole}
+        icon={Pencil}
+        title="Edit role"
+        width={460}
+        footer={
+          <ModalActions
+            onCancel={() => setRoleDraft(null)}
+            submitting={updatingRole}
+            submitLabel="Save changes"
+          />
+        }
+      >
+        <Field label="Role name" required htmlFor="edit-role-name">
+          <TextInput
+            id="edit-role-name"
+            autoFocus
+            maxLength={50}
+            disabled={updatingRole}
+            value={roleDraft?.name ?? ''}
+            onChange={(e) => {
+              setRoleDraft({ ...roleDraft, name: e.target.value });
+              setEditRoleError('');
+            }}
+          />
+        </Field>
+        <Field label="Description" htmlFor="edit-role-description">
+          <TextArea
+            id="edit-role-description"
+            rows={3}
+            disabled={updatingRole}
+            value={roleDraft?.description ?? ''}
+            onChange={(e) => {
+              setRoleDraft({ ...roleDraft, description: e.target.value });
+              setEditRoleError('');
+            }}
+          />
+        </Field>
+        {editRoleError && <p className="inos-error" role="alert">{editRoleError}</p>}
       </AdminModal>
     </Page>
   );

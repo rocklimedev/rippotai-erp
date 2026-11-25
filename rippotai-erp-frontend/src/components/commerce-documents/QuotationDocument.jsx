@@ -1,92 +1,71 @@
 // Quotation — finalised vendor's quotation, in the shared Rippotai print format (same as PO / WO).
-// Content comes from quotationSheetModel (QUOTATION TEMPLATE fields); the layout is the INOS commerce format.
+// Content = the QUOTATION TEMPLATE fields only; the layout is the INOS commerce format (compact, no cover).
 import React, { forwardRef, useMemo } from "react";
 import { PrintDocument, KV, Totals, Terms, SignOff, has, fmtDate } from "../print-document";
-import { COMMERCE_CLASS, Parties, companyParty, useCompanyProfile, fmtPhone, amountInWords, qty, rs, totalLines } from "../print-document/commerce";
-import { groupedItemTables } from "./PurchaseOrderDocument";
+import { COMMERCE_CLASS, fmtPhone, qty, rs } from "../print-document/commerce";
 
-const COLS = ["No.", "Particular", "#Qty", "Unit", "#Rate", "#Amount", "Remarks"];
-const TEMPLATE = "8mm 1fr 15mm 11mm 21mm 25mm 30mm";
+// Exactly the QUOTATION TEMPLATE fields: Date · Vendor name / type / phone / address ·
+// Project name / address · S.No / Particular / Rate / Quantity / Amount / Remarks ·
+// Subtotal / Grand total · Payment terms (Stages / Date / Amount / Remarks) ·
+// Terms & conditions · Approved by / Contractor's signature. No cover page.
+const COLS = ["S.No", "Particular", "#Rate (₹)", "#Quantity", "#Amount (₹)", "Remarks"];
+const TEMPLATE = "10mm 1fr 20mm 22mm 25mm 26mm";
 
 const QuotationDocument = forwardRef(function QuotationDocument({ model }, ref) {
-  const company = useCompanyProfile();
-
   const sections = useMemo(() => {
     if (!model) return [];
     const items = model.rows.filter((r) => r.type === "item");
-    let category = "";
-    const withCat = [];
-    model.rows.forEach((r) => {
-      if (r.type === "category") category = r.name;
-      else withCat.push({ ...r, category });
-    });
-    const tables = groupedItemTables(withCat, {
-      cols: COLS,
-      template: TEMPLATE,
-      category: (it) => it.category,
-      amount: (it) => it.amount,
-      cells: (it, n) => [
-        { text: String(n), strong: false },
-        { text: it.particular, sub: it.detail, strong: true },
-        it.quantity == null ? "" : qty(it.quantity),
-        String(it.unit || "").toLowerCase(),
-        rs(it.rate),
-        rs(it.amount),
-        it.remarks || "",
-      ],
-    });
-    const subtotal = model.totals.find((t) => t.key === "subtotal")?.value || 0;
+    const subtotal = model.totals.find((t) => t.key === "subtotal")?.value ?? items.reduce((s, r) => s + Number(r.amount || 0), 0);
     const out = [
       {
-        title: "Quotation details",
+        title: "Quotation",
+        unnumbered: true,
         blocks: [
-          <Parties
-            key="p"
-            parties={[
-              companyParty(company, "Issued by"),
-              {
-                title: "Vendor",
-                name: model.vendor.name,
-                lines: [model.vendor.address],
-                items: [
-                  { label: "Type", value: model.vendor.type },
-                  { label: "Phone", value: fmtPhone(model.vendor.phone) },
-                ],
-              },
-              {
-                title: "Project",
-                name: model.project.name,
-                lines: [model.project.address],
-                items: [{ label: "Client", value: model.project.client }],
-              },
-            ]}
-          />,
           <KV
             key="kv"
-            cols={3}
+            cols={2}
             items={[
-              { label: "Quotation no.", value: model.number, strong: true },
-              { label: "Date", value: fmtDate(model.date) },
-              { label: "Version", value: model.version > 1 ? `v${model.version}` : "v1" },
+              { label: "Vendor name", value: model.vendor.name || " ", strong: true },
+              { label: "Project name", value: model.project.name || " ", strong: true },
+              { label: "Vendor type", value: model.vendor.type || " " },
+              { label: "Project address", value: model.project.address || " " },
+              { label: "Phone number", value: fmtPhone(model.vendor.phone) || " " },
+              { label: "Date", value: fmtDate(model.date) || " " },
+              { label: "Address", value: model.vendor.address || " " },
             ]}
           />,
         ],
       },
       {
-        title: "Items",
+        title: "Particulars",
+        unnumbered: true,
         blocks: [
-          ...(items.length ? tables : []),
+          {
+            table: {
+              cols: COLS,
+              template: TEMPLATE,
+              items: items.map((it, i) => ({
+                key: it.id || i,
+                cells: [
+                  { text: String(i + 1), strong: false },
+                  { text: it.particular, sub: it.detail, strong: true },
+                  rs(it.rate),
+                  it.quantity == null ? "" : [qty(it.quantity), String(it.unit || "").toLowerCase()].filter(has).join(" "),
+                  rs(it.amount),
+                  it.remarks || "",
+                ],
+              })),
+            },
+          },
           {
             keep: (
               <Totals
                 key="t"
                 decimals={2}
-                words={amountInWords(model.grandTotal)}
-                lines={totalLines([
-                  { label: "Subtotal", value: subtotal, always: true },
-                  ...model.totals.filter((t) => t.key !== "subtotal").map((t) => ({ label: t.label, value: t.value })),
+                lines={[
+                  { label: "Subtotal", value: subtotal },
                   { label: "Grand total", value: model.grandTotal, grand: true },
-                ])}
+                ]}
               />
             ),
           },
@@ -96,55 +75,48 @@ const QuotationDocument = forwardRef(function QuotationDocument({ model }, ref) 
     if (model.payment?.length)
       out.push({
         title: "Payment terms",
+        unnumbered: true,
         blocks: [
           {
             table: {
-              cols: ["No.", "Stage", "Date", "#Amount", "Remarks"],
-              template: "8mm 1fr 26mm 28mm 40mm",
+              cols: ["Stages", "Date", "#Amount (₹)", "Remarks"],
+              template: "1fr 28mm 30mm 50mm",
               items: model.payment.map((p, i) => ({
                 key: i,
-                cells: [String(i + 1), { text: p.stage, strong: true }, p.date ? fmtDate(p.date) : "", has(p.amount) ? rs(p.amount) : "", p.remarks || ""],
+                cells: [{ text: p.stage, strong: true }, p.date ? fmtDate(p.date) : "", has(p.amount) ? rs(p.amount) : "", p.remarks || ""],
               })),
             },
           },
         ],
       });
     out.push(
-      { title: "Terms & conditions", blocks: [<Terms key="t" items={model.terms} />] },
+      { title: "Terms & conditions", unnumbered: true, blocks: [<Terms key="t" items={model.terms} />] },
       {
-        title: "Authorisation",
+        title: "Signatures",
+        unnumbered: true,
         blocks: [
           <SignOff
             key="s"
-            left={{ name: model.approvedBy?.name || company.name, role: model.approvedBy ? `Approved · ${fmtDate(model.approvedBy.date)}` : "Authorised signatory" }}
-            right={{ name: model.vendor.name || "Vendor", role: "Accepted · signature & stamp" }}
+            left={{ name: model.approvedBy?.name || " ", role: ["Approved by", model.approvedBy?.date ? fmtDate(model.approvedBy.date) : ""].filter(has).join(" · ") }}
+            right={{ name: model.vendor.name || " ", role: "Contractor's signature" }}
           />,
         ],
       },
     );
     return out;
-  }, [model, company]);
+  }, [model]);
 
   if (!model) return null;
   return (
     <PrintDocument
       ref={ref}
-      className={COMMERCE_CLASS}
+      className={`${COMMERCE_CLASS} pd-doc--compact`}
       docType="Quotation"
       title={model.project.name || "Quotation"}
-      subtitle={model.vendor.name}
-      coverDetails={[
-        { label: "Vendor", value: model.vendor.name, sub: model.vendor.type },
-        { label: "Project", value: model.project.name, sub: model.project.client },
-        { label: "Site", value: model.project.address },
-        { label: "Quotation no.", value: model.number, sub: model.version > 1 ? `Version ${model.version}` : "" },
-        { label: "Date", value: fmtDate(model.date) },
-        { label: "Quotation value", value: rs(model.grandTotal) },
-      ]}
-      preparedFor={model.vendor.name}
-      reference={model.number}
       date={fmtDate(model.date, { short: true })}
       sections={sections}
+      numbered={false}
+      noCover
     />
   );
 });

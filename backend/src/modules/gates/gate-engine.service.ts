@@ -558,7 +558,7 @@ export class GateEngineService {
     projectId: string,
     gateCode: string,
     user: CurrentUserPayload,
-    opts: { remarks?: string; override?: boolean } = {},
+    opts: { remarks?: string; override?: boolean; direct?: boolean } = {},
   ): Promise<GateReadiness> {
     if (!user.permissions?.includes('gates:clear'))
       throw new ForbiddenException('Missing gates:clear permission');
@@ -596,8 +596,13 @@ export class GateEngineService {
         );
       }
 
+      // A direct clear (phase button, confirmed twice) clears even with open
+      // conditions; it is logged as an override with the user's note.
       const isOverride =
-        !readiness.isReady && !!opts.override && gate.allowsOverride;
+        !readiness.isReady &&
+        (!!opts.direct || (!!opts.override && gate.allowsOverride));
+      if (isOverride && opts.direct && !opts.remarks?.trim())
+        opts = { ...opts, remarks: 'Cleared directly from the phase (conditions not all met).' };
       if (!readiness.isReady && !isOverride) {
         const failed = readiness.conditions
           .filter((c) => !c.optional && !c.passed)

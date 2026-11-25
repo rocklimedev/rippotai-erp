@@ -61,3 +61,32 @@
   color: var(--text-3, #7f8e88);
   font-size: 13px;
 }
+
+/* ---------- Sheet view in the Rippotai theme (was Excel green/blue/yellow) ---------- */
+.mps-sheet { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.mps-sheet__head {
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--surface);
+}
+.mps-sheet__head > div { display: flex; align-items: center; gap: 12px; }
+.mps-sheet__title { font-size: 15px; font-weight: 600; color: var(--brand); letter-spacing: 0; }
+.mps-sheet__icon { width: 18px; height: 18px; color: var(--text-3); }
+.mps-table { width: 100%; min-width: 1280px; border-collapse: collapse; font-size: 13px; }
+.mps-table .mps-c { white-space: nowrap; border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; color: var(--text); }
+.mps-table .mps-c.is-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mps-table .mps-c.is-strong { font-weight: 600; }
+.mps-table__title .mps-c {
+  background: var(--brand-50); color: var(--brand); text-align: center;
+  font-weight: 600; font-size: 13px; letter-spacing: 0.02em; padding: 10px 12px;
+}
+.mps-table__head .mps-c {
+  background: var(--surface-2); color: var(--text-3); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+}
+.mps-table .mps-row:hover { background: var(--surface-2); }
+.mps-table .mps-sno { color: var(--text-3); width: 56px; }
+.mps-table .mps-code { color: var(--text-3); font-size: 12px; }
+.mps-table .mps-empty { text-align: center; padding: 48px 12px; color: var(--text-3); }
+.mps-table__total .mps-c {
+  background: var(--brand-50); color: var(--brand); font-weight: 700; border-bottom: 0;
+}

@@ -314,6 +314,7 @@ function Cover({ docType, title, subtitle, details, company }) {
  *  wordCover     { title, fields?: [{label, value, wide?, gold?}], logo?: "full"|"cube", logoWidth?, … }
  *  footerLabel   word variant footer text (defaults to docType)
  *  bodyHeight    usable body height in mm when a template's margins differ (word default 251.5)
+ *  noCover       skip the cover page — compact one-sheet documents (Delivery Challan, Quotation)
  */
 const PrintDocument = forwardRef(function PrintDocument(
   {
@@ -339,6 +340,7 @@ const PrintDocument = forwardRef(function PrintDocument(
     variant,
     wordCover,
     footerLabel,
+    noCover = false,
   },
   ref,
 ) {
@@ -401,7 +403,8 @@ const PrintDocument = forwardRef(function PrintDocument(
     { label: 'Prepared by', value: preparedBy || 'Rippotai Architecture' },
   ];
 
-  const totalPages = (pages?.length || 0) + 1 + (closing ? 1 : 0);
+  const coverPages = noCover ? 0 : 1;
+  const totalPages = (pages?.length || 0) + coverPages + (closing ? 1 : 0);
   const headMeta = [reference, date, has(version) ? `v${version}` : ''].filter(has).join(' · ');
   const footLine = companyLine(company);
   const blockClass = (b) =>
@@ -414,7 +417,7 @@ const PrintDocument = forwardRef(function PrintDocument(
       style={{ '--pd-page-height': `${pageHeight}mm` }}
       className={`pd-doc ${word ? 'pd-doc--word' : ''} ${capturing ? 'is-capturing' : ''} ${className || ''}`}
     >
-      {cover ||
+      {noCover ? null : cover ||
         (word && (
           <WordCover
             {...wordCover}
@@ -476,7 +479,7 @@ const PrintDocument = forwardRef(function PrintDocument(
               </span>
               <span className="pd-foot__page">
                 {has(footerNote) && <>{footerNote} · </>}
-                Page {p + 2} of {totalPages}
+                Page {p + 1 + coverPages} of {totalPages}
               </span>
             </footer>
           )}

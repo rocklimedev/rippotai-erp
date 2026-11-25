@@ -11,4 +11,10 @@ export class ClearGateDto {
   @IsOptional()
   @IsBoolean()
   override?: boolean;
+
+  /** Direct clear from the phase's "Clear gate" button (confirmed twice in the UI).
+   *  Needs only gates:clear; unmet conditions are recorded as an override. */
+  @IsOptional()
+  @IsBoolean()
+  direct?: boolean;
 }

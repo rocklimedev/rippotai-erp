@@ -81,6 +81,17 @@ export class DocumentReviewsController {
     return this.flow.revision(req.user, type, id);
   }
 
+  // Make an earlier revision current again (needs edit access to the document type).
+  @RequirePermission('documents:read')
+  @Post('revisions/:id/restore')
+  restore(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('entity_type') type: string,
+  ) {
+    return this.flow.restore(req.user, type, id);
+  }
+
   @RequirePermission('documents:read')
   @Post()
   review(@Req() req: any, @Body() body: any) {

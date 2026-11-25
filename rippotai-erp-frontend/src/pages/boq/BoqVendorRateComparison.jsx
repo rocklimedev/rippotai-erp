@@ -35,6 +35,7 @@ import { useCreateQuotationFromComparisonMutation } from '@/api/procuerment/proc
 import { appConfirm, appPrompt } from '@/lib/app-dialog';
 import { downloadXlsx } from '@/lib/xlsxTemplate';
 import { buildVendorComparisonWorkbook } from './vendorComparisonExcel';
+import { buildVendorEstimateWorkbook } from './vendorEstimateExcel';
 import {
   comparisonTrades,
   withComparisonItems,
@@ -299,11 +300,6 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
         )
           return 'Check quote descriptions, quantities and rates.';
       }
-      if (
-        trade.finalised_vendor_id &&
-        !completeQuote(trade.vendors.find((v) => v.id === trade.finalised_vendor_id))
-      )
-        return 'Complete the selected vendor quote before finalising.';
     }
     return null;
   };
@@ -370,6 +366,28 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
       setExporting(false);
     }
   };
+  // Estimate of one vendor across every trade it quoted in (finalised or not).
+  const exportEstimate = async (vendor) => {
+    try {
+      const project = list(projects.data).find((p) => p.id === projectId) || initialSheet?.project;
+      const wb = await buildVendorEstimateWorkbook({ title, projectName: project?.name, vendor, trades });
+      downloadXlsx(
+        await wb.xlsx.writeBuffer(),
+        `Estimate - ${vendor.name || 'Vendor'} - ${project?.name || title}.xlsx`,
+      );
+    } catch {
+      toast.error('Could not export the estimate');
+    }
+  };
+  const estimateVendors = [
+    ...new Map(
+      trades.flatMap((trade) =>
+        trade.vendors
+          .filter((vendor) => vendor.name?.trim() && vendor.items.length)
+          .map((vendor) => [vendor.custom ? `n:${vendor.name.trim().toLowerCase()}` : vendor.id, vendor]),
+      ),
+    ).values(),
+  ].sort((a, b) => a.name.localeCompare(b.name));
   const total = trades.reduce(
     (sum, t) =>
       sum + quoteTotal(t.vendors.find((v) => v.id === t.finalised_vendor_id) || { items: [] }),
@@ -584,6 +602,25 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
             >
               {exporting ? 'Exporting…' : 'Export Excel'}
             </Button>
+            {estimateVendors.length > 0 && (
+              <details className="vc-menu" data-testid="vendor-estimate-menu">
+                <summary>Vendor estimate</summary>
+                <div className="vc-menu-content">
+                  {estimateVendors.map((vendor) => (
+                    <Button
+                      key={vendor.id}
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.currentTarget.closest('details')?.removeAttribute('open');
+                        exportEstimate(vendor);
+                      }}
+                    >
+                      {vendor.name}
+                    </Button>
+                  ))}
+                </div>
+              </details>
+            )}
             {canCreateQuotation && quotationVendors.length > 0 && (
               <details className="vc-menu">
                 <summary>Create quotation</summary>
@@ -735,7 +772,12 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
                             {trade.name}
                           </button>
                         </td>
-                        <td>{vendor?.name || 'Pending'}</td>
+                        <td>
+                          {vendor?.name || 'Pending'}
+                          {vendor && !completeQuote(vendor) && (
+                            <span className="vc-incomplete"> · Incomplete quote</span>
+                          )}
+                        </td>
                         <td className="text-right whitespace-nowrap">
                           {money(vendor ? quoteTotal(vendor) : 0)}
                         </td>
@@ -1010,7 +1052,6 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
                                   <Button
                                     variant="secondary"
                                     className={cx('vc-finalise', picked && 'is-on')}
-                                    disabled={!picked && !complete}
                                     onClick={() =>
                                       editTrade(active.id, {
                                         finalised_vendor_id: picked ? '' : vendor.id,
@@ -1032,6 +1073,14 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
                                       Clear finalisation
                                     </button>
                                   )}
+                                  <button
+                                    type="button"
+                                    className="vc-link"
+                                    onClick={() => exportEstimate(vendor)}
+                                    data-testid="vendor-estimate-export"
+                                  >
+                                    Export estimate
+                                  </button>
                                   <button
                                     type="button"
                                     className="vc-link"

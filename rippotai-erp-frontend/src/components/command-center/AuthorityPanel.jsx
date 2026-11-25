@@ -3,10 +3,10 @@
 // command-center:authority permission; the tab is also hidden for everyone else.
 import { useMemo, useState } from "react";
 import {
-  ShieldCheck, Lock, RefreshCw, ArrowRight, ArrowUpRight, ClipboardCheck, AlertTriangle,
+  ShieldCheck, Lock, RefreshCw, ArrowUpRight, ClipboardCheck, AlertTriangle,
   IndianRupee, Users, History, CheckCircle2, Link2, KeyRound,
 } from "lucide-react";
-import { Card, Button, Pill, StatTile, Stats, EmptyState, Segmented, Tabs, Avatar, Progress } from "@/components/inos";
+import { Card, Button, Pill, StatTile, Stats, EmptyState, Tabs, Avatar, Progress } from "@/components/inos";
 import { useGetCommandCenterAuthorityQuery } from "@/api/projects/command-center.api";
 import "./authority-panel.css";
 
@@ -34,88 +34,6 @@ const ago = (iso, past = false) => {
 const fullDate = (iso) =>
   iso ? new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
 const humanAction = (a = "") => a.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
-
-const GROUPS = [
-  { value: "all", label: "Everything" },
-  { value: "approvals", label: "Approvals" },
-  { value: "risks", label: "Risks" },
-  { value: "commercial", label: "Big deals" },
-];
-const GROUP_ICON = { approvals: ClipboardCheck, risks: AlertTriangle, commercial: IndianRupee };
-const GROUP_TONE = { approvals: "warn", risks: "bad", commercial: "info" };
-
-/* ---------- needs your decision ---------- */
-function QueueCard({ q, onOpen }) {
-  const Icon = GROUP_ICON[q.group] ?? ClipboardCheck;
-  const tone = GROUP_TONE[q.group] ?? "warn";
-  return (
-    <section className="ap-queue">
-      <header className="ap-queue__head">
-        <span className={`inos-icon-tile inos-icon-tile--sm inos-icon-tile--${tone}`}><Icon /></span>
-        <div className="ap-queue__title">
-          <h4>{q.label}</h4>
-          <p>{q.description}</p>
-        </div>
-        <div className="ap-queue__count">
-          <strong className="tabular">{q.count}</strong>
-          {q.value ? <span className="tabular">{inr(q.value)}</span> : null}
-        </div>
-      </header>
-      <ul className="ap-queue__list">
-        {q.items.slice(0, 5).map((it) => (
-          <li key={it.id}>
-            <button type="button" className="ap-item" onClick={() => onOpen(it.link)}>
-              <span className={`ap-item__dot ap-dot--${it.tone || tone}`} />
-              <span className="ap-item__main">
-                <span className="ap-item__title">{it.title}</span>
-                {it.sub && <span className="ap-item__sub">{it.sub}</span>}
-              </span>
-              <span className="ap-item__meta">
-                {it.amount ? <span className="tabular">{inr(it.amount)}</span> : null}
-                <span className="ap-item__date">{ago(it.date, q.key !== "big_deals")}</span>
-              </span>
-              <ArrowUpRight className="ap-item__go" aria-hidden />
-            </button>
-          </li>
-        ))}
-      </ul>
-      <footer className="ap-queue__foot">
-        <span>{q.count > 5 ? `Showing 5 of ${q.count}` : `${q.count} waiting`}</span>
-        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpen(q.link)}>
-          Open all
-        </Button>
-      </footer>
-    </section>
-  );
-}
-
-function ReviewSection({ queues, onOpen }) {
-  const [group, setGroup] = useState("all");
-  const shown = queues.filter((q) => group === "all" || q.group === group);
-  const open = shown.filter((q) => q.count > 0).sort((a, b) => order(a) - order(b) || b.count - a.count);
-  const clear = shown.filter((q) => q.count === 0);
-  return (
-    <Card
-      title="Needs your decision"
-      subtitle="Everything across the firm that is waiting on you. Click any line to open it."
-      actions={<Segmented value={group} onChange={setGroup} options={GROUPS} />}
-    >
-      {open.length === 0 ? (
-        <EmptyState icon={CheckCircle2} title="Nothing waiting on you" text="Every approval and escalation in this view is cleared." />
-      ) : (
-        <div className="ap-queues">{open.map((q) => <QueueCard key={q.key} q={q} onOpen={onOpen} />)}</div>
-      )}
-      {clear.length > 0 && (
-        <div className="ap-clear">
-          <CheckCircle2 aria-hidden />
-          <span>All clear:</span>
-          {clear.map((q) => <Pill key={q.key} tone="ok" size="sm">{q.label}</Pill>)}
-        </div>
-      )}
-    </Card>
-  );
-}
-const order = (q) => ({ risks: 0, approvals: 1, commercial: 2 }[q.group] ?? 3);
 
 /* ---------- only the super authority sees this ---------- */
 function MoneyView({ money, onOpen }) {
@@ -293,8 +211,6 @@ export default function AuthorityPanel({ onOpen }) {
       approvalCount: approvals.reduce((a, q) => a + q.count, 0),
       approvalValue: approvals.reduce((a, q) => a + (q.value || 0), 0),
       overdue: get("payments_overdue"),
-      escalations: get("escalations")?.count ?? 0,
-      qc: get("qc_failures")?.count ?? 0,
     };
   }, [data]);
 
@@ -322,7 +238,7 @@ export default function AuthorityPanel({ onOpen }) {
           <span className="ap-hero__badge"><ShieldCheck aria-hidden /></span>
           <div>
             <p className="ap-hero__eyebrow">Super authority</p>
-            <h3>{summary.decisions ? `${summary.decisions} things need you` : "You're all caught up"}</h3>
+            <h3>{summary.approvalCount ? `${summary.approvalCount} approvals need you` : "You're all caught up"}</h3>
             <p className="ap-hero__sub">
               Visible only to ADMIN and SUPERADMIN · updated {ago(data.generatedAt, true)}
             </p>
@@ -336,12 +252,8 @@ export default function AuthorityPanel({ onOpen }) {
           <div className={summary.overdue?.count ? "is-bad" : ""}>
             <strong className="tabular">{inr(summary.overdue?.value || 0)}</strong><span>client payments overdue</span>
           </div>
-          <div className={summary.escalations ? "is-warn" : ""}><strong className="tabular">{summary.escalations}</strong><span>open escalations</span></div>
-          <div className={summary.qc ? "is-bad" : ""}><strong className="tabular">{summary.qc}</strong><span>QC failures on site</span></div>
         </div>
       </section>
-
-      <ReviewSection queues={data.review} onOpen={onOpen} />
 
       <Card
         title={<span className="ap-private-title"><Lock aria-hidden /> Only you can see this</span>}

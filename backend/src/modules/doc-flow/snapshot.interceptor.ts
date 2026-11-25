@@ -24,15 +24,15 @@ export class DocumentSnapshotInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     if (context.getType() !== 'http') return next.handle();
     const request = context.switchToHttp().getRequest();
-    if (!['PUT', 'PATCH', 'POST'].includes(request.method))
+    if (!['PUT', 'PATCH', 'POST', 'DELETE'].includes(request.method))
       return next.handle();
     const path = Reflect.getMetadata(PATH_METADATA, context.getHandler());
-    const hit = snapshotTargetFor(context.getClass().name, String(path ?? ''));
+    const hit = snapshotTargetFor(context.getClass().name, String(path ?? ''), request.method);
     const key = hit && request.params?.[hit.target.param];
     if (!hit || !key) return next.handle();
     return from(
       this.flow
-        .captureBefore(hit.doc, key, hit.target.by)
+        .captureBefore(hit.doc, key, hit.target.by, hit.target.child)
         .catch((e) => {
           this.logger.warn(`Snapshot capture failed: ${e.message}`);
           return undefined;

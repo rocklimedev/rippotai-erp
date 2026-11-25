@@ -146,7 +146,8 @@ export default function MaterialProcurementSheetView() {
   if (isLoading || isFetching) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Material Procurement" description="Loading procurement sheet..." />
+        <PageHeader
+        eyebrow="Procurement" title="Material Procurement" description="Loading procurement sheet..." />
         <Card>
           <CardContent className="py-16 text-center text-sm text-muted-foreground">
             Loading procurement sheet...
@@ -160,6 +161,7 @@ export default function MaterialProcurementSheetView() {
     return (
       <div className="space-y-6">
         <PageHeader
+        eyebrow="Procurement"
           title="Material Procurement"
           description="The requested procurement sheet could not be found."
         />
@@ -198,7 +200,8 @@ export default function MaterialProcurementSheetView() {
   });
   const items = allItems.filter((item) => sheetOf(item) === activeName);
   const resolvedItems = items.map(resolveItem);
-  const canEdit = procurement.status === 'DRAFT';
+  // Every procurement sheet can be edited (submitted ones keep their status).
+  const canEdit = true;
 
   const toPayloadItem = (item, sheetName, index) => {
     const num = (v) => (v === null || v === undefined || v === '' ? undefined : Number(v));
@@ -424,6 +427,7 @@ export default function MaterialProcurementSheetView() {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
+        eyebrow="Procurement"
         title={procurement.procurementNo || 'Material Procurement'}
         description={recordInfo}
       />
@@ -449,20 +453,17 @@ export default function MaterialProcurementSheetView() {
             Download Excel
           </Button>
 
+          <Button variant="outline" asChild>
+            <Link to={`/procurement/material-procurement/${procurement.id}/edit`} data-testid="procurement-edit">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Link>
+          </Button>
           {procurement.status === 'DRAFT' && (
-            <>
-              <Button variant="outline" asChild>
-                <Link to={`/procurement/material-procurement/${procurement.id}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </Button>
-
-              <Button disabled={submitting} onClick={handleSubmit}>
-                <Send className="mr-2 h-4 w-4" />
-                {submitting ? 'Submitting...' : 'Submit'}
-              </Button>
-            </>
+            <Button disabled={submitting} onClick={handleSubmit}>
+              <Send className="mr-2 h-4 w-4" />
+              {submitting ? 'Submitting...' : 'Submit'}
+            </Button>
           )}
         </div>
       </div>
@@ -550,23 +551,24 @@ export default function MaterialProcurementSheetView() {
       </Card>
 
       {/* ========== Excel-like sheet view ========== */}
-      <Card className="overflow-hidden border-2 border-border shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between border-b bg-[#217346] px-4 py-3 text-white">
-          {/* Excel green header bar */}
+      <Card className="mps-sheet overflow-hidden">
+        <CardHeader className="mps-sheet__head">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
+            <span className="inos-icon-tile inos-icon-tile--sm" aria-hidden>
+              <FileSpreadsheet />
+            </span>
             <div>
-              <CardTitle className="text-base font-semibold tracking-wide text-white">
-                MATERIAL PROCUREMENT LIST – {projectName}
+              <CardTitle className="mps-sheet__title">
+                Material procurement list – {projectName}
               </CardTitle>
-              <p className="text-xs text-white/80">
+              <p className="mps-muted">
                 {allItems.length} material {allItems.length === 1 ? 'item' : 'items'} in{' '}
                 {sheets.length} {sheets.length === 1 ? 'sheet' : 'sheets'} ·{' '}
                 {procurement.procurementNo}
               </p>
             </div>
           </div>
-          <Calculator className="h-5 w-5 text-white/80" />
+          <Calculator className="mps-sheet__icon" aria-hidden />
         </CardHeader>
 
         <CardContent className="p-0">
@@ -641,60 +643,60 @@ export default function MaterialProcurementSheetView() {
           </div>
           <div className="overflow-x-auto">
             {/* Excel-style table */}
-            <table className="w-full min-w-[1450px] border-collapse text-sm">
+            <table className="mps-table">
               <thead>
                 {/* Title row (like Excel merged title) */}
-                <tr className="bg-[#e2efda]">
+                <tr className="mps-table__title">
                   <th
                     colSpan={14}
-                    className="border border-[#b4b4b4] px-3 py-2 text-center text-sm font-bold uppercase tracking-wide text-[#1f4e2e]"
+                    className="mps-c"
                   >
-                    MATERIAL PROCUREMENT LIST – {String(activeName || '').toUpperCase()}
+                    Material procurement list – {activeName}
                   </th>
                 </tr>
 
                 {/* Column headers – classic Excel look */}
-                <tr className="bg-[#d9e1f2] text-[13px]">
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
+                <tr className="mps-table__head">
+                  <th className="mps-c">
                     S. No.
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
+                  <th className="mps-c">
                     Area
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
+                  <th className="mps-c">
                     Location
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
+                  <th className="mps-c">
                     Material
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
+                  <th className="mps-c">
                     Brand
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
+                  <th className="mps-c">
                     Name
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-left font-semibold text-slate-800">
+                  <th className="mps-c">
                     Code
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
+                  <th className="mps-c is-num">
                     Wall(Sq.ft)
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
+                  <th className="mps-c is-num">
                     Floor(Sq.ft)
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
+                  <th className="mps-c is-num">
                     Ceiling(Sq.ft)
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
+                  <th className="mps-c is-num">
                     Total Area(Sq.ft)
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
+                  <th className="mps-c is-num">
                     Quantity
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
+                  <th className="mps-c is-num">
                     Price
                   </th>
-                  <th className="border border-[#b4b4b4] px-3 py-2 text-right font-semibold text-slate-800">
+                  <th className="mps-c is-num">
                     Amount
                   </th>
                 </tr>
@@ -705,7 +707,7 @@ export default function MaterialProcurementSheetView() {
                   <tr>
                     <td
                       colSpan={14}
-                      className="border border-[#b4b4b4] px-4 py-12 text-center text-muted-foreground"
+                      className="mps-c mps-empty"
                     >
                       No materials in {activeName} yet.
                     </td>
@@ -716,42 +718,42 @@ export default function MaterialProcurementSheetView() {
                       key={items[index]?.id || `${procurement.id}-${index}`}
                       className={
                         index % 2 === 0
-                          ? 'bg-white hover:bg-[#f2f2f2]'
-                          : 'bg-[#fafafa] hover:bg-[#f2f2f2]'
+                          ? 'mps-row'
+                          : 'mps-row is-alt'
                       }
                     >
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 font-medium text-slate-700">
+                      <td className="mps-c mps-sno">
                         {index + 1}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">{item.area}</td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">{item.location}</td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 font-medium">
+                      <td className="mps-c">{item.area}</td>
+                      <td className="mps-c">{item.location}</td>
+                      <td className="mps-c is-strong">
                         {item.material}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">{item.brand}</td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5">{item.name}</td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 font-mono text-xs">
+                      <td className="mps-c">{item.brand}</td>
+                      <td className="mps-c">{item.name}</td>
+                      <td className="mps-c mps-code">
                         {item.code}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
+                      <td className="mps-c is-num">
                         {formatNumber(item.wallArea)}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
+                      <td className="mps-c is-num">
                         {formatNumber(item.floorArea)}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
+                      <td className="mps-c is-num">
                         {formatNumber(item.ceilingArea)}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right font-medium tabular-nums">
+                      <td className="mps-c is-num is-strong">
                         {formatNumber(item.totalArea)}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
+                      <td className="mps-c is-num">
                         {formatNumber(item.quantity, 3)}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right tabular-nums">
+                      <td className="mps-c is-num">
                         {formatNumber(item.price, 2)}
                       </td>
-                      <td className="border border-[#b4b4b4] px-3 py-1.5 text-right font-medium tabular-nums">
+                      <td className="mps-c is-num is-strong">
                         {formatNumber(item.amount, 2)}
                       </td>
                     </tr>
@@ -761,21 +763,21 @@ export default function MaterialProcurementSheetView() {
 
               {/* Totals row – Excel style */}
               <tfoot>
-                <tr className="bg-[#fff2cc] font-semibold">
+                <tr className="mps-table__total">
                   <td
                     colSpan={10}
-                    className="border border-[#b4b4b4] px-3 py-2.5 text-right text-slate-800"
+                    className="mps-c is-num"
                   >
                     Totals · {activeName}
                   </td>
-                  <td className="border border-[#b4b4b4] px-3 py-2.5 text-right tabular-nums">
+                  <td className="mps-c is-num">
                     {formatNumber(sheetArea)}
                   </td>
-                  <td className="border border-[#b4b4b4] px-3 py-2.5 text-right tabular-nums">
+                  <td className="mps-c is-num">
                     {formatNumber(sheetQuantity, 3)}
                   </td>
-                  <td className="border border-[#b4b4b4] px-3 py-2.5" />
-                  <td className="border border-[#b4b4b4] px-3 py-2.5 text-right tabular-nums">
+                  <td className="mps-c" />
+                  <td className="mps-c is-num">
                     {formatCurrency(sheetAmount)}
                   </td>
                 </tr>
