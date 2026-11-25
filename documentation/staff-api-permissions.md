@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 962 routes, 930 staff routes and 381 assignable staff capabilities.
+There are 966 routes, 934 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -240,6 +240,7 @@ There are 962 routes, 930 staff routes and 381 assignable staff capabilities.
 | doc-flow | `GET /document-reviews/existing` | DocumentReviewsController.existing | `documents:read` | staff |
 | doc-flow | `GET /document-reviews` | DocumentReviewsController.list | `documents:read` | staff |
 | doc-flow | `GET /document-reviews/meta` | DocumentReviewsController.meta | `documents:read` | staff |
+| doc-flow | `POST /document-reviews/revisions/:id/restore` | DocumentReviewsController.restore | `documents:read` | staff |
 | doc-flow | `POST /document-reviews` | DocumentReviewsController.review | `documents:read` | staff |
 | doc-flow | `GET /document-reviews/revisions/:id` | DocumentReviewsController.revision | `documents:read` | staff |
 | doc-flow | `GET /document-reviews/rows` | DocumentReviewsController.rows | `documents:read` | staff |
@@ -458,6 +459,9 @@ There are 962 routes, 930 staff routes and 381 assignable staff capabilities.
 | microsoft | `GET /onedrive/search` | MicrosoftOneDriveController.search | `onedrive:read` | staff |
 | microsoft | `POST /onedrive/upload` | MicrosoftOneDriveController.uploadFile | `onedrive:upload` | staff |
 | microsoft | `POST /onedrive/upload-large` | MicrosoftOneDriveController.uploadLargeFile | `onedrive:upload` | staff |
+| payments | `POST /client-collections` | ClientCollectionsController.create | `payment-schedules:update` | staff |
+| payments | `DELETE /client-collections/:id` | ClientCollectionsController.remove | `payment-schedules:update` | staff |
+| payments | `GET /client-collections/summary` | ClientCollectionsController.summary | `payment-schedules:read` | staff |
 | payments | `POST /payment-schedules/:id/milestones` | PaymentSchedulesController.addMilestone | `payment-schedules:create` | staff |
 | payments | `POST /payment-schedules` | PaymentSchedulesController.create | `payment-schedules:create` | staff |
 | payments | `GET /payment-schedules` | PaymentSchedulesController.findAll | `payment-schedules:read` | staff |

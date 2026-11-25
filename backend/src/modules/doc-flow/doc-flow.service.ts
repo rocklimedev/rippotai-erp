@@ -49,7 +49,10 @@ const ACTION_LABEL: Record<ReviewAction, string> = {
 export class DocFlowService {
   private readonly logger = new Logger(DocFlowService.name);
   private owned = new Map<string, { at: number; perms: string[] }>();
-  private children = new Map<string, { table: string; fk: string; via?: string }[]>();
+  private children = new Map<
+    string,
+    { table: string; fk: string; via?: string }[]
+  >();
 
   constructor(
     private readonly sequelize: Sequelize,
@@ -124,15 +127,25 @@ export class DocFlowService {
     // Other documents and history/log tables that merely point at this one are not
     // part of its content (a BOQ's comparisons, estimates, versions, activity…).
     const docTables = new Set(DOC_TYPES.map((t) => t.table));
-    const history = /(_versions|_activities|_activity|_logs|_revisions|_reviews)$/;
+    const history =
+      /(_versions|_activities|_activity|_logs|_revisions|_reviews)$/;
     const declared = DOC_TYPES.find((t) => t.table === table)?.children ?? [];
     const list: { table: string; fk: string; via?: string }[] = [
       ...rows
         .filter((r) => SAFE.test(r.table_name) && SAFE.test(r.column_name))
-        .filter((r) => !docTables.has(r.table_name) && !history.test(r.table_name) && r.table_name !== 'budget_estimates')
+        .filter(
+          (r) =>
+            !docTables.has(r.table_name) &&
+            !history.test(r.table_name) &&
+            r.table_name !== 'budget_estimates',
+        )
         .map((r) => ({ table: r.table_name, fk: r.column_name })),
       ...declared.filter(
-        (c) => SAFE.test(c.table) && SAFE.test(c.fk) && (!c.via || SAFE.test(c.via)) && !rows.some((r) => r.table_name === c.table && !c.via),
+        (c) =>
+          SAFE.test(c.table) &&
+          SAFE.test(c.fk) &&
+          (!c.via || SAFE.test(c.via)) &&
+          !rows.some((r) => r.table_name === c.table && !c.via),
       ),
     ];
     // direct children first, then rows one level down (`via`)
@@ -238,7 +251,10 @@ export class DocFlowService {
         const current = row[d.statusCol];
         if (!from || from.includes(current)) {
           const extra = Object.entries(set ?? {})
-            .map(([col, v]) => `, ${q(col)} = ${v === 'now' ? 'NOW()' : ':userId'}`)
+            .map(
+              ([col, v]) =>
+                `, ${q(col)} = ${v === 'now' ? 'NOW()' : ':userId'}`,
+            )
             .join('');
           await this.sequelize.query(
             `UPDATE ${q(d.table)} SET ${q(d.statusCol)} = :to${extra} WHERE id = :entityId`,
@@ -372,7 +388,8 @@ export class DocFlowService {
     const d = this.type(type);
     await this.assertRead(actor, d);
     if (!projectId || !d.projectCol || d.projectLevel) return { id: null };
-    const order = d.versionChain && d.versionCol ? `${q(d.versionCol)} DESC,` : '';
+    const order =
+      d.versionChain && d.versionCol ? `${q(d.versionCol)} DESC,` : '';
     const rows: any[] = await this.sequelize.query(
       `SELECT id FROM ${q(d.table)}
         WHERE ${q(d.projectCol)} = :projectId
@@ -399,7 +416,8 @@ export class DocFlowService {
     child?: { table: string; parentCol: string },
   ) {
     if (by === 'child') {
-      if (!child || !SAFE.test(child.table) || !SAFE.test(child.parentCol)) return undefined;
+      if (!child || !SAFE.test(child.table) || !SAFE.test(child.parentCol))
+        return undefined;
       const [link] = await this.sequelize.query<any>(
         `SELECT ${q(child.parentCol)} AS pid FROM ${q(child.table)} WHERE id = :key LIMIT 1`,
         { replacements: { key }, type: QueryTypes.SELECT },
@@ -420,7 +438,9 @@ export class DocFlowService {
     const data: Record<string, any> = { [d.table]: row };
     for (const c of await this.childTables(d.table)) {
       if (c.via) {
-        const parents = ((data[c.via] as any[]) || []).map((p) => p.id).filter(Boolean);
+        const parents = ((data[c.via] as any[]) || [])
+          .map((p) => p.id)
+          .filter(Boolean);
         data[c.table] = parents.length
           ? await this.sequelize.query(
               `SELECT * FROM ${q(c.table)} WHERE ${q(c.fk)} IN (:parents) LIMIT 5000`,
@@ -445,12 +465,17 @@ export class DocFlowService {
     force = false,
   ) {
     const { row, data } = captured;
-    const [recent] = force ? [] : await this.sequelize.query<any>(
-      `SELECT id FROM document_snapshots
+    const [recent] = force
+      ? []
+      : await this.sequelize.query<any>(
+          `SELECT id FROM document_snapshots
         WHERE entity_type = :type AND entity_id = :id
           AND created_at > NOW() - INTERVAL 60 SECOND LIMIT 1`,
-      { replacements: { type: d.key, id: row.id }, type: QueryTypes.SELECT },
-    );
+          {
+            replacements: { type: d.key, id: row.id },
+            type: QueryTypes.SELECT,
+          },
+        );
     if (recent) return;
     const version = (await this.versionOf(d, row)) ?? 1;
     await this.sequelize.query(
@@ -508,7 +533,10 @@ export class DocFlowService {
     const snap = await this.revision(actor, type, snapshotId);
     const data: Record<string, any> = snap.data || {};
     const main = data[d.table];
-    if (!main?.id) throw new BadRequestException('This revision has no saved data to restore.');
+    if (!main?.id)
+      throw new BadRequestException(
+        'This revision has no saved data to restore.',
+      );
     const current = await this.captureBefore(d, main.id);
     if (!current) throw new NotFoundException(`${d.label} no longer exists.`);
 
@@ -529,17 +557,27 @@ export class DocFlowService {
     const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
     const value = (v: any) => {
       if (v === null || v === undefined) return null;
-      if (typeof v === 'string' && iso.test(v)) return v.replace('T', ' ').replace(/(\.\d+)?Z$/, '');
+      if (typeof v === 'string' && iso.test(v))
+        return v.replace('T', ' ').replace(/(\.\d+)?Z$/, '');
       if (typeof v === 'object') return JSON.stringify(v);
       return v;
     };
-    const KEEP = new Set(['id', 'created_at', 'createdAt', 'created_by', 'deleted_at', 'deletedAt']);
+    const KEEP = new Set([
+      'id',
+      'created_at',
+      'createdAt',
+      'created_by',
+      'deleted_at',
+      'deletedAt',
+    ]);
     if (d.versionCol) KEEP.add(d.versionCol);
 
     await this.sequelize.transaction(async (transaction) => {
       // 1. the document row
       const cols = await columnsOf(d.table);
-      const sets = Object.keys(main).filter((k) => cols.has(k) && !KEEP.has(k) && ident.test(k));
+      const sets = Object.keys(main).filter(
+        (k) => cols.has(k) && !KEEP.has(k) && ident.test(k),
+      );
       const repl: Record<string, any> = { id: main.id };
       sets.forEach((k, i) => (repl[`v${i}`] = value(main[k])));
       if (sets.length)
@@ -549,29 +587,43 @@ export class DocFlowService {
         );
 
       // 2. child rows, parents before children (a child table may point at another)
-      const children = (await this.childTables(d.table)).filter((c) => Array.isArray(data[c.table]));
+      const children = (await this.childTables(d.table)).filter((c) =>
+        Array.isArray(data[c.table]),
+      );
       const refs = await this.sequelize.query<{ t: string; r: string }>(
         `SELECT TABLE_NAME AS t, REFERENCED_TABLE_NAME AS r FROM information_schema.KEY_COLUMN_USAGE
           WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL`,
         { type: QueryTypes.SELECT },
       );
-      const dependsOn = (a: string, b: string) => refs.some((x) => x.t === a && x.r === b && a !== b);
+      const dependsOn = (a: string, b: string) =>
+        refs.some((x) => x.t === a && x.r === b && a !== b);
       const ordered = [...children].sort(
         (a, b) =>
           Number(!!a.via) - Number(!!b.via) ||
-          (dependsOn(a.table, b.table) ? 1 : dependsOn(b.table, a.table) ? -1 : 0),
+          (dependsOn(a.table, b.table)
+            ? 1
+            : dependsOn(b.table, a.table)
+              ? -1
+              : 0),
       );
       for (const c of ordered) {
         const ccols = await columnsOf(c.table);
         const rows: any[] = data[c.table];
         for (const row of rows) {
-          const keys = Object.keys(row).filter((k) => ccols.has(k) && ident.test(k));
+          const keys = Object.keys(row).filter(
+            (k) => ccols.has(k) && ident.test(k),
+          );
           if (!keys.includes('id')) continue;
           const rr: Record<string, any> = {};
           keys.forEach((k, i) => (rr[`c${i}`] = value(row[k])));
           await this.sequelize.query(
             `INSERT INTO ${bq(c.table)} (${keys.map(bq).join(', ')}) VALUES (${keys.map((_, i) => `:c${i}`).join(', ')})
-             ON DUPLICATE KEY UPDATE ${keys.filter((k) => k !== 'id').map((k) => `${bq(k)} = VALUES(${bq(k)})`).join(', ') || 'id = id'}`,
+             ON DUPLICATE KEY UPDATE ${
+               keys
+                 .filter((k) => k !== 'id')
+                 .map((k) => `${bq(k)} = VALUES(${bq(k)})`)
+                 .join(', ') || 'id = id'
+             }`,
             { replacements: rr, transaction },
           );
         }
@@ -586,21 +638,32 @@ export class DocFlowService {
           parentIds = (
             await this.sequelize.query<{ id: string }>(
               `SELECT id FROM ${bq(c.via)} WHERE ${bq(viaFk)} = :pid`,
-              { replacements: { pid: main.id }, type: QueryTypes.SELECT, transaction },
+              {
+                replacements: { pid: main.id },
+                type: QueryTypes.SELECT,
+                transaction,
+              },
             )
           ).map((x) => x.id);
           if (!parentIds.length) continue;
         }
         const extra = await this.sequelize.query<{ id: string }>(
           `SELECT id FROM ${bq(c.table)} WHERE ${bq(c.fk)} IN (:pids)${keep.length ? ' AND id NOT IN (:keep)' : ''}`,
-          { replacements: { pids: parentIds, keep }, type: QueryTypes.SELECT, transaction },
+          {
+            replacements: { pids: parentIds, keep },
+            type: QueryTypes.SELECT,
+            transaction,
+          },
         );
         for (const x of extra) {
           try {
-            await this.sequelize.query(`DELETE FROM ${bq(c.table)} WHERE id = :id`, {
-              replacements: { id: x.id },
-              transaction,
-            });
+            await this.sequelize.query(
+              `DELETE FROM ${bq(c.table)} WHERE id = :id`,
+              {
+                replacements: { id: x.id },
+                transaction,
+              },
+            );
           } catch {
             /* still referenced elsewhere (e.g. an item on a delivery challan) — keep it */
           }
