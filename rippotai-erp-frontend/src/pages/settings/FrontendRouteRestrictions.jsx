@@ -1,12 +1,14 @@
 import { useId, useState } from 'react';
+import { Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSetFrontendRouteRestrictionMutation } from '@/api/users/rbac.api';
 import { useAuth } from '@/context/AuthContext';
-import { Button, Field, TextInput } from '@/components/inos';
+import { Field, TextInput } from '@/components/inos';
 
 export default function FrontendRouteRestrictions({ groupName, paths, access, canAssign, loading }) {
   const { user, refresh } = useAuth();
   const searchId = useId();
+  const hintId = useId();
   const [search, setSearch] = useState('');
   const [save, { isLoading: saving }] = useSetFrontendRouteRestrictionMutation();
   const roleId = access?.role.id;
@@ -14,7 +16,7 @@ export default function FrontendRouteRestrictions({ groupName, paths, access, ca
   const editable = canAssign && Boolean(roleId) && !access.protected;
   const busy = saving || loading;
   const query = search.trim().toLowerCase();
-  const visiblePaths = paths.filter((path) => path.includes(query));
+  const visiblePaths = paths.filter((path) => path.toLowerCase().includes(query));
 
   async function change(pattern, restricted) {
     try {
@@ -29,7 +31,12 @@ export default function FrontendRouteRestrictions({ groupName, paths, access, ca
   if (!paths.length) return null;
 
   return (
-    <section className="space-y-3 p-4" aria-label={`${groupName} frontend routes`}>
+    <section
+      className="rp-route-card"
+      aria-label={`${groupName} frontend routes`}
+      aria-describedby={hintId}
+      aria-busy={busy || undefined}
+    >
       <Field label="Search frontend routes" htmlFor={searchId}>
         <TextInput
           id={searchId}
@@ -39,45 +46,51 @@ export default function FrontendRouteRestrictions({ groupName, paths, access, ca
           onChange={(event) => setSearch(event.target.value)}
         />
       </Field>
-      {access?.protected && <p>Administrator roles keep their frontend route access.</p>}
-      <div className="inos-table-wrap">
-        <table className="inos-table" aria-label={`${groupName} route restrictions`}>
-          <thead>
-            <tr>
-              <th scope="col">Frontend route</th>
-              <th scope="col">Route restriction</th>
-              {editable && <th scope="col">Action</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {visiblePaths.map((path) => {
-              const blocked = restrictions.has(path);
-              return (
-                <tr key={path}>
-                  <td><code>{path}</code></td>
-                  <td>{!access ? 'Unavailable' : blocked ? 'Blocked' : 'None'}</td>
-                  {editable && (
-                    <td>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={busy}
-                        aria-label={blocked ? `Remove restriction for ${path}` : `Block ${path}`}
-                        onClick={() => void change(path, !blocked)}
-                      >
-                        {blocked ? 'Remove restriction' : 'Block route'}
-                      </Button>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-            {!visiblePaths.length && (
-              <tr><td colSpan={editable ? 3 : 2}>No routes match your search.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <p className="rp-route-hint" id={hintId}>
+        {editable && 'Click a route to block or unblock it. A lock marks blocked routes.'}
+        {access?.protected && 'Administrator roles keep their frontend route access.'}
+        {!access && (loading ? 'Loading route restrictions…' : 'Route restrictions are unavailable.')}
+        {access && !access.protected && !editable && 'A lock marks blocked routes.'}
+      </p>
+      {visiblePaths.length ? (
+        <ul className="rp-route-tags" role="list">
+          {visiblePaths.map((path) => {
+            const blocked = restrictions.has(path);
+            const tagContents = (
+              <>
+                {blocked && <Lock size={13} aria-hidden="true" />}
+                <code>{path}</code>
+              </>
+            );
+            return (
+              <li key={path}>
+                {editable ? (
+                  <button
+                    type="button"
+                    className="rp-route-tag"
+                    aria-label={`Block ${path}`}
+                    aria-pressed={blocked}
+                    aria-disabled={busy || undefined}
+                    data-blocked={blocked}
+                    onClick={() => {
+                      if (!busy) void change(path, !blocked);
+                    }}
+                  >
+                    {tagContents}
+                  </button>
+                ) : (
+                  <span className="rp-route-tag" data-blocked={blocked}>
+                    {tagContents}
+                    {blocked && <span className="sr-only">Blocked</span>}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="rp-route-hint" role="status">No routes match your search.</p>
+      )}
     </section>
   );
 }

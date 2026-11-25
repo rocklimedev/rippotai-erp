@@ -654,5 +654,17 @@ const CSS = `
 .rp-level[data-level="mixed"] { border-color: #d9a441; }
 .rp-tag { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--mist-soft, #eef2f1); color: var(--text-2); vertical-align: 1px; }
 .rp-tag--warn { background: #fdf3df; color: #8a5a00; cursor: help; }
+.rp-route-card { display: grid; gap: 12px; margin: 12px 20px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--sage-50, #f6f8f7); }
+.rp-route-hint { margin: 0; color: var(--text-2); font-size: 13px; }
+.rp-route-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rp-route-tags > li { max-width: 100%; min-width: 0; }
+.rp-route-tag { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--card, #fff); color: var(--text-2); text-align: left; font-size: 12px; }
+.rp-route-tag code { min-width: 0; overflow-wrap: anywhere; }
+.rp-route-tag svg { flex-shrink: 0; }
+.rp-route-tag[data-blocked="true"] { border-color: #e7a8a8; background: #fce9e9; color: #8d2424; }
+button.rp-route-tag { cursor: pointer; }
+button.rp-route-tag[aria-disabled="true"] { cursor: wait; }
+button.rp-route-tag:not([aria-disabled="true"]):hover { border-color: currentColor; }
+button.rp-route-tag:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 @media (max-width: 720px) { .rp-row { flex-wrap: wrap; } .rp-level { width: 100%; } .rp-row--part { padding-left: 20px; } }
 `;
