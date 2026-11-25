@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { usePermission } from '@/hooks/use-permission';
+import { useGetUnitsQuery } from '../api/meta/unit.api';
 
 import {
   useCreateMaterialMutation,
@@ -28,8 +31,16 @@ const EMPTY_FORM = {
   is_active: true,
 };
 
-export default function CreateMaterialForm({ material = null, mode = 'create', onSuccess }) {
+export default function CreateMaterialForm({ material = null, mode = 'create', onSuccess, onCancel }) {
   const nav = useNavigate();
+  const inline = Boolean(onCancel);
+  const canReadUnits = usePermission('units', 'read');
+  const { data: unitsResponse, isLoading: unitsLoading, isError: unitsError } = useGetUnitsQuery(
+    undefined,
+    { skip: !inline || !canReadUnits },
+  );
+  const units = unitsResponse?.data?.data ?? unitsResponse?.data ?? unitsResponse ?? [];
+  const useUnitPicker = inline && canReadUnits && !unitsError;
 
   const [createMaterial, { isLoading: isCreating }] = useCreateMaterialMutation();
 
@@ -82,6 +93,10 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
 
   const validate = () => {
     const nextErrors = {};
+
+    if (!isEdit && !form.material_code.trim()) {
+      nextErrors.material_code = 'Material code is required.';
+    }
 
     if (!form.name.trim()) {
       nextErrors.name = 'Material name is required.';
@@ -170,13 +185,13 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
   // RENDER
   // ============================================================
 
-  return (
+  const formContent = (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* ======================================================
           HEADER ACTIONS
       ====================================================== */}
 
-      <div className="flex items-center justify-between gap-3">
+      {!inline && <div className="flex items-center justify-between gap-3">
         <Button
           type="button"
           variant="ghost"
@@ -212,7 +227,7 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
             )}
           </Button>
         </div>
-      </div>
+      </div>}
 
       {/* ======================================================
           FORM ERROR
@@ -237,14 +252,19 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
           {/* MATERIAL CODE */}
 
           <div className="space-y-2">
-            <Label htmlFor="material_code">Material Code</Label>
+            <Label htmlFor="material_code">
+              Material Code {!isEdit && <span className="text-destructive">*</span>}
+            </Label>
 
             <Input
               id="material_code"
               value={form.material_code}
               onChange={(e) => updateField('material_code', e.target.value)}
               placeholder="e.g. MAT-001"
+              maxLength={50}
+              className={errors.material_code ? 'border-destructive' : ''}
             />
+            {errors.material_code && <p className="text-xs text-destructive">{errors.material_code}</p>}
           </div>
 
           {/* MATERIAL NAME */}
@@ -338,27 +358,42 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
 
           <div className="space-y-2">
             <Label htmlFor="unit_id">
-              Unit ID <span className="text-destructive">*</span>
+              {useUnitPicker ? 'Unit' : 'Unit ID'} <span className="text-destructive">*</span>
             </Label>
 
-            <Input
+            {useUnitPicker ? (
+              <select
+                id="unit_id"
+                value={form.unit_id}
+                onChange={(e) => updateField('unit_id', e.target.value)}
+                disabled={unitsLoading}
+                className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${errors.unit_id ? 'border-destructive' : 'border-input'}`}
+              >
+                <option value="">
+                  {unitsLoading ? 'Loading units…' : 'Select unit'}
+                </option>
+                {Array.isArray(units) && units.map((unit) => (
+                  <option key={unit.id} value={unit.id}>{unit.name}</option>
+                ))}
+              </select>
+            ) : <Input
               id="unit_id"
               value={form.unit_id}
               onChange={(e) => updateField('unit_id', e.target.value)}
               placeholder="Unit UUID"
               className={errors.unit_id ? 'border-destructive' : ''}
-            />
+            />}
 
             {errors.unit_id && <p className="text-xs text-destructive">{errors.unit_id}</p>}
 
-            <p className="text-xs text-muted-foreground">
+            {!useUnitPicker && <p className="text-xs text-muted-foreground">
               Enter the Unit Master ID associated with this material.
-            </p>
+            </p>}
           </div>
 
           {/* STATUS */}
 
-          <div className="flex items-center justify-between rounded-lg border p-4">
+          {!inline && <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
               <Label htmlFor="is_active">Active Material</Label>
 
@@ -372,7 +407,7 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
               checked={form.is_active}
               onCheckedChange={(value) => updateField('is_active', value)}
             />
-          </div>
+          </div>}
         </CardContent>
       </Card>
 
@@ -404,7 +439,7 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
           type="button"
           variant="outline"
           disabled={isSaving}
-          onClick={() => (material?.id ? nav(`/procurement/${material.id}`) : nav('/procurement'))}
+          onClick={onCancel ?? (() => nav(material?.id ? `/procurement/${material.id}` : '/procurement'))}
         >
           Cancel
         </Button>
@@ -425,4 +460,14 @@ export default function CreateMaterialForm({ material = null, mode = 'create', o
       </div>
     </form>
   );
+
+  return inline ? (
+    <Dialog open onOpenChange={(open) => !open && !isSaving && onCancel()}>
+      <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto">
+        <DialogTitle>Create Material</DialogTitle>
+        <DialogDescription>Save a new material to select it for this row.</DialogDescription>
+        {formContent}
+      </DialogContent>
+    </Dialog>
+  ) : formContent;
 }

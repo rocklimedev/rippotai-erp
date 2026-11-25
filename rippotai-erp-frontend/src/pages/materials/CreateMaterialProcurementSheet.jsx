@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRefill } from '@/components/doc-list/useRefill';
 import { PrefillNotice } from '@/components/PrefillNotice';
+import CreateMaterialForm from '@/components/CreateMaterialForm';
+import { usePermission } from '@/hooks/use-permission';
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -103,6 +105,9 @@ const calculateItem = (item) => {
 // ============================================================
 
 export default function CreateMaterialProcurementSheet() {
+  const canCreateMaterial = usePermission('materials', 'create');
+  const [createMaterialRow, setCreateMaterialRow] = useState(null);
+  const [createdMaterials, setCreatedMaterials] = useState([]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -168,8 +173,10 @@ export default function CreateMaterialProcurementSheet() {
   const materials = useMemo(() => {
     const list =
       materialsResponse?.data?.data ?? materialsResponse?.data ?? materialsResponse ?? [];
-    return Array.isArray(list) ? list : [];
-  }, [materialsResponse]);
+    const fetched = Array.isArray(list) ? list : [];
+    const fetchedIds = new Set(fetched.map((material) => material.id));
+    return [...fetched, ...createdMaterials.filter((material) => !fetchedIds.has(material.id))];
+  }, [materialsResponse, createdMaterials]);
 
   // ============================================================
   // EXISTING
@@ -354,7 +361,7 @@ export default function CreateMaterialProcurementSheet() {
       toast.info(
         sheetTypeMaterials.length
           ? 'All default materials of this type are already in the sheet.'
-          : 'No materials of this type in Material Master yet.',
+          : 'No materials of this type are available yet.',
       );
       return;
     }
@@ -511,7 +518,7 @@ export default function CreateMaterialProcurementSheet() {
     const missingMaterial = validItems.find((item) => !item.materialId);
 
     if (missingMaterial) {
-      toast.error('Please select a Material Master for every item.');
+      toast.error('Please select a material for every item.');
 
       return false;
     }
@@ -828,7 +835,7 @@ export default function CreateMaterialProcurementSheet() {
                   <th className="min-w-[150px] px-3 py-3 text-left font-medium">Location</th>
 
                   <th className="min-w-[260px] px-3 py-3 text-left font-medium">
-                    Material Master *
+                    Material *
                   </th>
 
                   <th className="min-w-[120px] px-3 py-3 text-left font-medium">Wall (Sq.ft)</th>
@@ -899,7 +906,14 @@ export default function CreateMaterialProcurementSheet() {
                         <select
                           value={item.materialId}
                           disabled={busy}
-                          onChange={(event) => updateItem(index, 'materialId', event.target.value)}
+                          onChange={(event) => {
+                            const { value } = event.target;
+                            if (value === 'create-material') {
+                              setCreateMaterialRow(index);
+                              return;
+                            }
+                            updateItem(index, 'materialId', value);
+                          }}
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                         >
                           <option value="">
@@ -907,6 +921,7 @@ export default function CreateMaterialProcurementSheet() {
                               ? 'Loading materials...'
                               : item.description || 'Select material'}
                           </option>
+                          {canCreateMaterial && <option value="create-material">+ Create Material</option>}
 
                           {[
                             [sheetTypeMaterials, activeName],
@@ -915,7 +930,6 @@ export default function CreateMaterialProcurementSheet() {
                             if (!list.length) return null;
                             const options = list.map((material) => (
                               <option key={material.id} value={material.id}>
-                                {material.material_code ? `${material.material_code} — ` : ''}
                                 {material.name}
                                 {material.brand ? ` (${material.brand})` : ''}
                               </option>
@@ -1080,8 +1094,7 @@ export default function CreateMaterialProcurementSheet() {
 
           <div className="mt-4 flex justify-between gap-3">
             <p className="text-xs text-muted-foreground">
-              Total area and amount are calculated automatically. Material details are pulled from
-              Material Master.
+              Total area and amount are calculated automatically. Details come from the selected material.
             </p>
 
             <Button variant="outline" onClick={addItem} disabled={busy}>
@@ -1118,6 +1131,18 @@ export default function CreateMaterialProcurementSheet() {
           </Button>
         )}
       </div>
+      {createMaterialRow !== null && (
+        <CreateMaterialForm
+          onCancel={() => setCreateMaterialRow(null)}
+          onSuccess={(material) => {
+            setCreatedMaterials((current) => [...current, material]);
+            updateItem(createMaterialRow, 'materialId', material.id);
+            setCreateMaterialRow(null);
+            toast.success('Material created and selected.');
+          }}
+        />
+      )}
+
       {sheetDialog && (
         <Modal
           open
