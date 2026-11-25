@@ -303,6 +303,7 @@ export class MaterialProcurementService {
       ceilingArea: item.ceilingArea ?? null,
 
       totalArea,
+      isTotalAreaManual: item.isTotalAreaManual ?? null,
 
       // --------------------------------------------------------
       // QUANTITY / PRICE

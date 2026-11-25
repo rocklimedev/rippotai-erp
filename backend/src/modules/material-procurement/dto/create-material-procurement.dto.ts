@@ -1,6 +1,7 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -116,6 +117,10 @@ export class CreateMaterialProcurementItemDto {
   @IsNumber()
   @Min(0)
   totalArea?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isTotalAreaManual?: boolean;
 
   // ----------------------------------------------------------
   // QUANTITY
