@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 966 routes, 934 staff routes and 381 assignable staff capabilities.
+There are 967 routes, 935 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -346,6 +346,7 @@ There are 966 routes, 934 staff routes and 381 assignable staff capabilities.
 | leads | `GET /leads/review` | LeadsController.getReview | `leads:read` | staff |
 | leads | `PUT /leads/:id/stage` | LeadsController.moveStage | `leads:update` | staff |
 | leads | `PATCH /leads/:id` | LeadsController.patchLead | `leads:update` | staff |
+| leads | `POST /leads/resolve-maps-address` | LeadsController.resolveMapsAddress | `leads:create` | staff |
 | leads | `PUT /leads/:id/proposal` | LeadsController.setProposal | `leads:update` | staff |
 | leads | `POST /leads/sync/zoho` | LeadsController.syncZoho | `leads:sync` | staff |
 | leads | `PUT /leads/:id` | LeadsController.updateLead | `leads:update` | staff |

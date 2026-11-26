@@ -1,4 +1,8 @@
-import { calculateBudgetEstimateTotals, roundBudgetMoney, budgetItemAmount } from './budget-estimate-totals';
+import {
+  calculateBudgetEstimateTotals,
+  roundBudgetMoney,
+  budgetItemAmount,
+} from './budget-estimate-totals';
 import {
   BadRequestException,
   Injectable,
