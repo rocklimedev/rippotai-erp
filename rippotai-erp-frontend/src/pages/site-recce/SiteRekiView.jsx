@@ -26,9 +26,12 @@ import {
   WIntro,
   WFields,
   WLines,
-  padRows,
 } from '@/components/print-document';
-import { resolveSite } from '@/components/brief-document/site-options';
+import {
+  resolveSite,
+  projectTypeAnswer,
+  siteConditionAnswer,
+} from '@/components/brief-document/site-options';
 import { ProjectTypeGrid, SiteConditionGrid } from '@/components/brief-document/SiteOptionGrids';
 import howTo1 from '@/assets/brand/word/recce-how-to-1.jpg';
 import howTo2 from '@/assets/brand/word/recce-how-to-2.jpg';
@@ -148,16 +151,19 @@ export function buildRecceSections(recce) {
     blocks: [
       <div key="f">
         <WFields
+          omitEmpty
           items={[
             { label: 'Project name', value: project.name || recce.project_name },
             { label: 'Client name', value: recce.client_name },
           ]}
         />
         <WFields
+          omitEmpty
           cols={1}
           items={[{ label: 'Site address', value: recce.site_address || project.site_location }]}
         />
         <WFields
+          omitEmpty
           cols={3}
           items={[
             { label: 'Date of recce', value: fmtDate(recce.recce_date) },
@@ -177,50 +183,69 @@ export function buildRecceSections(recce) {
           ]}
         />
       </div>,
-      <div key="pt">
-        <WSub className="wd-sub--lg">Project type &amp; site type</WSub>
-        <ProjectTypeGrid site={site} itemGap={3.6} headGap={1.4} />
-      </div>,
-      <div key="sc">
-        <WSub className="wd-sub--lg">Site condition</WSub>
-        <SiteConditionGrid site={site} headingBox={false} itemGap={3.6} widths="57mm 57mm 1fr" />
-      </div>,
-      <div key="ac" style={{ marginTop: '13mm' }}>
-        <WSub>Access for material &amp; labour</WSub>
-        <WFields
-          cols={3}
-          items={[
-            { label: 'Lift available (Y/N) & size', value: lift },
-            { label: 'Staircase width', value: recce.staircase_width },
-            { label: 'Material entry point', value: recce.material_entry_point },
-          ]}
-        />
-      </div>,
-      <div key="ut">
-        <WSub>Utilities available on site</WSub>
-        <WFields
-          cols={3}
-          items={[
-            { label: 'Water connection', value: recce.water_connection },
-            { label: 'Power load available', value: recce.power_load_available },
-            { label: 'Drainage point location', value: recce.drainage_point_location },
-          ]}
-        />
-      </div>,
-      <div key="rw">
-        <WSub>Society / RWA restrictions</WSub>
-        <WFields
-          cols={3}
-          items={[
-            { label: 'Working hours allowed', value: recce.working_hours_allowed },
-            { label: 'Material movement rule', value: recce.material_movement_rule },
-            ...(has(recce.society_rwa_restrictions)
-              ? [{ label: 'Other restrictions', value: recce.society_rwa_restrictions }]
-              : []),
-          ]}
-        />
-      </div>,
-      {
+      has(projectTypeAnswer(site)) && (
+        <div key="pt">
+          <WSub className="wd-sub--lg">Project type &amp; site type</WSub>
+          <ProjectTypeGrid site={site} itemGap={3.6} headGap={1.4} />
+        </div>
+      ),
+      has(siteConditionAnswer(site)) && (
+        <div key="sc">
+          <WSub className="wd-sub--lg">Site condition</WSub>
+          <SiteConditionGrid site={site} headingBox={false} itemGap={3.6} widths="57mm 57mm 1fr" />
+        </div>
+      ),
+      [lift, recce.staircase_width, recce.material_entry_point].some(has) && (
+        <div key="ac" style={{ marginTop: '13mm' }}>
+          <WSub>Access for material &amp; labour</WSub>
+          <WFields
+            omitEmpty
+            cols={3}
+            items={[
+              { label: 'Lift available (Y/N) & size', value: lift },
+              { label: 'Staircase width', value: recce.staircase_width },
+              { label: 'Material entry point', value: recce.material_entry_point },
+            ]}
+          />
+        </div>
+      ),
+      [recce.water_connection, recce.power_load_available, recce.drainage_point_location].some(
+        has,
+      ) && (
+        <div key="ut">
+          <WSub>Utilities available on site</WSub>
+          <WFields
+            omitEmpty
+            cols={3}
+            items={[
+              { label: 'Water connection', value: recce.water_connection },
+              { label: 'Power load available', value: recce.power_load_available },
+              { label: 'Drainage point location', value: recce.drainage_point_location },
+            ]}
+          />
+        </div>
+      ),
+      [
+        recce.working_hours_allowed,
+        recce.material_movement_rule,
+        recce.society_rwa_restrictions,
+      ].some(has) && (
+        <div key="rw">
+          <WSub>Society / RWA restrictions</WSub>
+          <WFields
+            omitEmpty
+            cols={3}
+            items={[
+              { label: 'Working hours allowed', value: recce.working_hours_allowed },
+              { label: 'Material movement rule', value: recce.material_movement_rule },
+              ...(has(recce.society_rwa_restrictions)
+                ? [{ label: 'Other restrictions', value: recce.society_rwa_restrictions }]
+                : []),
+            ]}
+          />
+        </div>
+      ),
+      has(recce.existing_condition) && {
         newPage: true,
         node: (
           <div>
@@ -245,49 +270,46 @@ export function buildRecceSections(recce) {
   const measured = rooms.filter((r) => has(r.room_name));
   sections.push({
     title: 'Room-Wise Measurements',
+    no: '02',
     newPage: false,
     blocks: [
-      {
+      measured.length > 0 && {
         table: {
           skin: 'word',
           className: 'wd-table--open wd-sr-table',
           allowSplit: true,
           cols: ['Room', 'Length', 'Width', 'Height', 'Existing flooring / ceiling / notes'],
           template: '37.9mm 20.9mm 20.9mm 20.9mm 1fr',
-          items: padRows(
-            measured.map((r) => {
-              const d = roomFeetInchesDraft(r);
-              const type =
-                r.room_type === 'OTHER' ? r.room_type_other : labelOf(ROOM_TYPE, r.room_type);
-              return {
-                key: r.id,
-                cells: [
-                  {
-                    text: r.room_name,
-                    sub: [
-                      type,
-                      has(r.room_number) && `No. ${r.room_number}`,
-                      has(d.area) && `${num(d.area, 2)} sq ft`,
-                    ]
-                      .filter(Boolean)
-                      .join(' · '),
-                  },
-                  d.length,
-                  d.width,
-                  d.height,
-                  [
-                    r.existing_flooring && `Flooring: ${r.existing_flooring}`,
-                    r.existing_ceiling && `Ceiling: ${r.existing_ceiling}`,
-                    r.notes,
+          items: measured.map((r) => {
+            const d = roomFeetInchesDraft(r);
+            const type =
+              r.room_type === 'OTHER' ? r.room_type_other : labelOf(ROOM_TYPE, r.room_type);
+            return {
+              key: r.id,
+              cells: [
+                {
+                  text: r.room_name,
+                  sub: [
+                    type,
+                    has(r.room_number) && `No. ${r.room_number}`,
+                    has(d.area) && `${num(d.area, 2)} sq ft`,
                   ]
-                    .filter(has)
-                    .join('\n'),
-                ],
-              };
-            }),
-            9,
-            5,
-          ),
+                    .filter(Boolean)
+                    .join(' · '),
+                },
+                d.length,
+                d.width,
+                d.height,
+                [
+                  r.existing_flooring && `Flooring: ${r.existing_flooring}`,
+                  r.existing_ceiling && `Ceiling: ${r.existing_ceiling}`,
+                  r.notes,
+                ]
+                  .filter(has)
+                  .join('\n'),
+              ],
+            };
+          }),
         },
       },
     ],
@@ -296,6 +318,7 @@ export function buildRecceSections(recce) {
   /* 03 — How to Document the Layout & Photos (fixed guidance page) */
   sections.push({
     title: 'How to Document the Layout & Photos',
+    no: '03',
     blocks: [
       <div key="how">
         <p className="wd-sr-lead">
@@ -357,18 +380,19 @@ export function buildRecceSections(recce) {
   const layouts = [...(recce.floor_layouts || []), ...(recce.existing_site_layouts || [])]
     .map((l) => (typeof l === 'string' ? l : l?.url || l?.file_url))
     .filter(has);
-  const layoutBoxes = layouts.length ? layouts : [null, null];
   const blocks = [
-    <div key="fl">
-      <div className="wd-sr-label">FLOOR LAYOUT</div>
-      {layoutBoxes.slice(0, 2).map((url, i) => (
-        <div key={i} className="wd-sr-paste">
-          <div className="wd-sr-paste__head">Floor layout</div>
-          {url && <PrivateImage src={url} alt={`Floor layout ${i + 1}`} />}
-        </div>
-      ))}
-    </div>,
-    ...layoutBoxes.slice(2).map((url, i) => (
+    layouts.length > 0 && (
+      <div key="fl">
+        <div className="wd-sr-label">FLOOR LAYOUT</div>
+        {layouts.slice(0, 2).map((url, i) => (
+          <div key={i} className="wd-sr-paste">
+            <div className="wd-sr-paste__head">Floor layout</div>
+            {url && <PrivateImage src={url} alt={`Floor layout ${i + 1}`} />}
+          </div>
+        ))}
+      </div>
+    ),
+    ...layouts.slice(2).map((url, i) => (
       <div key={`fl${i}`} className="wd-sr-paste">
         <div className="wd-sr-paste__head">Floor layout</div>
         <PrivateImage src={url} alt={`Floor layout ${i + 3}`} />
@@ -376,8 +400,15 @@ export function buildRecceSections(recce) {
     )),
   ];
   rooms.forEach((room, ri) => {
-    const photos = bySort(room.photos, 'shot_number').filter(
-      (p) => has(p.photo_url) || has(p.layout_image_url) || has(p.marking_image_url) || has(p.standing_position),
+    const photos = bySort(room.photos, 'shot_number').filter((p) =>
+      [
+        p.photo_url,
+        p.layout_image_url,
+        p.marking_image_url,
+        p.standing_position,
+        p.camera_direction,
+        p.notes,
+      ].some(has),
     );
     const d = roomFeetInchesDraft(room);
     const type =
@@ -397,8 +428,7 @@ export function buildRecceSections(recce) {
         </p>
       </div>
     );
-    const rows = photos.length ? photos : [null];
-    rows.forEach((p, i) =>
+    photos.forEach((p, i) =>
       blocks.push({
         newPage: i === 0,
         node: (
@@ -410,7 +440,7 @@ export function buildRecceSections(recce) {
       }),
     );
   });
-  sections.push({ title: 'Layout & Photo Sheets', blocks });
+  sections.push({ title: 'Layout & Photo Sheets', no: '04', blocks });
 
   return sections;
 }

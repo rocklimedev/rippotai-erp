@@ -24,6 +24,11 @@ import { CreateDrawingDto } from './dto/create-drawing.dto';
 import { UpdateDrawingDto } from './dto/update-drawing.dto';
 import { CreateDrawingRevisionDto } from './dto/create-drawing-revision.dto';
 
+const PRE_DESIGN_LAYOUT_TYPES = new Set([
+  'PRE_EXISTING_LAYOUT',
+  'PRE_PROPOSED_LAYOUT',
+]);
+
 @Controller('drawings')
 export class DrawingsController {
   constructor(private readonly drawingsService: DrawingsService) {}
@@ -133,13 +138,16 @@ export class DrawingsController {
     }
 
     if (res.destroyed || res.writableEnded) return;
+    const isPreDesign =
+      drawing.phaseCode === '03_PRE_DESIGN' ||
+      PRE_DESIGN_LAYOUT_TYPES.has(drawing.documentType?.code ?? '');
     res.setHeader(
       'Content-Disposition',
       downloadDisposition(
         downloadName(
           [
             drawing.title || revision.filename,
-            drawing.drawingNumber,
+            isPreDesign ? null : drawing.drawingNumber,
             revision.revision,
           ],
           revision.storageFilename,

@@ -25,10 +25,13 @@ import {
   WLines,
   WSign,
   coverRows,
-  padRows,
   useProjectPeople,
 } from '@/components/print-document';
-import { resolveSite } from '@/components/brief-document/site-options';
+import {
+  resolveSite,
+  projectTypeAnswer,
+  siteConditionAnswer,
+} from '@/components/brief-document/site-options';
 import { ProjectTypeGrid, SiteConditionGrid } from '@/components/brief-document/SiteOptionGrids';
 import { useGetLatestProjectBriefQuery } from '../../api/documents/brief.api';
 import './scope-of-work-document.css';
@@ -172,6 +175,7 @@ export function buildSowSections(sow, brief) {
     title: 'Project details',
     blocks: [
       <WFields
+        omitEmpty
         key="f"
         cols={2}
         style={{ gridTemplateColumns: '81.8mm 1fr' }}
@@ -189,45 +193,56 @@ export function buildSowSections(sow, brief) {
           { label: 'Version', value: has(sow.version) ? String(sow.version) : '' },
         ]}
       />,
-      <div key="pt">
-        <WSub style={{ marginTop: '17mm' }}>Project type &amp; site type</WSub>
-        <ProjectTypeGrid site={site} />
-      </div>,
-      <div key="sc">
-        <WSub>Site condition</WSub>
-        <SiteConditionGrid site={site} itemGap={3.6} />
-      </div>,
+      has(projectTypeAnswer(site)) && (
+        <div key="pt">
+          <WSub style={{ marginTop: '17mm' }}>Project type &amp; site type</WSub>
+          <ProjectTypeGrid site={site} />
+        </div>
+      ),
+      has(siteConditionAnswer(site)) && (
+        <div key="sc">
+          <WSub>Site condition</WSub>
+          <SiteConditionGrid site={site} itemGap={3.6} />
+        </div>
+      ),
     ],
   });
 
   /* 02 — Work Type */
+  const hasWorkType = WORK_TYPES.some(([mode]) => sow.projectMode === mode);
+  const hasServices = SERVICES.some(([type]) => services.has(type)) || has(brief?.servicesOther);
   sections.push({
     title: 'Work Type',
+    no: '02',
     headClass: 'wd-sec--plain',
     blocks: [
-      <div key="wt" className="wd-sow-sage">
-        <WChecks
-          widths="80.8mm 1fr"
-          gap={2.6}
-          style={{ rowGap: '7.2mm', marginBottom: '26mm' }}
-          items={WORK_TYPES.map(([v, label]) => ({ label, checked: sow.projectMode === v }))}
-        />
-        <WSub>Services required</WSub>
-        <WChecks
-          gap={2.6}
-          style={{ rowGap: '5.7mm' }}
-          items={[
-            ...SERVICES.map(([v, label]) => ({ label, checked: services.has(v) })),
-            ...(has(brief?.servicesOther)
-              ? [{ label: 'Other', other: true, value: brief.servicesOther, checked: true }]
-              : []),
-          ]}
-        />
-      </div>,
-      <div key="pc" className="wd-sow-sage">
-        <WSub style={{ marginTop: '5.6mm' }}>Material procurement</WSub>
-        <WAnswer value={procLines} style={{ marginBottom: '8mm' }} />
-      </div>,
+      hasWorkType && (
+        <div key="wt" className="wd-sow-sage">
+          <WChecks
+            style={{ marginBottom: hasServices ? '26mm' : '8mm' }}
+            items={WORK_TYPES.map(([v, label]) => ({ label, checked: sow.projectMode === v }))}
+          />
+        </div>
+      ),
+      hasServices && (
+        <div key="sv" className="wd-sow-sage">
+          <WSub>Services required</WSub>
+          <WChecks
+            items={[
+              ...SERVICES.map(([v, label]) => ({ label, checked: services.has(v) })),
+              ...(has(brief?.servicesOther)
+                ? [{ label: 'Other', other: true, value: brief.servicesOther, checked: true }]
+                : []),
+            ]}
+          />
+        </div>
+      ),
+      procLines.length > 0 && (
+        <div key="pc" className="wd-sow-sage">
+          <WSub style={{ marginTop: '5.6mm' }}>Material procurement</WSub>
+          <WAnswer value={procLines} style={{ marginBottom: '8mm' }} />
+        </div>
+      ),
     ],
   });
 
@@ -261,34 +276,38 @@ export function buildSowSections(sow, brief) {
     unnumbered: true,
     newPage: true,
     blocks: [
-      <div key="ss">
-        <WSub className="wd-sow-sub--grey">Scope summary</WSub>
-        {has(sow.scopeSummary) && (
-          <WValue style={{ margin: '-4mm 0 4mm' }}>{sow.scopeSummary}</WValue>
-        )}
-      </div>,
-      {
+      (has(sow.scopeSummary) || summaryRows.length > 0) && (
+        <div key="ss">
+          <WSub className="wd-sow-sub--grey">Scope summary</WSub>
+          {has(sow.scopeSummary) && (
+            <WValue style={{ margin: '-4mm 0 4mm' }}>{sow.scopeSummary}</WValue>
+          )}
+        </div>
+      ),
+      summaryRows.length > 0 && {
         table: {
           skin: 'word',
           className: 'wd-table--open wd-sow-sum',
           allowSplit: true,
           cols: ['Space', 'Scope of work'],
           template: '45.9mm 1fr',
-          items: padRows(summaryRows, 8, 2),
+          items: summaryRows,
         },
       },
-      <div key="ex" style={{ marginTop: '20mm' }}>
-        <WSub className="wd-sow-sub--grey" style={{ fontSize: '8pt' }}>
-          Specific exclusions agreed
-        </WSub>
-        <WLines
-          value={sow.specificExclusions}
-          count={3}
-          lineHeight={14.6}
-          charsPerLine={100}
-          style={{ marginTop: '-6mm' }}
-        />
-      </div>,
+      has(sow.specificExclusions) && (
+        <div key="ex" style={{ marginTop: '20mm' }}>
+          <WSub className="wd-sow-sub--grey" style={{ fontSize: '8pt' }}>
+            Specific exclusions agreed
+          </WSub>
+          <WLines
+            value={sow.specificExclusions}
+            count={3}
+            lineHeight={14.6}
+            charsPerLine={100}
+            style={{ marginTop: '-6mm' }}
+          />
+        </div>
+      ),
     ],
   });
 
@@ -302,6 +321,7 @@ export function buildSowSections(sow, brief) {
   const catList = [...cats.values()].sort((a, b) => catSort(a.cat, b.cat));
   sections.push({
     title: 'Area-wise scope matrix',
+    no: '03',
     headClass: 'wd-sec--plain',
     blocks: catList.map(({ cat, items: list }, ci) => ({
       table: {
@@ -343,6 +363,7 @@ export function buildSowSections(sow, brief) {
   /* 04 — Acceptance */
   sections.push({
     title: 'Acceptance',
+    no: '04',
     headClass: 'wd-sec--plain',
     blocks: [
       <div key="acc" className="wd-sow-acc">
@@ -483,6 +504,7 @@ export function ScopeOfWorkView() {
           footerLabel="SCOPE OF WORK"
           title={projectName}
           wordCover={{
+            omitEmpty: true,
             title: 'SCOPE OF WORK',
             className: 'wd-cover--stacked',
             logoWidth: 44,

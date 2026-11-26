@@ -1,10 +1,8 @@
 // Client Brief — a filled copy of the user's CLIENT BRIEF TEMPLATE.docx (Word family of the
-// print kit, components/print-document/word.jsx): same cover, the same ten numbered sections
-// on the same pages, every option list printed in full with the captured choices ticked, and
-// blank lines kept where nothing was recorded. Fields INOS captures that the template lacks
-// are added in the template's own style next to their closest template field.
+// print kit, components/print-document/word.jsx). Optional fields print with their answers.
+// Users & lifestyle and Sign-off keep their template formatting.
 import { forwardRef, useMemo } from 'react';
-import { resolveSite } from './site-options';
+import { resolveSite, projectTypeAnswer, siteConditionAnswer } from './site-options';
 import { ProjectTypeGrid, SiteConditionGrid } from './SiteOptionGrids';
 import {
   PrintDocument,
@@ -203,6 +201,7 @@ export function buildBriefSections(brief) {
     title: 'Client & contact',
     blocks: [
       <WFields
+        omitEmpty
         key="f"
         items={[
           { label: 'Client name', value: client.name },
@@ -218,14 +217,18 @@ export function buildBriefSections(brief) {
           { label: 'Date of Brief', value: fmtDate(brief.briefDate) },
         ]}
       />,
-      <div key="pt">
-        <WSub>Project type &amp; site type</WSub>
-        <ProjectTypeGrid site={site} />
-      </div>,
-      <div key="sc">
-        <WSub>Site condition</WSub>
-        <SiteConditionGrid site={site} />
-      </div>,
+      has(projectTypeAnswer(site)) && (
+        <div key="pt">
+          <WSub>Project type &amp; site type</WSub>
+          <ProjectTypeGrid site={site} />
+        </div>
+      ),
+      has(siteConditionAnswer(site)) && (
+        <div key="sc">
+          <WSub>Site condition</WSub>
+          <SiteConditionGrid site={site} />
+        </div>
+      ),
     ],
   });
 
@@ -252,6 +255,7 @@ export function buildBriefSections(brief) {
     title: 'Site & property details',
     blocks: [
       <WFields
+        omitEmpty
         key="f"
         labelSize={6.5}
         items={[
@@ -268,19 +272,21 @@ export function buildBriefSections(brief) {
           { label: 'Lift Available', value: yesNo(brief.liftAvailable) },
         ]}
       />,
-      <div key="dr">
-        <WSub>Drawings and documents available with the client</WSub>
-        <WChecks
-          cols={3}
-          gap={1.6}
-          style={{ rowGap: '0.6mm' }}
-          items={[
-            ...DRAWINGS.map(([v, label]) => ({ label, checked: docTypes.has(v) })),
-            { label: 'Other', other: true, value: drawingsOther, checked: has(drawingsOther) },
-          ]}
-        />
-        {files.length > 0 && <WIntro>Files on record: {files.join(' · ')}</WIntro>}
-      </div>,
+      (DRAWINGS.some(([type]) => docTypes.has(type)) || has(drawingsOther) || files.length > 0) && (
+        <div key="dr">
+          <WSub>Drawings and documents available with the client</WSub>
+          <WChecks
+            cols={3}
+            gap={1.6}
+            style={{ rowGap: '0.6mm' }}
+            items={[
+              ...DRAWINGS.map(([v, label]) => ({ label, checked: docTypes.has(v) })),
+              { label: 'Other', other: true, value: drawingsOther, checked: has(drawingsOther) },
+            ]}
+          />
+          {files.length > 0 && <WIntro>Files on record: {files.join(' · ')}</WIntro>}
+        </div>
+      ),
     ],
   });
 
@@ -306,77 +312,91 @@ export function buildBriefSections(brief) {
   sections.push({
     title: 'Scope of work',
     blocks: [
-      <div key="tw">
-        <WSub size={8}>Type of work</WSub>
-        <WChecks
-          gap={1.6}
-          items={[
-            ...WORK_TYPES.map(([v, label]) => ({ label, checked: works.has(v) })),
-            ...(has(brief.workTypeOther) || works.has('OTHER')
-              ? [{ label: 'Other', other: true, value: brief.workTypeOther, checked: true }]
-              : []),
-          ]}
-        />
-      </div>,
-      <div key="sv" style={{ marginTop: '5mm' }}>
-        <WSub size={8}>Services required</WSub>
-        <WChecks
-          gap={1.6}
-          items={[
-            ...SERVICES.map(([v, label]) => ({ label, checked: services.has(v) })),
-            ...(has(brief.servicesOther) || services.has('OTHER')
-              ? [{ label: 'Other', other: true, value: brief.servicesOther, checked: true }]
-              : []),
-          ]}
-        />
-      </div>,
-      <div key="pc" className="wd-proc">
-        <WSub>Material procurement</WSub>
-        {procGroups.length > 0 && (
-          <div className="wd-proc__columns">
-            {procGroups.map(({ title, items }) => (
-              <div key={title}>
-                <strong>{title}</strong>
-                <ul className="wd-proc__items">
-                  {items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-        {procOther.length > 0 && (
-          <div>
-            <strong>Other</strong>
-            <ul className="wd-proc__items">
-              {procOther.map((item, index) => (
-                <li key={index}>{item}</li>
+      (WORK_TYPES.some(([type]) => works.has(type)) ||
+        has(brief.workTypeOther) ||
+        works.has('OTHER')) && (
+        <div key="tw">
+          <WSub size={8}>Type of work</WSub>
+          <WChecks
+            gap={1.6}
+            items={[
+              ...WORK_TYPES.map(([v, label]) => ({ label, checked: works.has(v) })),
+              ...(has(brief.workTypeOther) || works.has('OTHER')
+                ? [{ label: 'Other', other: true, value: brief.workTypeOther, checked: true }]
+                : []),
+            ]}
+          />
+        </div>
+      ),
+      (SERVICES.some(([type]) => services.has(type)) ||
+        has(brief.servicesOther) ||
+        services.has('OTHER')) && (
+        <div key="sv" style={{ marginTop: '5mm' }}>
+          <WSub size={8}>Services required</WSub>
+          <WChecks
+            gap={1.6}
+            items={[
+              ...SERVICES.map(([v, label]) => ({ label, checked: services.has(v) })),
+              ...(has(brief.servicesOther) || services.has('OTHER')
+                ? [{ label: 'Other', other: true, value: brief.servicesOther, checked: true }]
+                : []),
+            ]}
+          />
+        </div>
+      ),
+      (procGroups.length > 0 || procOther.length > 0 || hasLandscape) && (
+        <div key="pc" className="wd-proc">
+          <WSub>Material procurement</WSub>
+          {procGroups.length > 0 && (
+            <div className="wd-proc__columns">
+              {procGroups.map(({ title, items }) => (
+                <div key={title}>
+                  <strong>{title}</strong>
+                  <ul className="wd-proc__items">
+                    {items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
               ))}
+            </div>
+          )}
+          {procOther.length > 0 && (
+            <div>
+              <strong>Other</strong>
+              <ul className="wd-proc__items">
+                {procOther.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {hasLandscape && (
+            <ul className="wd-proc__items">
+              <li>Landscape (separate scope — see Scope of Work)</li>
             </ul>
-          </div>
-        )}
-        {hasLandscape && (
-          <ul className="wd-proc__items">
-            <li>Landscape (separate scope — see Scope of Work)</li>
-          </ul>
-        )}
-        {!procGroups.length && !procOther.length && !hasLandscape && (
-          <WAnswer style={{ marginBottom: '8mm' }} />
-        )}
-      </div>,
-      <div key="scope-boundaries" style={{ paddingTop: '6mm' }}>
-        <WSub style={{ marginBottom: '3mm' }}>Scope boundaries</WSub>
-        <WLabelTable
-          labelTone="green"
-          minHeight={10}
-          rows={[
-            { label: 'Areas included in scope', value: brief.areasIncludedInScope },
-            { label: 'Areas excluded from scope', value: brief.areasExcludedFromScope },
-            { label: 'Work already done by others', value: brief.workAlreadyDoneByOthers },
-          ]}
-        />
-      </div>,
+          )}
+        </div>
+      ),
+      [
+        brief.areasIncludedInScope,
+        brief.areasExcludedFromScope,
+        brief.workAlreadyDoneByOthers,
+      ].some(has) && (
+        <div key="scope-boundaries" style={{ paddingTop: '6mm' }}>
+          <WSub style={{ marginBottom: '3mm' }}>Scope boundaries</WSub>
+          <WLabelTable
+            omitEmpty
+            labelTone="green"
+            minHeight={10}
+            rows={[
+              { label: 'Areas included in scope', value: brief.areasIncludedInScope },
+              { label: 'Areas excluded from scope', value: brief.areasExcludedFromScope },
+              { label: 'Work already done by others', value: brief.workAlreadyDoneByOthers },
+            ]}
+          />
+        </div>
+      ),
     ],
   });
 
@@ -415,31 +435,29 @@ export function buildBriefSections(brief) {
   sections.push({
     title: 'Space requirements',
     blocks: [
-      <WIntro key="i">
-        Space by space, in the client’s own words. Anything not recorded here is not part of the
-        brief.
-      </WIntro>,
-      {
+      spaces.length > 0 && (
+        <WIntro key="i">
+          Space by space, in the client’s own words. Anything not recorded here is not part of the
+          brief.
+        </WIntro>
+      ),
+      spaces.length > 0 && {
         table: {
           skin: 'word',
           className: 'wd-thead--lg',
           cols: ['Space', 'Requirements'],
           template: '57mm 1fr',
           allowSplit: true,
-          items: padRows(
-            spaces.map((r, i) => ({
-              key: r.id || i,
-              cells: [
-                {
-                  text: r.spaceName,
-                  sub: Number(r.quantity) > 1 ? `Quantity: ${qty(r.quantity)}` : '',
-                },
-                { text: r.requirementDetails, sub: r.notes },
-              ],
-            })),
-            11,
-            2,
-          ),
+          items: spaces.map((r, i) => ({
+            key: r.id || i,
+            cells: [
+              {
+                text: r.spaceName,
+                sub: Number(r.quantity) > 1 ? `Quantity: ${qty(r.quantity)}` : '',
+              },
+              { text: r.requirementDetails, sub: r.notes },
+            ],
+          })),
         },
       },
     ],
@@ -458,53 +476,67 @@ export function buildBriefSections(brief) {
   sections.push({
     title: 'Design direction & preferences(optional)',
     blocks: [
-      <div key="st">
-        <WSub>Style direction</WSub>
-        <WChecks
-          gap={1.6}
-          widths="51.3mm 51.3mm 1fr"
-          items={[
-            ...STYLES.map(([v, label]) => ({ label, checked: styles.has(v) })),
-            { label: 'Other', other: true, value: styleOther, checked: styles.has('OTHER') },
-          ]}
-        />
-      </div>,
-      <div key="pr" style={{ marginTop: '1mm' }}>
-        <WSub style={{ marginBottom: '16.4mm' }}>Preferences</WSub>
-        <WLabelTable
-          minHeight={13.75}
-          rows={[
-            { label: 'Vastu requirements, if any', value: brief.vastuRequirements },
-            { label: 'Colours to avoid', value: brief.coloursToAvoid },
-            { label: 'Colours Preferred', value: brief.coloursPreferred },
-            { label: 'Materials disliked — hard no', value: brief.materialsDislikedHardNo },
-            { label: 'Material likes', value: brief.materialsLiked },
-            { label: 'Must-have elements', value: brief.mustHaveElements },
-            { label: 'Maintenance appetite', value: MAINTENANCE[brief.maintenanceAppetite] },
-            {
-              label: 'References shared by the client',
-              value: refs.length ? (
-                <div>
-                  {refs.map((r, i) => (
-                    <div key={r.id || i} style={{ marginTop: i ? '1.5mm' : 0 }}>
-                      {[r.title, r.description].filter(has).join(' — ')}
-                      {has(r.referenceUrl) && <span className="wd-muted"> {r.referenceUrl}</span>}
-                      {has(r.fileUrl) && (
-                        <img
-                          src={r.fileUrl}
-                          crossOrigin="anonymous"
-                          alt={r.title || 'Reference image'}
-                          className="wd-refimg"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : null,
-            },
-          ]}
-        />
-      </div>,
+      (STYLES.some(([style]) => styles.has(style)) || styles.has('OTHER') || has(styleOther)) && (
+        <div key="st">
+          <WSub>Style direction</WSub>
+          <WChecks
+            gap={1.6}
+            widths="51.3mm 51.3mm 1fr"
+            items={[
+              ...STYLES.map(([v, label]) => ({ label, checked: styles.has(v) })),
+              { label: 'Other', other: true, value: styleOther, checked: styles.has('OTHER') },
+            ]}
+          />
+        </div>
+      ),
+      ([
+        brief.vastuRequirements,
+        brief.coloursToAvoid,
+        brief.coloursPreferred,
+        brief.materialsDislikedHardNo,
+        brief.materialsLiked,
+        brief.mustHaveElements,
+        MAINTENANCE[brief.maintenanceAppetite],
+      ].some(has) ||
+        refs.length > 0) && (
+        <div key="pr" style={{ marginTop: '1mm' }}>
+          <WSub style={{ marginBottom: '16.4mm' }}>Preferences</WSub>
+          <WLabelTable
+            omitEmpty
+            minHeight={13.75}
+            rows={[
+              { label: 'Vastu requirements, if any', value: brief.vastuRequirements },
+              { label: 'Colours to avoid', value: brief.coloursToAvoid },
+              { label: 'Colours Preferred', value: brief.coloursPreferred },
+              { label: 'Materials disliked — hard no', value: brief.materialsDislikedHardNo },
+              { label: 'Material likes', value: brief.materialsLiked },
+              { label: 'Must-have elements', value: brief.mustHaveElements },
+              { label: 'Maintenance appetite', value: MAINTENANCE[brief.maintenanceAppetite] },
+              {
+                label: 'References shared by the client',
+                value: refs.length ? (
+                  <div>
+                    {refs.map((r, i) => (
+                      <div key={r.id || i} style={{ marginTop: i ? '1.5mm' : 0 }}>
+                        {[r.title, r.description].filter(has).join(' — ')}
+                        {has(r.referenceUrl) && <span className="wd-muted"> {r.referenceUrl}</span>}
+                        {has(r.fileUrl) && (
+                          <img
+                            src={r.fileUrl}
+                            crossOrigin="anonymous"
+                            alt={r.title || 'Reference image'}
+                            className="wd-refimg"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : null,
+              },
+            ]}
+          />
+        </div>
+      ),
     ],
   });
 
@@ -514,104 +546,123 @@ export function buildBriefSections(brief) {
   sections.push({
     title: 'Budget',
     blocks: [
-      <div key="b">
-        <WLabelTable
-          top={false}
-          labelWidth="62mm"
-          minHeight={36.5}
-          rows={[
-            {
-              label: (
-                <>
-                  Budget Range
-                  {money && <WValue style={{ marginTop: '1.5mm' }}>{money.exact}</WValue>}
-                </>
-              ),
-              value: BUDGET_RANGES.find(([, lo, hi]) => budget >= lo && budget < hi)?.[0] || '',
-            },
-            {
-              label: 'Funding stage — self-funded or loan',
-              value: brief.fundingStage,
-              minHeight: 19.9,
-            },
-            { label: 'Flexibility discussed', value: brief.budgetFlexibility, minHeight: 19.6 },
-          ]}
-        />
-        <div className="wd-goldrule" style={{ marginTop: '12.9mm' }} />
-        <WIntro style={{ marginTop: '3mm' }}>
-          Recorded as stated by the client at briefing stage. It is not a quotation and does not
-          bind either party until the BOQ is priced and frozen.
-        </WIntro>
-      </div>,
+      (money || has(brief.fundingStage) || has(brief.budgetFlexibility)) && (
+        <div key="b">
+          <WLabelTable
+            omitEmpty
+            top={false}
+            labelWidth="62mm"
+            minHeight={36.5}
+            rows={[
+              {
+                label: (
+                  <>
+                    Budget Range
+                    {money && <WValue style={{ marginTop: '1.5mm' }}>{money.exact}</WValue>}
+                  </>
+                ),
+                value:
+                  BUDGET_RANGES.find(([, lo, hi]) => budget >= lo && budget < hi)?.[0] ??
+                  (money ? money.short : ''),
+              },
+              {
+                label: 'Funding stage — self-funded or loan',
+                value: brief.fundingStage,
+                minHeight: 19.9,
+              },
+              { label: 'Flexibility discussed', value: brief.budgetFlexibility, minHeight: 19.6 },
+            ]}
+          />
+          <div className="wd-goldrule" style={{ marginTop: '12.9mm' }} />
+          <WIntro style={{ marginTop: '3mm' }}>
+            Recorded as stated by the client at briefing stage. It is not a quotation and does not
+            bind either party until the BOQ is priced and frozen.
+          </WIntro>
+        </div>
+      ),
     ],
   });
 
   /* 08 — Timeline */
   const tl = brief.expectedTimeline || '';
   const tlHit = TIMELINES.find(([, re]) => re.test(tl));
+  const hasTimelineFields =
+    [
+      brief.desiredStartDate,
+      brief.siteHandoverDate,
+      brief.targetCompletionDate,
+      tl,
+      brief.deadlineReason,
+    ].some(has) || brief.phasingRequired != null;
   const phases = bySort(brief.phases).filter((p) => has(p.phaseName));
   sections.push({
     title: 'Timeline',
     blocks: [
-      <div key="t" className="wd-twocol">
-        <div>
-          <WFields
-            cols={1}
-            labelSize={6.5}
-            gap={7}
-            style={{ marginBottom: 0 }}
-            items={[
-              { label: 'Desired start date', value: fmtDate(brief.desiredStartDate) },
-              {
-                label: 'Phasing required (Y / N)',
-                value: brief.phasingRequired == null ? '' : brief.phasingRequired ? 'Y' : 'N',
-              },
-              { label: 'Site handover date', value: fmtDate(brief.siteHandoverDate) },
-              { label: 'Target completion', value: fmtDate(brief.targetCompletionDate) },
-            ]}
-          />
+      hasTimelineFields && (
+        <div key="t" className="wd-twocol">
+          <div>
+            <WFields
+              omitEmpty
+              cols={1}
+              labelSize={6.5}
+              gap={7}
+              style={{ marginBottom: 0 }}
+              items={[
+                { label: 'Desired start date', value: fmtDate(brief.desiredStartDate) },
+                {
+                  label: 'Phasing required (Y / N)',
+                  value: brief.phasingRequired == null ? '' : brief.phasingRequired ? 'Y' : 'N',
+                },
+                { label: 'Site handover date', value: fmtDate(brief.siteHandoverDate) },
+                { label: 'Target completion', value: fmtDate(brief.targetCompletionDate) },
+              ]}
+            />
+          </div>
+          <div>
+            {has(tl) && (
+              <>
+                <span className="wd-field__label" style={{ fontSize: '6.5pt' }}>
+                  Expected timeline
+                </span>
+                <WAnswer value={tlHit ? tlHit[0] : tl} style={{ margin: '0 0 5mm' }} />
+              </>
+            )}
+            <WFields
+              omitEmpty
+              cols={1}
+              labelSize={6.5}
+              style={{ marginBottom: 0 }}
+              items={[
+                {
+                  label: 'Reason for the deadline (if any specific event or occasion)',
+                  value: brief.deadlineReason,
+                },
+              ]}
+            />
+          </div>
         </div>
-        <div>
-          <span className="wd-field__label" style={{ fontSize: '6.5pt' }}>
-            Expected timeline
-          </span>
-          <WAnswer value={tlHit ? tlHit[0] : tl} style={{ margin: '0 0 5mm' }} />
-          <WFields
-            cols={1}
-            labelSize={6.5}
-            style={{ marginBottom: 0 }}
-            items={[
-              {
-                label: 'Reason for the deadline (if any specific event or occasion)',
-                value: brief.deadlineReason,
-              },
-            ]}
-          />
-        </div>
-      </div>,
-      <WSub key="ph" style={{ marginTop: '11mm' }}>
-        Phasing, if required
-      </WSub>,
-      {
+      ),
+      phases.length > 0 && (
+        <WSub key="ph" style={{ marginTop: '11mm' }}>
+          Phasing, if required
+        </WSub>
+      ),
+      phases.length > 0 && {
         table: {
           skin: 'word',
           className: 'wd-table--open',
           cols: ['Phase', 'Start date', 'End date', 'Expected time'],
           template: '1fr 1fr 1fr 1fr',
           allowSplit: true,
-          items: padRows(
-            phases.map((p, i) => ({
-              key: p.id || i,
-              cells: [
-                { text: p.phaseName, sub: [p.description, p.notes].filter(has).join(' · ') },
-                fmtDate(p.startDate),
-                fmtDate(p.endDate),
-                p.expectedTime,
-              ],
-            })),
-            5,
-            4,
-          ),
+          items: phases.map((p, i) => ({
+            key: p.id || i,
+            cells: [
+              { text: p.phaseName, sub: [p.description, p.notes].filter(has).join(' · ') },
+              fmtDate(p.startDate),
+              fmtDate(p.endDate),
+              p.expectedTime,
+            ],
+          })),
         },
       },
     ],
@@ -621,23 +672,22 @@ export function buildBriefSections(brief) {
   const rest = Object.fromEntries(
     (brief.siteRestrictions || []).filter((r) => has(r.details)).map((r) => [r.type, r.details]),
   );
+  const restrictionRows = RESTRICTIONS.map(([key, label]) => ({ label, value: rest[key] })).filter(
+    ({ value }) => has(value),
+  );
   sections.push({
     title: 'Approvals, constraints & site risks',
     blocks: [
-      <WIntro key="i">
-        Everything that could stop work at site. Recorded now so it is priced and programmed, not
-        discovered later.
-      </WIntro>,
-      <WLabelTable
-        key="t"
-        top={false}
-        minHeight={12.3}
-        labelTone="ink"
-        rows={RESTRICTIONS.filter(([k]) => k !== 'ongoingWorkByOtherAgencies' || has(rest[k])).map(
-          ([k, label]) => ({ label, value: rest[k] }),
-        )}
-      />,
-      {
+      restrictionRows.length > 0 && (
+        <WIntro key="i">
+          Everything that could stop work at site. Recorded now so it is priced and programmed, not
+          discovered later.
+        </WIntro>
+      ),
+      restrictionRows.length > 0 && (
+        <WLabelTable key="t" top={false} minHeight={12.3} labelTone="ink" rows={restrictionRows} />
+      ),
+      has(brief.householdNotes) && {
         newPage: true,
         node: (
           <div>
@@ -691,7 +741,7 @@ export function buildBriefSections(brief) {
     ],
   });
 
-  return sections;
+  return sections.map((section, index) => ({ ...section, no: String(index + 1).padStart(2, '0') }));
 }
 
 /* ------------------------------------------------------------ document */
@@ -710,6 +760,7 @@ const ClientBriefDocument = forwardRef(function ClientBriefDocument({ brief, cap
       docType="Client Brief"
       title={project.name || 'Project'}
       wordCover={{
+        omitEmpty: true,
         title: 'CLIENT BRIEF',
         className: 'wd-cover--client-brief',
         rows: coverRows({
