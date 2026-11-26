@@ -120,7 +120,6 @@ export default function DailyReportCreatePage() {
                   projects.map((project) => (
                     <SelectItem key={project.id} value={String(project.id)}>
                       {project.name || project.projectName || `Project #${project.id}`}
-                      {project.code ? ` (${project.code})` : ''}
                     </SelectItem>
                   ))
                 )}

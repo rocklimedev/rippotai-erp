@@ -70,6 +70,7 @@ export default function ProjectNew() {
     client_id: searchParams.get('client_id') || '', // prefilled from Client detail → New project
     project_type_id: '',
     site_location: '',
+    google_maps_url: '',
     priority: 'MEDIUM',
     expected_completion_date: '',
     description: '',
@@ -135,6 +136,7 @@ export default function ProjectNew() {
       client_id: project.client_id || project.client?.id || '',
       project_type_id: project.project_type_id || project.project_type?.id || '',
       site_location: project.site_location || '',
+      google_maps_url: project.google_maps_url || '',
       priority: project.priority || 'MEDIUM',
       expected_completion_date: toDateInputValue(project.expected_completion_date),
       description: project.description || '',
@@ -196,9 +198,10 @@ export default function ProjectNew() {
     if (keys.includes('name'))
       next.name = form.name.trim() ? undefined : 'Give the project a name.';
     if (keys.includes('site_location'))
-      next.site_location = form.site_location.trim()
-        ? undefined
-        : 'Where is the site? A locality and city is enough.';
+      next.site_location =
+        form.site_location.trim() || (isEdit && !project?.site_location)
+          ? undefined
+          : 'Where is the site? A locality and city is enough.';
     setErrors(next);
     return next;
   };
@@ -212,7 +215,10 @@ export default function ProjectNew() {
 
     const payload = {
       name: form.name.trim(),
-      site_location: form.site_location.trim(),
+      ...(form.site_location.trim() && { site_location: form.site_location.trim() }),
+      ...(form.google_maps_url.trim() || isEdit
+        ? { google_maps_url: form.google_maps_url.trim() || null }
+        : {}),
       priority: form.priority,
       ...(form.client_id ? { client_id: form.client_id } : {}),
       ...(form.project_type_id ? { project_type_id: form.project_type_id } : {}),
@@ -313,6 +319,17 @@ export default function ProjectNew() {
               placeholder="e.g. Sector 42, Gurugram"
               invalid={Boolean(errors.site_location)}
               data-testid="new-site-location"
+            />
+          </Field>
+
+          <Field label="Google Maps link" optional htmlFor="pj-maps-link">
+            <TextInput
+              id="pj-maps-link"
+              type="url"
+              maxLength={4096}
+              value={form.google_maps_url}
+              onChange={(e) => set('google_maps_url', e.target.value)}
+              placeholder="Paste a Google Maps place or pin link"
             />
           </Field>
 

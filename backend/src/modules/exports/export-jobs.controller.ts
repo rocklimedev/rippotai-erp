@@ -12,6 +12,7 @@ import type { Response } from 'express';
 import { RequirePermission } from '../../common/decorator/require-permission.decorator';
 import { CdnService } from '../cdn/cdn.service';
 import { ExportJobsService } from './export-jobs.service';
+import { downloadDisposition, downloadName } from '@/common/download-name';
 
 @Controller('export-jobs')
 export class ExportJobsController {
@@ -41,8 +42,8 @@ export class ExportJobsController {
       throw new ConflictException('Export result is not yet available');
     res.setHeader('Cache-Control', 'private, no-store');
     if (result.type === 'json') return res.json(result.value);
-    const filename = result.filename.replace(/[^\w. -]/g, '_');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    const filename = downloadName([result.filename], result.filename, 'Export');
+    res.setHeader('Content-Disposition', downloadDisposition(filename));
     res.setHeader('Content-Type', result.mime);
     await this.storage.streamFile(result.key, res);
   }

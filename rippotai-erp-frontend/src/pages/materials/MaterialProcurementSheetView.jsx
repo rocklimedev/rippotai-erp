@@ -3,7 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Modal } from '@/components/projects/_projects-ui';
 import { customValuesOf, itemSheet, sheetsOf } from '@/components/procurement-sheet/sheets';
 import ProcurementColumns from '@/components/procurement-sheet/ProcurementColumns';
-import { customColumnIndex, procurementColumnOrder, RECORD_COLUMNS } from '@/components/procurement-sheet/columns';
+import {
+  customColumnIndex,
+  procurementColumnOrder,
+  RECORD_COLUMNS,
+} from '@/components/procurement-sheet/columns';
 import '@/components/procurement-sheet/procurement-sheet.css';
 import RecordContext from '@/components/record-context/RecordContext';
 import VersionHistory from '@/components/record-context/VersionHistory';
@@ -150,7 +154,10 @@ export default function MaterialProcurementSheetView() {
     return (
       <div className="space-y-6">
         <PageHeader
-        eyebrow="Procurement" title="Material Procurement" description="Loading procurement sheet..." />
+          eyebrow="Procurement"
+          title="Material Procurement"
+          description="Loading procurement sheet..."
+        />
         <Card>
           <CardContent className="py-16 text-center text-sm text-muted-foreground">
             Loading procurement sheet...
@@ -164,7 +171,7 @@ export default function MaterialProcurementSheetView() {
     return (
       <div className="space-y-6">
         <PageHeader
-        eyebrow="Procurement"
+          eyebrow="Procurement"
           title="Material Procurement"
           description="The requested procurement sheet could not be found."
         />
@@ -299,8 +306,7 @@ export default function MaterialProcurementSheetView() {
     ? projectsData
     : projectsData?.data || projectsData?.items || [];
   const project = procurement.project || projectList.find((p) => p.id === procurement.projectId);
-  const projectName =
-    project?.name || project?.projectName || project?.title || project?.code || '—';
+  const projectName = project?.name || project?.projectName || project?.title || '—';
 
   const allResolved = allItems.map(resolveItem);
   const sheetArea = resolvedItems.reduce((total, item) => total + numberValue(item.totalArea), 0);
@@ -365,18 +371,30 @@ export default function MaterialProcurementSheetView() {
           rows: allItems.filter((item) => sheetOf(item) === sheetDef.name).map(resolveItem),
         }))
         .filter((group) => group.rows.length || group.customFields.length);
-      if (!groups.length) groups.push({ name: 'Material Procurement', rows: [], customFields: [], columnOrder: RECORD_COLUMNS });
+      if (!groups.length)
+        groups.push({
+          name: 'Material Procurement',
+          rows: [],
+          customFields: [],
+          columnOrder: RECORD_COLUMNS,
+        });
       const usedNames = new Set();
       groups.forEach((group) => {
-        const fromStandard = (values, customValue) => group.columnOrder.map((column) => (
-          column.startsWith('custom-') ? customValue(customColumnIndex(column)) : values[RECORD_COLUMNS.indexOf(column)]
-        ));
+        const fromStandard = (values, customValue) =>
+          group.columnOrder.map((column) =>
+            column.startsWith('custom-')
+              ? customValue(customColumnIndex(column))
+              : values[RECORD_COLUMNS.indexOf(column)],
+          );
         const columnNumber = (column) => group.columnOrder.indexOf(column) + 1;
         const groupHeaders = fromStandard(headers, (index) => group.customFields[index]);
         const last = groupHeaders.length;
-        const formats = Object.fromEntries(Object.entries(standardFormats).map(([index, format]) => (
-          [columnNumber(RECORD_COLUMNS[Number(index) - 1]), format]
-        )));
+        const formats = Object.fromEntries(
+          Object.entries(standardFormats).map(([index, format]) => [
+            columnNumber(RECORD_COLUMNS[Number(index) - 1]),
+            format,
+          ]),
+        );
         let tab =
           group.name
             .replace(/[\\/?*[\]:]/g, ' ')
@@ -385,7 +403,10 @@ export default function MaterialProcurementSheetView() {
         while (usedNames.has(tab.toLowerCase())) tab = `${tab.slice(0, 28)} ${usedNames.size}`;
         usedNames.add(tab.toLowerCase());
         const sheet = workbook.addWorksheet(tab);
-        setWidths(sheet, fromStandard([8, 14, 14, 18, 14, 24, 12, 13, 13, 15, 15, 12, 14, 16], () => 22));
+        setWidths(
+          sheet,
+          fromStandard([8, 14, 14, 18, 14, 24, 12, 13, 13, 15, 15, 12, 14, 16], () => 22),
+        );
         writeBrandHeader(sheet, {
           title: `Material Procurement List – ${group.name}`,
           // projectName falls back to the raw project id when the project is not loaded — never print an id.
@@ -401,31 +422,46 @@ export default function MaterialProcurementSheetView() {
         styleHeaderRow(sheet.getRow(HEADER), 1, last, { right: Object.keys(formats).map(Number) });
         group.rows.forEach((item, index) => {
           const row = sheet.getRow(HEADER + 1 + index);
-          row.values = fromStandard([
-            index + 1,
-            item.area,
-            item.location,
-            item.material,
-            item.brand,
-            item.name,
-            item.code,
-            numberValue(item.wallArea),
-            numberValue(item.floorArea),
-            numberValue(item.ceilingArea),
-            numberValue(item.totalArea),
-            numberValue(item.quantity),
-            numberValue(item.price),
-            numberValue(item.amount),
-          ], (fieldIndex) => item.customValues[fieldIndex] ?? '');
+          row.values = fromStandard(
+            [
+              index + 1,
+              item.area,
+              item.location,
+              item.material,
+              item.brand,
+              item.name,
+              item.code,
+              numberValue(item.wallArea),
+              numberValue(item.floorArea),
+              numberValue(item.ceilingArea),
+              numberValue(item.totalArea),
+              numberValue(item.quantity),
+              numberValue(item.price),
+              numberValue(item.amount),
+            ],
+            (fieldIndex) => item.customValues[fieldIndex] ?? '',
+          );
           styleBodyRow(row, 1, last, formats);
-          row.getCell(columnNumber('serialNo')).alignment = { vertical: 'top', horizontal: 'center' };
+          row.getCell(columnNumber('serialNo')).alignment = {
+            vertical: 'top',
+            horizontal: 'center',
+          };
         });
         const lastItem = HEADER + group.rows.length;
         const totals = sheet.getRow(lastItem + 1);
         totals.getCell(columnNumber('ceilingArea')).value = 'Totals';
-        totals.getCell(columnNumber('totalArea')).value = group.rows.reduce((t, i) => t + numberValue(i.totalArea), 0);
-        totals.getCell(columnNumber('quantity')).value = group.rows.reduce((t, i) => t + numberValue(i.quantity), 0);
-        totals.getCell(columnNumber('amount')).value = group.rows.reduce((t, i) => t + numberValue(i.amount), 0);
+        totals.getCell(columnNumber('totalArea')).value = group.rows.reduce(
+          (t, i) => t + numberValue(i.totalArea),
+          0,
+        );
+        totals.getCell(columnNumber('quantity')).value = group.rows.reduce(
+          (t, i) => t + numberValue(i.quantity),
+          0,
+        );
+        totals.getCell(columnNumber('amount')).value = group.rows.reduce(
+          (t, i) => t + numberValue(i.amount),
+          0,
+        );
         styleTotalsRow(totals, 1, last, formats);
         finishSheet(sheet, {
           headerRow: HEADER,
@@ -476,7 +512,10 @@ export default function MaterialProcurementSheetView() {
           </Button>
 
           <Button variant="outline" asChild>
-            <Link to={`/procurement/material-procurement/${procurement.id}/edit`} data-testid="procurement-edit">
+            <Link
+              to={`/procurement/material-procurement/${procurement.id}/edit`}
+              data-testid="procurement-edit"
+            >
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Link>
@@ -669,61 +708,36 @@ export default function MaterialProcurementSheetView() {
               <thead>
                 {/* Title row (like Excel merged title) */}
                 <tr className="mps-table__title">
-                  <th
-                    colSpan={14 + customFields.length}
-                    className="mps-c"
-                  >
+                  <th colSpan={14 + customFields.length} className="mps-c">
                     Material procurement list – {activeName}
                   </th>
                 </tr>
 
                 {/* Column headers – classic Excel look */}
                 <tr className="mps-table__head">
-                  <ProcurementColumns order={columnOrder} standard={RECORD_COLUMNS} renderCustom={(fieldIndex) => (
-                    <th scope="col" className="mps-c">{customFields[fieldIndex]}</th>
-                  )}>
-                  <th className="mps-c">
-                    S. No.
-                  </th>
-                  <th className="mps-c">
-                    Area
-                  </th>
-                  <th className="mps-c">
-                    Location
-                  </th>
-                  <th className="mps-c">
-                    Material
-                  </th>
-                  <th className="mps-c">
-                    Brand
-                  </th>
-                  <th className="mps-c">
-                    Name
-                  </th>
-                  <th className="mps-c">
-                    Code
-                  </th>
-                  <th className="mps-c is-num">
-                    Wall(Sq.ft)
-                  </th>
-                  <th className="mps-c is-num">
-                    Floor(Sq.ft)
-                  </th>
-                  <th className="mps-c is-num">
-                    Ceiling(Sq.ft)
-                  </th>
-                  <th className="mps-c is-num">
-                    Total Area(Sq.ft)
-                  </th>
-                  <th className="mps-c is-num">
-                    Quantity
-                  </th>
-                  <th className="mps-c is-num">
-                    Price
-                  </th>
-                  <th className="mps-c is-num">
-                    Amount
-                  </th>
+                  <ProcurementColumns
+                    order={columnOrder}
+                    standard={RECORD_COLUMNS}
+                    renderCustom={(fieldIndex) => (
+                      <th scope="col" className="mps-c">
+                        {customFields[fieldIndex]}
+                      </th>
+                    )}
+                  >
+                    <th className="mps-c">S. No.</th>
+                    <th className="mps-c">Area</th>
+                    <th className="mps-c">Location</th>
+                    <th className="mps-c">Material</th>
+                    <th className="mps-c">Brand</th>
+                    <th className="mps-c">Name</th>
+                    <th className="mps-c">Code</th>
+                    <th className="mps-c is-num">Wall(Sq.ft)</th>
+                    <th className="mps-c is-num">Floor(Sq.ft)</th>
+                    <th className="mps-c is-num">Ceiling(Sq.ft)</th>
+                    <th className="mps-c is-num">Total Area(Sq.ft)</th>
+                    <th className="mps-c is-num">Quantity</th>
+                    <th className="mps-c is-num">Price</th>
+                    <th className="mps-c is-num">Amount</th>
                   </ProcurementColumns>
                 </tr>
               </thead>
@@ -731,10 +745,7 @@ export default function MaterialProcurementSheetView() {
               <tbody>
                 {resolvedItems.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={14 + customFields.length}
-                      className="mps-c mps-empty"
-                    >
+                    <td colSpan={14 + customFields.length} className="mps-c mps-empty">
                       No materials in {activeName} yet.
                     </td>
                   </tr>
@@ -742,49 +753,29 @@ export default function MaterialProcurementSheetView() {
                   resolvedItems.map((item, index) => (
                     <tr
                       key={items[index]?.id || `${procurement.id}-${index}`}
-                      className={
-                        index % 2 === 0
-                          ? 'mps-row'
-                          : 'mps-row is-alt'
-                      }
+                      className={index % 2 === 0 ? 'mps-row' : 'mps-row is-alt'}
                     >
-                      <ProcurementColumns order={columnOrder} standard={RECORD_COLUMNS} renderCustom={(fieldIndex) => (
-                        <td className="mps-c">{item.customValues[fieldIndex] || '—'}</td>
-                      )}>
-                      <td className="mps-c mps-sno">
-                        {index + 1}
-                      </td>
-                      <td className="mps-c">{item.area}</td>
-                      <td className="mps-c">{item.location}</td>
-                      <td className="mps-c is-strong">
-                        {item.material}
-                      </td>
-                      <td className="mps-c">{item.brand}</td>
-                      <td className="mps-c">{item.name}</td>
-                      <td className="mps-c mps-code">
-                        {item.code}
-                      </td>
-                      <td className="mps-c is-num">
-                        {formatNumber(item.wallArea)}
-                      </td>
-                      <td className="mps-c is-num">
-                        {formatNumber(item.floorArea)}
-                      </td>
-                      <td className="mps-c is-num">
-                        {formatNumber(item.ceilingArea)}
-                      </td>
-                      <td className="mps-c is-num is-strong">
-                        {formatNumber(item.totalArea)}
-                      </td>
-                      <td className="mps-c is-num">
-                        {formatNumber(item.quantity, 3)}
-                      </td>
-                      <td className="mps-c is-num">
-                        {formatNumber(item.price, 2)}
-                      </td>
-                      <td className="mps-c is-num is-strong">
-                        {formatNumber(item.amount, 2)}
-                      </td>
+                      <ProcurementColumns
+                        order={columnOrder}
+                        standard={RECORD_COLUMNS}
+                        renderCustom={(fieldIndex) => (
+                          <td className="mps-c">{item.customValues[fieldIndex] || '—'}</td>
+                        )}
+                      >
+                        <td className="mps-c mps-sno">{index + 1}</td>
+                        <td className="mps-c">{item.area}</td>
+                        <td className="mps-c">{item.location}</td>
+                        <td className="mps-c is-strong">{item.material}</td>
+                        <td className="mps-c">{item.brand}</td>
+                        <td className="mps-c">{item.name}</td>
+                        <td className="mps-c mps-code">{item.code}</td>
+                        <td className="mps-c is-num">{formatNumber(item.wallArea)}</td>
+                        <td className="mps-c is-num">{formatNumber(item.floorArea)}</td>
+                        <td className="mps-c is-num">{formatNumber(item.ceilingArea)}</td>
+                        <td className="mps-c is-num is-strong">{formatNumber(item.totalArea)}</td>
+                        <td className="mps-c is-num">{formatNumber(item.quantity, 3)}</td>
+                        <td className="mps-c is-num">{formatNumber(item.price, 2)}</td>
+                        <td className="mps-c is-num is-strong">{formatNumber(item.amount, 2)}</td>
                       </ProcurementColumns>
                     </tr>
                   ))
@@ -794,18 +785,19 @@ export default function MaterialProcurementSheetView() {
               {/* Totals row – Excel style */}
               <tfoot>
                 <tr className="mps-table__total">
-                  <td
-                    colSpan={totalsStart}
-                    className="mps-c is-num"
-                  >
+                  <td colSpan={totalsStart} className="mps-c is-num">
                     Totals · {activeName}
                   </td>
                   {columnOrder.slice(totalsStart).map((column) => (
-                    <td key={column} className="mps-c is-num">{{
-                      totalArea: formatNumber(sheetArea),
-                      quantity: formatNumber(sheetQuantity, 3),
-                      amount: formatCurrency(sheetAmount),
-                    }[column]}</td>
+                    <td key={column} className="mps-c is-num">
+                      {
+                        {
+                          totalArea: formatNumber(sheetArea),
+                          quantity: formatNumber(sheetQuantity, 3),
+                          amount: formatCurrency(sheetAmount),
+                        }[column]
+                      }
+                    </td>
                   ))}
                 </tr>
               </tfoot>

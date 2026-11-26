@@ -1,6 +1,7 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // src/zoho/cliq/zoho-cliq.controller.ts
 
+import { downloadDisposition, downloadName } from '@/common/download-name';
 import {
   Body,
   Controller,
@@ -426,14 +427,11 @@ export class ZohoCliqController {
       ? data
       : Buffer.from(data as ArrayBuffer);
 
-    const safeName =
-      filename && filename.trim()
-        ? filename.trim().replace(/[^\w.\-()+ ]+/g, '_')
-        : 'download';
+    const safeName = downloadName([filename], filename, 'Attachment');
 
     res.setHeader('Content-Type', 'application/octet-stream');
 
-    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+    res.setHeader('Content-Disposition', downloadDisposition(safeName));
 
     res.setHeader('Content-Length', String(buffer.length));
 

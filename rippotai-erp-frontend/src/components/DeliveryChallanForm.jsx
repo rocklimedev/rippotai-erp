@@ -532,7 +532,6 @@ export default function DeliveryChallanForm({
         label:
           getDisplayString(project.name) ||
           getDisplayString(project.project_name) ||
-          getDisplayString(project.code) ||
           getId(project),
       })),
     [projects],

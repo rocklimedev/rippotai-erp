@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { downloadName } from '@/lib/download-name';
 // Adjust this path to match your project layout (same as original cliq.api import)
-import { useDownloadCliqFileMutation } from "../../../api/connectors/cliq.api";
-import { T } from "../theme";
-import { formatBytes, getMediaType } from "../helpers";
-import { PdfIcon, FileIcon, DownloadIcon } from "../icons";
-import { MediaModal } from "./MediaModal";
+import { useDownloadCliqFileMutation } from '../../../api/connectors/cliq.api';
+import { T } from '../theme';
+import { formatBytes, getMediaType } from '../helpers';
+import { PdfIcon, FileIcon, DownloadIcon } from '../icons';
+import { MediaModal } from './MediaModal';
 
 /**
  * Renders an attachment:
@@ -15,7 +16,7 @@ import { MediaModal } from "./MediaModal";
  */
 export function AttachmentPreview({
   fileId,
-  filename = "File",
+  filename = 'File',
   mimeType,
   size,
   comment,
@@ -26,13 +27,13 @@ export function AttachmentPreview({
   const [thumbUrl, setThumbUrl] = useState(null);
   const [modalUrl, setModalUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const objectUrlsRef = useRef([]);
 
   const mediaType = getMediaType(mimeType, filename);
-  const isImage = mediaType === "image";
-  const isVideo = mediaType === "video";
-  const isPdf = mediaType === "pdf";
+  const isImage = mediaType === 'image';
+  const isVideo = mediaType === 'video';
+  const isPdf = mediaType === 'pdf';
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -51,7 +52,7 @@ export function AttachmentPreview({
   const fetchObjectUrl = useCallback(async () => {
     if (!fileId) return null;
     setLoading(true);
-    setError("");
+    setError('');
     try {
       const result = await downloadFile({ fileId, filename }).unwrap();
       const rawUrl = result.objectUrl;
@@ -63,12 +64,9 @@ export function AttachmentPreview({
       // the file under its blob UUID instead of the real name. Re-wrap it.
       const rawBlob = await (await fetch(rawUrl)).blob();
       const properType =
-        mimeType ||
-        (isPdf ? "application/pdf" : isVideo ? "video/mp4" : rawBlob.type);
+        mimeType || (isPdf ? 'application/pdf' : isVideo ? 'video/mp4' : rawBlob.type);
       const typedBlob =
-        rawBlob.type === properType
-          ? rawBlob
-          : new Blob([rawBlob], { type: properType });
+        rawBlob.type === properType ? rawBlob : new Blob([rawBlob], { type: properType });
 
       const url = URL.createObjectURL(typedBlob);
       objectUrlsRef.current.push(url);
@@ -80,9 +78,8 @@ export function AttachmentPreview({
 
       return url;
     } catch (err) {
-      const msg =
-        err?.data?.message || err?.error || err?.message || "Failed to load";
-      setError(typeof msg === "string" ? msg : "Failed to load file");
+      const msg = err?.data?.message || err?.error || err?.message || 'Failed to load';
+      setError(typeof msg === 'string' ? msg : 'Failed to load file');
       return null;
     } finally {
       setLoading(false);
@@ -127,18 +124,18 @@ export function AttachmentPreview({
       url = await fetchObjectUrl();
     }
     if (!url) return;
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = filename || "download";
+    a.download = downloadName([filename], filename, 'Attachment');
     document.body.appendChild(a);
     a.click();
     a.remove();
   };
 
-  const accentBg = isOwn ? "rgba(255,255,255,0.15)" : T.accentSoft;
-  const accentColor = isOwn ? "#fff" : T.accent;
-  const textColor = isOwn ? "#fff" : T.ink;
-  const mutedColor = isOwn ? "rgba(255,255,255,0.75)" : T.muted;
+  const accentBg = isOwn ? 'rgba(255,255,255,0.15)' : T.accentSoft;
+  const accentColor = isOwn ? '#fff' : T.accent;
+  const textColor = isOwn ? '#fff' : T.ink;
+  const mutedColor = isOwn ? 'rgba(255,255,255,0.75)' : T.muted;
 
   // ---- Image inline preview (Cliq-style) ----
   if (isImage) {
@@ -149,15 +146,15 @@ export function AttachmentPreview({
           onClick={openModal}
           aria-label={`View image ${filename}`}
           style={{
-            display: "block",
+            display: 'block',
             padding: 0,
-            border: "none",
-            background: "transparent",
-            cursor: "pointer",
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
             borderRadius: 10,
-            overflow: "hidden",
+            overflow: 'hidden',
             maxWidth: compact ? 220 : 260,
-            textAlign: "left",
+            textAlign: 'left',
           }}
         >
           {thumbUrl ? (
@@ -165,10 +162,10 @@ export function AttachmentPreview({
               src={thumbUrl}
               alt={filename}
               style={{
-                display: "block",
-                width: "100%",
+                display: 'block',
+                width: '100%',
                 maxHeight: 200,
-                objectFit: "cover",
+                objectFit: 'cover',
                 borderRadius: 10,
               }}
             />
@@ -180,13 +177,13 @@ export function AttachmentPreview({
                 borderRadius: 10,
                 background: accentBg,
                 color: accentColor,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 fontSize: 12,
               }}
             >
-              {loading ? "Loading…" : error || "Image"}
+              {loading ? 'Loading…' : error || 'Image'}
             </div>
           )}
           {!compact && (
@@ -195,9 +192,9 @@ export function AttachmentPreview({
                 marginTop: 4,
                 fontSize: 11,
                 color: mutedColor,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
               {filename}
@@ -233,11 +230,11 @@ export function AttachmentPreview({
             controls
             preload="metadata"
             style={{
-              display: "block",
-              width: "100%",
+              display: 'block',
+              width: '100%',
               maxHeight: 220,
               borderRadius: 10,
-              background: "#000",
+              background: '#000',
             }}
           >
             Sorry, your browser doesn't support embedded videos.
@@ -250,13 +247,13 @@ export function AttachmentPreview({
               borderRadius: 10,
               background: accentBg,
               color: accentColor,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               fontSize: 12,
             }}
           >
-            {loading ? "Loading…" : error || "Video"}
+            {loading ? 'Loading…' : error || 'Video'}
           </div>
         )}
 
@@ -264,9 +261,9 @@ export function AttachmentPreview({
           <div
             style={{
               marginTop: 4,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               gap: 8,
             }}
           >
@@ -274,9 +271,9 @@ export function AttachmentPreview({
               style={{
                 fontSize: 11,
                 color: mutedColor,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
                 flex: 1,
                 minWidth: 0,
               }}
@@ -290,19 +287,19 @@ export function AttachmentPreview({
               aria-label="Download video"
               onClick={handleDownload}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+                if (e.key === 'Enter' || e.key === ' ') {
                   handleDownload();
                 }
               }}
               style={{
-                display: "flex",
+                display: 'flex',
                 height: 22,
                 width: 22,
-                alignItems: "center",
-                justifyContent: "center",
+                alignItems: 'center',
+                justifyContent: 'center',
                 borderRadius: 6,
                 color: mutedColor,
-                cursor: "pointer",
+                cursor: 'pointer',
                 flexShrink: 0,
               }}
             >
@@ -323,20 +320,18 @@ export function AttachmentPreview({
         type="button"
         onClick={isPdf ? openModal : undefined}
         style={{
-          display: "flex",
-          alignItems: "center",
+          display: 'flex',
+          alignItems: 'center',
           gap: 10,
-          width: "100%",
+          width: '100%',
           maxWidth: 280,
-          padding: "8px 10px",
+          padding: '8px 10px',
           borderRadius: 10,
-          border: isOwn
-            ? "1px solid rgba(255,255,255,0.25)"
-            : `1px solid ${T.border}`,
-          background: isOwn ? "rgba(255,255,255,0.08)" : T.surface,
+          border: isOwn ? '1px solid rgba(255,255,255,0.25)' : `1px solid ${T.border}`,
+          background: isOwn ? 'rgba(255,255,255,0.08)' : T.surface,
           color: textColor,
-          cursor: isPdf ? "pointer" : "default",
-          textAlign: "left",
+          cursor: isPdf ? 'pointer' : 'default',
+          textAlign: 'left',
         }}
       >
         <div
@@ -346,9 +341,9 @@ export function AttachmentPreview({
             borderRadius: 8,
             background: accentBg,
             color: accentColor,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             flexShrink: 0,
           }}
         >
@@ -360,18 +355,16 @@ export function AttachmentPreview({
             style={{
               fontSize: 12.5,
               fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
             {filename}
           </div>
           <div style={{ fontSize: 10.5, color: mutedColor, marginTop: 2 }}>
-            {[isPdf ? "PDF" : mimeType, formatBytes(size)]
-              .filter(Boolean)
-              .join(" · ")}
-            {isPdf && " · Click to view"}
+            {[isPdf ? 'PDF' : mimeType, formatBytes(size)].filter(Boolean).join(' · ')}
+            {isPdf && ' · Click to view'}
           </div>
           {comment ? (
             <div
@@ -379,9 +372,9 @@ export function AttachmentPreview({
                 fontSize: 11,
                 color: mutedColor,
                 marginTop: 2,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
               {comment}
@@ -399,20 +392,20 @@ export function AttachmentPreview({
               handleDownload();
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+              if (e.key === 'Enter' || e.key === ' ') {
                 e.stopPropagation();
                 handleDownload();
               }
             }}
             style={{
-              display: "flex",
+              display: 'flex',
               height: 28,
               width: 28,
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: 'center',
+              justifyContent: 'center',
               borderRadius: 7,
               color: mutedColor,
-              cursor: "pointer",
+              cursor: 'pointer',
               flexShrink: 0,
             }}
           >

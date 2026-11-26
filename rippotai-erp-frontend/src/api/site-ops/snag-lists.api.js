@@ -1,31 +1,32 @@
-import { baseApi } from "@/store/baseApi";
+import { baseApi } from '@/store/baseApi';
+import { responseDownloadName } from '@/lib/download-name';
 export const snagListsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     deleteSnagDocument: builder.mutation({
-      query: (id) => ({ url: `/site-ops/snag-lists/${id}`, method: "DELETE" }),
-      invalidatesTags: ["SnagLists"],
+      query: (id) => ({ url: `/site-ops/snag-lists/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['SnagLists'],
     }),
     listSnagDocuments: builder.query({
-      query: (params) => ({ url: "/site-ops/snag-lists", params }),
-      providesTags: ["SnagLists"],
+      query: (params) => ({ url: '/site-ops/snag-lists', params }),
+      providesTags: ['SnagLists'],
     }),
     getSnagDocument: builder.query({
       query: (id) => `/site-ops/snag-lists/${id}`,
-      providesTags: ["SnagLists"],
+      providesTags: ['SnagLists'],
     }),
     saveSnagDocument: builder.mutation({
       query: ({ id, ...body }) => ({
-        url: `/site-ops/snag-lists${id ? `/${id}` : ""}`,
-        method: id ? "PATCH" : "POST",
+        url: `/site-ops/snag-lists${id ? `/${id}` : ''}`,
+        method: id ? 'PATCH' : 'POST',
         body,
       }),
-      invalidatesTags: ["SnagLists"],
+      invalidatesTags: ['SnagLists'],
     }),
     uploadSnagPhoto: builder.mutation({
       query: (file) => {
         const body = new FormData();
-        body.append("file", file);
-        return { url: "/site-ops/snag-lists/photos", method: "POST", body };
+        body.append('file', file);
+        return { url: '/site-ops/snag-lists/photos', method: 'POST', body };
       },
     }),
     downloadSnagDocument: builder.mutation({
@@ -34,12 +35,13 @@ export const snagListsApi = baseApi.injectEndpoints({
         responseHandler: async (response) => {
           if (!response.ok) return response.json();
           const url = URL.createObjectURL(await response.blob());
-          const link = document.createElement("a");
+          const link = document.createElement('a');
           link.href = url;
-          link.download =
-            response.headers
-              .get("Content-Disposition")
-              ?.match(/filename="([^"]+)"/)?.[1] || "snag-list.xlsx";
+          link.download = responseDownloadName(
+            response.headers.get('Content-Disposition'),
+            'Snag List.xlsx',
+            'Snag List',
+          );
           document.body.appendChild(link);
           link.click();
           link.remove();

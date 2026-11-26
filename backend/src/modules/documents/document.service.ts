@@ -19,6 +19,7 @@ import { CreateDocumentAttachmentDto } from './dto/create-document-attachment.dt
 
 import { CdnService } from '../cdn/cdn.service';
 import { GateEngineService } from '../gates/gate-engine.service';
+import { Project } from '../projects/models/projects.model';
 
 const PRE_DESIGN_UPLOAD_TYPES = new Set([
   'PRE_PITCH_PROPOSAL',
@@ -111,7 +112,10 @@ export class DocumentsService {
 
   async findOne(id: string): Promise<Document> {
     const document = await this.documentModel.findByPk(id, {
-      include: DOCUMENT_INCLUDES,
+      include: [
+        ...DOCUMENT_INCLUDES,
+        { model: Project, as: 'project', attributes: ['id', 'name'] },
+      ],
     });
 
     if (!document) {

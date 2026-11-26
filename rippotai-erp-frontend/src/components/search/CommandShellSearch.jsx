@@ -122,7 +122,12 @@ export default function CommandShellSearch({ currentApp }) {
         entityId: hit.id,
         entity_type: hit.entity_type,
         label: hit.title || hit.meta?.name || 'Untitled',
-        subtitle: hit.subtitle || ENTITY_LABEL[hit.entity_type] || hit.entity_type,
+        subtitle:
+          (hit.entity_type === 'project'
+            ? hit.subtitle?.replace(/^PRJ-\d+(?: · |$)/i, '')
+            : hit.subtitle) ||
+          ENTITY_LABEL[hit.entity_type] ||
+          hit.entity_type,
         type: ENTITY_LABEL[hit.entity_type] || hit.entity_type,
         score: hit.score,
         meta: hit.meta,

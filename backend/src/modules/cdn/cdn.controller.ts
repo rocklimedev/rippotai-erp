@@ -1,4 +1,5 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { downloadDisposition, downloadName } from '@/common/download-name';
 import {
   Controller,
   Get,
@@ -36,7 +37,10 @@ export class CdnController {
     res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
     verifyFileAccess(key, expires, signature);
     try {
-      res.setHeader('Content-Disposition', `inline; filename="${key}"`);
+      res.setHeader(
+        'Content-Disposition',
+        downloadDisposition(downloadName([key], key, 'File'), 'inline'),
+      );
       res.type(key);
       await this.cdnService.streamFile(key, res);
     } catch (error) {

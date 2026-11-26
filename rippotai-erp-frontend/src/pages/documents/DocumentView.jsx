@@ -1,5 +1,6 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { backLabel } from '@/components/projects/upload-docs/uploadDocs';
+import DownloadFileButton from '@/components/projects/upload-docs/DownloadFileButton';
 import { useGetDocumentQuery } from '@/api/documents/document.api';
 import { Page, PageHeader, Card, EmptyState } from '@/components/inos';
 import DrawingPreview from '../design-studio/DrawingPreview';
@@ -23,7 +24,11 @@ export default function DocumentView() {
   return (
     <Page>
       <PageHeader
-        crumbs={back ? [{ label: backLabel(back), to: back }, { label: document?.title || title }] : undefined}
+        crumbs={
+          back
+            ? [{ label: backLabel(back), to: back }, { label: document?.title || title }]
+            : undefined
+        }
         title={title}
         info={recordInfo}
         actions={
@@ -38,6 +43,7 @@ export default function DocumentView() {
                 Open in new tab
               </OpenFileLink>
             )}
+            {hasFile && <DownloadFileButton kind="document" record={document} />}
             {document?.id && <RecordEditDelete kind="document" record={document} backTo={back} />}
           </>
         }
@@ -48,9 +54,9 @@ export default function DocumentView() {
           id={id}
           listTo={
             back ||
-            document.projectId
+            (document.projectId
               ? `/projects/${encodeURIComponent(document.projectId)}?tab=documents`
-              : undefined
+              : undefined)
           }
           listLabel="Project documents"
         />

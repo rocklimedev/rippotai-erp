@@ -5,27 +5,27 @@
 // src/modules/boqs/boq-budget-layout.ts, so the preview, "Download PDF", the copy attached on
 // approval and the server export (POST /boqs/:id/export/pdf) are the same document.
 // Renders .pd-page A4 sheets, so downloadDocumentPdf / usePdfDownload work unchanged.
-import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef } from "react";
-import monogram from "../../assets/brand/rippotai-monogram.png";
-import { useGetTermsTemplateQuery } from "@/api/meta/terms.api";
+import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import monogram from '../../assets/brand/rippotai-monogram.png';
+import { useGetTermsTemplateQuery } from '@/api/meta/terms.api';
 import {
   BUDGET_CSS,
   BUDGET_VARIANT_LABELS,
   buildBudgetModel,
   paginateBudget,
   renderBudgetFlow,
-} from "./boqBudgetLayout";
+} from './boqBudgetLayout';
 
 export const BOQ_VARIANTS = BUDGET_VARIANT_LABELS;
 
-export const boqFileName = (boq, variant = "client", template = false) => {
+export const boqFileName = (boq, variant = 'client', template = false) => {
   const base = template
-    ? `BOQ-Template_${String(boq?.name || "template").replace(/[^\w-]+/g, "-")}`
-    : `BOQ_${String(boq?.boq_number || `${boq?.project?.name || "boq"}-v${boq?.version || 1}`).replace(/[^\w-]+/g, "-")}`;
-  return `${base}${template ? "" : `_${variant.replace(/_/g, "-")}`}.pdf`;
+    ? `BOQ-Template_${String(boq?.name || 'template').replace(/[^\w-]+/g, '-')}`
+    : `BOQ_${String(boq?.boq_number || `${boq?.project?.name || 'boq'}-v${boq?.version || 1}`).replace(/[^\w-]+/g, '-')}`;
+  return `${base}${template ? '' : `_${variant.replace(/_/g, '-')}`}.pdf`;
 };
 
-const has = (v) => typeof v === "string" && v.trim().length > 0;
+const has = (v) => typeof v === 'string' && v.trim().length > 0;
 
 // On-screen only: sheets stacked with a gap (the shared .pd-page shadow), none while capturing.
 const SCREEN_CSS = `
@@ -38,12 +38,15 @@ const SCREEN_CSS = `
  * props: boq (BOQ or template), variant ("client" | "internal" | "quantity_only" | "vendor_enquiry"),
  *        template (bool) — render a BOQ template (no project).
  */
-const BoqDocument = forwardRef(function BoqDocument({ boq, variant = "client", template = false }, ref) {
+const BoqDocument = forwardRef(function BoqDocument(
+  { boq, variant = 'client', template = false },
+  ref,
+) {
   const termsId = !template && !has(boq?.terms_html) ? boq?.terms_template_id : null;
   const { data: termsTpl } = useGetTermsTemplateQuery(termsId, { skip: !termsId });
   const terms = has(boq?.terms_html)
     ? boq.terms_html
-    : termsTpl?.content_html || termsTpl?.data?.content_html || "";
+    : termsTpl?.content_html || termsTpl?.data?.content_html || '';
 
   const html = useMemo(
     () =>
@@ -51,7 +54,7 @@ const BoqDocument = forwardRef(function BoqDocument({ boq, variant = "client", t
         ? renderBudgetFlow(
             buildBudgetModel(boq, { variant, template, terms, monogramSrc: monogram }),
           )
-        : "",
+        : '',
     [boq, variant, template, terms],
   );
 
@@ -59,7 +62,7 @@ const BoqDocument = forwardRef(function BoqDocument({ boq, variant = "client", t
   const setRef = useCallback(
     (el) => {
       hostRef.current = el;
-      if (typeof ref === "function") ref(el);
+      if (typeof ref === 'function') ref(el);
       else if (ref) ref.current = el;
     },
     [ref],

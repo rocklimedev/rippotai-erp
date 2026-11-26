@@ -1,4 +1,5 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { downloadDisposition, downloadName } from '@/common/download-name';
 import {
   Body,
   Controller,
@@ -180,7 +181,13 @@ export class DocumentsController {
 
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${(document.filename ?? document.storageFilename).replace(/["\r\n\\]/g, '_')}"`,
+      downloadDisposition(
+        downloadName(
+          [document.project?.name, document.title || document.filename],
+          document.storageFilename,
+          'Document',
+        ),
+      ),
     );
     res.setHeader('Content-Type', document.mime ?? 'application/octet-stream');
     try {
@@ -261,15 +268,24 @@ export class DocumentsController {
     @Res() res: Response,
   ) {
     res.setHeader('Cache-Control', 'private, no-store, max-age=0');
-    const version = (await this.documentsService.listVersions(id)).find(
-      (v) => v.id === versionId,
-    );
+    const document = await this.documentsService.findOne(id);
+    const version = document.versions?.find((v) => v.id === versionId);
     if (!version?.storageFilename) {
       return res.status(404).send({ message: 'No file on this revision' });
     }
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${(version.filename ?? version.storageFilename).replace(/["\r\n\\]/g, '_')}"`,
+      downloadDisposition(
+        downloadName(
+          [
+            document.project?.name,
+            document.title || version.filename,
+            version.version,
+          ],
+          version.storageFilename,
+          'Document',
+        ),
+      ),
     );
     res.setHeader('Content-Type', version.mime ?? 'application/octet-stream');
     try {

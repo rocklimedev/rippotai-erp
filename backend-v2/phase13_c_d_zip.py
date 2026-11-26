@@ -15,6 +15,7 @@ from typing import Optional, List, Dict, Any
 
 from fastapi import Depends, HTTPException, Body, UploadFile, File, Query
 from fastapi.responses import StreamingResponse, Response
+from download_names import document_disposition, document_filename
 from pydantic import BaseModel
 
 from openpyxl import load_workbook, Workbook
@@ -243,11 +244,21 @@ def register_phase13(api, db, get_current_user, require_internal_user, _full_boq
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
             manifest = []
+            used_paths = set()
             for r in rows:
-                fname = r.get("filename") or f"{r.get('id')}.bin"
+                fname = document_filename(r, r.get("filename") or "document.bin")
                 content = r.get("content_b64")
                 if content:
-                    z.writestr(f"{r.get('category','Other')}/{fname}", base64.b64decode(content))
+                    category = document_filename({"name": r.get("category") or "Other"})
+                    stem, _, extension = fname.rpartition(".")
+                    base, suffix = (stem, "." + extension) if stem else (fname, "")
+                    index = 2
+                    while f"{category}/{fname}".casefold() in used_paths:
+                        fname = f"{base} ({index}){suffix}"
+                        index += 1
+                    archive_path = f"{category}/{fname}"
+                    used_paths.add(archive_path.casefold())
+                    z.writestr(archive_path, base64.b64decode(content))
                 manifest.append({
                     "category": r.get("category"),
                     "title": r.get("title"),
@@ -262,12 +273,14 @@ def register_phase13(api, db, get_current_user, require_internal_user, _full_boq
                        "\n".join(f"[{m['category']}] {m['filename']} · v{m['version']} · {m['status']} · {m['date']} · {m['uploaded_by']}" for m in manifest))
         buf.seek(0)
         data = buf.getvalue()
-        safe_name = (proj.get("name") or "project").replace(" ", "-")
         return Response(
             content=data,
             media_type="application/zip",
             headers={
-                "Content-Disposition": f'attachment; filename="Handover-{safe_name}.zip"',
+                "Content-Disposition": document_disposition(
+                    {"project_name": proj.get("name"), "name": "Handover Package"},
+                    "handover.zip",
+                ),
                 "X-Doc-Count": str(len(rows)),
             },
         )

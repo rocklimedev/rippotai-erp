@@ -101,7 +101,7 @@ export default function SnagsListPage() {
               <SelectItem value="all">All projects</SelectItem>
               {projects.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
-                  {p.name || p.code || p.id}
+                  {p.name || 'Untitled project'}
                 </SelectItem>
               ))}
             </SelectContent>

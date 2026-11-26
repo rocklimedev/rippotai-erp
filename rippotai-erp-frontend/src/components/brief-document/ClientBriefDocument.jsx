@@ -232,11 +232,14 @@ export function buildBriefSections(brief) {
   /* 02 — Site & property details */
   const area = has(brief.siteArea)
     ? `${Number(brief.siteArea).toLocaleString('en-IN')} ${
-        brief.siteAreaUnit === 'OTHER' ? brief.siteAreaOtherUnit || '' : UNIT[brief.siteAreaUnit] || ''
+        brief.siteAreaUnit === 'OTHER'
+          ? brief.siteAreaOtherUnit || ''
+          : UNIT[brief.siteAreaUnit] || ''
       }`.trim()
     : '';
   const docTypes = new Set(listOf(brief.documents, 'documentType'));
-  if (has(brief.drawingsAvailable)) docTypes.add(LEGACY_DRAWING[brief.drawingsAvailable] || brief.drawingsAvailable);
+  if (has(brief.drawingsAvailable))
+    docTypes.add(LEGACY_DRAWING[brief.drawingsAvailable] || brief.drawingsAvailable);
   const drawingsOther = [
     ...[...docTypes].map((d) => LEGACY_DRAWING_LABEL[d]).filter(Boolean),
     ...(has(brief.drawingsOther) ? [brief.drawingsOther] : []),
@@ -257,7 +260,10 @@ export function buildBriefSections(brief) {
           { label: 'Property type', value: brief.projectType?.name || project.project_type?.name },
           { label: 'Ownership Status', value: brief.ownershipStatus },
           { label: 'Site Area (sq ft / gaj)', value: area },
-          { label: 'Number Of Floors', value: has(brief.numberOfFloors) ? String(brief.numberOfFloors) : '' },
+          {
+            label: 'Number Of Floors',
+            value: has(brief.numberOfFloors) ? String(brief.numberOfFloors) : '',
+          },
           { label: 'Facing / Orientation', value: cap(brief.facingOrientation) },
           { label: 'Lift Available', value: yesNo(brief.liftAvailable) },
         ]}
@@ -285,23 +291,18 @@ export function buildBriefSections(brief) {
   const procOther = (brief.procurementCategories || [])
     .filter((p) => p.category === 'OTHER')
     .map((p) => p.otherDescription)
-    .filter(has)
-    .join(', ');
+    .filter(has);
   const ticked = (on, group) =>
     on.some((c) => procurement.includes(c)) ||
     (group.parent &&
       procurement.includes(group.parent) &&
       !group.items.some(([, o]) => o.some((c) => procurement.includes(c))) &&
       on.length > 0);
-  // Only the chosen materials, one line per template group.
-  const procLines = [
-    ...PROCUREMENT_GROUPS.map((g) => {
-      const picked = g.items.filter(([, on]) => ticked(on, g)).map(([label]) => label);
-      return picked.length ? `${g.title}: ${picked.join(', ')}` : null;
-    }),
-    has(procOther) ? `Other: ${procOther}` : null,
-    services.has('LANDSCAPE_DESIGN') ? 'Landscape (separate scope — see Scope of Work)' : null,
-  ].filter(Boolean);
+  const procGroups = PROCUREMENT_GROUPS.map((group) => ({
+    title: group.title,
+    items: group.items.filter(([, on]) => ticked(on, group)).map(([label]) => label),
+  })).filter(({ items }) => items.length);
+  const hasLandscape = services.has('LANDSCAPE_DESIGN');
   sections.push({
     title: 'Scope of work',
     blocks: [
@@ -331,33 +332,64 @@ export function buildBriefSections(brief) {
       </div>,
       <div key="pc" className="wd-proc">
         <WSub>Material procurement</WSub>
-        <WAnswer value={procLines} style={{ marginBottom: '8mm' }} />
-      </div>,
-      {
-        newPage: true,
-        node: (
-          <div style={{ paddingTop: '30.5mm' }}>
-            <WSub style={{ marginBottom: '6.6mm' }}>Scope boundaries</WSub>
-            <WLabelTable
-              labelTone="green"
-              rows={[
-                { label: 'Areas included in scope', value: brief.areasIncludedInScope, minHeight: 59 },
-                { label: 'Areas excluded from scope', value: brief.areasExcludedFromScope, minHeight: 71.5 },
-                { label: 'Work already done by others', value: brief.workAlreadyDoneByOthers, minHeight: 65.3 },
-              ]}
-            />
+        {procGroups.length > 0 && (
+          <div className="wd-proc__columns">
+            {procGroups.map(({ title, items }) => (
+              <div key={title}>
+                <strong>{title}</strong>
+                <ul className="wd-proc__items">
+                  {items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-        ),
-      },
+        )}
+        {procOther.length > 0 && (
+          <div>
+            <strong>Other</strong>
+            <ul className="wd-proc__items">
+              {procOther.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {hasLandscape && (
+          <ul className="wd-proc__items">
+            <li>Landscape (separate scope — see Scope of Work)</li>
+          </ul>
+        )}
+        {!procGroups.length && !procOther.length && !hasLandscape && (
+          <WAnswer style={{ marginBottom: '8mm' }} />
+        )}
+      </div>,
+      <div key="scope-boundaries" style={{ paddingTop: '6mm' }}>
+        <WSub style={{ marginBottom: '3mm' }}>Scope boundaries</WSub>
+        <WLabelTable
+          labelTone="green"
+          minHeight={10}
+          rows={[
+            { label: 'Areas included in scope', value: brief.areasIncludedInScope },
+            { label: 'Areas excluded from scope', value: brief.areasExcludedFromScope },
+            { label: 'Work already done by others', value: brief.workAlreadyDoneByOthers },
+          ]}
+        />
+      </div>,
     ],
   });
 
   /* 04 — Users & lifestyle */
-  const occupants = bySort(brief.occupants).filter((r) => has(r.name) || has(r.specificNeedsPreferences));
+  const occupants = bySort(brief.occupants).filter(
+    (r) => has(r.name) || has(r.specificNeedsPreferences),
+  );
   sections.push({
     title: 'Users & lifestyle',
     blocks: [
-      <WIntro key="i">Everyone who will use the space, and what each of them needs from it.</WIntro>,
+      <WIntro key="i">
+        Everyone who will use the space, and what each of them needs from it.
+      </WIntro>,
       {
         table: {
           skin: 'word',
@@ -366,10 +398,7 @@ export function buildBriefSections(brief) {
           items: padRows(
             occupants.map((r, i) => ({
               key: r.id || i,
-              cells: [
-                [r.name, r.relationship].filter(has).join(' — '),
-                r.specificNeedsPreferences,
-              ],
+              cells: [[r.name, r.relationship].filter(has).join(' — '), r.specificNeedsPreferences],
             })),
             7,
             2,
@@ -387,7 +416,8 @@ export function buildBriefSections(brief) {
     title: 'Space requirements',
     blocks: [
       <WIntro key="i">
-        Space by space, in the client’s own words. Anything not recorded here is not part of the brief.
+        Space by space, in the client’s own words. Anything not recorded here is not part of the
+        brief.
       </WIntro>,
       {
         table: {
@@ -499,14 +529,18 @@ export function buildBriefSections(brief) {
               ),
               value: BUDGET_RANGES.find(([, lo, hi]) => budget >= lo && budget < hi)?.[0] || '',
             },
-            { label: 'Funding stage — self-funded or loan', value: brief.fundingStage, minHeight: 19.9 },
+            {
+              label: 'Funding stage — self-funded or loan',
+              value: brief.fundingStage,
+              minHeight: 19.9,
+            },
             { label: 'Flexibility discussed', value: brief.budgetFlexibility, minHeight: 19.6 },
           ]}
         />
         <div className="wd-goldrule" style={{ marginTop: '12.9mm' }} />
         <WIntro style={{ marginTop: '3mm' }}>
-          Recorded as stated by the client at briefing stage. It is not a quotation and does not bind
-          either party until the BOQ is priced and frozen.
+          Recorded as stated by the client at briefing stage. It is not a quotation and does not
+          bind either party until the BOQ is priced and frozen.
         </WIntro>
       </div>,
     ],
@@ -599,9 +633,9 @@ export function buildBriefSections(brief) {
         top={false}
         minHeight={12.3}
         labelTone="ink"
-        rows={RESTRICTIONS.filter(
-          ([k]) => k !== 'ongoingWorkByOtherAgencies' || has(rest[k]),
-        ).map(([k, label]) => ({ label, value: rest[k] }))}
+        rows={RESTRICTIONS.filter(([k]) => k !== 'ongoingWorkByOtherAgencies' || has(rest[k])).map(
+          ([k, label]) => ({ label, value: rest[k] }),
+        )}
       />,
       {
         newPage: true,

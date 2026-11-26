@@ -60,6 +60,9 @@ export class Project extends Model<Project> {
   declare site_location: string;
 
   @Column({ type: DataType.TEXT, allowNull: true })
+  declare google_maps_url: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
   declare description: string | null;
 
   @Column({

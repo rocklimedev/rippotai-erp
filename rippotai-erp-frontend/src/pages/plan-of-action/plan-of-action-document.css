@@ -145,7 +145,13 @@
   background: #000;
 }
 .pd-doc .wd-poa-gantt__bar span {
-  font-size: 3.5pt;
+  max-width: 100%;
+  padding-inline: 1mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 7pt;
+  font-weight: 700;
+  line-height: 1.1;
   color: #fff;
   white-space: nowrap;
 }

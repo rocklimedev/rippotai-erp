@@ -1,13 +1,15 @@
-import { baseApi } from "@/store/baseApi";
+import { baseApi } from '@/store/baseApi';
+import { responseDownloadName } from '@/lib/download-name';
 
 const downloadResponse = async (response) => {
   if (!response.ok) return response.json();
-  const filename =
-    response.headers
-      .get("Content-Disposition")
-      ?.match(/filename="([^"]+)"/)?.[1] || "admin-dpr.xlsx";
+  const filename = responseDownloadName(
+    response.headers.get('Content-Disposition'),
+    'Admin DPR.xlsx',
+    'Admin DPR',
+  );
   const url = URL.createObjectURL(await response.blob());
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
@@ -20,20 +22,20 @@ const downloadResponse = async (response) => {
 export const adminDprApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     deleteAdminDprDocument: builder.mutation({
-      query: (id) => ({ url: `/dpr/admin-documents/${id}`, method: "DELETE" }),
-      invalidatesTags: ["AdminDpr"],
+      query: (id) => ({ url: `/dpr/admin-documents/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['AdminDpr'],
     }),
     listAdminDprDocuments: builder.query({
-      query: (params) => ({ url: "/dpr/admin-documents", params }),
-      providesTags: ["AdminDpr"],
+      query: (params) => ({ url: '/dpr/admin-documents', params }),
+      providesTags: ['AdminDpr'],
     }),
     getAdminDprDocument: builder.query({
       query: (id) => `/dpr/admin-documents/${id}`,
-      providesTags: ["AdminDpr"],
+      providesTags: ['AdminDpr'],
     }),
     createAdminDprDocument: builder.mutation({
-      query: (body) => ({ url: "/dpr/admin-documents", method: "POST", body }),
-      invalidatesTags: ["AdminDpr"],
+      query: (body) => ({ url: '/dpr/admin-documents', method: 'POST', body }),
+      invalidatesTags: ['AdminDpr'],
     }),
     downloadSavedAdminDpr: builder.mutation({
       query: (id) => ({
@@ -42,37 +44,37 @@ export const adminDprApi = baseApi.injectEndpoints({
       }),
     }),
     listAdminDpr: builder.query({
-      query: ({ kind = "reports", ...params }) => ({
+      query: ({ kind = 'reports', ...params }) => ({
         url: `/dpr/admin-${kind}`,
         params,
       }),
-      providesTags: ["AdminDpr"],
+      providesTags: ['AdminDpr'],
     }),
     saveAdminDpr: builder.mutation({
       query: ({ kind, id, ...body }) => ({
-        url: `/dpr/admin-${kind}${id ? `/${id}` : ""}`,
-        method: id ? "PATCH" : "POST",
+        url: `/dpr/admin-${kind}${id ? `/${id}` : ''}`,
+        method: id ? 'PATCH' : 'POST',
         body,
       }),
-      invalidatesTags: ["AdminDpr"],
+      invalidatesTags: ['AdminDpr'],
     }),
     deleteAdminDpr: builder.mutation({
       query: ({ kind, id }) => ({
         url: `/dpr/admin-${kind}/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["AdminDpr"],
+      invalidatesTags: ['AdminDpr'],
     }),
     downloadAdminDpr: builder.mutation({
       query: (params) => ({
-        url: "/dpr/admin-reports/export",
+        url: '/dpr/admin-reports/export',
         params,
         responseHandler: async (response) => {
           if (!response.ok) return response.json();
           const url = URL.createObjectURL(await response.blob());
-          const link = document.createElement("a");
+          const link = document.createElement('a');
           link.href = url;
-          link.download = "admin-dpr.xlsx";
+          link.download = 'admin-dpr.xlsx';
           document.body.appendChild(link);
           link.click();
           link.remove();

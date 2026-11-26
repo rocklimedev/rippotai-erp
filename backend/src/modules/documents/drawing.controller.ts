@@ -1,4 +1,5 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { downloadDisposition, downloadName } from '@/common/download-name';
 import {
   Body,
   Controller,
@@ -64,7 +65,7 @@ export class DrawingsController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `${inline === '1' ? 'inline' : 'attachment'}; filename="${filename}"`,
+      downloadDisposition(filename, inline === '1' ? 'inline' : 'attachment'),
     );
     res.setHeader('Content-Length', String(buffer.length));
     res.end(buffer);
@@ -124,8 +125,8 @@ export class DrawingsController {
     @Param('revisionId', ParseUUIDPipe) revisionId: string,
     @Res() res: Response,
   ) {
-    const revisions = await this.drawingsService.listRevisions(id);
-    const revision = revisions.find((r) => r.id === revisionId);
+    const drawing = await this.drawingsService.findOne(id);
+    const revision = drawing.revisions?.find((r) => r.id === revisionId);
 
     if (!revision || !revision.storageFilename) {
       return res.status(404).send({ message: 'Revision file not found' });
@@ -134,7 +135,17 @@ export class DrawingsController {
     if (res.destroyed || res.writableEnded) return;
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${(revision.filename ?? revision.storageFilename).replace(/["\r\n\\]/g, '_')}"`,
+      downloadDisposition(
+        downloadName(
+          [
+            drawing.title || revision.filename,
+            drawing.drawingNumber,
+            revision.revision,
+          ],
+          revision.storageFilename,
+          'Drawing',
+        ),
+      ),
     );
     res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     res.setHeader('Content-Type', revision.mime ?? 'application/octet-stream');

@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
+import { downloadName } from '@/lib/download-name';
 
 /**
  * downloadDocumentPdf(rootEl, fileName, { title, author, subject, output })  — output: "blob" returns a Blob instead of saving
@@ -92,7 +93,7 @@ export async function downloadDocumentPdf(
     });
     // output: "blob" → return the PDF (e.g. to upload it) instead of saving it.
     if (output === 'blob') return pdf.output('blob');
-    pdf.save(fileName);
+    pdf.save(downloadName([fileName], 'export.pdf', 'Document'));
     return null;
   } finally {
     probeFix.remove();

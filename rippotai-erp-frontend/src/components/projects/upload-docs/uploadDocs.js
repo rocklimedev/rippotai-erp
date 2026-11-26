@@ -1,19 +1,28 @@
 // Upload-type project documents (Contract, Agreement, Design, Material Palette,
 // Tender / Working Drawings and the Pre Design slots) on top of the existing
 // document_types + documents / drawings system.
-import { useMemo } from "react";
-import { toast } from "sonner";
-import { useGetDocumentTypesQuery, useGetDocumentsQuery } from "@/api/documents/document.api";
-import { useGetDrawingsQuery } from "@/api/documents/drawing.api";
-import { useGetProjectsQuery } from "@/api/projects/project.api";
-import { authenticatedFetch } from "@/lib/http-client";
-import { API_URL } from "@/lib/config";
-import { latestRevision, sortedRevisions } from "@/pages/design-studio/drawingUtils";
-import { openInNewTab } from "@/components/record-context/openFile";
-import { UPLOAD_DOCUMENTS } from "@/config/projectDocuments";
+import { useMemo } from 'react';
+import { toast } from 'sonner';
+import { useGetDocumentTypesQuery, useGetDocumentsQuery } from '@/api/documents/document.api';
+import { useGetDrawingsQuery } from '@/api/documents/drawing.api';
+import { useGetProjectsQuery } from '@/api/projects/project.api';
+import { authenticatedFetch } from '@/lib/http-client';
+import { API_URL } from '@/lib/config';
+import { latestRevision, sortedRevisions } from '@/pages/design-studio/drawingUtils';
+import { openInNewTab } from '@/components/record-context/openFile';
+import { responseDownloadName } from '@/lib/download-name';
+import { UPLOAD_DOCUMENTS } from '@/config/projectDocuments';
 
 export const asList = (v) =>
-  Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : Array.isArray(v?.data) ? v.data : Array.isArray(v?.results) ? v.results : [];
+  Array.isArray(v)
+    ? v
+    : Array.isArray(v?.items)
+      ? v.items
+      : Array.isArray(v?.data)
+        ? v.data
+        : Array.isArray(v?.results)
+          ? v.results
+          : [];
 
 const at = (r) => r?.updatedAt || r?.updated_at || r?.createdAt || r?.created_at || null;
 
@@ -24,9 +33,13 @@ export function useFlowTypes(cfg) {
     const all = asList(data).filter((t) => t.isActive !== false);
     return all
       .filter((t) =>
-        cfg.typeCodes ? cfg.typeCodes.includes(t.code) : t.phaseCode === cfg.phaseCode && !(cfg.excludeCodes || []).includes(t.code),
+        cfg.typeCodes
+          ? cfg.typeCodes.includes(t.code)
+          : t.phaseCode === cfg.phaseCode && !(cfg.excludeCodes || []).includes(t.code),
       )
-      .filter((t) => (cfg.target === "DRAWING" ? t.targetType === "DRAWING" : t.targetType !== "DRAWING"))
+      .filter((t) =>
+        cfg.target === 'DRAWING' ? t.targetType === 'DRAWING' : t.targetType !== 'DRAWING',
+      )
       .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
   }, [data, cfg]);
   return { types, isLoading };
@@ -46,7 +59,7 @@ export function useProjectsList() {
 export function useUploadRows(cfg, projectId) {
   const { types, isLoading: typesLoading } = useFlowTypes(cfg);
   const { byId } = useProjectsList();
-  const isDrawing = cfg.target === "DRAWING";
+  const isDrawing = cfg.target === 'DRAWING';
   const docsQ = useGetDocumentsQuery(projectId ? { projectId } : {}, { skip: isDrawing });
   const drawingsQ = useGetDrawingsQuery(projectId ? { projectId } : {}, { skip: !isDrawing });
   const typeIds = useMemo(() => new Set(types.map((t) => t.id)), [types]);
@@ -60,7 +73,9 @@ export function useUploadRows(cfg, projectId) {
         const typeId = r.documentTypeId || r.document_type_id;
         if (typeIds.has(typeId)) return true;
         // Drawings saved under a custom name (no checklist type) belong to their phase's list.
-        return isDrawing && !!cfg.phaseCode && !typeId && (r.phaseCode || r.phase_code) === cfg.phaseCode;
+        return (
+          isDrawing && !!cfg.phaseCode && !typeId && (r.phaseCode || r.phase_code) === cfg.phaseCode
+        );
       })
       .filter((r) => !projectId || (r.projectId || r.project_id) === projectId)
       .map((r) => {
@@ -69,31 +84,51 @@ export function useUploadRows(cfg, projectId) {
         const rev = isDrawing ? latestRevision(r) : null;
         return {
           id: r.id,
-          kind: isDrawing ? "drawing" : "document",
+          kind: isDrawing ? 'drawing' : 'document',
           typeId,
           typeName: typeById[typeId]?.name || (isDrawing && !typeId ? r.title : null) || cfg.name,
-          title: isDrawing ? `${r.drawingNumber ? `${r.drawingNumber} · ` : ""}${r.title || ""}` : r.title,
+          title: isDrawing
+            ? `${r.drawingNumber ? `${r.drawingNumber} · ` : ''}${r.title || ''}`
+            : r.title,
           projectId: pid,
-          projectName: byId[pid]?.name || r.project?.name || "—",
-          version: isDrawing ? rev?.revision || "—" : r.version || "V1",
+          projectName: byId[pid]?.name || r.project?.name || '—',
+          version: isDrawing ? rev?.revision || '—' : r.version || 'V1',
           revisions: isDrawing ? sortedRevisions(r).length : Math.max(asList(r.versions).length, 1),
-          status: r.status || (isDrawing ? "Draft" : "draft"),
+          status: r.status || (isDrawing ? 'Draft' : 'draft'),
           updatedAt: at(isDrawing ? rev || r : r),
           hasFile: isDrawing ? !!rev : !!(r.storageFilename || r.url),
           record: r,
         };
       })
       .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
-  }, [types, typeIds, typeById, isDrawing, docsQ.data, drawingsQ.data, projectId, byId, cfg.name, cfg.phaseCode]);
+  }, [
+    types,
+    typeIds,
+    typeById,
+    isDrawing,
+    docsQ.data,
+    drawingsQ.data,
+    projectId,
+    byId,
+    cfg.name,
+    cfg.phaseCode,
+  ]);
 
   const q = isDrawing ? drawingsQ : docsQ;
-  return { rows, types, isLoading: typesLoading || q.isLoading, isFetching: q.isFetching, refetch: q.refetch };
+  return {
+    rows,
+    types,
+    isLoading: typesLoading || q.isLoading,
+    isFetching: q.isFetching,
+    refetch: q.refetch,
+  };
 }
 
 export async function saveBlob(path, fallbackName) {
-  const res = await authenticatedFetch(`${API_URL}${path}`);
+  const url = /^https?:\/\//i.test(path) ? path : `${API_URL}${path}`;
+  const res = await authenticatedFetch(url);
   if (!res.ok) {
-    let msg = "Could not download the file.";
+    let msg = 'Could not download the file.';
     try {
       msg = (await res.json())?.message || msg;
     } catch {
@@ -101,25 +136,33 @@ export async function saveBlob(path, fallbackName) {
     }
     throw new Error(msg);
   }
-  const disposition = res.headers.get("content-disposition") || "";
-  const name = /filename="?([^"]+)"?/i.exec(disposition)?.[1] || fallbackName || "download";
-  const url = URL.createObjectURL(await res.blob());
-  const a = document.createElement("a");
-  a.href = url;
+  const disposition = res.headers.get('content-disposition') || '';
+  const name = responseDownloadName(disposition, fallbackName);
+  const blobUrl = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = blobUrl;
   a.download = name;
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 }
 
 /** Download the latest file of a row (document or drawing). */
 export async function downloadRow(row) {
   try {
-    if (row.kind === "drawing") {
+    if (row.kind === 'drawing') {
       const rev = latestRevision(row.record);
-      if (!rev) throw new Error("No file uploaded yet.");
-      await saveBlob(`/drawings/${row.id}/revisions/${rev.id}/download`, rev.filename);
+      if (!rev) throw new Error('No file uploaded yet.');
+      const path =
+        !rev.storageFilename && rev.url
+          ? new URL(rev.url, API_URL).href
+          : `/drawings/${row.id}/revisions/${rev.id}/download`;
+      await saveBlob(path, rev.filename || row.title);
     } else {
-      await saveBlob(`/documents/${row.id}/download`, row.record?.filename || row.title);
+      const path =
+        !row.record?.storageFilename && row.record?.url
+          ? new URL(row.record.url, API_URL).href
+          : `/documents/${row.id}/download`;
+      await saveBlob(path, row.record?.filename || row.title);
     }
   } catch (e) {
     toast.error(e.message);
@@ -128,17 +171,23 @@ export async function downloadRow(row) {
 
 /** Open the latest file of a row (document or drawing) in a new tab. */
 export function openRow(row) {
-  if (row.kind === "drawing") {
+  if (row.kind === 'drawing') {
     const rev = latestRevision(row.record);
-    if (!rev) return toast.error("No file uploaded yet.");
-    return openInNewTab(`/drawings/${row.id}/revisions/${rev.id}/download`, { title: rev.filename });
+    if (!rev) return toast.error('No file uploaded yet.');
+    return openInNewTab(`/drawings/${row.id}/revisions/${rev.id}/download`, {
+      title: rev.filename,
+    });
   }
-  return openInNewTab(`/documents/${row.id}/download`, { title: row.record?.filename || row.title });
+  return openInNewTab(`/documents/${row.id}/download`, {
+    title: row.record?.filename || row.title,
+  });
 }
 
 /** Open one earlier version of an uploaded document in a new tab. */
 export function openDocumentVersion(documentId, version) {
-  return openInNewTab(`/documents/${documentId}/versions/${version.id}/download`, { title: version.filename });
+  return openInNewTab(`/documents/${documentId}/versions/${version.id}/download`, {
+    title: version.filename,
+  });
 }
 
 export async function downloadDocumentVersion(documentId, version) {
@@ -154,27 +203,36 @@ export async function downloadDocumentVersion(documentId, version) {
  * (Design or Build) with `?back=` pointing at the list it came from.
  */
 export const viewPathFor = (row, back) => {
-  const app = String(back || "").startsWith("/build") ? "/build" : row.kind === "drawing" || String(back || "").startsWith("/design") ? "/design" : null;
-  const path = row.kind === "drawing" ? `${app || "/design"}/drawings/${row.id}` : app ? `${app}/documents/${row.id}` : `/projects/documents/${row.id}`;
+  const app = String(back || '').startsWith('/build')
+    ? '/build'
+    : row.kind === 'drawing' || String(back || '').startsWith('/design')
+      ? '/design'
+      : null;
+  const path =
+    row.kind === 'drawing'
+      ? `${app || '/design'}/drawings/${row.id}`
+      : app
+        ? `${app}/documents/${row.id}`
+        : `/projects/documents/${row.id}`;
   return back ? `${path}?back=${encodeURIComponent(back)}` : path;
 };
 
 /** Name of the list a `?back=` link returns to (Tender Drawings, Contract, Pre Design…). */
 export function backLabel(back) {
   if (!back) return null;
-  const path = String(back).split("?")[0];
-  if (path.startsWith("/design/pre-design")) return "Pre Design";
+  const path = String(back).split('?')[0];
+  if (path.startsWith('/design/pre-design')) return 'Pre Design';
   const hit = Object.values(UPLOAD_DOCUMENTS).find((c) => c.listPath === path);
   if (hit) return hit.name;
-  if (path.startsWith("/projects/")) return "Project";
-  return "Back";
+  if (path.startsWith('/projects/')) return 'Project';
+  return 'Back';
 }
 
 export function formatDay(d) {
-  if (!d) return "—";
+  if (!d) return '—';
   const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /** The upload config a saved record belongs to (for Edit from its own page). */
@@ -185,7 +243,13 @@ export function cfgForRecord(kind, record) {
   const all = Object.values(UPLOAD_DOCUMENTS);
   return (
     all.find((c) => c.target === target && c.typeCodes?.includes(code)) ||
-    all.find((c) => c.target === target && c.phaseCode && c.phaseCode === phase && !(c.excludeCodes || []).includes(code)) || {
+    all.find(
+      (c) =>
+        c.target === target &&
+        c.phaseCode &&
+        c.phaseCode === phase &&
+        !(c.excludeCodes || []).includes(code),
+    ) || {
       key: `${target}:${phase || 'other'}`,
       name: record?.documentType?.name || (kind === 'drawing' ? 'Drawing' : 'Document'),
       target,
@@ -193,4 +257,3 @@ export function cfgForRecord(kind, record) {
     }
   );
 }
-

@@ -88,7 +88,7 @@ function Timeline({ phases }) {
                 width: b[i].marker ? undefined : `${Math.min(b[i].width, 100 - b[i].left)}%`,
               }}
             >
-              {!b[i].marker && <span>{p.title.toUpperCase()}</span>}
+              {!b[i].marker && <span title={p.title}>{p.title.toUpperCase()}</span>}
             </div>
           </div>
         </div>

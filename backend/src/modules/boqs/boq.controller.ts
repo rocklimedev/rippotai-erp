@@ -1,4 +1,5 @@
 import { AsyncExport } from '../exports/async-export.decorator';
+import { downloadDisposition } from '@/common/download-name';
 import {
   Body,
   Controller,
@@ -395,7 +396,7 @@ export class BoqController {
     res.set({
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': downloadDisposition(filename),
     });
     res.send(buffer);
   }
@@ -418,7 +419,7 @@ export class BoqController {
     );
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': downloadDisposition(filename),
     });
     res.send(buffer);
   }

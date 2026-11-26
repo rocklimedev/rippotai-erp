@@ -3,6 +3,7 @@ import { BoqService, BoqJSON, BoqItemJSON } from './boq.service';
 import * as puppeteer from 'puppeteer';
 import ExcelJS from 'exceljs';
 import { TermsTemplate } from '../metas/models/terms-templates.model';
+import { downloadName } from '@/common/download-name';
 import {
   COMPANY_NAME,
   brandLogo,
@@ -183,7 +184,11 @@ export class BoqExportService {
     const buffer = await workbook.xlsx.writeBuffer();
     return {
       buffer: Buffer.from(buffer),
-      filename: `${this.formatValue(boq.boq_number || boq.id)}.xlsx`,
+      filename: downloadName(
+        [project?.name, 'BOQ', this.formatValue(boq.boq_number)],
+        'export.xlsx',
+        'BOQ',
+      ),
     };
   }
 
@@ -208,7 +213,16 @@ export class BoqExportService {
       });
       return {
         buffer: Buffer.from(pdf),
-        filename: `${this.formatValue(boq.boq_number || boq.id)}-${variant}.pdf`,
+        filename: downloadName(
+          [
+            (boq.project as BoqProjectJSON | undefined)?.name,
+            'BOQ',
+            this.formatValue(boq.boq_number),
+            variant,
+          ],
+          'export.pdf',
+          'BOQ',
+        ),
       };
     } finally {
       await browser.close();

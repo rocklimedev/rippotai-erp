@@ -198,7 +198,7 @@ export default function ProjectDocumentsBoard({ projects = [], projectId }) {
           >
             {projects.map((item) => (
               <option key={item.id} value={item.id}>
-                {[item.code, item.name || item.project_name].filter(Boolean).join(' · ')}
+                {item.name || item.project_name || 'Untitled project'}
               </option>
             ))}
           </select>

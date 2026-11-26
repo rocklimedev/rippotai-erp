@@ -1,20 +1,21 @@
-import { appAlert } from "@/lib/app-dialog";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { appAlert } from '@/lib/app-dialog';
+import { downloadName } from '@/lib/download-name';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   useGetProjectShortlistGridQuery,
   useSaveShortlistWorkspaceRowMutation,
   useUpdateProjectShortlistMutation,
   useLazyExportProjectShortlistQuery,
-} from "../../api/vendors/vendor-shortlist.api";
+} from '../../api/vendors/vendor-shortlist.api';
 
-import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
-import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
+import { useGetVendorsQuery } from '../../api/vendors/vendor.api';
+import { useGetMaterialsQuery } from '../../api/procuerment/material-master.api';
 import {
   createShortlistSaveQueue,
   reconcileConfirmedShortlistRows,
-} from "../../api/vendors/shortlist-grid";
+} from '../../api/vendors/shortlist-grid';
 
 /**
  * ============================================================
@@ -22,21 +23,21 @@ import {
  * ============================================================
  */
 
-function formatMoney(value, currency = "INR") {
-  if (value == null || value === "") return "—";
+function formatMoney(value, currency = 'INR') {
+  if (value == null || value === '') return '—';
 
   const num = Number(value);
 
-  if (Number.isNaN(num)) return "—";
+  if (Number.isNaN(num)) return '—';
 
   try {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
       currency,
       maximumFractionDigits: 0,
     }).format(num);
   } catch {
-    return num.toLocaleString("en-IN");
+    return num.toLocaleString('en-IN');
   }
 }
 
@@ -67,7 +68,7 @@ function getVendorName(vendor) {
     vendor?.company_name ||
     vendor?.business_name ||
     vendor?.display_name ||
-    "Unnamed Vendor"
+    'Unnamed Vendor'
   );
 }
 
@@ -81,27 +82,22 @@ function getVendorId(vendor) {
  * ============================================================
  */
 
-function EditableMoneyCell({
-  value,
-  onSave,
-  disabled = false,
-  currency = "INR",
-}) {
+function EditableMoneyCell({ value, onSave, disabled = false, currency = 'INR' }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value ?? "");
+  const [draft, setDraft] = useState(value ?? '');
   const committingRef = useRef(false);
 
   const startEdit = useCallback(() => {
     if (disabled) return;
 
-    setDraft(value ?? "");
+    setDraft(value ?? '');
     setEditing(true);
   }, [disabled, value]);
 
   const cancel = useCallback(() => {
     if (committingRef.current) return;
 
-    setDraft(value ?? "");
+    setDraft(value ?? '');
     setEditing(false);
   }, [value]);
 
@@ -110,14 +106,11 @@ function EditableMoneyCell({
 
     committingRef.current = true;
 
-    const raw =
-      draft === "" || draft == null
-        ? null
-        : Number(String(draft).replace(/,/g, ""));
+    const raw = draft === '' || draft == null ? null : Number(String(draft).replace(/,/g, ''));
 
     const parsed = raw == null || Number.isNaN(raw) ? null : raw;
 
-    const current = value === "" || value == null ? null : Number(value);
+    const current = value === '' || value == null ? null : Number(value);
 
     if (parsed !== current) {
       try {
@@ -139,16 +132,16 @@ function EditableMoneyCell({
         inputMode="decimal"
         step="0.01"
         className="bc-input !py-1.5 !px-2 text-right tabular-nums w-full min-w-[110px]"
-        value={draft ?? ""}
+        value={draft ?? ''}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={commit}
         onKeyDown={(event) => {
-          if (event.key === "Enter") {
+          if (event.key === 'Enter') {
             event.preventDefault();
             commit();
           }
 
-          if (event.key === "Escape") {
+          if (event.key === 'Escape') {
             event.preventDefault();
             cancel();
           }
@@ -162,15 +155,15 @@ function EditableMoneyCell({
     <button
       type="button"
       className={[
-        "w-full text-right tabular-nums",
-        "px-2 py-1.5 rounded-md transition-colors",
+        'w-full text-right tabular-nums',
+        'px-2 py-1.5 rounded-md transition-colors',
         disabled
-          ? "cursor-not-allowed text-[var(--muted)]"
-          : "hover:bg-[var(--mist-soft)] cursor-text",
-      ].join(" ")}
+          ? 'cursor-not-allowed text-[var(--muted)]'
+          : 'hover:bg-[var(--mist-soft)] cursor-text',
+      ].join(' ')}
       onClick={startEdit}
       disabled={disabled}
-      title={disabled ? "This row cannot be edited" : "Click to edit"}
+      title={disabled ? 'This row cannot be edited' : 'Click to edit'}
     >
       {formatMoney(value, currency)}
     </button>
@@ -187,11 +180,11 @@ function VendorSelectCell({
   value,
   onSave,
   disabled = false,
-  placeholder = "Select vendor",
+  placeholder = 'Select vendor',
   isMaterial = false,
 }) {
   const [editing, setEditing] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
   const inputRef = useRef(null);
@@ -205,14 +198,11 @@ function VendorSelectCell({
     },
   );
 
-  const { data: materialsResponse, isFetching: isSearchingMaterials } =
-    useGetMaterialsQuery(
-      { search: search.trim() || undefined, isActive: true },
-      { skip: !editing || !isMaterial },
-    );
-  const vendors = normalizeVendors(
-    isMaterial ? materialsResponse : vendorsResponse,
+  const { data: materialsResponse, isFetching: isSearchingMaterials } = useGetMaterialsQuery(
+    { search: search.trim() || undefined, isActive: true },
+    { skip: !editing || !isMaterial },
   );
+  const vendors = normalizeVendors(isMaterial ? materialsResponse : vendorsResponse);
   const searching = isMaterial ? isSearchingMaterials : isSearching;
 
   useEffect(() => {
@@ -228,7 +218,7 @@ function VendorSelectCell({
   const startEdit = useCallback(() => {
     if (disabled) return;
 
-    setSearch(value || "");
+    setSearch(value || '');
     setEditing(true);
   }, [disabled, value]);
 
@@ -236,7 +226,7 @@ function VendorSelectCell({
     if (saving) return;
 
     setEditing(false);
-    setSearch("");
+    setSearch('');
   }, [saving]);
 
   const selectVendor = useCallback(
@@ -244,7 +234,7 @@ function VendorSelectCell({
       const id = getVendorId(vendor);
 
       if (!id) {
-        console.error("Vendor does not have an id", vendor);
+        console.error('Vendor does not have an id', vendor);
         return;
       }
 
@@ -261,7 +251,7 @@ function VendorSelectCell({
 
         if (saved) {
           setEditing(false);
-          setSearch("");
+          setSearch('');
         }
       } finally {
         setSaving(false);
@@ -280,31 +270,27 @@ function VendorSelectCell({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Escape") {
+            if (event.key === 'Escape') {
               event.preventDefault();
               close();
             }
           }}
-          placeholder={isMaterial ? "Search materials..." : "Search vendors..."}
+          placeholder={isMaterial ? 'Search materials...' : 'Search vendors...'}
           autoComplete="off"
         />
 
         <div
           className={[
-            "absolute z-50 left-0 right-0 mt-1",
-            "bg-white border border-[var(--stroke)]",
-            "rounded-lg shadow-lg overflow-hidden",
-            "max-h-64 overflow-y-auto",
-          ].join(" ")}
+            'absolute z-50 left-0 right-0 mt-1',
+            'bg-white border border-[var(--stroke)]',
+            'rounded-lg shadow-lg overflow-hidden',
+            'max-h-64 overflow-y-auto',
+          ].join(' ')}
         >
           {searching ? (
-            <div className="px-3 py-3 text-sm text-[var(--muted)]">
-              Searching…
-            </div>
+            <div className="px-3 py-3 text-sm text-[var(--muted)]">Searching…</div>
           ) : vendors.length === 0 ? (
-            <div className="px-3 py-3 text-sm text-[var(--muted)]">
-              No matches found.
-            </div>
+            <div className="px-3 py-3 text-sm text-[var(--muted)]">No matches found.</div>
           ) : (
             vendors.map((vendor) => {
               const id = getVendorId(vendor);
@@ -315,31 +301,25 @@ function VendorSelectCell({
                   key={id}
                   type="button"
                   className={[
-                    "w-full text-left px-3 py-2.5",
-                    "hover:bg-[var(--mist-soft)]",
-                    "border-b border-[var(--stroke)] last:border-b-0",
-                    "transition-colors",
-                  ].join(" ")}
+                    'w-full text-left px-3 py-2.5',
+                    'hover:bg-[var(--mist-soft)]',
+                    'border-b border-[var(--stroke)] last:border-b-0',
+                    'transition-colors',
+                  ].join(' ')}
                   onMouseDown={(event) => {
                     event.preventDefault();
                   }}
                   onClick={() => selectVendor(vendor)}
                   disabled={saving}
                 >
-                  <div className="font-medium text-sm text-[var(--ink-green)]">
-                    {name}
-                  </div>
+                  <div className="font-medium text-sm text-[var(--ink-green)]">{name}</div>
 
                   {vendor?.email && (
-                    <div className="text-xs text-[var(--muted)] mt-0.5">
-                      {vendor.email}
-                    </div>
+                    <div className="text-xs text-[var(--muted)] mt-0.5">{vendor.email}</div>
                   )}
 
                   {vendor?.phone && (
-                    <div className="text-xs text-[var(--muted)]">
-                      {vendor.phone}
-                    </div>
+                    <div className="text-xs text-[var(--muted)]">{vendor.phone}</div>
                   )}
                 </button>
               );
@@ -354,16 +334,16 @@ function VendorSelectCell({
     <button
       type="button"
       className={[
-        "w-full text-left px-2 py-1.5",
-        "rounded-md truncate transition-colors",
+        'w-full text-left px-2 py-1.5',
+        'rounded-md truncate transition-colors',
         disabled
-          ? "cursor-not-allowed text-[var(--muted)]"
-          : "hover:bg-[var(--mist-soft)] cursor-pointer",
-        !value ? "text-[var(--muted)] italic" : "",
-      ].join(" ")}
+          ? 'cursor-not-allowed text-[var(--muted)]'
+          : 'hover:bg-[var(--mist-soft)] cursor-pointer',
+        !value ? 'text-[var(--muted)] italic' : '',
+      ].join(' ')}
       onClick={startEdit}
       disabled={disabled}
-      title={disabled ? "This row cannot be edited" : value || placeholder}
+      title={disabled ? 'This row cannot be edited' : value || placeholder}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="truncate">{value || placeholder}</span>
@@ -376,11 +356,7 @@ function VendorSelectCell({
             stroke="currentColor"
             strokeWidth={2}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         )}
       </div>
@@ -409,10 +385,9 @@ export default function ProjectVendorShortlistView({
     skip: !shortlistId,
   });
 
-  const [saveWorkspaceRow, { isLoading: isUpdating }] =
-    useSaveShortlistWorkspaceRowMutation();
+  const [saveWorkspaceRow, { isLoading: isUpdating }] = useSaveShortlistWorkspaceRowMutation();
   const [recoveryRows, setRecoveryRows] = useState({});
-  const [saveMessage, setSaveMessage] = useState("");
+  const [saveMessage, setSaveMessage] = useState('');
   const [confirmedRows, setConfirmedRows] = useState({});
   const confirmedRowsRef = useRef({});
   useEffect(() => {
@@ -429,10 +404,7 @@ export default function ProjectVendorShortlistView({
       gridData,
       shortlistId,
     );
-    if (
-      Object.keys(remaining).length !==
-      Object.keys(confirmedRowsRef.current).length
-    ) {
+    if (Object.keys(remaining).length !== Object.keys(confirmedRowsRef.current).length) {
       confirmedRowsRef.current = remaining;
       setConfirmedRows(remaining);
     }
@@ -440,8 +412,7 @@ export default function ProjectVendorShortlistView({
 
   const [updateShortlist] = useUpdateProjectShortlistMutation();
 
-  const [triggerExport, { isFetching: isExporting }] =
-    useLazyExportProjectShortlistQuery();
+  const [triggerExport, { isFetching: isExporting }] = useLazyExportProjectShortlistQuery();
 
   const isLocked = Boolean(gridData?.is_locked) || readOnly;
 
@@ -453,7 +424,7 @@ export default function ProjectVendorShortlistView({
   const handleUpdateField = useCallback(
     async (blockTrade, row, patch) => {
       if (isLocked) return;
-      setSaveMessage("");
+      setSaveMessage('');
       return queueSave(shortlistId, async () => {
         try {
           const { vendor, ...values } = patch;
@@ -467,7 +438,7 @@ export default function ProjectVendorShortlistView({
             .find((block) => block.trade === blockTrade)
             ?.rows.find((item) => item.working_type === row.working_type);
           if (!savedRow?.entry_id)
-            throw new Error("Saved row is missing from the workspace response");
+            throw new Error('Saved row is missing from the workspace response');
           const saved = {
             ...savedRow,
             id: savedRow.entry_id,
@@ -476,23 +447,19 @@ export default function ProjectVendorShortlistView({
           const confirmed = {};
           for (const block of workspace.grid)
             for (const item of block.rows)
-              confirmed[`${shortlistId}:${block.trade}:${item.working_type}`] =
-                item;
+              confirmed[`${shortlistId}:${block.trade}:${item.working_type}`] = item;
           confirmedRowsRef.current = confirmed;
           setConfirmedRows(confirmed);
-          setSaveMessage("Changes saved.");
-          toast.success("Changes saved", {
+          setSaveMessage('Changes saved.');
+          toast.success('Changes saved', {
             description: `${blockTrade} · ${row.working_type}`,
           });
           return saved;
         } catch (err) {
-          console.error("Update entry failed", err);
-          (await appAlert(
-            err?.data?.message ||
-              err?.error ||
-              err?.message ||
-              "Failed to update shortlist entry",
-          ));
+          console.error('Update entry failed', err);
+          await appAlert(
+            err?.data?.message || err?.error || err?.message || 'Failed to update shortlist entry',
+          );
         }
       });
     },
@@ -509,7 +476,7 @@ export default function ProjectVendorShortlistView({
       if (isLocked) return;
 
       return handleUpdateField(blockTrade, row, {
-        ...(gridData?.shortlist_type === "MATERIAL"
+        ...(gridData?.shortlist_type === 'MATERIAL'
           ? { material_id: selection.material_id }
           : { vendor_id: selection.vendor_id }),
         name_of_vendor: selection.name_of_vendor,
@@ -524,8 +491,7 @@ export default function ProjectVendorShortlistView({
    * ==========================================================
    */
   const handleSelect = useCallback(
-    (blockTrade, row) =>
-      handleUpdateField(blockTrade, row, { is_selected: true }),
+    (blockTrade, row) => handleUpdateField(blockTrade, row, { is_selected: true }),
     [handleUpdateField],
   );
 
@@ -545,8 +511,8 @@ export default function ProjectVendorShortlistView({
 
       await refetch();
     } catch (err) {
-      console.error("Lock update failed", err);
-      (await appAlert(err?.data?.message || "Failed to update shortlist lock"));
+      console.error('Lock update failed', err);
+      await appAlert(err?.data?.message || 'Failed to update shortlist lock');
     }
   };
 
@@ -563,11 +529,13 @@ export default function ProjectVendorShortlistView({
 
       const url = URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `${
-        gridData?.shortlist_type || "SHORTLIST"
-      }_${shortlistId}.xlsx`;
+      a.download = downloadName(
+        [titleProp || gridData?.title || `${typeLabel} Shortlist`],
+        'export.xlsx',
+        'Shortlist',
+      );
 
       document.body.appendChild(a);
       a.click();
@@ -575,13 +543,12 @@ export default function ProjectVendorShortlistView({
 
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Export failed", err);
-      (await appAlert("Export failed"));
+      console.error('Export failed', err);
+      await appAlert('Export failed');
     }
   };
 
-  const typeLabel =
-    gridData?.shortlist_type === "MATERIAL" ? "Material" : "Vendor";
+  const typeLabel = gridData?.shortlist_type === 'MATERIAL' ? 'Material' : 'Vendor';
 
   /**
    * ==========================================================
@@ -627,12 +594,10 @@ export default function ProjectVendorShortlistView({
     <div className="space-y-5">
       {gridData.unplaced_entries?.length > 0 && (
         <section className="bc-card p-4 space-y-3">
-          <h3 className="font-semibold">
-            Saved records needing a trade and work type
-          </h3>
+          <h3 className="font-semibold">Saved records needing a trade and work type</h3>
           <p className="text-sm">
-            These records have missing or outdated coordinates. Choose their
-            original row to restore them. Existing occupied rows are protected.
+            These records have missing or outdated coordinates. Choose their original row to restore
+            them. Existing occupied rows are protected.
           </p>
           {gridData.unplaced_entries.map((entry) => {
             const coordinates = recoveryRows[entry.id] || {};
@@ -647,16 +612,16 @@ export default function ProjectVendorShortlistView({
                   {entry.name_of_vendor ||
                     entry.vendor?.name ||
                     entry.material?.name ||
-                    "Unassigned"}{" "}
-                  · Estimate: {entry.estimate_value ?? "—"} · Quotation:{" "}
-                  {entry.quotation_value ?? "—"}
+                    'Unassigned'}{' '}
+                  · Estimate: {entry.estimate_value ?? '—'} · Quotation:{' '}
+                  {entry.quotation_value ?? '—'}
                 </span>
                 <select
                   aria-label="Recovery trade"
                   className="bc-input"
                   disabled={isLocked || isUpdating}
-                  value={coordinates.trade || ""}
-                  onChange={(e) => change("trade", e.target.value)}
+                  value={coordinates.trade || ''}
+                  onChange={(e) => change('trade', e.target.value)}
                 >
                   <option value="">Choose trade</option>
                   {gridData.grid.map((block) => (
@@ -669,8 +634,8 @@ export default function ProjectVendorShortlistView({
                   aria-label="Recovery work type"
                   className="bc-input"
                   disabled={isLocked || isUpdating}
-                  value={coordinates.working_type || ""}
-                  onChange={(e) => change("working_type", e.target.value)}
+                  value={coordinates.working_type || ''}
+                  onChange={(e) => change('working_type', e.target.value)}
                 >
                   <option value="">Choose work type</option>
                   {gridData.grid[0]?.rows.map((row) => (
@@ -682,10 +647,7 @@ export default function ProjectVendorShortlistView({
                 <button
                   className="bc-btn-secondary"
                   disabled={
-                    isLocked ||
-                    isUpdating ||
-                    !coordinates.trade ||
-                    !coordinates.working_type
+                    isLocked || isUpdating || !coordinates.trade || !coordinates.working_type
                   }
                   onClick={() =>
                     handleUpdateField(
@@ -739,16 +701,12 @@ export default function ProjectVendorShortlistView({
             onClick={handleExport}
             disabled={isExporting}
           >
-            {isExporting ? "Exporting…" : "Download Excel"}
+            {isExporting ? 'Exporting…' : 'Download Excel'}
           </button>
 
           {!readOnly && (
-            <button
-              type="button"
-              className="bc-btn-secondary"
-              onClick={handleToggleLock}
-            >
-              {gridData.is_locked ? "Unlock" : "Lock"}
+            <button type="button" className="bc-btn-secondary" onClick={handleToggleLock}>
+              {gridData.is_locked ? 'Unlock' : 'Lock'}
             </button>
           )}
         </div>
@@ -777,16 +735,11 @@ export default function ProjectVendorShortlistView({
               {(gridData.grid || []).map((block) =>
                 (block.rows || []).map((serverRow, rowIdx) => {
                   const row =
-                    confirmedRows[
-                      `${shortlistId}:${block.trade}:${serverRow.working_type}`
-                    ] || serverRow;
+                    confirmedRows[`${shortlistId}:${block.trade}:${serverRow.working_type}`] ||
+                    serverRow;
                   const isFirst = rowIdx === 0;
 
-                  const rowKey = [
-                    shortlistId,
-                    block.trade,
-                    row.working_type,
-                  ].join("-");
+                  const rowKey = [shortlistId, block.trade, row.working_type].join('-');
 
                   // Now editable even when entry_id is missing
                   const canEditRow = !isLocked;
@@ -795,11 +748,11 @@ export default function ProjectVendorShortlistView({
                     <tr
                       key={rowKey}
                       className={[
-                        "border-t border-[var(--stroke)]",
+                        'border-t border-[var(--stroke)]',
                         row.is_selected
-                          ? "bg-[rgba(31,69,59,0.06)]"
-                          : "hover:bg-[var(--mist-soft)]/60",
-                      ].join(" ")}
+                          ? 'bg-[rgba(31,69,59,0.06)]'
+                          : 'hover:bg-[var(--mist-soft)]/60',
+                      ].join(' ')}
                     >
                       {/* S.NO + TRADE */}
                       {isFirst ? (
@@ -821,20 +774,16 @@ export default function ProjectVendorShortlistView({
                       ) : null}
 
                       {/* WORKING TYPE */}
-                      <td className="px-3 py-1.5 text-[var(--muted)] nowrap">
-                        {row.working_type}
-                      </td>
+                      <td className="px-3 py-1.5 text-[var(--muted)] nowrap">{row.working_type}</td>
 
                       {/* VENDOR / MATERIAL */}
                       <td className="px-1 py-1 min-w-0">
                         <VendorSelectCell
                           value={row.name_of_vendor}
-                          isMaterial={gridData?.shortlist_type === "MATERIAL"}
+                          isMaterial={gridData?.shortlist_type === 'MATERIAL'}
                           disabled={!canEditRow}
                           placeholder={`Select ${typeLabel.toLowerCase()}`}
-                          onSave={(selection) =>
-                            handleVendorSave(block.trade, row, selection)
-                          }
+                          onSave={(selection) => handleVendorSave(block.trade, row, selection)}
                         />
                       </td>
 
@@ -871,22 +820,18 @@ export default function ProjectVendorShortlistView({
                         <button
                           type="button"
                           className={[
-                            "inline-flex h-7 w-7",
-                            "items-center justify-center",
-                            "rounded-full border",
-                            "transition-colors",
+                            'inline-flex h-7 w-7',
+                            'items-center justify-center',
+                            'rounded-full border',
+                            'transition-colors',
                             row.is_selected
-                              ? "bg-[var(--ink-green)] border-[var(--ink-green)] text-white"
-                              : "border-[var(--stroke)] text-[var(--muted)] hover:border-[var(--ink-green)]",
-                            isLocked ? "opacity-60 cursor-not-allowed" : "",
-                          ].join(" ")}
+                              ? 'bg-[var(--ink-green)] border-[var(--ink-green)] text-white'
+                              : 'border-[var(--stroke)] text-[var(--muted)] hover:border-[var(--ink-green)]',
+                            isLocked ? 'opacity-60 cursor-not-allowed' : '',
+                          ].join(' ')}
                           onClick={() => handleSelect(block.trade, row)}
                           disabled={isLocked}
-                          title={
-                            row.is_selected
-                              ? "Selected for this trade"
-                              : "Mark as selected"
-                          }
+                          title={row.is_selected ? 'Selected for this trade' : 'Mark as selected'}
                           aria-label="Select"
                         >
                           {row.is_selected ? (
@@ -922,7 +867,7 @@ export default function ProjectVendorShortlistView({
       ======================================================= */}
       {(isUpdating || saveMessage) && (
         <p role="status" className="text-sm text-[var(--muted)] text-right">
-          {isUpdating ? "Saving…" : saveMessage}
+          {isUpdating ? 'Saving…' : saveMessage}
         </p>
       )}
     </div>

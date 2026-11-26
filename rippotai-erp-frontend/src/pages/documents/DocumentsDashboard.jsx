@@ -1,37 +1,32 @@
-import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { RefreshCw, Plus, FolderOpen, FileText, Layers3 } from "lucide-react";
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { RefreshCw, Plus, FolderOpen, FileText, Layers3 } from 'lucide-react';
 
-import { useGetDocumentsQuery } from "../../api/documents/document.api";
-import { useGetDrawingsQuery } from "../../api/documents/drawing.api";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetDocumentsQuery } from '../../api/documents/document.api';
+import { useGetDrawingsQuery } from '../../api/documents/drawing.api';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
 /* ============================================================
    HELPERS
 ============================================================ */
 
 const getProjectId = (item) => {
-  return item?.projectId || item?.project_id || item?.project?.id || "";
+  return item?.projectId || item?.project_id || item?.project?.id || '';
 };
 
 const getProjectName = (item, projectMap) => {
   const projectId = getProjectId(item);
 
-  return (
-    item?.project?.name ||
-    item?.project_name ||
-    projectMap[projectId] ||
-    "Unassigned"
-  );
+  return item?.project?.name || item?.project_name || projectMap[projectId] || 'Unassigned';
 };
 
 const getDocumentType = (document) => {
-  return document?.documentType?.name || document?.category || "Documents";
+  return document?.documentType?.name || document?.category || 'Documents';
 };
 
 const getDrawingCategory = (drawing) => {
-  return drawing?.category || drawing?.drawingType?.name || "Drawings";
+  return drawing?.category || drawing?.drawingType?.name || 'Drawings';
 };
 
 /* ============================================================
@@ -70,8 +65,7 @@ export default function DocumentsDashboard() {
      projectId and not project.name.
   ========================================================== */
 
-  const { data: projectsResponse, isLoading: projectsLoading } =
-    useGetProjectsQuery({});
+  const { data: projectsResponse, isLoading: projectsLoading } = useGetProjectsQuery({});
 
   /* ==========================================================
      NORMALIZE RESPONSES
@@ -111,12 +105,7 @@ export default function DocumentsDashboard() {
     projects.forEach((project) => {
       if (!project?.id) return;
 
-      map[project.id] =
-        project.name ||
-        project.projectName ||
-        project.title ||
-        project.code ||
-        project.id;
+      map[project.id] = project.name || project.projectName || project.title || project.id;
     });
 
     return map;
@@ -128,7 +117,7 @@ export default function DocumentsDashboard() {
 
   React.useEffect(() => {
     if (documentsError || drawingsError) {
-      toast.error("Failed to load documents");
+      toast.error('Failed to load documents');
     }
   }, [documentsError, drawingsError]);
 
@@ -172,7 +161,7 @@ export default function DocumentsDashboard() {
 
         category: getDocumentType(document),
 
-        type: "document",
+        type: 'document',
 
         document_type: document?.documentType || null,
       };
@@ -190,7 +179,7 @@ export default function DocumentsDashboard() {
 
         category: getDrawingCategory(drawing),
 
-        type: "drawing",
+        type: 'drawing',
 
         document_type: null,
       };
@@ -212,13 +201,13 @@ export default function DocumentsDashboard() {
        * keep it under a stable "unassigned" key.
        */
 
-      const projectId = item.project_id || "unassigned";
+      const projectId = item.project_id || 'unassigned';
 
       if (!grouped[projectId]) {
         grouped[projectId] = {
           project_id: projectId,
 
-          project_name: item.project_name || "Unassigned",
+          project_name: item.project_name || 'Unassigned',
 
           count: 0,
 
@@ -234,15 +223,15 @@ export default function DocumentsDashboard() {
 
       group.count++;
 
-      if (item.type === "document") {
+      if (item.type === 'document') {
         group.documents++;
       }
 
-      if (item.type === "drawing") {
+      if (item.type === 'drawing') {
         group.drawings++;
       }
 
-      const category = item.category || "Other";
+      const category = item.category || 'Other';
 
       if (!group.categories[category]) {
         group.categories[category] = 0;
@@ -251,9 +240,7 @@ export default function DocumentsDashboard() {
       group.categories[category]++;
     }
 
-    return Object.values(grouped).sort((a, b) =>
-      a.project_name.localeCompare(b.project_name),
-    );
+    return Object.values(grouped).sort((a, b) => a.project_name.localeCompare(b.project_name));
   }, [items]);
 
   /* ==========================================================
@@ -280,7 +267,7 @@ export default function DocumentsDashboard() {
               text-[#333333]
             "
             style={{
-              fontFamily: "Poppins",
+              fontFamily: 'Poppins',
             }}
           >
             Documents
@@ -311,14 +298,14 @@ export default function DocumentsDashboard() {
             "
             title="Refresh"
           >
-            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
 
           {/* ADD DOCUMENT */}
 
           <button
             type="button"
-            onClick={() => nav("/projects/documents/upload")}
+            onClick={() => nav('/projects/documents/upload')}
             className="
               flex items-center gap-2
               h-9 px-4
@@ -328,7 +315,7 @@ export default function DocumentsDashboard() {
               font-semibold
             "
             style={{
-              background: "#1F453B",
+              background: '#1F453B',
             }}
           >
             <Plus size={14} />
@@ -344,33 +331,21 @@ export default function DocumentsDashboard() {
       {!loading && projectGroups.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 mb-5">
           <div className="bc-card px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B7B7C]">
-              Projects
-            </div>
+            <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B7B7C]">Projects</div>
 
-            <div className="text-[25px] font-bold text-[#333333] mt-1">
-              {projectGroups.length}
-            </div>
+            <div className="text-[25px] font-bold text-[#333333] mt-1">{projectGroups.length}</div>
           </div>
 
           <div className="bc-card px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B7B7C]">
-              Documents
-            </div>
+            <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B7B7C]">Documents</div>
 
-            <div className="text-[25px] font-bold text-[#333333] mt-1">
-              {documents.length}
-            </div>
+            <div className="text-[25px] font-bold text-[#333333] mt-1">{documents.length}</div>
           </div>
 
           <div className="bc-card px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B7B7C]">
-              Drawings
-            </div>
+            <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B7B7C]">Drawings</div>
 
-            <div className="text-[25px] font-bold text-[#333333] mt-1">
-              {drawings.length}
-            </div>
+            <div className="text-[25px] font-bold text-[#333333] mt-1">{drawings.length}</div>
           </div>
 
           <div className="bc-card px-4 py-3">
@@ -378,9 +353,7 @@ export default function DocumentsDashboard() {
               Total Files
             </div>
 
-            <div className="text-[25px] font-bold text-[#333333] mt-1">
-              {items.length}
-            </div>
+            <div className="text-[25px] font-bold text-[#333333] mt-1">{items.length}</div>
           </div>
         </div>
       )}
@@ -415,9 +388,7 @@ export default function DocumentsDashboard() {
 
           <div className="text-[14px]">No documents found</div>
 
-          <div className="text-[12px] mt-1 text-[#8A9697]">
-            Upload a document to get started.
-          </div>
+          <div className="text-[12px] mt-1 text-[#8A9697]">Upload a document to get started.</div>
         </div>
       ) : (
         /* ====================================================
@@ -438,11 +409,7 @@ export default function DocumentsDashboard() {
             <div
               key={project.project_id}
               onClick={() =>
-                nav(
-                  `/documents/all?project_id=${encodeURIComponent(
-                    project.project_id,
-                  )}`,
-                )
+                nav(`/documents/all?project_id=${encodeURIComponent(project.project_id)}`)
               }
               className="
                   bc-card
@@ -493,9 +460,7 @@ export default function DocumentsDashboard() {
                     {project.project_name}
                   </div>
 
-                  <div className="text-[11px] text-[#8A9697] mt-1">
-                    Project files
-                  </div>
+                  <div className="text-[11px] text-[#8A9697] mt-1">Project files</div>
                 </div>
               </div>
 
@@ -508,9 +473,7 @@ export default function DocumentsDashboard() {
                   <div className="flex items-center gap-1.5">
                     <FileText size={13} className="text-[#1F453B]" />
 
-                    <span className="text-[11px] text-[#6B7B7C]">
-                      Documents
-                    </span>
+                    <span className="text-[11px] text-[#6B7B7C]">Documents</span>
                   </div>
 
                   <div className="text-[20px] font-bold text-[#333333] mt-1">

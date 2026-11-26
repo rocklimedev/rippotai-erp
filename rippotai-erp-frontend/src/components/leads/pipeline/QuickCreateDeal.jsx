@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button, Field, TextInput, SelectInput, ChoiceGroup } from '@/components/inos';
 import { useGetClientsQuery } from '@/api/projects/client.api';
-import { useCreateLeadMutation, useUpdateLeadMutation } from '@/api/connectors/leads.api';
+import {
+  useCreateLeadMutation,
+  useResolveLeadMapsAddressMutation,
+  useUpdateLeadMutation,
+} from '@/api/connectors/leads.api';
 import { STAGES, formatINR } from '@/hooks/stages';
 import { Modal } from './Modal';
 import { errorText, parseRupees } from './utils';
@@ -49,9 +53,12 @@ const empty = (stage) => ({
   stage: stage || 'capture',
   ownerId: '',
   source: 'Referral',
+  referralName: '',
   expectedClose: '',
   type: 'Residential',
   location: '',
+  mapsUrl: '',
+  resolvedMapsUrl: '',
   size: '',
   service: 'DESIGN',
   tag: '',
@@ -80,6 +87,7 @@ const fromDeal = (d) => ({
   amount: rupeesText(d.amount),
   ownerId: d.ownerId || d.owner || '',
   source: d.source || '',
+  referralName: d.referralName || '',
   expectedClose: d.expectedClose ? String(d.expectedClose).slice(0, 10) : '',
   type: d.type || 'Residential',
   location: d.location || '',
@@ -96,7 +104,14 @@ const fromDeal = (d) => ({
  * The deal's project and client are created / filled on the server so every
  * document for that project autofills.
  */
-export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta, onCreated, deal }) {
+export default function QuickCreateDeal({
+  open,
+  onOpenChange,
+  defaultStage,
+  meta,
+  onCreated,
+  deal,
+}) {
   const editing = !!deal;
   const [form, setForm] = useState(() => (deal ? fromDeal(deal) : empty(defaultStage)));
   const [errors, setErrors] = useState({});
@@ -105,6 +120,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
   });
   const [createLead, { isLoading: creating }] = useCreateLeadMutation();
   const [updateLead, { isLoading: updating }] = useUpdateLeadMutation();
+  const [resolveMapsAddress, { isLoading: resolvingAddress }] = useResolveLeadMapsAddressMutation();
   const isLoading = creating || updating;
 
   // Reset every time the modal opens (create: "existing client"; edit: the deal).
@@ -155,6 +171,8 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
 
   const selectedClient = sortedClients.find((c) => c.id === form.clientId);
   const amountValue = parseRupees(form.amount);
+  const showReferralName = /^(referral|others?)$/i.test(form.source);
+  const referralName = showReferralName ? form.referralName.trim() : '';
 
   const onClientPick = (id) => {
     const c = sortedClients.find((x) => x.id === id);
@@ -193,13 +211,37 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
       e.whatsapp = 'Enter a 10-digit WhatsApp number.';
     if (!form.service) e.service = 'Pick Design or Build.';
     if (!form.dealName.trim()) e.dealName = 'Name the deal, e.g. “Malhotra Residence”.';
+    if (form.location.trim().length > 255) e.location = 'Use an address of up to 255 characters.';
     if (form.amount && Number.isNaN(amountValue)) e.amount = 'Use a number, e.g. 45 L or 1.2 Cr.';
     setErrors(e);
     return !Object.keys(e).length;
   };
 
+  const lookupAddress = async () => {
+    const url = form.mapsUrl.trim();
+    if (!url || resolvingAddress) return;
+    try {
+      const { address } = await resolveMapsAddress(url).unwrap();
+      if (address.length > 255) {
+        setErrors((e) => ({
+          ...e,
+          mapsUrl: 'The address is too long. Enter a shorter address below.',
+        }));
+        return;
+      }
+      setForm((current) =>
+        current.mapsUrl.trim() === url
+          ? { ...current, location: address, resolvedMapsUrl: url }
+          : current,
+      );
+      setErrors((e) => ({ ...e, mapsUrl: undefined, location: undefined }));
+    } catch (err) {
+      setErrors((e) => ({ ...e, mapsUrl: errorText(err, 'Could not look up this address.') }));
+    }
+  };
+
   const submit = async () => {
-    if (isLoading || !validate()) return;
+    if (isLoading || resolvingAddress || !validate()) return;
     const owner = meta?.owners?.find((o) => (o.id || o.name) === form.ownerId);
     if (editing) return submitEdit(owner);
     const body = {
@@ -208,9 +250,11 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
       amount: amountValue ?? undefined,
       stage: form.stage,
       source: form.source || undefined,
+      referralName: referralName || undefined,
       expectedClose: form.expectedClose || undefined,
       type: form.type,
       location: form.location.trim() || undefined,
+      googleMapsUrl: form.mapsUrl.trim() || undefined,
       size: form.size.trim() || undefined,
       service: form.service,
       tag: form.tag || undefined,
@@ -225,6 +269,10 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
               phone: form.phone || undefined,
               email: form.email.trim() || undefined,
               contactPerson: form.contact.trim() || undefined,
+              address:
+                form.resolvedMapsUrl && form.resolvedMapsUrl === form.mapsUrl.trim()
+                  ? form.location.trim() || undefined
+                  : undefined,
             },
             phone: form.phone || undefined,
             email: form.email.trim() || undefined,
@@ -251,6 +299,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
       whatsapp: form.whatsapp || null,
       amount: amountValue ?? null,
       source: form.source || null,
+      referralName: referralName || null,
       expectedClose: form.expectedClose || null,
       type: form.type,
       location: form.location.trim() || null,
@@ -259,11 +308,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
       tag: form.tag || null,
       description: form.description.trim() || null,
       ...(form.stage !== deal.stage && form.stage !== 'lost' ? { stage: form.stage } : {}),
-      ...(owner
-        ? owner.id
-          ? { ownerId: owner.id }
-          : { owner: owner.name, ownerId: null }
-        : {}),
+      ...(owner ? (owner.id ? { ownerId: owner.id } : { owner: owner.name, ownerId: null }) : {}),
       ...(form.clientMode === 'existing'
         ? form.clientId && form.clientId !== deal.clientId
           ? { clientId: form.clientId }
@@ -307,6 +352,7 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
             variant="primary"
             onClick={submit}
             loading={isLoading}
+            disabled={isLoading || resolvingAddress}
             data-testid={editing ? 'edit-deal-submit' : 'create-deal-submit'}
           >
             {editing ? 'Save changes' : 'Create deal'}
@@ -509,6 +555,18 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
           </SelectInput>
         </Field>
 
+        {showReferralName && (
+          <Field label="Referral name" optional htmlFor="qc-referral-name">
+            <TextInput
+              id="qc-referral-name"
+              value={form.referralName}
+              onChange={(e) => set('referralName', e.target.value)}
+              placeholder="Enter the referrer's name"
+              maxLength={255}
+            />
+          </Field>
+        )}
+
         <Field label="Expected close" optional htmlFor="qc-close">
           <TextInput
             id="qc-close"
@@ -518,12 +576,51 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
           />
         </Field>
 
-        <Field label="Location" optional htmlFor="qc-location">
+        {!editing && (
+          <Field
+            label="Google Maps link"
+            optional
+            full
+            htmlFor="qc-maps-url"
+            error={errors.mapsUrl}
+            hint="The link is saved with the deal and its project."
+          >
+            <div className="flex items-start gap-2">
+              <TextInput
+                id="qc-maps-url"
+                type="url"
+                maxLength={4096}
+                value={form.mapsUrl}
+                onChange={(e) => set('mapsUrl', e.target.value)}
+                placeholder="Paste a Google Maps place or pin link"
+                disabled={resolvingAddress}
+                invalid={!!errors.mapsUrl}
+              />
+              <Button
+                className="shrink-0"
+                onClick={lookupAddress}
+                disabled={!form.mapsUrl.trim() || resolvingAddress}
+              >
+                {resolvingAddress ? 'Looking up…' : 'Find address'}
+              </Button>
+            </div>
+          </Field>
+        )}
+
+        <Field
+          label="Location"
+          optional
+          htmlFor="qc-location"
+          error={errors.location}
+          full={!editing}
+        >
           <TextInput
             id="qc-location"
             value={form.location}
             onChange={(e) => set('location', e.target.value)}
             placeholder="e.g. Golf Course Road, Gurugram"
+            readOnly={resolvingAddress}
+            invalid={!!errors.location}
           />
         </Field>
 

@@ -148,7 +148,15 @@ function Fact({ label, children }) {
   );
 }
 
-export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, onAskLost, onEdit }) {
+export default function DealDrawer({
+  dealId,
+  open,
+  onOpenChange,
+  meta,
+  onMove,
+  onAskLost,
+  onEdit,
+}) {
   const navigate = useNavigate();
   const { data: deal, isLoading, isError } = useGetLeadQuery(dealId, { skip: !dealId });
   const [tab, setTab] = useState('timeline');
@@ -217,7 +225,10 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
     try {
       if (deal.clientId) {
         // The server links (or creates) the client's project of this name and fills its facts.
-        const saved = await updateLead({ id: dealId, dealName: deal.dealName || deal.title }).unwrap();
+        const saved = await updateLead({
+          id: dealId,
+          dealName: deal.dealName || deal.title,
+        }).unwrap();
         if (saved?.projectId) {
           toast.success('Project created and linked');
           return;
@@ -226,6 +237,7 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
       const p = await createProject({
         name: deal.title,
         site_location: deal.location || 'To be confirmed',
+        ...(deal.googleMapsUrl ? { google_maps_url: deal.googleMapsUrl } : {}),
         priority: 'MEDIUM',
         ...(deal.clientId ? { client_id: deal.clientId } : {}),
       }).unwrap();
@@ -732,6 +744,18 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
                         onSave={(v) => save({ location: v })}
                       />
                     </Fact>
+                    {deal.googleMapsUrl && (
+                      <Fact label="Google Maps">
+                        <a
+                          className="underline underline-offset-2"
+                          href={deal.googleMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open in Google Maps
+                        </a>
+                      </Fact>
+                    )}
                     <Fact label="Project">
                       {deal.projectId ? (
                         <button
@@ -799,6 +823,7 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
                         onSave={(v) => save({ source: v })}
                       />
                     </Fact>
+                    {deal.referralName && <Fact label="Referral name">{deal.referralName}</Fact>}
                     <Fact label="Type">
                       <EditableField
                         value={deal.type || ''}

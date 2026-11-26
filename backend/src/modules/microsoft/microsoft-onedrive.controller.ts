@@ -1,6 +1,7 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // microsoft/services/microsoft-onedrive.controller.ts
 
+import { downloadDisposition, downloadName } from '@/common/download-name';
 import {
   Controller,
   Get,
@@ -140,16 +141,13 @@ export class MicrosoftOneDriveController {
       itemId,
     );
 
-    const fileName = metadata?.name || 'download';
+    const fileName = downloadName([metadata?.name], metadata?.name, 'File');
 
     const contentType = metadata?.file?.mimeType || 'application/octet-stream';
 
     res.setHeader('Content-Type', contentType);
 
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${this.sanitizeFileName(fileName)}"`,
-    );
+    res.setHeader('Content-Disposition', downloadDisposition(fileName));
 
     res.setHeader('Content-Length', content.length);
 
@@ -343,13 +341,5 @@ export class MicrosoftOneDriveController {
       deleted: true,
       itemId,
     };
-  }
-
-  // ============================================================
-  // HELPER
-  // ============================================================
-
-  private sanitizeFileName(fileName: string): string {
-    return fileName.replace(/[\r\n"]/g, '').replace(/[\\/:*?<>|]/g, '_');
   }
 }

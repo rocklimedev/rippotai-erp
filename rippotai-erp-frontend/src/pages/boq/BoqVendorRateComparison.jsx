@@ -32,6 +32,16 @@ import VersionHistory from '@/components/record-context/VersionHistory';
 import DeleteRateComparison from '@/components/materials/DeleteRateComparison';
 import { usePermission } from '@/hooks/use-permission';
 import { useCreateQuotationFromComparisonMutation } from '@/api/procuerment/procurement-quotation.api';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { DocumentPreview } from '@/components/print-document';
+import QuotationDocument from '@/components/commerce-documents/QuotationDocument';
+import { quotationSheetModel } from '@/components/quotation-documents/quotationModel';
 import { appConfirm, appPrompt } from '@/lib/app-dialog';
 import { downloadXlsx } from '@/lib/xlsxTemplate';
 import { buildVendorComparisonWorkbook } from './vendorComparisonExcel';
@@ -78,6 +88,7 @@ const list = (response) => {
 
 export default function VendorRateComparison() {
   const { id } = useParams();
+  const [savedQuotation, setSavedQuotation] = useState(null);
   const catalogueQuery = useGetVendorTradesQuery();
   const query = useGetRateComparisonQuery(id, {
     skip: !id,
@@ -116,17 +127,41 @@ export default function VendorRateComparison() {
       </Page>
     );
   return (
-    <Workspace
-      key={id || 'new'}
-      initialSheet={id ? query.currentData : null}
-      catalogue={list(catalogueQuery.data)}
-      catalogueError={catalogueQuery.isError}
-      retryCatalogue={catalogueQuery.refetch}
-    />
+    <>
+      <Workspace
+        key={id || 'new'}
+        initialSheet={id ? query.currentData : null}
+        catalogue={list(catalogueQuery.data)}
+        catalogueError={catalogueQuery.isError}
+        retryCatalogue={catalogueQuery.refetch}
+        onQuotationSaved={setSavedQuotation}
+      />
+      <Sheet
+        open={Boolean(savedQuotation)}
+        onOpenChange={(open) => !open && setSavedQuotation(null)}
+      >
+        <SheetContent className="h-full w-full overflow-y-auto sm:max-w-[900px]">
+          {savedQuotation && (
+            <>
+              <SheetHeader>
+                <SheetTitle>Quotation {savedQuotation.quotation_number}</SheetTitle>
+                <SheetDescription>
+                  {savedQuotation.refilled ? 'Updated' : 'Created'} for{' '}
+                  {savedQuotation.vendor_name || savedQuotation.vendor?.name}.
+                </SheetDescription>
+              </SheetHeader>
+              <DocumentPreview>
+                <QuotationDocument model={quotationSheetModel(savedQuotation)} />
+              </DocumentPreview>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
 
-function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) {
+function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue, onQuotationSaved }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [title, setTitle] = useState(initialSheet?.title || '');
@@ -212,7 +247,8 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
   const canCreateQuotation = usePermission('procurement-quotations', 'create');
   const canCreateTrade = usePermission('vendor-rate-comparisons', 'create');
   const [createTrade, creatingTrade] = useCreateVendorTradeMutation();
-  const [createQuotation, quotationStatus] = useCreateQuotationFromComparisonMutation();
+  const [createQuotation] = useCreateQuotationFromComparisonMutation();
+  const [quotationPending, setQuotationPending] = useState(false);
   const state = JSON.stringify({ title, projectId, notes, trades });
   const dirty = state !== saved;
   useEffect(() => {
@@ -273,13 +309,13 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
       ],
     });
   };
-  const validate = () => {
+  const validate = (nextTrades = trades) => {
     if (!initialSheet && (!projectId || checkedProjectId !== projectId || checkingProject))
       return 'Select a project and wait for its existing comparison check.';
     if (!title.trim() || !projectId) return 'Enter a sheet name and select a project.';
-    if (!trades.length || trades.some((t) => !t.name.trim()))
+    if (!nextTrades.length || nextTrades.some((t) => !t.name.trim()))
       return 'Enter a name for every trade.';
-    for (const trade of trades) {
+    for (const trade of nextTrades) {
       if (
         trade.items.some(
           (item) =>
@@ -303,26 +339,30 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
     }
     return null;
   };
-  const save = async () => {
-    const error = validate();
-    if (error) return toast.error(error);
+  const save = async ({ nextTrades = trades, forQuotation = false } = {}) => {
+    const error = validate(nextTrades);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     const body = {
       title: title.trim(),
       project_id: projectId,
       notes,
-      snapshot: { schema_version: 2, trades },
+      snapshot: { schema_version: 2, trades: nextTrades },
     };
     try {
       const result = await (
         initialSheet ? update({ id: initialSheet.id, revision, ...body }) : create(body)
       ).unwrap();
       setRevision(result.revision);
-      setSaved(state);
+      setSaved(JSON.stringify({ title, projectId, notes, trades: nextTrades }));
       toast.success('Vendor comparison saved');
-      if (!initialSheet) navigate(`${basePath}/${result.id}/edit`, { replace: true });
+      if (!initialSheet && !forQuotation)
+        navigate(`${basePath}/${result.id}/edit`, { replace: true });
       return result;
     } catch (error) {
-      if (!initialSheet && error?.status === 409 && error?.data?.comparison_id) {
+      if (!forQuotation && !initialSheet && error?.status === 409 && error?.data?.comparison_id) {
         toast.info('This project already has a vendor comparison. Opening its saved data.');
         navigate(`${basePath}/${error.data.comparison_id}/edit`, {
           replace: true,
@@ -332,17 +372,64 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
       toast.error([error?.data?.message || 'Could not save comparison'].flat().join('. '));
     }
   };
-  const makeQuotation = async (vendorId) => {
-    const sheet = dirty || !initialSheet ? await save() : initialSheet;
-    if (!sheet) return;
+  const makeQuotation = async (vendor, { nextTrades = trades, confirm = false } = {}) => {
+    if (saving || quotationPending) return;
+    if (vendor.custom) {
+      toast.info('Select a vendor from the vendor directory to create a quotation.');
+      return;
+    }
+    const incompleteTrade = nextTrades.find(
+      (trade) =>
+        trade.finalised_vendor_id === vendor.id &&
+        !completeQuote(trade.vendors.find((entry) => entry.id === vendor.id)),
+    );
+    if (incompleteTrade) {
+      toast.info(
+        `Complete the vendor’s quote for ${incompleteTrade.name} to create the quotation.`,
+      );
+      return;
+    }
+    setQuotationPending(true);
+    let sheet;
     try {
+      if (
+        confirm &&
+        !(await appConfirm(
+          `Create or update the quotation for ${vendor.name} using their finalised trades?`,
+        ))
+      )
+        return;
+      sheet =
+        dirty || !initialSheet || nextTrades !== trades
+          ? await save({ nextTrades, forQuotation: true })
+          : initialSheet;
+      if (!sheet) return;
       const quotation = await createQuotation({
         comparison_id: sheet.id,
-        vendor_id: vendorId,
+        vendor_id: vendor.id,
       }).unwrap();
-      navigate(`/procurement/quotations/${quotation.id}`);
+      onQuotationSaved(quotation);
     } catch (error) {
-      toast.error(error?.data?.message || 'Could not create quotation');
+      toast.error([error?.data?.message || 'Could not create quotation'].flat().join('. '));
+    } finally {
+      setQuotationPending(false);
+      if (!initialSheet && sheet) {
+        const query = new URLSearchParams({
+          tab: workspaceTab,
+          ...(workspaceTab === 'comparison' && activeId && { trade: activeId }),
+        });
+        navigate(`${basePath}/${sheet.id}/edit?${query}`, { replace: true });
+      }
+    }
+  };
+  const finaliseVendor = (vendor) => {
+    const picked = active.finalised_vendor_id === vendor.id;
+    const nextTrades = trades.map((trade) =>
+      trade.id === active.id ? { ...trade, finalised_vendor_id: picked ? '' : vendor.id } : trade,
+    );
+    setTrades(nextTrades);
+    if (!picked && canCreateQuotation) {
+      void makeQuotation(vendor, { nextTrades, confirm: true });
     }
   };
   const exportExcel = async () => {
@@ -370,7 +457,12 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
   const exportEstimate = async (vendor) => {
     try {
       const project = list(projects.data).find((p) => p.id === projectId) || initialSheet?.project;
-      const wb = await buildVendorEstimateWorkbook({ title, projectName: project?.name, vendor, trades });
+      const wb = await buildVendorEstimateWorkbook({
+        title,
+        projectName: project?.name,
+        vendor,
+        trades,
+      });
       downloadXlsx(
         await wb.xlsx.writeBuffer(),
         `Estimate - ${vendor.name || 'Vendor'} - ${project?.name || title}.xlsx`,
@@ -384,7 +476,10 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
       trades.flatMap((trade) =>
         trade.vendors
           .filter((vendor) => vendor.name?.trim() && vendor.items.length)
-          .map((vendor) => [vendor.custom ? `n:${vendor.name.trim().toLowerCase()}` : vendor.id, vendor]),
+          .map((vendor) => [
+            vendor.custom ? `n:${vendor.name.trim().toLowerCase()}` : vendor.id,
+            vendor,
+          ]),
       ),
     ).values(),
   ].sort((a, b) => a.name.localeCompare(b.name));
@@ -629,8 +724,11 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
                     <Button
                       key={vendor.id}
                       variant="ghost"
-                      disabled={saving || quotationStatus.isLoading}
-                      onClick={() => makeQuotation(vendor.id)}
+                      disabled={saving || quotationPending}
+                      onClick={(event) => {
+                        event.currentTarget.closest('details')?.removeAttribute('open');
+                        void makeQuotation(vendor);
+                      }}
                     >
                       {vendor.name}
                     </Button>
@@ -641,10 +739,11 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
             <Button
               disabled={
                 saving ||
+                quotationPending ||
                 checkingProject ||
                 (!initialSheet && (!projectId || checkedProjectId !== projectId))
               }
-              onClick={save}
+              onClick={() => save()}
             >
               {saving ? 'Saving…' : 'Save comparison'}
             </Button>
@@ -1052,11 +1151,8 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
                                   <Button
                                     variant="secondary"
                                     className={cx('vc-finalise', picked && 'is-on')}
-                                    onClick={() =>
-                                      editTrade(active.id, {
-                                        finalised_vendor_id: picked ? '' : vendor.id,
-                                      })
-                                    }
+                                    disabled={saving || quotationPending}
+                                    onClick={() => finaliseVendor(vendor)}
                                   >
                                     {picked ? '✓ Finalised vendor' : 'Finalise this vendor'}
                                   </Button>
@@ -1073,13 +1169,23 @@ function Workspace({ initialSheet, catalogue, catalogueError, retryCatalogue }) 
                                       Clear finalisation
                                     </button>
                                   )}
+                                  {picked && canCreateQuotation && (
+                                    <Button
+                                      size="sm"
+                                      disabled={saving || quotationPending}
+                                      onClick={() => makeQuotation(vendor, { confirm: true })}
+                                      data-testid="vendor-create-quotation"
+                                    >
+                                      Create quotation
+                                    </Button>
+                                  )}
                                   <button
                                     type="button"
                                     className="vc-link"
                                     onClick={() => exportEstimate(vendor)}
                                     data-testid="vendor-estimate-export"
                                   >
-                                    Export estimate
+                                    Export estimate (Excel)
                                   </button>
                                   <button
                                     type="button"

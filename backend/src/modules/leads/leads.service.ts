@@ -1,4 +1,5 @@
 import { assignProjectCode } from '../projects/project-code';
+import { normalizeGoogleMapsUrl } from '@/common/google-maps-url';
 import {
   BadRequestException,
   Injectable,
@@ -103,6 +104,16 @@ export const LEAD_SOURCES = [
 ];
 
 const STUCK_AFTER_DAYS = 14;
+
+function normalizeReferralName(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value !== 'string' || value.trim().length > 255) {
+    throw new BadRequestException(
+      'Referral name must be text up to 255 characters.',
+    );
+  }
+  return value.trim() || null;
+}
 const DAY = 86400000;
 
 function normaliseStage(stage?: string | null): LeadStage | null {
@@ -497,6 +508,9 @@ export class LeadsService implements OnModuleInit {
       type: l.type,
       service: l.service || LeadService.DESIGN,
       location: pick(p.site_location, l.location),
+      googleMapsUrl: extra.project
+        ? (p.google_maps_url ?? null)
+        : l.googleMapsUrl,
       size: pick(projectSize, l.size),
       budget: projectBudget != null ? fmtINR(projectBudget) : l.budget,
       clientBudget: projectBudget,
@@ -506,6 +520,7 @@ export class LeadsService implements OnModuleInit {
       expectedClose: l.expectedClose,
       timeline: l.timeline,
       source: l.source,
+      referralName: l.referralName,
       owner: l.owner,
       ownerId: l.ownerId,
       stage: l.stage,
@@ -578,7 +593,7 @@ export class LeadsService implements OnModuleInit {
         : Promise.resolve([] as Record<string, any>[]),
       projectIds.length
         ? this.select<Record<string, any>>(
-            `SELECT p.id, p.name, p.status, p.site_location, p.site_area, p.site_area_unit,
+            `SELECT p.id, p.name, p.status, p.site_location, p.google_maps_url, p.site_area, p.site_area_unit,
                     p.client_budget, t.name AS project_type_name
                FROM projects p LEFT JOIN project_types t ON t.id = p.project_type_id
               WHERE p.id IN (?) AND p.deleted_at IS NULL`,
@@ -859,6 +874,8 @@ export class LeadsService implements OnModuleInit {
 
   async createLead(actor: Actor, body: Record<string, any>) {
     body = body || {};
+    const referralName = normalizeReferralName(body.referralName);
+    const googleMapsUrl = normalizeGoogleMapsUrl(body.googleMapsUrl);
     const contactName = String(body.contact ?? body.name ?? '').trim();
     const dealName = String(body.dealName ?? body.title ?? '').trim();
     let clientId: string | null = body.clientId || null;
@@ -919,12 +936,14 @@ export class LeadsService implements OnModuleInit {
       email: body.email || null,
       type,
       location: body.location || null,
+      googleMapsUrl,
       size: body.size || null,
       budget: body.budget || null,
       amount,
       expectedClose: body.expectedClose || null,
       timeline: body.timeline || null,
       source: body.source || null,
+      referralName,
       owner,
       ownerId,
       stage,
@@ -958,7 +977,11 @@ export class LeadsService implements OnModuleInit {
     }
 
     // Connect the deal to a project + client so every document autofills.
-    await this.linkProject(actor, lead);
+    await this.linkProject(
+      actor,
+      lead,
+      googleMapsUrl ? ['googleMapsUrl'] : undefined,
+    );
 
     // Best-effort mirror to Bigin (only when connected)
     this.mirrorCreate(actor.id, lead).catch(() => undefined);
@@ -1044,6 +1067,12 @@ export class LeadsService implements OnModuleInit {
             project.get({ plain: true }),
             {
               location: lead.location,
+              googleMapsUrl:
+                touched.has('googleMapsUrl') ||
+                touched.has('projectId') ||
+                patch.projectId
+                  ? lead.googleMapsUrl
+                  : undefined,
               projectTypeId: await this.projectTypeFor(lead.type),
               size: lead.size,
               budget: toNum(lead.amount) ?? parseBudgetRange(lead.budget),
@@ -1114,6 +1143,7 @@ export class LeadsService implements OnModuleInit {
       slug,
       client_id: lead.clientId,
       site_location: lead.location || '',
+      google_maps_url: lead.googleMapsUrl ?? null,
       status: 'lead',
       priority: 'MEDIUM',
       created_by: actor.id || null,
@@ -1124,7 +1154,7 @@ export class LeadsService implements OnModuleInit {
     }
     const [row] = await this.select<{ id: string }>('SELECT UUID() AS id');
     await this.db.query(
-      'INSERT INTO projects (id, name, slug, client_id, site_location, status, priority, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO projects (id, name, slug, client_id, site_location, google_maps_url, status, priority, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       {
         replacements: [
           row.id,
@@ -1132,6 +1162,7 @@ export class LeadsService implements OnModuleInit {
           values.slug,
           values.client_id,
           values.site_location,
+          values.google_maps_url,
           values.status,
           values.priority,
           values.created_by,
@@ -1198,6 +1229,7 @@ export class LeadsService implements OnModuleInit {
       expectedClose: 'expected close',
       timeline: 'timeline',
       source: 'source',
+      referralName: 'referral name',
       owner: 'owner',
       ownerId: 'owner',
       tag: 'tag',
@@ -1208,6 +1240,10 @@ export class LeadsService implements OnModuleInit {
       description: 'description',
       lostReason: 'lost reason',
     };
+
+    if ('referralName' in body) {
+      body.referralName = normalizeReferralName(body.referralName);
+    }
 
     // Edit form may add a brand-new client.
     if (!body.clientId && body.newClient?.name?.trim()) {

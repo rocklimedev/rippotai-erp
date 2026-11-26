@@ -84,7 +84,7 @@ export default function SnagCreatePage() {
               <SelectContent>
                 {projects.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.name || p.code || p.id}
+                    {p.name || 'Untitled project'}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -1382,10 +1382,11 @@ export class ProjectPlannerService {
     const users = ids.length
       ? await User.findAll({ where: { id: ids }, attributes: ['id', 'name'] })
       : [];
-    return buildPlannerWorkbook(
+    const buffer = await buildPlannerWorkbook(
       overview,
       Object.fromEntries(users.map((u) => [u.id, u.name])),
     );
+    return { buffer, projectName: overview.project.name };
   }
 
   // ============================================================
