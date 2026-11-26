@@ -124,37 +124,44 @@ export const normalizePoaPhases = (poa) =>
 export function buildPoaSections(poa, phases) {
   const sections = [];
   const total =
-    poa.total_duration_label ||
+    (has(poa.total_duration_label) ? poa.total_duration_label : '') ||
     durationLabel(poa.total_duration_min_days, poa.total_duration_max_days);
   const count = poa.total_phases || phases.length;
 
   /* How the Execution runs */
+  const showStats = count > 0 || has(total);
   sections.push({
     title: 'How the Execution runs',
     unnumbered: true,
     headClass: 'wd-poa-head',
     blocks: [
-      <div key="o">
-        {has(poa.execution_description) && (
-          <p className="wd-poa-lead">{poa.execution_description}</p>
-        )}
-        <div className="wd-poa-stats">
-          <div>
-            <div className="wd-poa-stats__v">
-              {has(count) ? String(count).padStart(2, '0') : ''}
+      (has(poa.execution_description) || showStats) && (
+        <div key="o">
+          {has(poa.execution_description) && (
+            <p className="wd-poa-lead">{poa.execution_description}</p>
+          )}
+          {showStats && (
+            <div className="wd-poa-stats">
+              {count > 0 && (
+                <div>
+                  <div className="wd-poa-stats__v">{String(count).padStart(2, '0')}</div>
+                  <div className="wd-poa-stats__l">Execution phases from services to handover</div>
+                </div>
+              )}
+              {has(total) && (
+                <div>
+                  <div className="wd-poa-stats__v">{total}</div>
+                  <div className="wd-poa-stats__l">
+                    Indicative site duration with overlaps, subject to Terms
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="wd-poa-stats__l">Execution phases from services to handover</div>
-          </div>
-          <div>
-            <div className="wd-poa-stats__v">{total}</div>
-            <div className="wd-poa-stats__l">
-              Indicative site duration with overlaps, subject to Terms
-            </div>
-          </div>
+          )}
         </div>
-      </div>,
+      ),
       phases.length > 0 && <Timeline key="tl" phases={phases} />,
-    ].filter(Boolean),
+    ],
   });
 
   /* PLAN OF ACTION — phase table */
@@ -179,8 +186,8 @@ export function buildPoaSections(poa, phases) {
                 {
                   text: [p.description, p.details].filter(has).join('\n\n'),
                   sub: [
-                    p.parallel && `PARALLEL — ${p.parallel}`,
-                    p.inclusion && `INCLUDES — ${p.inclusion}`,
+                    has(p.parallel) && `PARALLEL — ${p.parallel}`,
+                    has(p.inclusion) && `INCLUDES — ${p.inclusion}`,
                   ]
                     .filter(Boolean)
                     .join('\n'),
@@ -371,6 +378,7 @@ export function PlanOfActionView() {
           numbered={false}
           title={projectName}
           wordCover={{
+            omitEmpty: true,
             title: 'PLAN OF ACTION',
             className: 'wd-poa-cover',
             logoWidth: 70,

@@ -5,14 +5,14 @@
 //   gold #D9B061, green #0D3D2F, sage label #7E9A92, field rules #D9D9D6 (0.5 pt),
 //   section rule black 1 pt, sub-heading rule gold 0.75 pt.
 // Use with <PrintDocument variant="word" wordCover={…} sections={…} />.
-import React from "react";
-import "./word.css";
-import coverLogo from "../../assets/brand/word/rippotai-cover-logo.png";
-import coverCube from "../../assets/brand/word/rippotai-cover-cube.png";
-import { has } from "./format";
-import { checkedLabels } from "./word-helpers";
+import React from 'react';
+import './word.css';
+import coverLogo from '../../assets/brand/word/rippotai-cover-logo.png';
+import coverCube from '../../assets/brand/word/rippotai-cover-cube.png';
+import { has } from './format';
+import { checkedLabels } from './word-helpers';
 
-const cx = (...c) => c.filter(Boolean).join(" ");
+const cx = (...c) => c.filter(Boolean).join(' ');
 const shown = (v) => (has(v) || React.isValidElement(v) ? v : null);
 
 /* ------------------------------------------------------------ cover */
@@ -26,7 +26,8 @@ const shown = (v) => (has(v) || React.isValidElement(v) ? v : null);
 export function WordCover({
   title,
   rows,
-  logo = "full",
+  omitEmpty = false,
+  logo = 'full',
   logoWidth = 39.7,
   logoTop = 61.7,
   titleClass,
@@ -38,43 +39,36 @@ export function WordCover({
   className,
   beforeTitle,
 }) {
+  const fields = omitEmpty
+    ? (rows || []).map((row) => row.filter((field) => has(field.value))).filter((row) => row.length)
+    : rows;
   return (
-    <section className={cx("pd-page wd-cover", className)}>
-      <div
-        className="wd-cover__brand"
-        style={{ paddingTop: `${logoTop - 22.9}mm` }}
-      >
+    <section className={cx('pd-page wd-cover', className)}>
+      <div className="wd-cover__brand" style={{ paddingTop: `${logoTop - 22.9}mm` }}>
         <img
-          src={logo === "cube" ? coverCube : coverLogo}
+          src={logo === 'cube' ? coverCube : coverLogo}
           alt="Rippotai"
           style={{ width: `${logoWidth}mm` }}
         />
         {beforeTitle}
-        {has(title) && (
-          <h1 className={cx("wd-cover__title", titleClass)}>{title}</h1>
-        )}
+        {has(title) && <h1 className={cx('wd-cover__title', titleClass)}>{title}</h1>}
         {has(subtitle) && <p className="wd-cover__subtitle">{subtitle}</p>}
         {children}
       </div>
-      {rows?.length > 0 && (
+      {fields?.length > 0 && (
         <div className="wd-cover__rows" style={{ top: `${rowsTop}mm` }}>
-          {rows.map((row, i) => (
+          {fields.map((row, i) => (
             <div
               key={i}
               className={cx(
-                "wd-cover__row",
-                row.length === 1 && row[0].wide && "wd-cover__row--wide",
+                'wd-cover__row',
+                row.length === 1 && row[0].wide && 'wd-cover__row--wide',
               )}
             >
               {row.map((f) => (
                 <div key={f.label} className="wd-cover__field">
                   <span className="wd-cover__label">{f.label}</span>
-                  <span
-                    className={cx(
-                      "wd-cover__value",
-                      f.gold && "wd-cover__value--gold",
-                    )}
-                  >
+                  <span className={cx('wd-cover__value', f.gold && 'wd-cover__value--gold')}>
                     {shown(f.value)}
                   </span>
                 </div>
@@ -92,10 +86,10 @@ export function WordCover({
 /* ------------------------------------------------------------ headings & text */
 
 /** Spaced capitals sub-heading over a gold rule ("PROJECT TYPE & SITE TYPE"). */
-export function WSub({ children, size, tail, rule = "gold", style, className }) {
+export function WSub({ children, size, tail, rule = 'gold', style, className }) {
   return (
     <div
-      className={cx("wd-sub", rule === "none" && "wd-sub--plain", className)}
+      className={cx('wd-sub', rule === 'none' && 'wd-sub--plain', className)}
       style={{ ...(size ? { fontSize: `${size}pt` } : null), ...style }}
     >
       {children}
@@ -115,7 +109,7 @@ export const WIntro = ({ children, style }) =>
 /** Filled-in text, as typed into a template blank. */
 export const WValue = ({ children, className, style }) =>
   shown(children) ? (
-    <div className={cx("wd-value", className)} style={style}>
+    <div className={cx('wd-value', className)} style={style}>
       {children}
     </div>
   ) : null;
@@ -125,7 +119,7 @@ export const WValue = ({ children, className, style }) =>
 /** One label + filled value + grey rule. */
 export function WField({ label, value, labelSize, className, style }) {
   return (
-    <div className={cx("wd-field", className)} style={style}>
+    <div className={cx('wd-field', className)} style={style}>
       <span
         className="wd-field__label"
         style={labelSize ? { fontSize: `${labelSize}pt` } : undefined}
@@ -141,8 +135,9 @@ export function WField({ label, value, labelSize, className, style }) {
  * Two (or n) column grid of fields; empties keep their blank line like the template.
  * items: [{ label, value, span? }]
  */
-export function WFields({ items, cols = 2, labelSize, gap, style }) {
-  const list = (items || []).filter(Boolean);
+export function WFields({ items, cols = 2, labelSize, gap, style, omitEmpty = false }) {
+  const list = (items || []).filter((field) => field && (!omitEmpty || has(field.value)));
+  if (omitEmpty && !list.length) return null;
   return (
     <div
       className="wd-fields"
@@ -182,10 +177,7 @@ export function Box({ checked }) {
  */
 export function WCheck({ label, checked, other, value, indent, gap, style }) {
   return (
-    <div
-      className={cx("wd-check", indent && "wd-check--indent")}
-      style={style}
-    >
+    <div className={cx('wd-check', indent && 'wd-check--indent')} style={style}>
       <Box checked={checked} />
       <span
         className="wd-check__label"
@@ -193,8 +185,8 @@ export function WCheck({ label, checked, other, value, indent, gap, style }) {
       >
         {label}
         {other && (
-          <span className={cx("wd-blank", has(value) && "wd-blank--filled")}>
-            {has(value) ? value : ""}
+          <span className={cx('wd-blank', has(value) && 'wd-blank--filled')}>
+            {has(value) ? value : ''}
           </span>
         )}
       </span>
@@ -209,9 +201,9 @@ export function WCheck({ label, checked, other, value, indent, gap, style }) {
  * value: string | string[] (one per line)
  */
 export function WAnswer({ value, style, className }) {
-  const text = Array.isArray(value) ? value.filter(has).join("\n") : value;
+  const text = Array.isArray(value) ? value.filter(has).join('\n') : value;
   return (
-    <div className={cx("wd-answer", className)} style={style}>
+    <div className={cx('wd-answer', className)} style={style}>
       <div className="wd-field__value">{shown(text)}</div>
     </div>
   );
@@ -228,25 +220,21 @@ export function WChecks({ items, cols = 3, widths, gap, style, className, answer
     return (
       <WAnswer
         className={className}
-        value={checkedLabels(list).join(", ")}
-        style={{ marginBottom: style?.marginBottom ?? "8mm" }}
+        value={checkedLabels(list).join(', ')}
+        style={{ marginBottom: style?.marginBottom ?? '8mm' }}
       />
     );
   }
   return (
     <div
-      className={cx("wd-checks", className)}
+      className={cx('wd-checks', className)}
       style={{
         gridTemplateColumns: widths || `repeat(${cols}, 1fr)`,
         ...style,
       }}
     >
       {list.map((it, i) =>
-        it.empty ? (
-          <span key={i} />
-        ) : (
-          <WCheck key={`${it.label}-${i}`} gap={gap} {...it} />
-        ),
+        it.empty ? <span key={i} /> : <WCheck key={`${it.label}-${i}`} gap={gap} {...it} />,
       )}
     </div>
   );
@@ -277,13 +265,8 @@ export function WCheckColumns({ columns, widths, gap, itemGap, style, foot }) {
         ))}
       </div>
       {foot && (
-        <div
-          className="wd-checkcols wd-checkcols--foot"
-          style={{ gridTemplateColumns: tmpl }}
-        >
-          {foot.map((it, i) =>
-            it ? <WCheck key={i} gap={gap} {...it} /> : <span key={i} />,
-          )}
+        <div className="wd-checkcols wd-checkcols--foot" style={{ gridTemplateColumns: tmpl }}>
+          {foot.map((it, i) => (it ? <WCheck key={i} gap={gap} {...it} /> : <span key={i} />))}
         </div>
       )}
     </div>
@@ -297,28 +280,22 @@ export function WCheckColumns({ columns, widths, gap, itemGap, style, foot }) {
  * paint repeating gradients); extra lines are added when the text needs them.
  */
 export function WLines({ value, count = 6, lineHeight = 7.7, charsPerLine = 105, style }) {
-  const text = typeof value === "string" ? value : "";
+  const text = typeof value === 'string' ? value : '';
   const needed = text
-    ? text
-        .split("\n")
-        .reduce((n, l) => n + Math.max(1, Math.ceil(l.length / charsPerLine)), 0)
+    ? text.split('\n').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / charsPerLine)), 0)
     : 0;
   const lines = Math.max(count, needed);
   return (
     <div
       className="wd-lines"
       style={{
-        "--wd-line": `${lineHeight}mm`,
+        '--wd-line': `${lineHeight}mm`,
         minHeight: `${lines * lineHeight}mm`,
         ...style,
       }}
     >
       {Array.from({ length: lines }, (_, i) => (
-        <span
-          key={i}
-          className="wd-lines__rule"
-          style={{ top: `${(i + 1) * lineHeight}mm` }}
-        />
+        <span key={i} className="wd-lines__rule" style={{ top: `${(i + 1) * lineHeight}mm` }} />
       ))}
       <div className="wd-lines__text">{shown(value)}</div>
     </div>
@@ -331,24 +308,24 @@ export function WLines({ value, count = 6, lineHeight = 7.7, charsPerLine = 105,
  */
 export function WLabelTable({
   rows,
-  labelWidth = "57mm",
+  labelWidth = '57mm',
   minHeight = 6,
   labelTone,
   top = true,
   style,
+  omitEmpty = false,
 }) {
+  const list = (rows || []).filter((row) => row && (!omitEmpty || has(row.value)));
+  if (omitEmpty && !list.length) return null;
   return (
     <div
-      className={cx("wd-ltable", top && "wd-ltable--top")}
+      className={cx('wd-ltable', top && 'wd-ltable--top')}
       style={{ gridTemplateColumns: `${labelWidth} 1fr`, ...style }}
     >
-      {(rows || []).filter(Boolean).map((r, i) => (
+      {list.map((r, i) => (
         <React.Fragment key={`${r.label}-${i}`}>
           <div
-            className={cx(
-              "wd-ltable__label",
-              labelTone && `wd-ltable__label--${labelTone}`,
-            )}
+            className={cx('wd-ltable__label', labelTone && `wd-ltable__label--${labelTone}`)}
             style={{ minHeight: `${r.minHeight ?? minHeight}mm` }}
           >
             {r.label}
@@ -361,14 +338,14 @@ export function WLabelTable({
 }
 
 /** Signature column: spaced caps label, signature rule, then "Name - …" / "Date - …" lines. */
-export function WSign({ label, lines, ruleTone = "dark", style }) {
+export function WSign({ label, lines, ruleTone = 'dark', style }) {
   return (
     <div className="wd-sign" style={style}>
       {label && <div className="wd-sign__label">{label}</div>}
-      <div className={cx("wd-sign__rule", `wd-sign__rule--${ruleTone}`)} />
+      <div className={cx('wd-sign__rule', `wd-sign__rule--${ruleTone}`)} />
       {(lines || []).map((l, i) => (
         <div key={i} className="wd-sign__line">
-          {typeof l === "string" ? (
+          {typeof l === 'string' ? (
             l
           ) : (
             <>
