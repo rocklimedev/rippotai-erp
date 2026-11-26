@@ -2852,6 +2852,16 @@
   {
     "module": "leads",
     "controller": "LeadsController",
+    "handler": "resolveMapsAddress",
+    "method": "POST",
+    "path": "/leads/resolve-maps-address",
+    "permission": "leads:create",
+    "public": false,
+    "file": "src/modules/leads/leads.controller.ts"
+  },
+  {
+    "module": "leads",
+    "controller": "LeadsController",
     "handler": "setProposal",
     "method": "PUT",
     "path": "/leads/:id/proposal",
