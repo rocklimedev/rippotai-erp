@@ -57,7 +57,10 @@ export class DrawingsController {
     @Query('inline') inline: string | undefined,
     @Res() res: Response,
   ) {
-    const { buffer, filename } = await this.drawingsService.buildDocket(projectId, documentTypeId);
+    const { buffer, filename } = await this.drawingsService.buildDocket(
+      projectId,
+      documentTypeId,
+    );
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/inos';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -32,12 +32,11 @@ export default function DeleteChecklist({ checklist, onDeleted }) {
   return (
     <>
       <Button
-        variant="ghost"
-        className="text-red-600"
+        variant="danger"
+        icon={Trash2}
         disabled={isLoading}
         onClick={() => setOpen(true)}
       >
-        <Trash2 className="mr-2 h-4 w-4" />
         Delete
       </Button>
       <AlertDialog

@@ -45,12 +45,30 @@ export class DocumentSnapshotInterceptor implements NestInterceptor {
       concatMap((captured) =>
         next.handle().pipe(
           concatMap(async (result) => {
-            if (captured)
+            if (captured) {
+              if (
+                hit.doc.key === 'procurement-sheet' &&
+                Array.isArray(result?.items)
+              ) {
+                const saved = result.toJSON();
+                captured.data.procurement_after = {
+                  sheets: saved.sheets,
+                  items: saved.items.map(({ materialMaster, ...item }) => ({
+                    ...item,
+                    materialMaster: materialMaster && {
+                      name: materialMaster.name,
+                      category: materialMaster.category,
+                      material_code: materialMaster.material_code,
+                    },
+                  })),
+                };
+              }
               await this.flow
                 .commitSnapshot(hit.doc, captured, request.user)
                 .catch((e) =>
                   this.logger.warn(`Snapshot save failed: ${e.message}`),
                 );
+            }
             return result;
           }),
         ),

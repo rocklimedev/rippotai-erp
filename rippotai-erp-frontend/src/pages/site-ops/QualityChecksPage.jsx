@@ -8,7 +8,9 @@ import {
   PrintChecklistButton,
   PrintTemplateButton,
 } from '@/components/site-ops/ChecklistPrint';
-import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, ClipboardCheck, Download, Plus, Save } from 'lucide-react';
+import { Button, Card, EmptyState, Field, Page, PageHeader, SelectInput, StatusPill, TextArea, TextInput } from '@/components/inos';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useGetProjectsQuery } from '../../api/projects/project.api';
 import {
@@ -69,6 +71,7 @@ function dateInput(value) {
 }
 
 export default function QualityChecksPage() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const projectId = params.get('projectId') || '';
   const checklistId = params.get('checklistId') || '';
@@ -82,52 +85,50 @@ export default function QualityChecksPage() {
   const projects = array(response);
   const project = projects.find((project) => project.id === projectId);
   return (
-    <div className="bg-page min-h-full p-4 sm:p-6 space-y-5">
-      <Link className="bc-btn-secondary inline-flex" to="/site-operations/checklists">
-        ← Checklists list
-      </Link>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">Site operations</p>
-          <h1 className="text-2xl font-semibold text-[var(--ink-green)]">
-            Quality checklist workspace
-          </h1>
-          {checklistId && recordInfo && (
-            <p className="text-[13px] text-[var(--muted)] mt-1">{recordInfo}</p>
-          )}
+    <Page>
+      <PageHeader
+        crumbs={[
+          { label: 'Site Operations' },
+          { label: 'Checklists', to: '/site-operations/checklists' },
+          { label: 'Workspace' },
+        ]}
+        icon={<ClipboardCheck size={22} />}
+        title="Quality checklist workspace"
+        info={checklistId ? recordInfo : undefined}
+        actions={
+          <Button icon={ArrowLeft} onClick={() => navigate('/site-operations/checklists')}>
+            Checklists list
+          </Button>
+        }
+      />
+      <Card title="Project details">
+        <div className="inos-form-grid">
+          <Field label="Project" htmlFor="quality-project">
+            <SelectInput
+              id="quality-project"
+              className="w-full"
+              value={projectId}
+              disabled={isLoading}
+              onChange={(event) => {
+                const next = new URLSearchParams(params);
+                next.delete('checklistId');
+                if (event.target.value) next.set('projectId', event.target.value);
+                else next.delete('projectId');
+                setParams(next);
+              }}
+            >
+              <option value="">{isLoading ? 'Loading projects…' : 'Select a project'}</option>
+              {projectId && !project && <option value={projectId}>{projectId}</option>}
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name || project.project_name}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
         </div>
-        <div className="w-full sm:w-80">
-          <label htmlFor="quality-project" className="block text-sm mb-1">
-            Project
-          </label>
-          <select
-            id="quality-project"
-            className="bc-input w-full"
-            value={projectId}
-            disabled={isLoading}
-            onChange={(event) => {
-              const next = new URLSearchParams(params);
-              next.delete('checklistId');
-              if (event.target.value) next.set('projectId', event.target.value);
-              else next.delete('projectId');
-              setParams(next);
-            }}
-          >
-            <option value="">{isLoading ? 'Loading projects…' : 'Select a project'}</option>
-            {projectId && !project && <option value={projectId}>{projectId}</option>}
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name || project.project_name}
-              </option>
-            ))}
-          </select>
-          {error && (
-            <button className="text-sm text-red-600" onClick={refetch}>
-              Could not load projects. Retry
-            </button>
-          )}
-        </div>
-      </div>
+        {error && <Button className="mt-3" onClick={refetch}>Retry loading projects</Button>}
+      </Card>
       {checklistId && <RecordContext type="checklist" id={checklistId} />}
       {projectId ? (
         <QualityProject
@@ -137,12 +138,12 @@ export default function QualityChecksPage() {
           initialId={params.get('checklistId')}
         />
       ) : (
-        <div className="bc-card p-10 text-center text-[var(--muted)]">
-          Select a project to create and inspect its quality checklists.
-        </div>
+        <Card>
+          <EmptyState icon={ClipboardCheck} title="Select a project" text="Choose a project to create and inspect its quality checklists." />
+        </Card>
       )}
       {checklistId && <VersionHistory type="checklist" id={checklistId} />}
-    </div>
+    </Page>
   );
 }
 
@@ -169,12 +170,11 @@ function QualityProject({ projectId, projectName, initialId }) {
   const [exportJson, { isFetching: exporting }] = useLazyExportProjectQualityWorkbookJsonQuery();
   return (
     <>
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <h2 className="text-lg font-semibold">{projectName}</h2>
+      <Card title={projectName}>
         <div className="flex flex-wrap gap-2">
           <PrintBlankChecklist templates={templates} />
-          <button
-            className="bc-btn-secondary"
+          <Button
+            icon={Download}
             disabled={exporting}
             onClick={async () => {
               try {
@@ -187,12 +187,12 @@ function QualityProject({ projectId, projectName, initialId }) {
             }}
           >
             {exporting ? 'Preparing Excel…' : 'Download project Excel'}
-          </button>
-          <button className="bc-btn-primary" onClick={() => setShowCreate(true)}>
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={() => setShowCreate(true)}>
             New checklist
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
       {showCreate && (
         <CreateChecklist
           projectId={projectId}
@@ -222,61 +222,74 @@ function QualityProject({ projectId, projectName, initialId }) {
             refreshOverview={refreshOverview}
             projectId={projectId}
           />
-          <section className="space-y-3">
-            <h2 className="font-semibold">Project checklists</h2>
+          <Card title="Project checklists" flush>
             {error ? (
-              <button className="bc-btn-secondary" onClick={refetch}>
+              <Button className="m-4" onClick={refetch}>
                 Could not load checklists. Retry
-              </button>
+              </Button>
             ) : isFetching ? (
-              <p>Loading checklists…</p>
+              <p className="p-4" role="status">Loading checklists…</p>
             ) : !list?.data?.length ? (
-              <div className="bc-card p-6">
-                No checklists yet. Create one from a work-head template.
-              </div>
+              <EmptyState icon={ClipboardCheck} title="No checklists yet" text="Create a checklist to start inspecting this project." />
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {list.data.map((checklist) => (
-                  <button
-                    className="bc-card p-4 text-left hover:shadow-md"
-                    key={checklist.id}
-                    onClick={() => setActiveId(checklist.id)}
-                  >
-                    <h3 className="font-semibold">{checklist.checklist_name}</h3>
-                    <p className="text-sm text-[var(--muted)] mt-1">
-                      {checklist.checklist_items?.length || 0} checkpoints ·{' '}
-                      {checklist.status.replaceAll('_', ' ')} ·{' '}
-                      {Number(checklist.completion_percentage)}% inspected
-                    </p>
-                    {checklist.description && (
-                      <p className="text-sm mt-2">{checklist.description}</p>
-                    )}
-                  </button>
-                ))}
+              <div className="inos-table-wrap">
+                <table className="inos-table">
+                  <thead>
+                    <tr>
+                      <th>Checklist</th>
+                      <th>Status</th>
+                      <th>Checkpoints</th>
+                      <th>Inspected</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.data.map((checklist) => (
+                      <tr key={checklist.id}>
+                        <td>
+                          <span className="font-semibold">{checklist.checklist_name}</span>
+                          {checklist.description && (
+                            <p className="mt-1 whitespace-normal text-[var(--text-2)]">{checklist.description}</p>
+                          )}
+                        </td>
+                        <td><StatusPill status={checklist.status} /></td>
+                        <td>{checklist.checklist_items?.length || 0}</td>
+                        <td>{Number(checklist.completion_percentage)}%</td>
+                        <td>
+                          <Button
+                            size="sm"
+                            aria-label={`Open ${checklist.checklist_name}`}
+                            onClick={() => setActiveId(checklist.id)}
+                          >
+                            Open
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
             {list?.totalPages > 1 && (
-              <div className="flex items-center gap-3">
-                <button
-                  className="bc-btn-secondary"
+              <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[var(--line)] p-4">
+                <Button
                   disabled={page === 1}
                   onClick={() => setPage(page - 1)}
                 >
                   Previous
-                </button>
+                </Button>
                 <span>
                   Page {page} of {list.totalPages}
                 </span>
-                <button
-                  className="bc-btn-secondary"
+                <Button
                   disabled={page >= list.totalPages}
                   onClick={() => setPage(page + 1)}
                 >
                   Next
-                </button>
+                </Button>
               </div>
             )}
-          </section>
+          </Card>
         </>
       )}
     </>
@@ -350,29 +363,23 @@ function OverviewTable({ overview, overviewLoading, overviewError, refreshOvervi
   };
 
   return (
-    <section className="bc-card overflow-hidden">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold">Work-head overview</h2>
-        <p className="text-sm text-[var(--muted)]">
-          Record each work head’s overall status and remarks.
-        </p>
-      </div>
+    <Card title="Work-head overview" subtitle="Record each work head’s overall status and remarks." flush>
       {overviewLoading ? (
         <p className="p-4">Loading work heads…</p>
       ) : overviewError ? (
-        <button className="bc-btn-secondary m-4" onClick={refreshOverview}>
+        <Button className="m-4" onClick={refreshOverview}>
           Could not load work heads. Retry
-        </button>
+        </Button>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="bc-table">
+          <div className="inos-table-wrap">
+            <table className="inos-table">
               <thead>
                 <tr>
-                  <th className="p-3">S. no.</th>
-                  <th className="p-3">Heads</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Remarks</th>
+                  <th>S. no.</th>
+                  <th>Heads</th>
+                  <th>Status</th>
+                  <th>Remarks</th>
                 </tr>
               </thead>
               <tbody>
@@ -382,13 +389,12 @@ function OverviewTable({ overview, overviewLoading, overviewError, refreshOvervi
                     remarks: head.remarks ?? '',
                   };
                   return (
-                    <tr key={head.item_id} className="border-t">
-                      <td className="p-3">{head.template_serial_number}</td>
-                      <td className="p-3 font-medium">{head.name}</td>
-                      <td className="p-3">
-                        <select
+                    <tr key={head.item_id}>
+                      <td>{head.template_serial_number}</td>
+                      <td className="font-medium">{head.name}</td>
+                      <td>
+                        <SelectInput
                           aria-label={`Status for ${head.name}`}
-                          className="bc-input"
                           value={draft.status}
                           onChange={(event) =>
                             updateDraft(head.item_id, 'status', event.target.value)
@@ -399,12 +405,12 @@ function OverviewTable({ overview, overviewLoading, overviewError, refreshOvervi
                               {value}
                             </option>
                           ))}
-                        </select>
+                        </SelectInput>
                       </td>
-                      <td className="p-3">
-                        <textarea
+                      <td>
+                        <TextArea
                           aria-label={`Remarks for ${head.name}`}
-                          className="bc-input w-full min-w-48"
+                          className="w-full min-w-48"
                           rows={2}
                           value={draft.remarks}
                           onChange={(event) =>
@@ -418,15 +424,16 @@ function OverviewTable({ overview, overviewLoading, overviewError, refreshOvervi
               </tbody>
             </table>
             {!heads.length && (
-              <p className="p-4 text-[var(--muted)]">
+              <p className="p-4 text-[var(--text-2)]">
                 Template work heads are not available. Apply the quality template migration.
               </p>
             )}
           </div>
           {heads.length > 0 && (
-            <div className="p-4 border-t flex justify-end">
-              <button
-                className="bc-btn-primary"
+            <div className="flex justify-end border-t border-[var(--line)] p-4">
+              <Button
+                variant="primary"
+                icon={Save}
                 disabled={isLoading || dirtyIds.length === 0}
                 onClick={saveAll}
               >
@@ -435,12 +442,12 @@ function OverviewTable({ overview, overviewLoading, overviewError, refreshOvervi
                   : dirtyIds.length
                     ? `Save all (${dirtyIds.length})`
                     : 'Save all'}
-              </button>
+              </Button>
             </div>
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -456,13 +463,10 @@ function CreateChecklist({ projectId, templates, templateError, onClose, onCreat
   });
   const busy = templateState.isLoading || customState.isLoading;
   return (
-    <section className="bc-card p-4 space-y-3">
-      <div className="flex justify-between">
-        <h2 className="font-semibold">Create project checklist</h2>
-        <button className="bc-btn-secondary" disabled={busy} onClick={onClose}>
-          Cancel
-        </button>
-      </div>
+    <Card
+      title="Create project checklist"
+      actions={<Button disabled={busy} onClick={onClose}>Cancel</Button>}
+    >
       {templateError && (
         <p role="alert" className="text-red-600">
           Could not load templates. Check that the template migration has been applied.
@@ -488,10 +492,9 @@ function CreateChecklist({ projectId, templates, templateError, onClose, onCreat
           }
         }}
       >
-        <label className="block text-sm">
-          Work head
-          <select
-            className="bc-input w-full mt-1"
+        <Field label="Work head" htmlFor="quality-work-head">
+          <SelectInput
+            id="quality-work-head"
             value={workHead}
             onChange={(event) => setWorkHead(event.target.value)}
             disabled={busy}
@@ -502,38 +505,36 @@ function CreateChecklist({ projectId, templates, templateError, onClose, onCreat
                 {template.label} ({template.checkpoint_count} checkpoints)
               </option>
             ))}
-          </select>
-        </label>
+          </SelectInput>
+        </Field>
         {!selected?.has_template && (
           <>
-            <p className="text-sm text-[var(--muted)]">
+            <p className="text-sm text-[var(--text-2)]">
               {selected
                 ? 'The supplied workbook has no detailed sheet for this head. Add your own checkpoints after creating it.'
                 : 'Add project-specific checkpoints after creating this checklist.'}
             </p>
-            <label className="block text-sm">
-              Checklist name
-              <input
-                className="bc-input mt-1 w-full"
+            <Field label="Checklist name" htmlFor="quality-checklist-name">
+              <TextInput
+                id="quality-checklist-name"
                 maxLength={255}
                 value={name}
                 placeholder={selected?.label || 'Checklist name'}
                 onChange={(event) => setName(event.target.value)}
               />
-            </label>
+            </Field>
           </>
         )}
-        <label className="block text-sm">
-          Description / location
-          <textarea
-            className="bc-input w-full mt-1"
+        <Field label="Description / location" htmlFor="quality-checklist-description">
+          <TextArea
+            id="quality-checklist-description"
             rows={2}
             maxLength={2000}
             value={description}
             placeholder="e.g. First-floor bathroom"
             onChange={(event) => setDescription(event.target.value)}
           />
-        </label>
+        </Field>
         {isFetching && <p>Loading template preview…</p>}
         {preview && (
           <details>
@@ -549,18 +550,18 @@ function CreateChecklist({ projectId, templates, templateError, onClose, onCreat
             </ol>
           </details>
         )}
-        {selected?.has_template && (
-          <PrintTemplateButton workHead={workHead} className="bc-btn-secondary mr-2" />
-        )}
-        <button className="bc-btn-primary" disabled={busy || (!selected && !name.trim())}>
-          {busy
-            ? 'Creating…'
-            : selected?.has_template
-              ? 'Create from template'
-              : 'Create checklist'}
-        </button>
+        <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--line)] pt-4">
+          {selected?.has_template && <PrintTemplateButton workHead={workHead} />}
+          <Button type="submit" variant="primary" icon={Plus} disabled={busy || (!selected && !name.trim())}>
+            {busy
+              ? 'Creating…'
+              : selected?.has_template
+                ? 'Create from template'
+                : 'Create checklist'}
+          </Button>
+        </div>
       </form>
-    </section>
+    </Card>
   );
 }
 
@@ -639,49 +640,42 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
     }
   };
 
-  if (isLoading) return <p>Loading checklist…</p>;
+  if (isLoading) return <Card><p role="status">Loading checklist…</p></Card>;
   if (error || !checklist)
     return (
-      <div className="bc-card p-5">
-        <button className="bc-btn-secondary" onClick={onBack}>
-          Back
-        </button>
-        <button className="bc-btn-secondary" onClick={refetch}>
-          Could not load checklist. Retry
-        </button>
-      </div>
+      <Card title="Could not load checklist">
+        <div className="flex flex-wrap gap-2">
+          <Button icon={ArrowLeft} onClick={onBack}>Project checklists</Button>
+          <Button onClick={refetch}>Retry</Button>
+        </div>
+      </Card>
     );
   if (checklist.project_id !== projectId)
     return (
-      <div role="alert">
-        This checklist belongs to a different project.{' '}
-        <button onClick={onBack}>Back to project</button>
-      </div>
+      <Card>
+        <p role="alert">This checklist belongs to a different project.</p>
+        <Button className="mt-3" icon={ArrowLeft} onClick={onBack}>Back to project</Button>
+      </Card>
     );
 
   const accepted = items.filter((item) => item.is_accepted === true).length;
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap justify-between gap-3">
-        <div>
-          <button className="text-sm underline" onClick={onBack}>
-            ← Project checklists
-          </button>
-          <h2 className="text-xl font-semibold mt-2">{checklist.checklist_name}</h2>
-          <p className="text-sm text-[var(--muted)]">{checklist.description}</p>
-          <p className="text-sm mt-1">
-            {items.length} checkpoints · {accepted} accepted ·{' '}
-            {Number(checklist.completion_percentage)}% inspected ·{' '}
-            {checklist.status.replaceAll('_', ' ')}
+    <>
+      <Card title={checklist.checklist_name} subtitle={checklist.description}>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <StatusPill status={checklist.status} />
+          <p className="text-sm text-[var(--text-2)]">
+            {items.length} checkpoints · {accepted} accepted · {Number(checklist.completion_percentage)}% inspected
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 items-start">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button icon={ArrowLeft} onClick={onBack}>Project checklists</Button>
           <PrintChecklistButton checklist={checklist} projectName={projectName} />
-          <button className="bc-btn-secondary" onClick={() => setShowAdd(!showAdd)}>
+          <Button icon={Plus} aria-expanded={showAdd} onClick={() => setShowAdd(!showAdd)}>
             Add checkpoint
-          </button>
-          <button
-            className="bc-btn-secondary"
+          </Button>
+          <Button
+            icon={Download}
             disabled={exportState.isFetching}
             onClick={async () => {
               try {
@@ -694,9 +688,9 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
             }}
           >
             {exportState.isFetching ? 'Preparing Excel…' : 'Download Excel'}
-          </button>
-          <button
-            className="bc-btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             disabled={
               !items.length ||
               accepted !== items.length ||
@@ -713,10 +707,10 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
             }}
           >
             Mark passed
-          </button>
+          </Button>
           <DeleteChecklist checklist={checklist} onDeleted={onBack} />
         </div>
-      </div>
+      </Card>
       {showAdd && (
         <AddCheckpoint
           checklistId={id}
@@ -724,24 +718,24 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
           onClose={() => setShowAdd(false)}
         />
       )}
-      <div className="bc-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="bc-table">
+      <Card title="Checkpoints" flush>
+        <div className="inos-table-wrap">
+          <table className="inos-table">
             <thead>
               <tr>
-                <th className="p-3">S. No.</th>
-                <th className="p-3 min-w-80">Checkpoint</th>
-                <th className="p-3">Accepted (yes/no)</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Remarks / Observation</th>
-                <th className="p-3">Inspection date</th>
+                <th>S. No.</th>
+                <th className="min-w-80">Checkpoint</th>
+                <th>Accepted (yes/no)</th>
+                <th>Status</th>
+                <th>Remarks / Observation</th>
+                <th>Inspection date</th>
               </tr>
             </thead>
             <tbody>
               {PHASES.map(([phase, label]) => (
                 <Fragment key={phase}>
-                  <tr className="bg-[var(--mist-soft)]">
-                    <th colSpan={6} className="p-3 text-left">
+                  <tr className="bg-[var(--surface-2)]">
+                    <th colSpan={6} className="text-left">
                       {label}
                     </th>
                   </tr>
@@ -761,12 +755,11 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                         date: dateInput(item.inspection_date),
                       };
                       return (
-                        <tr key={item.id} className="border-t">
-                          <td className="p-3">{item.serial_number}</td>
-                          <td className="p-3">{item.checkpoint_name}</td>
-                          <td className="p-3">
-                            <select
-                              className="bc-input"
+                        <tr key={item.id}>
+                          <td>{item.serial_number}</td>
+                          <td>{item.checkpoint_name}</td>
+                          <td>
+                            <SelectInput
                               aria-label={`Acceptance for checkpoint ${item.serial_number}`}
                               value={draft.accepted}
                               onChange={(event) => {
@@ -785,11 +778,10 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                               <option value="">Pending</option>
                               <option value="yes">Yes</option>
                               <option value="no">No</option>
-                            </select>
+                            </SelectInput>
                           </td>
-                          <td className="p-3">
-                            <select
-                              className="bc-input"
+                          <td>
+                            <SelectInput
                               aria-label={`Status for checkpoint ${item.serial_number}`}
                               value={draft.status}
                               onChange={(event) => {
@@ -807,11 +799,11 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                                   {label}
                                 </option>
                               ))}
-                            </select>
+                            </SelectInput>
                           </td>
-                          <td className="p-3">
-                            <textarea
-                              className="bc-input w-full min-w-52"
+                          <td>
+                            <TextArea
+                              className="w-full min-w-52"
                               aria-label={`Remarks for checkpoint ${item.serial_number}`}
                               rows={2}
                               maxLength={2000}
@@ -823,9 +815,8 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                               }
                             />
                           </td>
-                          <td className="p-3">
-                            <input
-                              className="bc-input"
+                          <td>
+                            <TextInput
                               aria-label={`Inspection date for checkpoint ${item.serial_number}`}
                               type="date"
                               value={draft.date}
@@ -841,7 +832,7 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                     })}
                   {!items.some((item) => item.phase === phase) && (
                     <tr>
-                      <td colSpan={6} className="p-3 text-sm text-[var(--muted)]">
+                      <td colSpan={6} className="text-sm text-[var(--text-2)]">
                         No checkpoints in this phase.
                       </td>
                     </tr>
@@ -852,9 +843,10 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
           </table>
         </div>
         {items.length > 0 && (
-          <div className="p-4 border-t flex justify-end">
-            <button
-              className="bc-btn-primary"
+          <div className="flex justify-end border-t border-[var(--line)] p-4">
+            <Button
+              variant="primary"
+              icon={Save}
               disabled={updateState.isLoading || dirtyIds.length === 0}
               onClick={saveAll}
             >
@@ -863,11 +855,11 @@ function ChecklistDetail({ id, projectId, projectName, onBack }) {
                 : dirtyIds.length
                   ? `Save all (${dirtyIds.length})`
                   : 'Save all'}
-            </button>
+            </Button>
           </div>
         )}
-      </div>
-    </section>
+      </Card>
+    </>
   );
 }
 
@@ -876,53 +868,53 @@ function AddCheckpoint({ checklistId, nextSerial, onClose }) {
   const [phase, setPhase] = useState('BEFORE_EXECUTION');
   const [add, { isLoading }] = useAddQualityChecklistItemMutation();
   return (
-    <form
-      className="bc-card p-4 flex flex-wrap gap-3 items-end"
-      onSubmit={async (event) => {
-        event.preventDefault();
-        try {
-          await add({
-            checklistId,
-            serial_number: nextSerial,
-            checkpoint_name: name.trim(),
-            phase,
-          }).unwrap();
-          onClose();
-          toast.success('Checkpoint added');
-        } catch (error) {
-          toast.error(message(error));
-        }
-      }}
-    >
-      <label className="flex-1 text-sm">
-        Checkpoint
-        <input
-          className="bc-input w-full mt-1"
-          maxLength={255}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-      </label>
-      <label className="text-sm">
-        Phase
-        <select
-          className="bc-input mt-1"
-          value={phase}
-          onChange={(event) => setPhase(event.target.value)}
-        >
-          {PHASES.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button className="bc-btn-primary" disabled={isLoading || !name.trim()}>
-        {isLoading ? 'Adding…' : 'Add'}
-      </button>
-      <button type="button" className="bc-btn-secondary" onClick={onClose}>
-        Cancel
-      </button>
-    </form>
+    <Card title="Add checkpoint">
+      <form
+        className="inos-form-grid"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          try {
+            await add({
+              checklistId,
+              serial_number: nextSerial,
+              checkpoint_name: name.trim(),
+              phase,
+            }).unwrap();
+            onClose();
+            toast.success('Checkpoint added');
+          } catch (error) {
+            toast.error(message(error));
+          }
+        }}
+      >
+        <Field label="Checkpoint" htmlFor="quality-new-checkpoint">
+          <TextInput
+            id="quality-new-checkpoint"
+            maxLength={255}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </Field>
+        <Field label="Phase" htmlFor="quality-new-phase">
+          <SelectInput
+            id="quality-new-phase"
+            value={phase}
+            onChange={(event) => setPhase(event.target.value)}
+          >
+            {PHASES.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </SelectInput>
+        </Field>
+        <div className="span-full flex flex-wrap justify-end gap-2 border-t border-[var(--line)] pt-4">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary" icon={Plus} disabled={isLoading || !name.trim()}>
+            {isLoading ? 'Adding…' : 'Add'}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }

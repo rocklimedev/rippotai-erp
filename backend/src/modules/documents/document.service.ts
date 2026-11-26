@@ -153,7 +153,8 @@ export class DocumentsService {
         );
       }
     }
-    const startsInDraft = documentType && PRE_DESIGN_UPLOAD_TYPES.has(documentType.code);
+    const startsInDraft =
+      documentType && PRE_DESIGN_UPLOAD_TYPES.has(documentType.code);
     let status = startsInDraft ? 'draft' : dto.status;
     if (file && !status) {
       status =
@@ -182,7 +183,10 @@ export class DocumentsService {
     } as any);
     if (requirement && (startsInDraft || document.status === 'approved')) {
       const isCompleted = document.status === 'approved';
-      await requirement.update({ isCompleted, completedAt: isCompleted ? new Date() : null });
+      await requirement.update({
+        isCompleted,
+        completedAt: isCompleted ? new Date() : null,
+      });
     }
     if (document.projectId)
       await this.gateEngine.invalidateReadinessCache(document.projectId);
@@ -265,7 +269,8 @@ export class DocumentsService {
       ? await this.documentTypeModel.findByPk(document.documentTypeId)
       : null;
     const startsInDraft = type && PRE_DESIGN_UPLOAD_TYPES.has(type.code);
-    const reviewStatus = type && !type.requiresApproval ? 'approved' : 'submitted';
+    const reviewStatus =
+      type && !type.requiresApproval ? 'approved' : 'submitted';
     const status = startsInDraft ? 'draft' : reviewStatus;
 
     const { filename, url } = await this.cdnService.uploadFile(file);
@@ -403,7 +408,8 @@ export class DocumentsService {
 
     const nextVersionLabel =
       dto.version ?? this.computeNextVersionLabel(document);
-    const startsInDraft = document.documentType &&
+    const startsInDraft =
+      document.documentType &&
       PRE_DESIGN_UPLOAD_TYPES.has(document.documentType.code);
     const status = startsInDraft ? 'draft' : dto.status;
 
@@ -433,7 +439,9 @@ export class DocumentsService {
 
     if (startsInDraft) {
       if (document.requirementId) {
-        const requirement = await this.requirementModel.findByPk(document.requirementId);
+        const requirement = await this.requirementModel.findByPk(
+          document.requirementId,
+        );
         await requirement?.update({ isCompleted: false, completedAt: null });
       }
       if (document.projectId)

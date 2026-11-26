@@ -215,6 +215,15 @@
   .inos-topbar__tools > button:not([data-testid="topbar-user"]), .inos-topbar__tools > a, .inos-topbar__tools > * > button { width: 36px; height: 36px; }
   .inos-shell__content { padding: 16px 16px 40px; }
 }
+@media (max-width: 360px) {
+  .inos-topbar { gap: 4px; padding-inline: 8px; }
+  .inos-topbar__menu, .inos-topbar__apps { width: 32px; }
+  .inos-topbar__monogram { width: 24px; height: 24px; }
+  .inos-topbar__tools > button:not([data-testid="topbar-user"]),
+  .inos-topbar__tools > a,
+  .inos-topbar__tools > * > button { width: 32px; }
+  .inos-shell__content { padding-inline: 12px; }
+}
 @media print {
   .inos-side, .inos-topbar, .inos-autohead { display: none !important; }
   .inos-shell__main { margin-left: 0 !important; }

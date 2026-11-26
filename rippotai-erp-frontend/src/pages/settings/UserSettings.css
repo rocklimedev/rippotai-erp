@@ -1,0 +1,106 @@
+.users-settings {
+  container-type: inline-size;
+}
+
+.users-settings__joined-label {
+  display: none;
+}
+
+.users-settings__identity,
+.users-settings__email {
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 760px) {
+  .users-settings .inos-page-header__actions {
+    flex-wrap: wrap;
+  }
+
+  .users-settings .inos-page-header__actions .inos-btn,
+  .users-settings .inos-toolbar button {
+    min-height: 44px;
+  }
+
+  .users-settings .inos-toolbar .inos-search {
+    flex: 1 0 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .users-settings .inos-search input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .users-settings__table,
+  .users-settings__table tbody {
+    display: block;
+  }
+
+  .users-settings__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .users-settings__table tbody tr:not(.users-settings__row) {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .users-settings__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'identity actions'
+      'email email'
+      'role joined'
+      'status verification';
+    gap: 6px 8px;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .users-settings__row:last-child {
+    border-bottom: 0;
+  }
+
+  .users-settings__table tbody .users-settings__row td {
+    display: block;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .users-settings__row .adm-cell-title {
+    flex-wrap: wrap;
+  }
+
+  .users-settings__row .inos-pill {
+    white-space: normal;
+  }
+
+  .users-settings__identity { grid-area: identity; }
+  .users-settings__email { grid-area: email; }
+  .users-settings__role { grid-area: role; }
+  .users-settings__joined { grid-area: joined; }
+  .users-settings__status { grid-area: status; }
+  .users-settings__verification { grid-area: verification; }
+  .users-settings__row .actions { grid-area: actions; }
+
+  .users-settings__joined-label {
+    display: inline;
+  }
+
+  .users-settings__row .actions button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

@@ -720,6 +720,8 @@ button.inos-stat:hover {
 
 /* Table */
 .inos-table-wrap {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
 }
 .inos-table {
@@ -1769,9 +1771,20 @@ textarea.bc-input {
 .inos-page-header__actions .inos-btn--outline,
 .inos-page-header__actions .inos-btn--soft { --h: 34px; padding: 0 12px; font-size: 13px; border-color: var(--line-strong); background: #fff; }
 @media (max-width: 767px) {
-  .inos-page-header__back { display: inline-flex; }
+  .inos-page { gap: 16px; padding-bottom: 32px; }
+  .inos-page-header { align-items: flex-start; gap: 12px; }
+  .inos-page-header__back { display: inline-flex; width: 44px; height: 44px; }
   .inos-page-header .inos-title { font-size: 22px; }
   .inos-crumbs ol { margin-bottom: 4px; }
+  .inos-crumbs li { max-width: 100%; overflow-wrap: anywhere; }
+  .inos-page-header__actions { max-width: 100%; }
+  .inos-page-header__actions .inos-btn,
+  .inos-toolbar .inos-btn,
+  .inos-form-actions .inos-btn { min-height: 44px; }
+  .inos-toolbar .inos-search { flex-basis: 100%; min-width: 0; max-width: none; }
+  .inos-toolbar .inos-search input { min-height: 44px; font-size: 16px; }
+  .inos-toolbar .inos-segmented button { min-height: 44px; }
+  .inos-form-actions__buttons { flex-wrap: wrap; max-width: 100%; }
 }
 
 /* Tables */

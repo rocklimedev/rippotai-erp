@@ -31,7 +31,7 @@ export default function SettingsLayout() {
   return (
     <AppShell app="settings">
       <div className="w-full max-w-[1700px] mx-auto">
-        <div className="bg-white border border-[var(--line)] rounded-2xl p-6 lg:p-8 min-h-[480px]">
+        <div className="bg-white border border-[var(--line)] rounded-2xl p-3 sm:p-6 lg:p-8 min-h-[480px]">
           <Outlet />
         </div>
       </div>
