@@ -2,6 +2,7 @@ import { HttpException } from '@nestjs/common';
 import type { RequestHandler } from 'express';
 import { CdnService } from './cdn.service';
 import { verifyFileAccess } from './file-access';
+import { downloadDisposition, downloadName } from '@/common/download-name';
 
 // Local development uses the same absolute CDN URL shape. This middleware must
 // run before express.static, so a private filename never bypasses validation.
@@ -19,6 +20,10 @@ export function localPrivateCdn(storage: CdnService): RequestHandler {
         req.query.signature as string,
       );
       res.type(key);
+      res.setHeader(
+        'Content-Disposition',
+        downloadDisposition(downloadName([key], key, 'File'), 'inline'),
+      );
       await storage.streamFile(key, res);
     } catch (error) {
       if (res.headersSent || res.destroyed) {

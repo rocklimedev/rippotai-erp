@@ -102,6 +102,9 @@ export class Lead extends Model<Lead> {
   })
   declare location: string | null;
 
+  @Column({ field: 'google_maps_url', type: DataType.TEXT, allowNull: true })
+  declare googleMapsUrl: string | null;
+
   @Column({
     type: DataType.STRING,
     allowNull: true,
@@ -125,6 +128,9 @@ export class Lead extends Model<Lead> {
     allowNull: true,
   })
   declare source: string | null;
+
+  @Column({ field: 'referral_name', type: DataType.STRING, allowNull: true })
+  declare referralName: string | null;
 
   @Column({
     type: DataType.STRING,

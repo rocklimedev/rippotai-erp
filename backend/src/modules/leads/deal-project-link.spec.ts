@@ -59,6 +59,25 @@ describe('deal -> project / client facts', () => {
     expect(patch).toEqual({ site_location: 'New address' });
   });
 
+  it('copies a deal Maps link into the project independently of the address', () => {
+    const googleMapsUrl = 'https://maps.app.goo.gl/example';
+    expect(
+      projectFactPatch(
+        { site_location: 'Existing address' },
+        { googleMapsUrl },
+      ),
+    ).toEqual({
+      google_maps_url: googleMapsUrl,
+    });
+    expect(
+      projectFactPatch(
+        { google_maps_url: 'https://maps.app.goo.gl/old' },
+        { googleMapsUrl },
+        new Set(['google_maps_url']),
+      ),
+    ).toEqual({ google_maps_url: googleMapsUrl });
+  });
+
   it('fills empty client contact fields and keeps typed ones', () => {
     expect(
       clientFactPatch(

@@ -1,6 +1,7 @@
 """Phase 5 — Projects App + Client Portal backend module."""
 from fastapi import APIRouter, HTTPException, Depends, Body, Query, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
+from download_names import document_disposition
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Any, Dict
 from datetime import datetime, timezone, timedelta, date
@@ -443,7 +444,7 @@ def register_phase5(app, api, db, deps: dict):
         if d.get("content_b64"):
             import base64 as _b64
             content = _b64.b64decode(d["content_b64"])
-            return StreamingResponse(io.BytesIO(content), media_type=d.get("mime") or "application/pdf", headers={"Content-Disposition": f'attachment; filename="{d.get("filename","document.pdf")}"'})
+            return StreamingResponse(io.BytesIO(content), media_type=d.get("mime") or "application/pdf", headers={"Content-Disposition": document_disposition(d, d.get("filename") or "document.pdf")})
         # Legacy disk-backed docs
         if not d.get("path"):
             raise HTTPException(404, "Document has no payload")
@@ -451,7 +452,7 @@ def register_phase5(app, api, db, deps: dict):
         if not p.exists():
             raise HTTPException(404, "File missing on disk")
         content = p.read_bytes()
-        return StreamingResponse(io.BytesIO(content), media_type=d.get("mime") or "application/pdf", headers={"Content-Disposition": f'attachment; filename="{p.name}"'})
+        return StreamingResponse(io.BytesIO(content), media_type=d.get("mime") or "application/pdf", headers={"Content-Disposition": document_disposition(d, p.name)})
 
     @api.post("/projects/{pid}/handover/deliver")
     async def deliver_handover(pid: str, payload: dict = Body(default={}), current=Depends(require_internal)):

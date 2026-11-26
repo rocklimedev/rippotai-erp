@@ -176,7 +176,7 @@ describe('unified project planner', () => {
         },
       ],
     });
-    const data = await instance.exportProjectWorkbook('project');
+    const { buffer: data } = await instance.exportProjectWorkbook('project');
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(data as any);
     // Sheets, titles and headings of PROJECT PLANNER TEMPLATE.xlsx.

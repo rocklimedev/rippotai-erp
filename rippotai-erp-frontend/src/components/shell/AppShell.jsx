@@ -1,30 +1,30 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { APP_META } from "@/config/appNav";
-import { useAuth } from "@/context/AuthContext";
-import { PageHeader } from "@/components/inos";
-import AppSidebar from "./AppSidebar";
-import GlobalTopBar from "./GlobalTopBar";
-import { activeItem, sidebarItems } from "./nav-items";
-import { PageTitleProvider } from "./PageTitleContext";
-import { usePageTitleState } from "./page-title";
-import { classifyLocation, codeFromInfo, recordVisit } from "./recent";
-import { LAST_APP_KEY } from "./last-app";
-import "./shell.css";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { APP_META } from '@/config/appNav';
+import { useAuth } from '@/context/AuthContext';
+import { PageHeader } from '@/components/inos';
+import AppSidebar from './AppSidebar';
+import GlobalTopBar from './GlobalTopBar';
+import { activeItem, sidebarItems } from './nav-items';
+import { PageTitleProvider } from './PageTitleContext';
+import { usePageTitleState } from './page-title';
+import { classifyLocation, codeFromInfo, recordVisit } from './recent';
+import { LAST_APP_KEY } from './last-app';
+import './shell.css';
 
-const COLLAPSE_KEY = "inos.sidebar.collapsed";
+const COLLAPSE_KEY = 'inos.sidebar.collapsed';
 const readCollapsed = () => {
   try {
-    return localStorage.getItem(COLLAPSE_KEY) === "1";
+    return localStorage.getItem(COLLAPSE_KEY) === '1';
   } catch {
     return false;
   }
 };
 
 function titleFromPath(pathname) {
-  const last = pathname.split("/").filter(Boolean).pop() || "";
+  const last = pathname.split('/').filter(Boolean).pop() || '';
   if (!last || /^[0-9a-f-]{8,}$/i.test(last) || /^\d+$/.test(last)) return null;
-  return last.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return last.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /* Pages not built on <PageHeader> render their own big <h1> near the top.
@@ -37,16 +37,16 @@ function usePageHeading(rootRef, pathname, skip) {
     let current = null;
     const pick = () => {
       const top = root.getBoundingClientRect().top;
-      const h1 = [...root.querySelectorAll("h1")].find(
+      const h1 = [...root.querySelectorAll('h1')].find(
         (el) =>
-          !el.closest("[role=dialog]") &&
-          !el.closest(".inos-page-header") &&
+          !el.closest('[role=dialog]') &&
+          !el.closest('.inos-page-header') &&
           el.getBoundingClientRect().top - top < 220 &&
           el.textContent.trim(),
       );
-      if (current && current !== h1) current.classList.remove("is-lifted-title");
+      if (current && current !== h1) current.classList.remove('is-lifted-title');
       current = h1 || null;
-      if (h1) h1.classList.add("is-lifted-title");
+      if (h1) h1.classList.add('is-lifted-title');
       setHeading(h1 ? h1.textContent.trim() : null);
     };
     pick();
@@ -54,7 +54,7 @@ function usePageHeading(rootRef, pathname, skip) {
     obs.observe(root, { childList: true, subtree: true, characterData: true });
     return () => {
       obs.disconnect();
-      if (current) current.classList.remove("is-lifted-title");
+      if (current) current.classList.remove('is-lifted-title');
     };
   }, [rootRef, pathname, skip]);
   return skip ? null : heading;
@@ -70,9 +70,12 @@ function ShellPage({ app, children }) {
   const ref = useRef(null);
   const hasHeader = (ctx?.headers || 0) > 0;
   const lifted = usePageHeading(ref, location.pathname, hasHeader);
-  const meta = APP_META[app] || { name: "INOS", base: "/" };
+  const meta = APP_META[app] || { name: 'INOS', base: '/' };
   const explicit = ctx?.title || lifted;
-  const fallback = ctx?.active?.label || (location.pathname === meta.base ? meta.name : titleFromPath(location.pathname)) || meta.name;
+  const fallback =
+    ctx?.active?.label ||
+    (location.pathname === meta.base ? meta.name : titleFromPath(location.pathname)) ||
+    meta.name;
   const pageName = explicit || fallback;
 
   useEffect(() => {
@@ -88,8 +91,14 @@ function ShellPage({ app, children }) {
     const t = setTimeout(() => {
       const to = `${location.pathname}${location.search}`;
       const code = codeFromInfo(info);
-      if (kind.kind === "project") recordVisit(user.id, { kind: "project", id: kind.id, to: location.pathname, label: explicit, code });
-      else recordVisit(user.id, { kind: "document", to, label: explicit, code, type: activeLabel });
+      if (kind.kind === 'project')
+        recordVisit(user.id, {
+          kind: 'project',
+          id: kind.id,
+          to: location.pathname,
+          label: explicit,
+        });
+      else recordVisit(user.id, { kind: 'document', to, label: explicit, code, type: activeLabel });
     }, 700);
     return () => clearTimeout(t);
   }, [location.pathname, location.search, explicit, info, activeLabel, user?.id]);
@@ -116,10 +125,14 @@ export default function AppShell({ app, children }) {
   const { user } = useAuth();
   const rows = useMemo(() => sidebarItems(app, user), [app, user]);
   const active = activeItem(rows, location);
-  const activeExact = !!active && (active.to.includes("?") ? active.to === `${location.pathname}${location.search}` : active.to === location.pathname);
+  const activeExact =
+    !!active &&
+    (active.to.includes('?')
+      ? active.to === `${location.pathname}${location.search}`
+      : active.to === location.pathname);
 
   useEffect(() => {
-    if (location.pathname === "/approvals") return;
+    if (location.pathname === '/approvals') return;
     try {
       sessionStorage.setItem(LAST_APP_KEY, app);
     } catch {
@@ -130,7 +143,7 @@ export default function AppShell({ app, children }) {
   const toggle = () =>
     setCollapsed((c) => {
       try {
-        localStorage.setItem(COLLAPSE_KEY, c ? "0" : "1");
+        localStorage.setItem(COLLAPSE_KEY, c ? '0' : '1');
       } catch {
         /* storage unavailable */
       }
@@ -140,11 +153,13 @@ export default function AppShell({ app, children }) {
   return (
     <PageTitleProvider app={app} rows={rows} active={active} activeExact={activeExact}>
       {/* The menu is either fully shown or fully hidden (no squeezed icon rail). */}
-      <div className={`inos-shell ${collapsed ? "is-hidden" : ""}`}>
+      <div className={`inos-shell ${collapsed ? 'is-hidden' : ''}`}>
         <GlobalTopBar
           app={app}
           menuHidden={collapsed}
-          onOpenMenu={() => (window.innerWidth >= 1024 && collapsed ? toggle() : setMobileOpen(true))}
+          onOpenMenu={() =>
+            window.innerWidth >= 1024 && collapsed ? toggle() : setMobileOpen(true)
+          }
         />
         <AppSidebar
           app={app}

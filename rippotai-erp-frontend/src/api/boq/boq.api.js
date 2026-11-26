@@ -1,4 +1,5 @@
-import { baseApi } from "../../store/baseApi";
+import { baseApi } from '../../store/baseApi';
+import { responseDownloadName } from '@/lib/download-name';
 
 export const boqApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -8,44 +9,44 @@ export const boqApi = baseApi.injectEndpoints({
 
     getBoqs: builder.query({
       query: (params = {}) => ({
-        url: "/boqs",
+        url: '/boqs',
         params: {
           ...(params.project_id && { project_id: params.project_id }),
           ...(params.status && { status: params.status }),
           ...(params.q && { q: params.q }),
         },
       }),
-      providesTags: ["BOQ"],
+      providesTags: ['BOQ'],
     }),
     getBoqById: builder.query({
       query: (id) => `/boqs/${id}`,
-      providesTags: (result, error, id) => [{ type: "BOQ", id }],
+      providesTags: (result, error, id) => [{ type: 'BOQ', id }],
     }),
 
     createBoq: builder.mutation({
       query: (body) => ({
-        url: "/boqs",
-        method: "POST",
+        url: '/boqs',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["BOQ"],
+      invalidatesTags: ['BOQ'],
     }),
 
     updateBoq: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/boqs/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "BOQ", id }, "BOQ"],
+      invalidatesTags: (result, error, { id }) => [{ type: 'BOQ', id }, 'BOQ'],
     }),
 
     deleteBoq: builder.mutation({
       query: (id) => ({
         url: `/boqs/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["BOQ"],
+      invalidatesTags: ['BOQ'],
     }),
 
     // ---- Workflow ----
@@ -53,81 +54,75 @@ export const boqApi = baseApi.injectEndpoints({
     submitBoqForApproval: builder.mutation({
       query: ({ id, note }) => ({
         url: `/boqs/${id}/submit-for-approval`,
-        method: "POST",
+        method: 'POST',
         body: { note },
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "BOQ", id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'BOQ', id }],
     }),
 
     approveBoq: builder.mutation({
       query: ({ id, remarks }) => ({
         url: `/boqs/${id}/approve`,
-        method: "POST",
+        method: 'POST',
         body: { remarks },
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "BOQ", id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'BOQ', id }],
     }),
 
     duplicateBoqVersion: builder.mutation({
       query: ({ id, reason, note, versionName }) => ({
         url: `/boqs/${id}/duplicate-version`,
-        method: "POST",
+        method: 'POST',
         body: { reason, note, version_name: versionName },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        "BOQ",
-        { type: "BOQ_VERSION", id },
-      ],
+      invalidatesTags: (result, error, { id }) => ['BOQ', { type: 'BOQ_VERSION', id }],
     }),
 
     combineBoqs: builder.mutation({
       query: (body) => ({
-        url: "/boqs/combine",
-        method: "POST",
+        url: '/boqs/combine',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["BOQ"],
+      invalidatesTags: ['BOQ'],
     }),
     createBoqNewVersion: builder.mutation({
       query: ({ id }) => ({
         url: `/boqs/${id}/new-version`,
-        method: "POST",
+        method: 'POST',
       }),
-      invalidatesTags: (result, error, { id }) => [
-        "BOQ",
-        { type: "BOQ_VERSION", id },
-      ],
+      invalidatesTags: (result, error, { id }) => ['BOQ', { type: 'BOQ_VERSION', id }],
     }),
 
     getBoqVersionHistory: builder.query({
       query: (id) => `/boqs/${id}/versions`,
-      providesTags: (result, error, id) => [{ type: "BOQ_VERSION", id }],
+      providesTags: (result, error, id) => [{ type: 'BOQ_VERSION', id }],
     }),
 
     renameBoqVersion: builder.mutation({
       query: ({ versionId, versionName }) => ({
         url: `/boqs/versions/${versionId}`,
-        method: "PATCH",
+        method: 'PATCH',
         body: { version_name: versionName },
       }),
       invalidatesTags: (result, error, { boqId }) =>
-        boqId ? [{ type: "BOQ_VERSION", id: boqId }] : ["BOQ_VERSION"],
+        boqId ? [{ type: 'BOQ_VERSION', id: boqId }] : ['BOQ_VERSION'],
     }),
 
     compareBoqVersions: builder.query({
       query: ({ id, vs }) => `/boqs/${id}/compare?vs=${vs}`,
       providesTags: (result, error, { id, vs }) => [
-        { type: "BOQ_VERSION", id },
-        { type: "BOQ_VERSION", id: vs },
+        { type: 'BOQ_VERSION', id },
+        { type: 'BOQ_VERSION', id: vs },
       ],
     }),
     applyBoqTerms: builder.mutation({
       query: ({ id, terms_template_id, version }) => ({
         url: `/boqs/${id}/terms`,
-        method: "PATCH",
+        method: 'PATCH',
         body: { terms_template_id, version },
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "BOQ", id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'BOQ', id }],
     }),
 
     // ==========================
@@ -137,42 +132,36 @@ export const boqApi = baseApi.injectEndpoints({
     addBoqCategory: builder.mutation({
       query: ({ boqId, ...body }) => ({
         url: `/boqs/${boqId}/categories`,
-        method: "POST",
+        method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId }, "LIBRARY",
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }, 'LIBRARY'],
     }),
 
     reorderBoqCategories: builder.mutation({
       query: ({ boqId, orderedIds }) => ({
         url: `/boqs/${boqId}/categories/reorder`,
-        method: "PATCH",
+        method: 'PATCH',
         body: { ordered_ids: orderedIds },
       }),
-      invalidatesTags: (_result, _error, { boqId }) => [{ type: "BOQ", id: boqId }],
+      invalidatesTags: (_result, _error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     updateBoqCategory: builder.mutation({
       query: ({ boqId, categoryId, ...body }) => ({
         url: `/boqs/${boqId}/categories/${categoryId}`,
-        method: "PATCH",
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     deleteBoqCategory: builder.mutation({
       query: ({ boqId, categoryId }) => ({
         url: `/boqs/${boqId}/categories/${categoryId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     // ==========================
@@ -182,55 +171,45 @@ export const boqApi = baseApi.injectEndpoints({
     addBoqItem: builder.mutation({
       query: ({ boqId, categoryId, ...body }) => ({
         url: `/boqs/${boqId}/categories/${categoryId}/items`,
-        method: "POST",
+        method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId }, "LIBRARY",
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }, 'LIBRARY'],
     }),
 
     updateBoqItem: builder.mutation({
       query: ({ boqId, itemId, ...body }) => ({
         url: `/boqs/${boqId}/items/${itemId}`,
-        method: "PATCH",
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId }, "LIBRARY",
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }, 'LIBRARY'],
     }),
 
     deleteBoqItem: builder.mutation({
       query: ({ boqId, itemId }) => ({
         url: `/boqs/${boqId}/items/${itemId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     reorderBoqItems: builder.mutation({
       query: ({ boqId, categoryId, orderedIds }) => ({
         url: `/boqs/${boqId}/items/reorder`,
-        method: "POST",
+        method: 'POST',
         body: { category_id: categoryId, ordered_ids: orderedIds },
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     bulkUpdateBoqItems: builder.mutation({
       query: ({ boqId, ids, op, value }) => ({
         url: `/boqs/${boqId}/items/bulk`,
-        method: "POST",
+        method: 'POST',
         body: { ids, op, value },
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     // ==========================
@@ -240,44 +219,36 @@ export const boqApi = baseApi.injectEndpoints({
     addBoqMiscellaneous: builder.mutation({
       query: ({ boqId, ...body }) => ({
         url: `/boqs/${boqId}/miscellaneous`,
-        method: "POST",
+        method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     updateBoqMiscellaneous: builder.mutation({
       query: ({ boqId, miscId, ...body }) => ({
         url: `/boqs/${boqId}/miscellaneous/${miscId}`,
-        method: "PATCH",
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     deleteBoqMiscellaneous: builder.mutation({
       query: ({ boqId, miscId }) => ({
         url: `/boqs/${boqId}/miscellaneous/${miscId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     reorderBoqMiscellaneous: builder.mutation({
       query: ({ boqId, orderedIds }) => ({
         url: `/boqs/${boqId}/miscellaneous/reorder`,
-        method: "POST",
+        method: 'POST',
         body: { ordered_ids: orderedIds },
       }),
-      invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
-      ],
+      invalidatesTags: (result, error, { boqId }) => [{ type: 'BOQ', id: boqId }],
     }),
 
     // ==========================
@@ -291,26 +262,35 @@ export const boqApi = baseApi.injectEndpoints({
           responseHandler: (r) => r.blob(),
         });
         if (result.error) return result;
-        downloadBlob(result.data, filename);
+        downloadBlob(
+          result.data,
+          responseDownloadName(
+            result.meta?.response?.headers.get('Content-Disposition'),
+            filename || 'BOQ.xlsx',
+            'BOQ',
+          ),
+        );
         return { data: { ok: true } };
       },
     }),
 
     exportBoqPdf: builder.mutation({
-      queryFn: async (
-        { boqId, variant, filename },
-        _api,
-        _extra,
-        baseQuery,
-      ) => {
+      queryFn: async ({ boqId, variant, filename }, _api, _extra, baseQuery) => {
         const result = await baseQuery({
           url: `/boqs/${boqId}/export/pdf`,
-          method: "POST",
+          method: 'POST',
           body: { variant },
           responseHandler: (r) => r.blob(),
         });
         if (result.error) return result;
-        downloadBlob(result.data, filename);
+        downloadBlob(
+          result.data,
+          responseDownloadName(
+            result.meta?.response?.headers.get('Content-Disposition'),
+            filename || 'BOQ.pdf',
+            'BOQ',
+          ),
+        );
         return { data: { ok: true } };
       },
     }),
@@ -319,7 +299,7 @@ export const boqApi = baseApi.injectEndpoints({
       queryFn: async ({ boqId, variant }, _api, _extra, baseQuery) => {
         const result = await baseQuery({
           url: `/boqs/${boqId}/export/pdf-thumbnail?variant=${variant}`,
-          method: "POST",
+          method: 'POST',
           responseHandler: (r) => r.blob(),
         });
         if (result.error) return result;
@@ -332,8 +312,8 @@ export const boqApi = baseApi.injectEndpoints({
     // ==========================
 
     getBoqCatalog: builder.query({
-      query: () => "/boq-catalog",
-      providesTags: ["BOQ_CATALOG"],
+      query: () => '/boq-catalog',
+      providesTags: ['BOQ_CATALOG'],
     }),
 
     // ==========================
@@ -341,39 +321,39 @@ export const boqApi = baseApi.injectEndpoints({
     // ==========================
 
     getTemplates: builder.query({
-      query: () => "/boq/templates",
-      providesTags: ["BOQ_TEMPLATE"],
+      query: () => '/boq/templates',
+      providesTags: ['BOQ_TEMPLATE'],
     }),
 
     getTemplateById: builder.query({
       query: (id) => `/boq/templates/${id}`,
-      providesTags: ["BOQ_TEMPLATE"],
+      providesTags: ['BOQ_TEMPLATE'],
     }),
 
     createTemplate: builder.mutation({
       query: (body) => ({
-        url: "/boq/templates",
-        method: "POST",
+        url: '/boq/templates',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     updateTemplate: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/boq/templates/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     deleteTemplate: builder.mutation({
       query: (id) => ({
         url: `/boq/templates/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     // ---- Template Categories ----
@@ -381,18 +361,18 @@ export const boqApi = baseApi.injectEndpoints({
     addTemplateCategory: builder.mutation({
       query: ({ templateId, name }) => ({
         url: `/boq/templates/${templateId}/categories`,
-        method: "POST",
+        method: 'POST',
         body: { name },
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     deleteTemplateCategory: builder.mutation({
       query: ({ templateId, categoryId }) => ({
         url: `/boq/templates/${templateId}/categories/${categoryId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     // ---- Template Items ----
@@ -400,36 +380,36 @@ export const boqApi = baseApi.injectEndpoints({
     addTemplateItem: builder.mutation({
       query: ({ templateId, categoryId, ...body }) => ({
         url: `/boq/templates/${templateId}/categories/${categoryId}/items`,
-        method: "POST",
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     updateTemplateItem: builder.mutation({
       query: ({ templateId, itemId, ...body }) => ({
         url: `/boq/templates/${templateId}/items/${itemId}`,
-        method: "PATCH",
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     deleteTemplateItem: builder.mutation({
       query: ({ templateId, itemId }) => ({
         url: `/boq/templates/${templateId}/items/${itemId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     reorderTemplateItems: builder.mutation({
       query: ({ templateId, categoryId, orderedIds }) => ({
         url: `/boq/templates/${templateId}/items/reorder`,
-        method: "POST",
+        method: 'POST',
         body: { category_id: categoryId, ordered_ids: orderedIds },
       }),
-      invalidatesTags: ["BOQ_TEMPLATE"],
+      invalidatesTags: ['BOQ_TEMPLATE'],
     }),
 
     // ==========================
@@ -438,10 +418,10 @@ export const boqApi = baseApi.injectEndpoints({
 
     getActivity: builder.query({
       query: (params) => ({
-        url: "/boq/activity",
+        url: '/boq/activity',
         params,
       }),
-      providesTags: ["BOQ_ACTIVITY"],
+      providesTags: ['BOQ_ACTIVITY'],
     }),
 
     // ==========================
@@ -449,90 +429,90 @@ export const boqApi = baseApi.injectEndpoints({
     // ==========================
 
     getLibraryCategories: builder.query({
-      query: () => "/library/categories",
-      providesTags: ["LIBRARY"],
+      query: () => '/library/categories',
+      providesTags: ['LIBRARY'],
     }),
 
     createLibraryCategory: builder.mutation({
       query: (body) => ({
-        url: "/library/categories",
-        method: "POST",
+        url: '/library/categories',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["LIBRARY"],
+      invalidatesTags: ['LIBRARY'],
     }),
 
     getLibraryItems: builder.query({
       query: (params) => ({
-        url: "/library/items",
+        url: '/library/items',
         params,
       }),
-      providesTags: ["LIBRARY"],
+      providesTags: ['LIBRARY'],
     }),
 
     getLibraryItem: builder.query({
       query: (id) => `/library/items/${id}`,
-      providesTags: ["LIBRARY"],
+      providesTags: ['LIBRARY'],
     }),
 
     createLibraryItem: builder.mutation({
       query: (body) => ({
-        url: "/library/items",
-        method: "POST",
+        url: '/library/items',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["LIBRARY"],
+      invalidatesTags: ['LIBRARY'],
     }),
 
     updateLibraryItem: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/library/items/${id}`,
-        method: "PATCH",
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: ["LIBRARY"],
+      invalidatesTags: ['LIBRARY'],
     }),
 
     deleteLibraryItem: builder.mutation({
       query: (id) => ({
         url: `/library/items/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["LIBRARY"],
+      invalidatesTags: ['LIBRARY'],
     }),
     getBoqSummary: builder.query({
-      query: () => "/boqs/summary",
-      providesTags: ["BOQ"],
+      query: () => '/boqs/summary',
+      providesTags: ['BOQ'],
     }),
 
     getBoqProductivity: builder.query({
-      query: () => "/boqs/productivity",
-      providesTags: ["BOQ"],
+      query: () => '/boqs/productivity',
+      providesTags: ['BOQ'],
     }),
 
     getBoqProjectWise: builder.query({
-      query: () => "/boqs/project-wise",
-      providesTags: ["BOQ"],
+      query: () => '/boqs/project-wise',
+      providesTags: ['BOQ'],
     }),
 
     getBoqValueTrend: builder.query({
-      query: () => "/boqs/value-trend?months=6",
-      providesTags: ["BOQ"],
+      query: () => '/boqs/value-trend?months=6',
+      providesTags: ['BOQ'],
     }),
 
     getBoqMonthlyVolume: builder.query({
-      query: () => "/boqs/monthly-volume?months=6",
-      providesTags: ["BOQ"],
+      query: () => '/boqs/monthly-volume?months=6',
+      providesTags: ['BOQ'],
     }),
 
     getBoqStatusMix: builder.query({
-      query: () => "/boqs/status-mix",
-      providesTags: ["BOQ"],
+      query: () => '/boqs/status-mix',
+      providesTags: ['BOQ'],
     }),
 
     getBoqRecentlyEdited: builder.query({
       query: (limit = 5) => `/boqs/recently-edited?limit=${limit}`,
-      providesTags: ["BOQ"],
+      providesTags: ['BOQ'],
     }),
   }),
   overrideExisting: false,
@@ -540,7 +520,7 @@ export const boqApi = baseApi.injectEndpoints({
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   a.click();

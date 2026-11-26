@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 
 import { LeadsService } from './leads.service';
+import { resolveGoogleMapsAddress } from './google-maps-address';
 import type { LeadFilters } from './leads.service';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
@@ -71,6 +72,12 @@ export class LeadsController {
   @Post('sync/zoho')
   syncZoho(@Req() req: RequestWithUser) {
     return this.leadsService.syncFromZoho(actorOf(req));
+  }
+
+  @RequirePermission('leads:create')
+  @Post('resolve-maps-address')
+  resolveMapsAddress(@Body('url') url: unknown) {
+    return resolveGoogleMapsAddress(url);
   }
 
   // POST /api/v1/leads

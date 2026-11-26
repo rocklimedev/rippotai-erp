@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { backLabel } from '@/components/projects/upload-docs/uploadDocs';
+import DownloadFileButton from '@/components/projects/upload-docs/DownloadFileButton';
 import { toast } from 'sonner';
 import { ImageOff } from 'lucide-react';
 
@@ -134,6 +135,7 @@ export default function DrawingsView() {
                 Open in new tab
               </OpenFileLink>
             )}
+            {hasFile && <DownloadFileButton kind="drawing" record={drawing} />}
             <RecordEditDelete kind="drawing" record={drawing} backTo={back} />
           </>
         }

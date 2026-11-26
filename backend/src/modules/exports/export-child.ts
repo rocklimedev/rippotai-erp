@@ -67,9 +67,11 @@ export async function executeExport(data: ExportData): Promise<ExportResult> {
       const bytes = Buffer.from(value);
       if (bytes.length > exportConfig().maxResultBytes)
         throw new Error('Export exceeds configured result size');
-      const filename =
-        headers['content-disposition']?.match(/filename="([^"]+)"/)?.[1] ||
-        'export.bin';
+      const disposition = headers['content-disposition'];
+      const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+      const filename = encoded
+        ? decodeURIComponent(encoded)
+        : disposition?.match(/filename="([^"]+)"/)?.[1] || 'Export.bin';
       const stored = await app.get(CdnService).uploadBuffer(bytes, filename);
       return {
         type: 'file',

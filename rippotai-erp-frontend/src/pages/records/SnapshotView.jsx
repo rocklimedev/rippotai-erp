@@ -13,7 +13,11 @@ import {
   viewPath,
 } from '@/components/record-context/codes';
 import { useRecordContext } from '@/components/record-context/useRecordInfo';
-import { customColumnIndex, procurementColumnOrder, SHEET_COLUMNS } from '@/components/procurement-sheet/columns';
+import {
+  customColumnIndex,
+  procurementColumnOrder,
+  SHEET_COLUMNS,
+} from '@/components/procurement-sheet/columns';
 import { customValuesOf, itemSheet, sheetsOf } from '@/components/procurement-sheet/sheets';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import '@/components/record-context/record-context.css';
@@ -85,26 +89,34 @@ function Rows({ rows }) {
 
 const procurementItemKeys = [
   ...Object.keys(SHEET_COLUMNS).filter((key) => key !== 'material'),
-  'materialId', 'sheetName', 'isTotalAreaManual', 'customValues',
+  'materialId',
+  'sheetName',
+  'isTotalAreaManual',
+  'customValues',
 ];
 
 function normalizeProcurementItem(item) {
-  return Object.fromEntries(Object.entries(item).map(([key, value]) => [
-    key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()), value,
-  ]));
+  return Object.fromEntries(
+    Object.entries(item).map(([key, value]) => [
+      key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()),
+      value,
+    ]),
+  );
 }
 
 function procurementItemKey(item) {
   const values = [...customValuesOf(item)];
   while (values.length && (values.at(-1) == null || values.at(-1) === '')) values.pop();
-  return JSON.stringify(procurementItemKeys.map((key) => {
-    if (key === 'customValues') return values;
-    const value = item[key];
-    if (key === 'isTotalAreaManual') return Boolean(Number(value));
-    if (value == null || value === '') return null;
-    if (/Area$|^(serialNo|quantity|price|amount)$/.test(key)) return Number(value);
-    return value;
-  }));
+  return JSON.stringify(
+    procurementItemKeys.map((key) => {
+      if (key === 'customValues') return values;
+      const value = item[key];
+      if (key === 'isTotalAreaManual') return Boolean(Number(value));
+      if (value == null || value === '') return null;
+      if (/Area$|^(serialNo|quantity|price|amount)$/.test(key)) return Number(value);
+      return value;
+    }),
+  );
 }
 
 function ProcurementItems({ snapshot, comparison }) {
@@ -113,17 +125,22 @@ function ProcurementItems({ snapshot, comparison }) {
     const key = procurementItemKey(normalizeProcurementItem(item));
     previous.set(key, (previous.get(key) ?? 0) + 1);
   }
-  const materials = new Map((comparison?.materials ?? []).map((material) => [material.id, material]));
-  const items = (comparison?.items ?? []).map(normalizeProcurementItem).filter((item) => {
-    const key = procurementItemKey(item);
-    const count = previous.get(key) ?? 0;
-    if (count) previous.set(key, count - 1);
-    return count === 0;
-  }).map((item) => ({
-    ...item,
-    customValues: customValuesOf(item),
-    materialMaster: item.materialMaster ?? materials.get(item.materialId),
-  }));
+  const materials = new Map(
+    (comparison?.materials ?? []).map((material) => [material.id, material]),
+  );
+  const items = (comparison?.items ?? [])
+    .map(normalizeProcurementItem)
+    .filter((item) => {
+      const key = procurementItemKey(item);
+      const count = previous.get(key) ?? 0;
+      if (count) previous.set(key, count - 1);
+      return count === 0;
+    })
+    .map((item) => ({
+      ...item,
+      customValues: customValuesOf(item),
+      materialMaster: item.materialMaster ?? materials.get(item.materialId),
+    }));
   const sheets = sheetsOf({
     sheets: comparison?.sheets ?? snapshot.material_procurements?.sheets,
     items,
@@ -134,8 +151,9 @@ function ProcurementItems({ snapshot, comparison }) {
     if (!groups.has(name)) groups.set(name, []);
     groups.get(name).push(item);
   }
-  const categories = [...new Set([...sheets.map((sheet) => sheet.name), ...groups.keys()])]
-    .filter((name) => groups.has(name));
+  const categories = [...new Set([...sheets.map((sheet) => sheet.name), ...groups.keys()])].filter(
+    (name) => groups.has(name),
+  );
 
   return (
     <Card title="Material Procurement Items" className="rc-card">
@@ -144,7 +162,9 @@ function ProcurementItems({ snapshot, comparison }) {
           <div className="overflow-x-auto p-1">
             <TabsList aria-label="Material procurement categories">
               {categories.map((name) => (
-                <TabsTrigger key={name} value={name}>{name}</TabsTrigger>
+                <TabsTrigger key={name} value={name}>
+                  {name}
+                </TabsTrigger>
               ))}
             </TabsList>
           </div>
@@ -157,20 +177,32 @@ function ProcurementItems({ snapshot, comparison }) {
                 <div className="inos-table-wrap">
                   <table className="inos-table">
                     <thead>
-                      <tr>{columns.map((key) => (
-                        <th key={key}>{SHEET_COLUMNS[key] ?? sheet.customFields[customColumnIndex(key)]}</th>
-                      ))}</tr>
+                      <tr>
+                        {columns.map((key) => (
+                          <th key={key}>
+                            {SHEET_COLUMNS[key] ?? sheet.customFields[customColumnIndex(key)]}
+                          </th>
+                        ))}
+                      </tr>
                     </thead>
                     <tbody>
-                      {rows.sort((a, b) => a.serialNo - b.serialNo).map((item) => (
-                        <tr key={item.id}>{columns.map((key) => (
-                          <td key={key}>{show(key === 'material'
-                            ? item.materialMaster?.name ?? item.materialId
-                            : key.startsWith('custom-')
-                              ? item.customValues[customColumnIndex(key)]
-                              : item[key])}</td>
-                        ))}</tr>
-                      ))}
+                      {rows
+                        .sort((a, b) => a.serialNo - b.serialNo)
+                        .map((item) => (
+                          <tr key={item.id}>
+                            {columns.map((key) => (
+                              <td key={key}>
+                                {show(
+                                  key === 'material'
+                                    ? (item.materialMaster?.name ?? item.materialId)
+                                    : key.startsWith('custom-')
+                                      ? item.customValues[customColumnIndex(key)]
+                                      : item[key],
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -178,7 +210,9 @@ function ProcurementItems({ snapshot, comparison }) {
             );
           })}
         </Tabs>
-      ) : <p className="rc-empty">No material procurement items were updated.</p>}
+      ) : (
+        <p className="rc-empty">No material procurement items were updated.</p>
+      )}
     </Card>
   );
 }
@@ -193,7 +227,7 @@ export default function SnapshotView() {
   const meta = docMeta(type);
   const tables = Object.entries(data?.data ?? {});
   const [main, ...children] = tables;
-  const code = ctx ? docCode(type, ctx.number, ctx.project?.code) : null;
+  const code = ctx ? docCode(ctx.number) : null;
   const current = viewPath(type, data?.entity_id, ctx?.project?.id);
   return (
     <Page>
@@ -224,7 +258,11 @@ export default function SnapshotView() {
           />
         </Card>
       ) : type === 'procurement-sheet' && data?.data ? (
-        <ProcurementItems key={data.id} snapshot={data.data} comparison={data.procurementComparison} />
+        <ProcurementItems
+          key={data.id}
+          snapshot={data.data}
+          comparison={data.procurementComparison}
+        />
       ) : main ? (
         <>
           <Card title={meta.label} className="rc-card">

@@ -4,6 +4,8 @@ import { ValidationPipe } from '@nestjs/common';
 
 import * as express from 'express';
 import * as fs from 'fs';
+import { basename } from 'node:path';
+import { downloadDisposition, downloadName } from './common/download-name';
 import { AppModule } from './app.module';
 import { getCorsOptions } from './common/security/cors.config';
 import { RedisIoAdapter } from './redis-io.adapter';
@@ -74,7 +76,16 @@ async function bootstrap() {
     app.use(
       '/cdn',
       express.static(cdnDir, {
-        setHeaders: (res) => res.setHeader('Access-Control-Allow-Origin', '*'),
+        setHeaders: (res, path) => {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          const key = basename(path);
+          const name = downloadName([key], key, 'File');
+          if (name !== key)
+            res.setHeader(
+              'Content-Disposition',
+              downloadDisposition(name, 'inline'),
+            );
+        },
       }),
     );
   }

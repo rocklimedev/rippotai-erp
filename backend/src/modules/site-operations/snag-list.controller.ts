@@ -1,5 +1,6 @@
 import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { downloadDisposition, downloadName } from '@/common/download-name';
 import {
   BadRequestException,
   Body,
@@ -74,7 +75,13 @@ export class SnagListController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="snag-list-${row.id}-r${row.revision}.xlsx"`,
+      downloadDisposition(
+        downloadName(
+          [row.project_name, 'Snag List', `R${row.revision}`],
+          'export.xlsx',
+          'Snag List',
+        ),
+      ),
     );
     res.send(row.excel_data);
   }

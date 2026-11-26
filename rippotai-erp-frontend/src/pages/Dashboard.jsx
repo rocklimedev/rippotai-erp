@@ -49,12 +49,11 @@ function ContinueWorking() {
           <Link
             to={project.to}
             className="inos-chip"
-            title={project.code ? `${project.code} · ${project.label}` : project.label}
+            title={project.label}
             data-testid="continue-project"
           >
             <ArrowUpRight size={14} aria-hidden />
             <span>{project.label}</span>
-            {project.code && <small>{project.code}</small>}
           </Link>
         )}
         {recentDocs.map((d) => (

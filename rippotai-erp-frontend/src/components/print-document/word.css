@@ -271,6 +271,20 @@
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
+.pd-doc .wd-proc__columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 4mm;
+  align-items: start;
+}
+.pd-doc .wd-proc__items {
+  font-size: 8pt;
+  line-height: 1.25;
+  list-style: disc outside;
+  margin: 0 0 3mm;
+  padding-inline-start: 5mm;
+  overflow-wrap: anywhere;
+}
 .wd-checks {
   display: grid;
   row-gap: 2mm;

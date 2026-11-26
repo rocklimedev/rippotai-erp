@@ -1,43 +1,57 @@
 // "Clear gate" on each phase: one button, an optional note, then a second
 // "are you sure" step before the gate is cleared (direct clear — open
 // conditions are recorded as an override with the note).
-import { useState } from "react";
-import { CheckCircle2, ShieldCheck } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { Button, TextArea } from "@/components/inos";
-import { Modal } from "@/components/projects/_projects-ui";
+import { useState } from 'react';
+import { CheckCircle2, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Button, TextArea } from '@/components/inos';
+import { Modal } from '@/components/projects/_projects-ui';
 import {
   useGetCommandCenterGateReadinessQuery,
   useClearCommandCenterGateMutation,
-} from "@/api/projects/command-center.api";
+} from '@/api/projects/command-center.api';
 
 const message = (error) => {
   const value = error?.data?.message;
-  return Array.isArray(value) ? value.join("; ") : value || "The gate could not be cleared. Please retry.";
+  return Array.isArray(value)
+    ? value.join('; ')
+    : value || 'The gate could not be cleared. Please retry.';
 };
-const title = (s) => s.toLowerCase().replace(/_/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase());
+const title = (s) =>
+  s
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b[a-z]/g, (c) => c.toUpperCase());
 // "Required evidence: 01_BRIEF" → "Brief documents"; "Approved: PRE_PROPOSED_LAYOUT" → "Proposed Layout"
 const label = (s) => {
-  const code = String(s || "").replace(/^(Approved|Required evidence|Paid milestone):\s*/i, "").trim();
-  if (/^(\d{2}|[AB])_[A-Z_]+$/.test(code)) return `${title(code.replace(/^(\d{2}|[AB])_/, ""))} documents`;
+  const code = String(s || '')
+    .replace(/^(Approved|Required evidence|Paid milestone):\s*/i, '')
+    .trim();
+  if (/^(\d{2}|[AB])_[A-Z_]+$/.test(code))
+    return `${title(code.replace(/^(\d{2}|[AB])_/, ''))} documents`;
   if (/^[A-Z0-9_]+$/.test(code))
-    return title(code.replace(/^(PRE|PLAN|DES|TENDER|WORK|EXEC|HANDOVER|VENDOR|MAT|BRIEF|RECCE|MOD)_/, ""));
+    return title(
+      code.replace(/^(PRE|PLAN|DES|TENDER|WORK|EXEC|HANDOVER|VENDOR|MAT|BRIEF|RECCE|MOD)_/, ''),
+    );
   return code;
 };
 
 export default function PhaseGateButton({ projectId, gates, onFlash }) {
   const { user } = useAuth();
   const permissions = user?.permissions ?? [];
-  const canClear = permissions.includes("gates:clear");
-  const gate = (gates || []).find((g) => g.status !== "CLEARED");
+  const canClear = permissions.includes('gates:clear');
+  const gate = (gates || []).find((g) => g.status !== 'CLEARED');
   const allCleared = (gates || []).length > 0 && !gate;
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [note, setNote] = useState("");
-  const [err, setErr] = useState("");
+  const [note, setNote] = useState('');
+  const [err, setErr] = useState('');
   const { currentData: readiness } = useGetCommandCenterGateReadinessQuery(
     { projectId, gateCode: gate?.gateCode },
-    { skip: !projectId || !gate || !permissions.includes("gates:read"), refetchOnMountOrArgChange: true },
+    {
+      skip: !projectId || !gate || !permissions.includes('gates:read'),
+      refetchOnMountOrArgChange: true,
+    },
   );
   const [clear, { isLoading }] = useClearCommandCenterGateMutation();
 
@@ -56,14 +70,18 @@ export default function PhaseGateButton({ projectId, gates, onFlash }) {
     if (isLoading) return;
     setOpen(false);
     setStep(1);
-    setErr("");
+    setErr('');
   };
   const confirm = async () => {
-    setErr("");
+    setErr('');
     try {
-      await clear({ projectId, gateCode: gate.gateCode, body: { remarks: note.trim() || undefined, direct: true } }).unwrap();
+      await clear({
+        projectId,
+        gateCode: gate.gateCode,
+        body: { remarks: note.trim() || undefined, direct: true },
+      }).unwrap();
       onFlash?.(`${gate.gateName} cleared.`);
-      setNote("");
+      setNote('');
       close();
       setOpen(false);
     } catch (e) {
@@ -90,7 +108,7 @@ export default function PhaseGateButton({ projectId, gates, onFlash }) {
         <Modal
           open
           onClose={close}
-          title={step === 1 ? `Clear gate · ${gate.gateName}` : "Are you sure?"}
+          title={step === 1 ? `Clear gate · ${gate.gateName}` : 'Are you sure?'}
           width={480}
           testId="clear-gate-modal"
           footer={
@@ -99,7 +117,12 @@ export default function PhaseGateButton({ projectId, gates, onFlash }) {
                 <Button variant="ghost" onClick={close}>
                   Cancel
                 </Button>
-                <Button variant="primary" icon={ShieldCheck} onClick={() => setStep(2)} data-testid="clear-gate-next">
+                <Button
+                  variant="primary"
+                  icon={ShieldCheck}
+                  onClick={() => setStep(2)}
+                  data-testid="clear-gate-next"
+                >
                   Clear gate
                 </Button>
               </>
@@ -108,7 +131,12 @@ export default function PhaseGateButton({ projectId, gates, onFlash }) {
                 <Button variant="ghost" onClick={() => setStep(1)} disabled={isLoading}>
                   Back
                 </Button>
-                <Button variant="primary" onClick={confirm} loading={isLoading} data-testid="clear-gate-confirm">
+                <Button
+                  variant="primary"
+                  onClick={confirm}
+                  loading={isLoading}
+                  data-testid="clear-gate-confirm"
+                >
                   Yes, clear gate
                 </Button>
               </>
@@ -116,10 +144,11 @@ export default function PhaseGateButton({ projectId, gates, onFlash }) {
           }
         >
           {step === 1 ? (
-            <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: 'grid', gap: 12 }}>
               {unmet.length > 0 && (
                 <p className="cc-gate__warn" style={{ margin: 0 }}>
-                  Not yet met: {unmet.map((c) => label(c.label)).join(", ")}. Clearing now records an override.
+                  Not yet met: {unmet.map((c) => label(c.label)).join(', ')}. Clearing now records
+                  an override.
                 </p>
               )}
               <TextArea
@@ -140,7 +169,8 @@ export default function PhaseGateButton({ projectId, gates, onFlash }) {
           ) : (
             <p style={{ margin: 0, lineHeight: 1.5 }}>
               Confirm clearing <strong>{gate.gateName}</strong>
-              {note.trim() ? <> with the note “{note.trim()}”</> : null}. The next phase will be unlocked.
+              {note.trim() ? <> with the note “{note.trim()}”</> : null}. The next phase will be
+              unlocked.
             </p>
           )}
         </Modal>

@@ -15,7 +15,9 @@ function SidebarTooltip({ label, enabled, children }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="right" sideOffset={8}>{label}</TooltipContent>
+      <TooltipContent side="right" sideOffset={8}>
+        {label}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -42,9 +44,7 @@ function Shortcuts({ collapsed }) {
           {!collapsed && (
             <span className="inos-side__shortcut-text">
               <span>Current project</span>
-              {project && (
-                <small>{project.code ? `${project.code} · ${project.label}` : project.label}</small>
-              )}
+              {project && <small>{project.label}</small>}
             </span>
           )}
         </Link>
@@ -132,7 +132,9 @@ export default function AppSidebar({ app, collapsed, onToggle, mobileOpen, onClo
                 aria-label={collapsed ? `${meta.name} home` : undefined}
                 title={collapsed ? undefined : `${meta.name} home`}
               >
-                <span className="inos-side__app-icon" aria-hidden="true">{Icon && <Icon />}</span>
+                <span className="inos-side__app-icon" aria-hidden="true">
+                  {Icon && <Icon />}
+                </span>
                 {!collapsed && <span className="inos-side__app-name">{meta.name}</span>}
               </Link>
             </SidebarTooltip>
@@ -149,7 +151,8 @@ export default function AppSidebar({ app, collapsed, onToggle, mobileOpen, onClo
 
           <ul className="inos-side__menu">
             {groups.map((g) => {
-              const open = !g.section || !closed[g.section] || (!collapsed && g.rows.includes(active));
+              const open =
+                !g.section || !closed[g.section] || (!collapsed && g.rows.includes(active));
               return (
                 <li key={g.section || '_top'}>
                   {g.section && !collapsed && (
@@ -172,7 +175,11 @@ export default function AppSidebar({ app, collapsed, onToggle, mobileOpen, onClo
                         aria-expanded={open}
                         onClick={() => toggleSection(g.section)}
                       >
-                        {createElement(navIcon(g.section), { size: 14, strokeWidth: 2, 'aria-hidden': true })}
+                        {createElement(navIcon(g.section), {
+                          size: 14,
+                          strokeWidth: 2,
+                          'aria-hidden': true,
+                        })}
                       </button>
                     </SidebarTooltip>
                   )}

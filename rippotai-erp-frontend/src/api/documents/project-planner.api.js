@@ -1,4 +1,5 @@
 import { baseApi } from '../../store/baseApi';
+import { responseDownloadName } from '@/lib/download-name';
 
 export const projectPlannerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -11,7 +12,11 @@ export const projectPlannerApi = baseApi.injectEndpoints({
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = 'project-planner.xlsx';
+          link.download = responseDownloadName(
+            response.headers.get('Content-Disposition'),
+            'Project Planner.xlsx',
+            'Project Planner',
+          );
           document.body.appendChild(link);
           link.click();
           link.remove();

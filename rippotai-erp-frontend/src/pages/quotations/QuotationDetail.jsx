@@ -6,6 +6,7 @@ import { fmtINR, relativeTime, StatusChip } from '@/lib/format';
 // Excel export (blob download) isn't covered by the RTK Query slice below,
 // so that call still goes through the plain axios client.
 import api, { API } from '@/lib/api';
+import { downloadName } from '@/lib/download-name';
 import QuotationDocument, {
   quotationFileName,
 } from '../../components/commerce-documents/QuotationDocument';
@@ -175,7 +176,11 @@ export default function QuotationDetail() {
       const url = URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Quotation_${String(q.quotationNumber || id).replace(/[^A-Za-z0-9_-]+/g, '-')}.xlsx`;
+      a.download = downloadName(
+        [project.name, 'Quotation', q.quotationNumber],
+        'export.xlsx',
+        'Quotation',
+      );
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {

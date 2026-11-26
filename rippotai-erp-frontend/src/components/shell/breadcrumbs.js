@@ -3,24 +3,42 @@
 // extra crumbs (e.g. the project a record belongs to). Crumbs written for the
 // old app structure (CRM, Site Operations, Workspace, …) are dropped so every
 // page shows the same trail.
-import { APP_META } from "@/config/appNav";
+import { APP_META } from '@/config/appNav';
 
-const norm = (s) => (typeof s === "string" ? s.trim().toLowerCase() : "");
-const pathOf = (to) => (typeof to === "string" ? to.split(/[?#]/)[0].replace(/\/(all|list)$/, "") : "");
+const norm = (s) => (typeof s === 'string' ? s.trim().toLowerCase() : '');
+const pathOf = (to) =>
+  typeof to === 'string' ? to.split(/[?#]/)[0].replace(/\/(all|list)$/, '') : '';
 
 const APP_BASES = new Set(Object.values(APP_META).map((m) => m.base));
-const LEGACY = new Set([...Object.values(APP_META).map((m) => norm(m.name)), "workspace", "site operations", "home", "inos"]);
+const LEGACY = new Set([
+  ...Object.values(APP_META).map((m) => norm(m.name)),
+  'workspace',
+  'site operations',
+  'home',
+  'inos',
+]);
 
 export function buildCrumbs({ app, active, activeExact, title, crumbs, trail = true }) {
-  const out = [{ label: "Home", to: "/dashboard" }];
+  const out = [{ label: 'Home', to: '/dashboard' }];
   const meta = APP_META[app];
-  if (trail && meta && app !== "dashboard") {
-    out.push({ label: meta.name, to: meta.base });
+  if (trail && meta && app !== 'dashboard') {
+    // A list can share its app's name (Design → /design/design).
+    const listCrumb =
+      Array.isArray(crumbs) &&
+      crumbs.find(
+        (c) => norm(c?.label) === norm(meta.name) && pathOf(c?.to).startsWith(`${meta.base}/`),
+      );
+    out.push({ label: meta.name, to: listCrumb?.to || meta.base });
     if (active) {
-      if (active.group && norm(active.group) !== norm(meta.name) && norm(active.group) !== norm(active.label))
+      if (
+        active.group &&
+        norm(active.group) !== norm(meta.name) &&
+        norm(active.group) !== norm(active.label)
+      )
         out.push({ label: active.group });
       // On the item's own page the title names it ("PO" → "Purchase Order").
-      if (norm(active.label) !== norm(meta.name) && !(activeExact && title)) out.push({ label: active.label, to: active.to });
+      if (norm(active.label) !== norm(meta.name) && !(activeExact && title))
+        out.push({ label: active.label, to: active.to });
     }
   }
   const seenLabels = new Set(out.map((c) => norm(c.label)));
@@ -38,7 +56,7 @@ export function buildCrumbs({ app, active, activeExact, title, crumbs, trail = t
     return true;
   });
   const list = [...out, ...extra];
-  const t = typeof title === "string" ? title.trim() : title;
+  const t = typeof title === 'string' ? title.trim() : title;
   if (t && norm(list[list.length - 1].label) !== norm(t)) list.push({ label: t });
   return list.map((c, i) => (i === list.length - 1 ? { label: c.label, current: true } : c));
 }
@@ -46,5 +64,5 @@ export function buildCrumbs({ app, active, activeExact, title, crumbs, trail = t
 /** Where the mobile back arrow goes when there is no in-app history. */
 export function parentOf(list) {
   for (let i = list.length - 2; i >= 0; i -= 1) if (list[i].to) return list[i].to;
-  return "/dashboard";
+  return '/dashboard';
 }

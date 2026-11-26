@@ -78,6 +78,21 @@ function StatusCard({ project, progress }) {
     ],
     ['Client', clientName || '—'],
     ['Site', project.site_location || '—'],
+    ...(project.google_maps_url
+      ? [
+          [
+            'Google Maps',
+            <a
+              className="underline underline-offset-2"
+              href={project.google_maps_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open in Google Maps <ExternalLink size={13} className="inline" aria-hidden />
+            </a>,
+          ],
+        ]
+      : []),
     [
       'Completion',
       project.expected_completion_date ? formatDate(project.expected_completion_date) : '—',
@@ -540,7 +555,7 @@ export default function ProjectWorkspace() {
     members.find((m) => m.is_primary) ||
     members[0];
   const stage = progress.current?.name || phaseLabel(p.current_phase);
-  const infoLine = [p.code, stage, lead?.user?.name ? `Project lead: ${lead.user.name}` : null]
+  const infoLine = [stage, lead?.user?.name ? `Project lead: ${lead.user.name}` : null]
     .filter(Boolean)
     .join(' · ');
 
@@ -573,7 +588,7 @@ export default function ProjectWorkspace() {
           <ActionRequired projectId={id} />
         </div>
       )}
-      {tab === 'overview' && <RecentActivity projectId={id} projectCode={p.code} />}
+      {tab === 'overview' && <RecentActivity projectId={id} />}
       {tab === 'drawings' && <ProjectDrawingsTab projectId={id} />}
       {tab === 'documents' && <ProjectDocumentsHub project={p} />}
 

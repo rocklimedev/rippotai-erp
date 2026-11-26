@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import Depends, HTTPException, UploadFile, File, Form, Query, Body
 from fastapi.responses import StreamingResponse
+from download_names import document_disposition
 from pydantic import BaseModel
 
 from reportlab.lib.pagesizes import A4
@@ -280,7 +281,7 @@ def register_documents(api, db, get_current_user, enforce_free_trial_cap=None):
         return StreamingResponse(
             io.BytesIO(content),
             media_type=d.get("mime") or "application/octet-stream",
-            headers={"Content-Disposition": f'attachment; filename="{d.get("filename","document")}"'}
+            headers={"Content-Disposition": document_disposition(d, d.get("filename"))}
         )
 
     @api.patch("/documents/{doc_id}")

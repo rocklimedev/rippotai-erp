@@ -3,7 +3,11 @@ import { DrawingsController } from './drawing.controller';
 describe('drawing download responses', () => {
   function setup() {
     const service = {
-      listRevisions: jest.fn().mockResolvedValue([{ id: 'revision', storageFilename: 'private-file.pdf', filename: 'plan.pdf', mime: 'application/pdf' }]),
+      findOne: jest.fn().mockResolvedValue({
+        title: 'Ground Floor Plan',
+        drawingNumber: 'A-01',
+        revisions: [{ id: 'revision', revision: 'V2', storageFilename: 'private-file.pdf', filename: 'plan.pdf', mime: 'application/pdf' }],
+      }),
       streamFile: jest.fn().mockResolvedValue(undefined),
     };
     const response: any = {
@@ -13,6 +17,15 @@ describe('drawing download responses', () => {
     };
     return { service, response, controller: new DrawingsController(service as any) };
   }
+
+  it('names the download after the drawing and revision', async () => {
+    const { response, controller } = setup();
+    await controller.downloadRevision('drawing', 'revision', response);
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Content-Disposition',
+      expect.stringContaining('filename="Ground Floor Plan - A-01 - V2.pdf"'),
+    );
+  });
 
   it('does not stream a request that disconnected during revision lookup', async () => {
     const { service, response, controller } = setup();

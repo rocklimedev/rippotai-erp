@@ -61,6 +61,11 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(4096)
+  google_maps_url?: string | null;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()

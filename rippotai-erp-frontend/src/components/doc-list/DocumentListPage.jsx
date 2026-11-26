@@ -17,7 +17,6 @@ import { useGetDocCapabilitiesQuery, useGetDocMetaQuery } from '@/api/doc-flow/d
 import { useGetProjectsQuery } from '@/api/projects/project.api';
 import { HistoryDrawer, ReviewMenu, ReviewStatusPill } from './review';
 import { fmtDate } from './doc-utils';
-import { docCode } from '@/components/record-context/codes';
 import './doc-list.css';
 
 const RANK = { none: 0, view: 1, edit: 2, create: 3, full: 4 };
@@ -71,9 +70,8 @@ export default function DocumentListPage({
   const { data: projectList } = useGetProjectsQuery({ includeArchived: true });
   const projectNames = useMemo(() => {
     const m = new Map();
-    // "PRJ-001 · Name" (project codes, proto-records).
     for (const p of Array.isArray(projectList) ? projectList : (projectList?.data ?? []))
-      m.set(p.id, { name: p.code ? `${p.code} · ${p.name}` : p.name, code: p.code });
+      m.set(p.id, p.name);
     return m;
   }, [projectList]);
   const level = RANK[caps?.level ?? 'view'] ?? 1;
@@ -86,8 +84,7 @@ export default function DocumentListPage({
     const list = (Array.isArray(rows) ? rows : []).map((raw) => {
       const r = getRow(raw);
       const proj = r.projectId ? projectNames.get(r.projectId) : null;
-      if (proj) r.projectName = proj.name;
-      r.code = r.code ?? docCode(type, null, proj?.code);
+      if (proj) r.projectName = proj;
       const m = meta[r.id];
       const version = r.version ?? m?.snapshotVersion ?? 1;
       return { ...r, raw, meta: m, version: Number(version) || 1 };

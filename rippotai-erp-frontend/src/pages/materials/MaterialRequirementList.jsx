@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   AlertTriangle,
@@ -13,18 +13,18 @@ import {
   Package,
   Plus,
   RefreshCw,
-} from "lucide-react";
+} from 'lucide-react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 import {
   Select,
@@ -32,50 +32,45 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-import { Shell } from "../../hooks/shared";
+import { Shell } from '../../hooks/shared';
 
-import { useGetMaterialRequirementsByProjectQuery } from "../../api/procuerment/material-requirement.api";
+import { useGetMaterialRequirementsByProjectQuery } from '../../api/procuerment/material-requirement.api';
 
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
 /* ============================================================
    BRAND
 ============================================================ */
 
-const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
-const BRAND_TEXT = "text-[#1F453B]";
-const BRAND_SOFT = "bg-[#E7F1EA] text-[#1F453B]";
+const BRAND = 'bg-[#1F453B] hover:bg-[#17372f] text-white';
+const BRAND_TEXT = 'text-[#1F453B]';
+const BRAND_SOFT = 'bg-[#E7F1EA] text-[#1F453B]';
 
-const ALL_PROJECTS = "__all__";
+const ALL_PROJECTS = '__all__';
 
 /* ============================================================
    STATUS
 ============================================================ */
 
-const COMPLETED_STATUSES = ["COMPLETED", "CLOSED"];
+const COMPLETED_STATUSES = ['COMPLETED', 'CLOSED'];
 
-const ACTIVE_READY_STATUSES = ["READY"];
+const ACTIVE_READY_STATUSES = ['READY'];
 
-const IN_PROGRESS_STATUSES = ["IN_PROGRESS"];
+const IN_PROGRESS_STATUSES = ['IN_PROGRESS'];
 
-const CANCELLED_STATUSES = ["CANCELLED", "REJECTED"];
+const CANCELLED_STATUSES = ['CANCELLED', 'REJECTED'];
 
 /* ============================================================
    HELPERS
 ============================================================ */
 
-const getProjectId = (project) =>
-  project?.id || project?.projectId || project?.project_id || "";
+const getProjectId = (project) => project?.id || project?.projectId || project?.project_id || '';
 
-const getProjectName = (project, fallback = "Project") => {
+const getProjectName = (project, fallback = 'Project') => {
   if (!project) return fallback;
 
   return (
@@ -83,8 +78,6 @@ const getProjectName = (project, fallback = "Project") => {
     project.projectName ||
     project.project_name ||
     project.title ||
-    project.code ||
-    project.project_code ||
     project.id ||
     fallback
   );
@@ -94,13 +87,10 @@ const getRequirementId = (requirement) =>
   requirement?.id ||
   requirement?.materialRequirementId ||
   requirement?.material_requirement_id ||
-  "";
+  '';
 
 const getRequirementProjectId = (requirement) =>
-  requirement?.projectId ||
-  requirement?.project_id ||
-  requirement?.project?.id ||
-  "";
+  requirement?.projectId || requirement?.project_id || requirement?.project?.id || '';
 
 const getItemName = (requirement) =>
   requirement?.itemName ||
@@ -108,51 +98,46 @@ const getItemName = (requirement) =>
   requirement?.material?.name ||
   requirement?.material?.materialName ||
   requirement?.material?.material_name ||
-  "Untitled Material";
+  'Untitled Material';
 
 const getCategory = (requirement) =>
-  requirement?.category || requirement?.material?.category || "—";
+  requirement?.category || requirement?.material?.category || '—';
 
 const getSelection = (requirement) =>
-  requirement?.selection ||
-  requirement?.description ||
-  requirement?.material?.description ||
-  "—";
+  requirement?.selection || requirement?.description || requirement?.material?.description || '—';
 
-const getStyle = (requirement) =>
-  requirement?.style || requirement?.material?.style || "";
+const getStyle = (requirement) => requirement?.style || requirement?.material?.style || '';
 
 const getFunctionalNeeds = (requirement) =>
-  requirement?.functionalNeeds || requirement?.functional_needs || "";
+  requirement?.functionalNeeds || requirement?.functional_needs || '';
 
 const getMaterialCode = (requirement) =>
   requirement?.material?.materialCode ||
   requirement?.material?.material_code ||
   requirement?.materialCode ||
   requirement?.material_code ||
-  "";
+  '';
 
 const getMaterialName = (requirement) =>
   requirement?.material?.name ||
   requirement?.material?.materialName ||
   requirement?.material?.material_name ||
-  "";
+  '';
 
-const getStatus = (requirement) =>
-  String(requirement?.status || "DRAFT").toUpperCase();
+const getStatus = (requirement) => String(requirement?.status || 'DRAFT').toUpperCase();
 
 const getRequirementDate = (requirement) =>
-  requirement?.requirementDate || requirement?.requirement_date || "";
+  requirement?.requirementDate || requirement?.requirement_date || '';
 
 const getUpdatedDate = (requirement) =>
   requirement?.updatedAt ||
   requirement?.updated_at ||
   requirement?.createdAt ||
   requirement?.created_at ||
-  "";
+  '';
 
 const formatDate = (value) => {
-  if (!value) return "—";
+  if (!value) return '—';
 
   const date = new Date(value);
 
@@ -160,10 +145,10 @@ const formatDate = (value) => {
     return String(value).slice(0, 10);
   }
 
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
 };
 
@@ -191,32 +176,31 @@ const normalizeArrayResponse = (response) => {
   return [];
 };
 
-const isCompletedStatus = (status) =>
-  COMPLETED_STATUSES.includes(String(status).toUpperCase());
+const isCompletedStatus = (status) => COMPLETED_STATUSES.includes(String(status).toUpperCase());
 
 const getStatusClasses = (status) => {
   switch (String(status).toUpperCase()) {
-    case "READY":
-      return "bg-[#E7F1EA] text-[#1F453B]";
+    case 'READY':
+      return 'bg-[#E7F1EA] text-[#1F453B]';
 
-    case "IN_PROGRESS":
-      return "bg-[#FFF3E8] text-[#A34D27]";
+    case 'IN_PROGRESS':
+      return 'bg-[#FFF3E8] text-[#A34D27]';
 
-    case "COMPLETED":
-      return "bg-[#E7F1EA] text-[#2F6B3F]";
+    case 'COMPLETED':
+      return 'bg-[#E7F1EA] text-[#2F6B3F]';
 
-    case "CANCELLED":
-      return "bg-[#FCECEC] text-[#A33A3A]";
+    case 'CANCELLED':
+      return 'bg-[#FCECEC] text-[#A33A3A]';
 
-    case "REJECTED":
-      return "bg-[#FCECEC] text-[#A33A3A]";
+    case 'REJECTED':
+      return 'bg-[#FCECEC] text-[#A33A3A]';
 
-    case "CLOSED":
-      return "bg-[#E7F1EA] text-[#2F6B3F]";
+    case 'CLOSED':
+      return 'bg-[#E7F1EA] text-[#2F6B3F]';
 
-    case "DRAFT":
+    case 'DRAFT':
     default:
-      return "bg-muted text-muted-foreground";
+      return 'bg-muted text-muted-foreground';
   }
 };
 
@@ -229,8 +213,8 @@ function StatPill({ label, value, tone }) {
     <div className="text-right">
       <div
         className={cn(
-          "text-xs font-semibold tabular-nums",
-          tone === "warning" ? "text-[#A34D27]" : "text-foreground",
+          'text-xs font-semibold tabular-nums',
+          tone === 'warning' ? 'text-[#A34D27]' : 'text-foreground',
         )}
       >
         {value}
@@ -253,10 +237,7 @@ function ProgressStat({ percentage }) {
         <span>{percentage}%</span>
       </div>
 
-      <Progress
-        value={Math.min(Math.max(percentage, 0), 100)}
-        className="h-1.5"
-      />
+      <Progress value={Math.min(Math.max(percentage, 0), 100)} className="h-1.5" />
     </div>
   );
 }
@@ -282,12 +263,9 @@ function MaterialRequirementRow({ requirement, onView, onEdit }) {
       <div className="flex items-center gap-3">
         {/* ICON */}
         <div
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-            BRAND_SOFT,
-          )}
+          className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', BRAND_SOFT)}
         >
-          <Package className={cn("h-[16px] w-[16px]", BRAND_TEXT)} />
+          <Package className={cn('h-[16px] w-[16px]', BRAND_TEXT)} />
         </div>
 
         {/* MAIN */}
@@ -297,11 +275,11 @@ function MaterialRequirementRow({ requirement, onView, onEdit }) {
 
             <Badge
               className={cn(
-                "h-5 rounded-full px-2 text-[10px] font-semibold hover:bg-transparent",
+                'h-5 rounded-full px-2 text-[10px] font-semibold hover:bg-transparent',
                 getStatusClasses(status),
               )}
             >
-              {status.replaceAll("_", " ")}
+              {status.replaceAll('_', ' ')}
             </Badge>
 
             {materialCode && (
@@ -313,30 +291,23 @@ function MaterialRequirementRow({ requirement, onView, onEdit }) {
 
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-muted-foreground">
             <span>
-              Category:{" "}
-              <span className="font-medium text-foreground/80">{category}</span>
+              Category: <span className="font-medium text-foreground/80">{category}</span>
             </span>
 
             {style && (
               <span>
-                Style:{" "}
-                <span className="font-medium text-foreground/80">{style}</span>
+                Style: <span className="font-medium text-foreground/80">{style}</span>
               </span>
             )}
 
             <span>
-              Required by:{" "}
-              <span className="font-medium text-foreground/80">
-                {requirementDate}
-              </span>
+              Required by: <span className="font-medium text-foreground/80">{requirementDate}</span>
             </span>
 
             <span>Updated: {updated}</span>
           </div>
 
-          <div className="mt-1 truncate text-[11.5px] text-muted-foreground">
-            {selection}
-          </div>
+          <div className="mt-1 truncate text-[11.5px] text-muted-foreground">{selection}</div>
         </div>
 
         {/* REQUIREMENT DATE */}
@@ -414,13 +385,11 @@ function MaterialProjectCard({
   onViewProject,
 }) {
   const projectId = getProjectId(project);
-  const projectName = getProjectName(project, projectId || "Project");
+  const projectName = getProjectName(project, projectId || 'Project');
 
   const total = requirements.length;
 
-  const completed = requirements.filter((item) =>
-    isCompletedStatus(getStatus(item)),
-  ).length;
+  const completed = requirements.filter((item) => isCompletedStatus(getStatus(item))).length;
 
   const pending = Math.max(total - completed, 0);
 
@@ -434,12 +403,9 @@ function MaterialProjectCard({
           <div className="flex items-center gap-3 px-4 py-3">
             {/* COLLAPSE */}
             <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex min-w-0 flex-1 items-center gap-3 text-left"
-              >
+              <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left">
                 {/* ARROW */}
-                <div className={cn("shrink-0", BRAND_TEXT)}>
+                <div className={cn('shrink-0', BRAND_TEXT)}>
                   {collapsed ? (
                     <ChevronRight className="h-5 w-5" />
                   ) : (
@@ -450,26 +416,16 @@ function MaterialProjectCard({
                 {/* FOLDER */}
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E7F1EA]">
                   {collapsed ? (
-                    <Folder className={cn("h-[18px] w-[18px]", BRAND_TEXT)} />
+                    <Folder className={cn('h-[18px] w-[18px]', BRAND_TEXT)} />
                   ) : (
-                    <FolderOpen
-                      className={cn("h-[18px] w-[18px]", BRAND_TEXT)}
-                    />
+                    <FolderOpen className={cn('h-[18px] w-[18px]', BRAND_TEXT)} />
                   )}
                 </div>
 
                 {/* PROJECT INFO */}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate text-[15px] font-bold">
-                      {projectName}
-                    </span>
-
-                    {project?.code && (
-                      <span className="text-[10.5px] text-muted-foreground">
-                        {project.code}
-                      </span>
-                    )}
+                    <span className="truncate text-[15px] font-bold">{projectName}</span>
                   </div>
 
                   <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
@@ -484,7 +440,7 @@ function MaterialProjectCard({
                   <StatPill
                     label="pending"
                     value={pending}
-                    tone={pending > 0 ? "warning" : "default"}
+                    tone={pending > 0 ? 'warning' : 'default'}
                   />
 
                   <ProgressStat percentage={percentage} />
@@ -533,11 +489,7 @@ function MaterialProjectCard({
           <div className="ml-[88px] mt-0 flex items-center gap-4 px-4 pb-3 md:hidden">
             <StatPill label="requirements" value={total} />
 
-            <StatPill
-              label="pending"
-              value={pending}
-              tone={pending > 0 ? "warning" : "default"}
-            />
+            <StatPill label="pending" value={pending} tone={pending > 0 ? 'warning' : 'default'} />
 
             <ProgressStat percentage={percentage} />
           </div>
@@ -548,10 +500,7 @@ function MaterialProjectCard({
           {requirements.length ? (
             requirements.map((requirement) => (
               <MaterialRequirementRow
-                key={
-                  getRequirementId(requirement) ||
-                  `${projectId}-${getItemName(requirement)}`
-                }
+                key={getRequirementId(requirement) || `${projectId}-${getItemName(requirement)}`}
                 requirement={requirement}
                 onView={onView}
                 onEdit={onEdit}
@@ -567,18 +516,13 @@ function MaterialProjectCard({
           <div className="flex items-center justify-between border-t bg-muted/30 px-4 py-2.5 text-[11px]">
             <span className="text-muted-foreground">
               {total} material requirement
-              {total !== 1 ? "s" : ""}
+              {total !== 1 ? 's' : ''}
             </span>
 
             <span
-              className={cn(
-                "font-semibold",
-                pending > 0 ? "text-[#A34D27]" : "text-[#2F6B3F]",
-              )}
+              className={cn('font-semibold', pending > 0 ? 'text-[#A34D27]' : 'text-[#2F6B3F]')}
             >
-              {pending > 0
-                ? `${pending} pending`
-                : "All requirements completed"}
+              {pending > 0 ? `${pending} pending` : 'All requirements completed'}
             </span>
           </div>
         </CollapsibleContent>
@@ -593,12 +537,10 @@ function MaterialProjectCard({
 
 function SummaryCard({ label, value, sub, valueClassName, className }) {
   return (
-    <Card className={cn("p-3", className)}>
+    <Card className={cn('p-3', className)}>
       <div className="text-[11px] text-muted-foreground">{label}</div>
 
-      <div className={cn("mt-1 text-xl font-bold", valueClassName)}>
-        {value}
-      </div>
+      <div className={cn('mt-1 text-xl font-bold', valueClassName)}>{value}</div>
 
       <div className="text-[10.5px] text-muted-foreground">{sub}</div>
     </Card>
@@ -612,9 +554,9 @@ function SummaryCard({ label, value, sub, valueClassName, className }) {
 export default function MaterialRequirementList() {
   const nav = useNavigate();
 
-  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState('');
 
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState('');
 
   const [collapsedProjects, setCollapsedProjects] = useState({});
 
@@ -624,20 +566,14 @@ export default function MaterialRequirementList() {
      PROJECTS
   ========================================================== */
 
-  const { data: projectsResponse, isLoading: projectsLoading } =
-    useGetProjectsQuery({});
+  const { data: projectsResponse, isLoading: projectsLoading } = useGetProjectsQuery({});
 
   const projects = useMemo(() => {
     if (Array.isArray(projectsResponse)) {
       return projectsResponse;
     }
 
-    return (
-      projectsResponse?.data ||
-      projectsResponse?.projects ||
-      projectsResponse?.items ||
-      []
-    );
+    return projectsResponse?.data || projectsResponse?.projects || projectsResponse?.items || [];
   }, [projectsResponse]);
 
   /* ==========================================================
@@ -687,7 +623,7 @@ export default function MaterialRequirementList() {
     const grouped = new Map();
 
     requirements.forEach((requirement) => {
-      const projectId = String(getRequirementProjectId(requirement) || "");
+      const projectId = String(getRequirementProjectId(requirement) || '');
 
       if (!projectId) {
         return;
@@ -721,7 +657,7 @@ export default function MaterialRequirementList() {
 
       const project = projectMap.get(projectId) || {
         id: selectedProjectId,
-        name: "Selected Project",
+        name: 'Selected Project',
       };
 
       const projectRequirements = requirementsByProject.get(projectId) || [];
@@ -761,7 +697,7 @@ export default function MaterialRequirementList() {
           result.push({
             project: {
               id: projectId,
-              name: "Unknown Project",
+              name: 'Unknown Project',
             },
             requirements: projectRequirements,
           });
@@ -776,10 +712,10 @@ export default function MaterialRequirementList() {
     if (searchTerm) {
       result = result
         .map((group) => {
-          const projectName = getProjectName(group.project, "").toLowerCase();
+          const projectName = getProjectName(group.project, '').toLowerCase();
 
           const projectCode = String(
-            group.project?.code || group.project?.project_code || "",
+            group.project?.code || group.project?.project_code || '',
           ).toLowerCase();
 
           const projectId = String(getProjectId(group.project)).toLowerCase();
@@ -789,27 +725,25 @@ export default function MaterialRequirementList() {
             projectCode.includes(searchTerm) ||
             projectId.includes(searchTerm);
 
-          const filteredRequirements = group.requirements.filter(
-            (requirement) => {
-              const values = [
-                getItemName(requirement),
-                getCategory(requirement),
-                getSelection(requirement),
-                getStyle(requirement),
-                getFunctionalNeeds(requirement),
-                getStatus(requirement),
-                getMaterialCode(requirement),
-                getMaterialName(requirement),
-                getRequirementDate(requirement),
-              ];
+          const filteredRequirements = group.requirements.filter((requirement) => {
+            const values = [
+              getItemName(requirement),
+              getCategory(requirement),
+              getSelection(requirement),
+              getStyle(requirement),
+              getFunctionalNeeds(requirement),
+              getStatus(requirement),
+              getMaterialCode(requirement),
+              getMaterialName(requirement),
+              getRequirementDate(requirement),
+            ];
 
-              return values.some((value) =>
-                String(value || "")
-                  .toLowerCase()
-                  .includes(searchTerm),
-              );
-            },
-          );
+            return values.some((value) =>
+              String(value || '')
+                .toLowerCase()
+                .includes(searchTerm),
+            );
+          });
 
           if (projectMatches) {
             return {
@@ -870,23 +804,15 @@ export default function MaterialRequirementList() {
   const completedRequirements = filteredProjectGroups.reduce(
     (total, group) =>
       total +
-      group.requirements.filter((requirement) =>
-        isCompletedStatus(getStatus(requirement)),
-      ).length,
+      group.requirements.filter((requirement) => isCompletedStatus(getStatus(requirement))).length,
     0,
   );
 
-  const pendingRequirements = Math.max(
-    totalRequirements - completedRequirements,
-    0,
-  );
+  const pendingRequirements = Math.max(totalRequirements - completedRequirements, 0);
 
   const draftRequirements = filteredProjectGroups.reduce(
     (total, group) =>
-      total +
-      group.requirements.filter(
-        (requirement) => getStatus(requirement) === "DRAFT",
-      ).length,
+      total + group.requirements.filter((requirement) => getStatus(requirement) === 'DRAFT').length,
     0,
   );
 
@@ -909,18 +835,16 @@ export default function MaterialRequirementList() {
   );
 
   const completionPercentage =
-    totalRequirements > 0
-      ? Math.round((completedRequirements / totalRequirements) * 100)
-      : 100;
+    totalRequirements > 0 ? Math.round((completedRequirements / totalRequirements) * 100) : 100;
 
   /* ==========================================================
      PROJECT CHANGE
   ========================================================== */
 
   const handleProjectChange = (value) => {
-    setSelectedProjectId(value === ALL_PROJECTS ? "" : value);
+    setSelectedProjectId(value === ALL_PROJECTS ? '' : value);
 
-    setQ("");
+    setQ('');
 
     setCollapsedProjects({});
   };
@@ -936,7 +860,7 @@ export default function MaterialRequirementList() {
       return;
     }
 
-    nav("/procurement/requirements/add");
+    nav('/procurement/requirements/add');
   };
 
   /* ==========================================================
@@ -954,7 +878,7 @@ export default function MaterialRequirementList() {
     nav(
       projectId
         ? `/procurement/${projectId}/material-requirements?requirementId=${id}`
-        : "/procurement/requirements",
+        : '/procurement/requirements',
     );
   };
 
@@ -974,7 +898,7 @@ export default function MaterialRequirementList() {
     nav(
       projectId
         ? `/procurement/${projectId}/material-requirements?requirementId=${id}`
-        : "/procurement/requirements",
+        : '/procurement/requirements',
     );
   };
 
@@ -1038,20 +962,13 @@ export default function MaterialRequirementList() {
       title="Material Requirements"
       subtitle={
         selectedProjectId
-          ? "Material requirements for the selected project"
-          : "All projects — material requirements and procurement planning"
+          ? 'Material requirements for the selected project'
+          : 'All projects — material requirements and procurement planning'
       }
       action={
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RefreshCw
-              className={cn("h-[14px] w-[14px]", isFetching && "animate-spin")}
-            />
+          <Button type="button" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={cn('h-[14px] w-[14px]', isFetching && 'animate-spin')} />
             Refresh
           </Button>
 
@@ -1074,10 +991,7 @@ export default function MaterialRequirementList() {
                 Project
               </Label>
 
-              <Select
-                value={selectedProjectId || ALL_PROJECTS}
-                onValueChange={handleProjectChange}
-              >
+              <Select value={selectedProjectId || ALL_PROJECTS} onValueChange={handleProjectChange}>
                 <SelectTrigger className="h-11 font-semibold">
                   <SelectValue />
                 </SelectTrigger>
@@ -1104,8 +1018,8 @@ export default function MaterialRequirementList() {
 
             <p className="text-[11.5px] text-muted-foreground">
               {selectedProjectId
-                ? "Showing material requirements for the selected project."
-                : "Showing material requirements across all projects."}
+                ? 'Showing material requirements for the selected project.'
+                : 'Showing material requirements across all projects.'}
             </p>
           </div>
         </Card>
@@ -1117,17 +1031,9 @@ export default function MaterialRequirementList() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           <SummaryCard label="Projects" value={totalProjects} sub="in view" />
 
-          <SummaryCard
-            label="Requirements"
-            value={totalRequirements}
-            sub="total"
-          />
+          <SummaryCard label="Requirements" value={totalRequirements} sub="total" />
 
-          <SummaryCard
-            label="Completed"
-            value={completedRequirements}
-            sub="completed"
-          />
+          <SummaryCard label="Completed" value={completedRequirements} sub="completed" />
 
           <SummaryCard
             label="Pending"
@@ -1136,11 +1042,7 @@ export default function MaterialRequirementList() {
             sub="requirements"
           />
 
-          <SummaryCard
-            label="Draft"
-            value={draftRequirements}
-            sub="requirements"
-          />
+          <SummaryCard label="Draft" value={draftRequirements} sub="requirements" />
 
           <SummaryCard
             label="Completion"
@@ -1171,21 +1073,11 @@ export default function MaterialRequirementList() {
           </label>
 
           <div className="ml-auto flex items-center gap-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={expandAll}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={expandAll}>
               Expand all
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={collapseAll}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={collapseAll}>
               Collapse all
             </Button>
           </div>
@@ -1208,13 +1100,13 @@ export default function MaterialRequirementList() {
                 {requirementsErrorData?.data?.message ||
                   requirementsErrorData?.data?.detail ||
                   requirementsErrorData?.error ||
-                  "Please try again."}
+                  'Please try again.'}
               </p>
 
               <Button
                 type="button"
                 size="sm"
-                className={cn(BRAND, "mt-4")}
+                className={cn(BRAND, 'mt-4')}
                 onClick={() => refetch()}
               >
                 Retry
@@ -1245,7 +1137,7 @@ export default function MaterialRequirementList() {
               filteredProjectGroups.map((group) => {
                 const projectId = getProjectId(group.project);
 
-                const projectKey = String(projectId || "unknown");
+                const projectKey = String(projectId || 'unknown');
 
                 return (
                   <MaterialProjectCard
@@ -1265,23 +1157,17 @@ export default function MaterialRequirementList() {
                 <CardContent className="py-12 text-center">
                   <Package className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
 
-                  <p className="text-sm font-semibold">
-                    No material requirements found
-                  </p>
+                  <p className="text-sm font-semibold">No material requirements found</p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
                     {q
-                      ? "Try a different search."
+                      ? 'Try a different search.'
                       : selectedProjectId
-                        ? "No material requirements have been added to this project."
-                        : "No material requirements have been added to any project yet."}
+                        ? 'No material requirements have been added to this project.'
+                        : 'No material requirements have been added to any project yet.'}
                   </p>
 
-                  <Button
-                    type="button"
-                    className={cn(BRAND, "mt-4")}
-                    onClick={handleCreate}
-                  >
+                  <Button type="button" className={cn(BRAND, 'mt-4')} onClick={handleCreate}>
                     <Plus className="h-[14px] w-[14px]" />
                     New requirement
                   </Button>
@@ -1320,11 +1206,9 @@ export default function MaterialRequirementList() {
 
             <CardContent className="pt-0">
               <p className="text-[11.5px] text-[#8A6B5D]">
-                There are{" "}
-                <span className="font-semibold">{pendingRequirements}</span>{" "}
-                material requirement
-                {pendingRequirements !== 1 ? "s" : ""} that are not yet
-                completed.
+                There are <span className="font-semibold">{pendingRequirements}</span> material
+                requirement
+                {pendingRequirements !== 1 ? 's' : ''} that are not yet completed.
               </p>
             </CardContent>
           </Card>

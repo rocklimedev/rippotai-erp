@@ -26,10 +26,10 @@ export function versionLabel(ctx, reviews) {
   return `v${currentVersion(ctx, reviews)}`;
 }
 
-/** Line under a document's title: "Kapoor Farmhouse · PS-PRJ-003" (project name and document code only). */
+/** Line under a document's title: "Kapoor Farmhouse · BOQ-024" (project name and document code only). */
 export function recordInfo(ctx) {
   if (!ctx) return null;
-  const code = docCode(ctx.type, ctx.number, ctx.project?.code);
+  const code = docCode(ctx.number);
   return [ctx.project?.name, code].filter(Boolean).join(' · ') || null;
 }
 

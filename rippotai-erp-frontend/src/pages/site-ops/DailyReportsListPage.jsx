@@ -104,7 +104,6 @@ export default function DailyReportsListPage() {
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name || project.projectName || `Project #${project.id}`}
-                  {project.code ? ` (${project.code})` : ''}
                 </option>
               ))}
             </select>

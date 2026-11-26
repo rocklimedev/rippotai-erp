@@ -1,20 +1,34 @@
 // Native (INOS database) Tasks, Notes, Calendar feed, Activity feed and Client overview.
 // Backend: src/modules/tasks, src/modules/calendar, src/modules/workspace.
-import { baseApi } from "../../store/baseApi";
+import { baseApi } from '../../store/baseApi';
+import { responseDownloadName } from '@/lib/download-name';
 
 const api = baseApi.enhanceEndpoints({
-  addTagTypes: ["WsTasks", "WsNotes", "WsCalendar", "WsActivity", "WsClientOverview", "ReminderSync"],
+  addTagTypes: [
+    'WsTasks',
+    'WsNotes',
+    'WsCalendar',
+    'WsActivity',
+    'WsClientOverview',
+    'ReminderSync',
+  ],
 });
 
 const clean = (o = {}) =>
-  Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "all"));
+  Object.fromEntries(
+    Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== '' && v !== 'all'),
+  );
 
 const downloadCrucialWork = async (response) => {
   if (!response.ok) return response.json();
-  const filename = response.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ||
-    (response.headers.get("Content-Type")?.includes("pdf") ? "crucial-work.pdf" : "crucial-work.docx");
+  const extension = response.headers.get('Content-Type')?.includes('pdf') ? 'pdf' : 'docx';
+  const filename = responseDownloadName(
+    response.headers.get('Content-Disposition'),
+    `Crucial Work.${extension}`,
+    'Crucial Work',
+  );
   const url = URL.createObjectURL(await response.blob());
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
@@ -28,42 +42,57 @@ export const workspaceApi = api.injectEndpoints({
   endpoints: (b) => ({
     /* ---------------- tasks ---------------- */
     getCrucialWork: b.query({
-      query: (params) => ({ url: "/tasks/crucial-work", params: clean(params) }),
-      providesTags: [{ type: "WsTasks", id: "LIST" }],
+      query: (params) => ({ url: '/tasks/crucial-work', params: clean(params) }),
+      providesTags: [{ type: 'WsTasks', id: 'LIST' }],
     }),
     saveCrucialCheck: b.mutation({
-      query: ({ id, ...body }) => ({ url: `/tasks/${id}/crucial-check`, method: "POST", body }),
-      invalidatesTags: [{ type: "WsTasks", id: "LIST" }],
+      query: ({ id, ...body }) => ({ url: `/tasks/${id}/crucial-check`, method: 'POST', body }),
+      invalidatesTags: [{ type: 'WsTasks', id: 'LIST' }],
     }),
     exportCrucialWork: b.mutation({
-      query: (params) => ({ url: "/tasks/crucial-work/export", params: clean(params), responseHandler: downloadCrucialWork }),
+      query: (params) => ({
+        url: '/tasks/crucial-work/export',
+        params: clean(params),
+        responseHandler: downloadCrucialWork,
+      }),
     }),
     downloadCrucialTemplate: b.mutation({
-      query: () => ({ url: "/tasks/crucial-work/template", responseHandler: downloadCrucialWork }),
+      query: () => ({ url: '/tasks/crucial-work/template', responseHandler: downloadCrucialWork }),
     }),
     getWsTasks: b.query({
-      query: (params = {}) => ({ url: "/tasks", params: clean(params) }),
-      providesTags: (r) => [...(r || []).map((t) => ({ type: "WsTasks", id: t.id })), { type: "WsTasks", id: "LIST" }],
+      query: (params = {}) => ({ url: '/tasks', params: clean(params) }),
+      providesTags: (r) => [
+        ...(r || []).map((t) => ({ type: 'WsTasks', id: t.id })),
+        { type: 'WsTasks', id: 'LIST' },
+      ],
     }),
     getWsMyTasks: b.query({
-      query: () => "/tasks/my-tasks",
-      providesTags: [{ type: "WsTasks", id: "LIST" }],
+      query: () => '/tasks/my-tasks',
+      providesTags: [{ type: 'WsTasks', id: 'LIST' }],
     }),
     getWsTask: b.query({
       query: (id) => `/tasks/${id}`,
-      providesTags: (r, e, id) => [{ type: "WsTasks", id }],
+      providesTags: (r, e, id) => [{ type: 'WsTasks', id }],
     }),
     createWsTask: b.mutation({
-      query: (body) => ({ url: "/tasks", method: "POST", body }),
-      invalidatesTags: [{ type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity", { type: "ReminderSync", id: "tasks" }],
+      query: (body) => ({ url: '/tasks', method: 'POST', body }),
+      invalidatesTags: [
+        { type: 'WsTasks', id: 'LIST' },
+        'WsCalendar',
+        'WsActivity',
+        { type: 'ReminderSync', id: 'tasks' },
+      ],
     }),
     updateWsTask: b.mutation({
-      query: ({ id, ...body }) => ({ url: `/tasks/${id}`, method: "PATCH", body }),
+      query: ({ id, ...body }) => ({ url: `/tasks/${id}`, method: 'PATCH', body }),
       async onQueryStarted({ id, ...patch }, { dispatch, queryFulfilled, getState }) {
         // optimistic update for board drag & drop / quick status changes
         const undo = [];
-        for (const { endpointName, originalArgs } of workspaceApi.util.selectInvalidatedBy(getState(), [{ type: "WsTasks", id: "LIST" }])) {
-          if (endpointName !== "getWsTasks" && endpointName !== "getWsMyTasks") continue;
+        for (const { endpointName, originalArgs } of workspaceApi.util.selectInvalidatedBy(
+          getState(),
+          [{ type: 'WsTasks', id: 'LIST' }],
+        )) {
+          if (endpointName !== 'getWsTasks' && endpointName !== 'getWsMyTasks') continue;
           undo.push(
             dispatch(
               workspaceApi.util.updateQueryData(endpointName, originalArgs, (draft) => {
@@ -79,68 +108,82 @@ export const workspaceApi = api.injectEndpoints({
           undo.forEach((u) => u.undo());
         }
       },
-      invalidatesTags: (r, e, { id }) => [{ type: "WsTasks", id }, { type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity", { type: "ReminderSync", id: "tasks" }],
+      invalidatesTags: (r, e, { id }) => [
+        { type: 'WsTasks', id },
+        { type: 'WsTasks', id: 'LIST' },
+        'WsCalendar',
+        'WsActivity',
+        { type: 'ReminderSync', id: 'tasks' },
+      ],
     }),
     deleteWsTask: b.mutation({
-      query: (id) => ({ url: `/tasks/${id}`, method: "DELETE" }),
-      invalidatesTags: [{ type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity", { type: "ReminderSync", id: "tasks" }],
+      query: (id) => ({ url: `/tasks/${id}`, method: 'DELETE' }),
+      invalidatesTags: [
+        { type: 'WsTasks', id: 'LIST' },
+        'WsCalendar',
+        'WsActivity',
+        { type: 'ReminderSync', id: 'tasks' },
+      ],
     }),
 
     /* ---------------- notes ---------------- */
     getWsNotes: b.query({
-      query: (params = {}) => ({ url: "/notes", params: clean(params) }),
-      providesTags: [{ type: "WsNotes", id: "LIST" }],
+      query: (params = {}) => ({ url: '/notes', params: clean(params) }),
+      providesTags: [{ type: 'WsNotes', id: 'LIST' }],
     }),
     createWsNote: b.mutation({
-      query: (body) => ({ url: "/notes", method: "POST", body }),
-      invalidatesTags: [{ type: "WsNotes", id: "LIST" }, "WsClientOverview"],
+      query: (body) => ({ url: '/notes', method: 'POST', body }),
+      invalidatesTags: [{ type: 'WsNotes', id: 'LIST' }, 'WsClientOverview'],
     }),
     updateWsNote: b.mutation({
-      query: ({ id, ...body }) => ({ url: `/notes/${id}`, method: "PATCH", body }),
-      invalidatesTags: [{ type: "WsNotes", id: "LIST" }, "WsClientOverview"],
+      query: ({ id, ...body }) => ({ url: `/notes/${id}`, method: 'PATCH', body }),
+      invalidatesTags: [{ type: 'WsNotes', id: 'LIST' }, 'WsClientOverview'],
     }),
     deleteWsNote: b.mutation({
-      query: (id) => ({ url: `/notes/${id}`, method: "DELETE" }),
-      invalidatesTags: [{ type: "WsNotes", id: "LIST" }, "WsClientOverview"],
+      query: (id) => ({ url: `/notes/${id}`, method: 'DELETE' }),
+      invalidatesTags: [{ type: 'WsNotes', id: 'LIST' }, 'WsClientOverview'],
     }),
 
     /* ---------------- calendar ---------------- */
     getWsCalendarFeed: b.query({
-      query: ({ from, to, mine } = {}) => ({ url: "/calendar/feed", params: clean({ from, to, mine: mine ? 1 : undefined }) }),
-      providesTags: ["WsCalendar"],
+      query: ({ from, to, mine } = {}) => ({
+        url: '/calendar/feed',
+        params: clean({ from, to, mine: mine ? 1 : undefined }),
+      }),
+      providesTags: ['WsCalendar'],
     }),
     createWsEvent: b.mutation({
-      query: (body) => ({ url: "/calendar/events", method: "POST", body }),
-      invalidatesTags: ["WsCalendar", "WsActivity", { type: "ReminderSync", id: "calendar" }],
+      query: (body) => ({ url: '/calendar/events', method: 'POST', body }),
+      invalidatesTags: ['WsCalendar', 'WsActivity', { type: 'ReminderSync', id: 'calendar' }],
     }),
     updateWsEvent: b.mutation({
-      query: ({ id, ...body }) => ({ url: `/calendar/events/${id}`, method: "PATCH", body }),
-      invalidatesTags: ["WsCalendar", "WsActivity", { type: "ReminderSync", id: "calendar" }],
+      query: ({ id, ...body }) => ({ url: `/calendar/events/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['WsCalendar', 'WsActivity', { type: 'ReminderSync', id: 'calendar' }],
     }),
     deleteWsEvent: b.mutation({
-      query: (id) => ({ url: `/calendar/events/${id}`, method: "DELETE" }),
-      invalidatesTags: ["WsCalendar", "WsActivity", { type: "ReminderSync", id: "calendar" }],
+      query: (id) => ({ url: `/calendar/events/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['WsCalendar', 'WsActivity', { type: 'ReminderSync', id: 'calendar' }],
     }),
 
     /* ---------------- activity ---------------- */
     getWsActivity: b.query({
-      query: (params = {}) => ({ url: "/activity-logs/feed", params: clean(params) }),
-      providesTags: ["WsActivity"],
+      query: (params = {}) => ({ url: '/activity-logs/feed', params: clean(params) }),
+      providesTags: ['WsActivity'],
     }),
 
     /* ---------------- inventory ---------------- */
     getWsInventoryOverview: b.query({
-      query: (projectId) => ({ url: "/inventory-overview", params: clean({ projectId }) }),
+      query: (projectId) => ({ url: '/inventory-overview', params: clean({ projectId }) }),
     }),
 
     /* ---------------- clients ---------------- */
     getWsClientsSummary: b.query({
-      query: () => "/clients-summary",
-      providesTags: ["WsClientOverview"],
+      query: () => '/clients-summary',
+      providesTags: ['WsClientOverview'],
     }),
     getWsClientOverview: b.query({
       query: (id) => `/clients/${id}/overview`,
-      providesTags: (r, e, id) => [{ type: "WsClientOverview", id }, "WsClientOverview"],
+      providesTags: (r, e, id) => [{ type: 'WsClientOverview', id }, 'WsClientOverview'],
     }),
   }),
 });

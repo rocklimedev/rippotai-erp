@@ -4,6 +4,7 @@ import { EXECUTION_PHASE, executionWorkFor } from './execution-work';
 import { col, fn, Op, Transaction, where, WhereOptions } from 'sequelize';
 import { ConflictException } from '@nestjs/common';
 import { Project } from './models/projects.model';
+import { normalizeGoogleMapsUrl } from '@/common/google-maps-url';
 import {
   CreateProjectDto,
   CreateProjectTeamMemberDto,
@@ -92,7 +93,8 @@ export class ProjectsService {
     // STRIP TEAM MEMBERS FROM PROJECT PAYLOAD
     // ============================================================
 
-    const { team_members, ...projectData } = dto;
+    const { team_members, google_maps_url, ...projectData } = dto;
+    const mapsUrl = normalizeGoogleMapsUrl(google_maps_url);
 
     // ============================================================
     // CREATE PROJECT
@@ -114,6 +116,7 @@ export class ProjectsService {
         const created = await this.projectModel.create(
           {
             ...projectData,
+            ...(google_maps_url !== undefined && { google_maps_url: mapsUrl }),
             slug,
             created_by: user?.id ?? null,
           } as any,
@@ -205,13 +208,15 @@ export class ProjectsService {
 
   /** Projects in Execution carry the Build-planner work going on (execution_work). */
   private async attachExecutionWork(projects: Project[]) {
-    const ids = projects.filter((p) => p.current_phase === EXECUTION_PHASE).map((p) => p.id);
+    const ids = projects
+      .filter((p) => p.current_phase === EXECUTION_PHASE)
+      .map((p) => p.id);
     if (!ids.length) return;
     try {
       const work = await executionWorkFor(this.projectModel.sequelize!, ids);
       projects.forEach((p) => {
         const w = work.get(p.id);
-        if (w) p.setDataValue('execution_work' as keyof Project, w as never);
+        if (w) p.setDataValue('execution_work' as keyof Project, w);
       });
     } catch {
       /* the list still works without it */
@@ -338,6 +343,9 @@ export class ProjectsService {
 
     const updateData: Partial<Project> = {
       ...dto,
+      ...(dto.google_maps_url !== undefined && {
+        google_maps_url: normalizeGoogleMapsUrl(dto.google_maps_url),
+      }),
       updated_by: user?.id ?? project.updated_by,
       expected_completion_date: dto.expected_completion_date
         ? new Date(dto.expected_completion_date)

@@ -1,30 +1,53 @@
 // My approvals: every document waiting for the current user's decision, across
 // all document types. Review opens the shared Approve / Revise / Reject /
 // Archive dialog with comments.
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { CheckCircle2 } from "lucide-react";
-import { Card, EmptyState, Page, PageHeader, Pill, SearchInput, Toolbar, prettyStatus } from "@/components/inos";
-import { HistoryDrawer, ReviewMenu } from "@/components/doc-list/review";
-import { fmtDate } from "@/components/doc-list/doc-utils";
-import { approvalPath, useGetMyApprovalsCountQuery, useGetMyApprovalsQuery } from "@/api/doc-flow/approvals.api";
-import "@/components/doc-list/doc-list.css";
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
+import {
+  Card,
+  EmptyState,
+  Page,
+  PageHeader,
+  Pill,
+  SearchInput,
+  Toolbar,
+  prettyStatus,
+} from '@/components/inos';
+import { HistoryDrawer, ReviewMenu } from '@/components/doc-list/review';
+import { fmtDate } from '@/components/doc-list/doc-utils';
+import {
+  approvalPath,
+  useGetMyApprovalsCountQuery,
+  useGetMyApprovalsQuery,
+} from '@/api/doc-flow/approvals.api';
+import '@/components/doc-list/doc-list.css';
 
 const waited = (since) => {
   if (!since) return null;
   const days = Math.floor((Date.now() - new Date(since).getTime()) / 86400000);
-  if (!Number.isFinite(days) || days < 1) return "today";
-  return days === 1 ? "1 day" : `${days} days`;
+  if (!Number.isFinite(days) || days < 1) return 'today';
+  return days === 1 ? '1 day' : `${days} days`;
+};
+
+const recordCode = ({ code, project_code }) => {
+  const suffix = project_code ? `-${project_code}` : '';
+  return suffix && code?.endsWith(suffix) ? code.slice(0, -suffix.length) : code;
 };
 
 export default function MyApprovals() {
-  const { data, isLoading, isFetching, error, refetch } = useGetMyApprovalsQuery(undefined, { refetchOnMountOrArgChange: true });
+  const { data, isLoading, isFetching, error, refetch } = useGetMyApprovalsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const { refetch: refetchCount } = useGetMyApprovalsCountQuery();
-  const [q, setQ] = useState("");
-  const [type, setType] = useState("");
+  const [q, setQ] = useState('');
+  const [type, setType] = useState('');
   const [history, setHistory] = useState(null);
   const rows = useMemo(() => (Array.isArray(data) ? data : []), [data]);
-  const types = useMemo(() => [...new Map(rows.map((r) => [r.type, r.type_label])).entries()], [rows]);
+  const types = useMemo(
+    () => [...new Map(rows.map((r) => [r.type, r.type_label])).entries()],
+    [rows],
+  );
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();
     return rows
@@ -32,7 +55,11 @@ export default function MyApprovals() {
       .filter(
         (r) =>
           !term ||
-          [r.code, r.name, r.type_label, r.project_name, r.project_code, r.submitted_by_name].filter(Boolean).join(" ").toLowerCase().includes(term),
+          [recordCode(r), r.name, r.type_label, r.project_name, r.submitted_by_name]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+            .includes(term),
       );
   }, [rows, q, type]);
   const done = () => {
@@ -42,12 +69,21 @@ export default function MyApprovals() {
 
   return (
     <Page>
-      <PageHeader title="My Approvals" trail={false} info={isLoading ? null : `${rows.length} waiting for your decision`} />
+      <PageHeader
+        title="My Approvals"
+        trail={false}
+        info={isLoading ? null : `${rows.length} waiting for your decision`}
+      />
       <Card flush className="dl-card">
         <div className="dl-filters">
           <Toolbar>
             <SearchInput value={q} onChange={setQ} placeholder="Search approvals" />
-            <select className="inos-select dl-project" value={type} onChange={(e) => setType(e.target.value)} aria-label="Document type">
+            <select
+              className="inos-select dl-project"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              aria-label="Document type"
+            >
               <option value="">All documents</option>
               {types.map(([k, label]) => (
                 <option key={k} value={k}>
@@ -58,14 +94,24 @@ export default function MyApprovals() {
           </Toolbar>
         </div>
         {error ? (
-          <EmptyState title="Could not load approvals" text={error?.data?.message || "Try again in a moment."} />
+          <EmptyState
+            title="Could not load approvals"
+            text={error?.data?.message || 'Try again in a moment.'}
+          />
         ) : isLoading ? (
           <div className="dl-loading">Loading…</div>
         ) : !shown.length ? (
-          <EmptyState icon={CheckCircle2} title={rows.length ? "No matches" : "Nothing waiting for your decision"} />
+          <EmptyState
+            icon={CheckCircle2}
+            title={rows.length ? 'No matches' : 'Nothing waiting for your decision'}
+          />
         ) : (
           <div className="inos-table-wrap">
-            <table className="inos-table dl-table" data-testid="approvals-table" aria-busy={isFetching || undefined}>
+            <table
+              className="inos-table dl-table"
+              data-testid="approvals-table"
+              aria-busy={isFetching || undefined}
+            >
               <thead>
                 <tr>
                   <th>Record</th>
@@ -79,7 +125,7 @@ export default function MyApprovals() {
               <tbody>
                 {shown.map((r) => {
                   const to = approvalPath(r);
-                  const label = `${r.code}${r.version ? ` v${r.version}` : ""}`;
+                  const label = `${recordCode(r) || r.type_label}${r.version ? ` v${r.version}` : ''}`;
                   return (
                     <tr key={`${r.type}:${r.id}`} data-testid="approval-row">
                       <td className="dl-name">
@@ -92,25 +138,27 @@ export default function MyApprovals() {
                         )}
                         <div className="appr-sub">
                           {r.type_label}
-                          {r.name && r.name !== r.type_label ? ` · ${r.name}` : ""}
+                          {r.name && r.name !== r.type_label ? ` · ${r.name}` : ''}
                         </div>
                       </td>
                       <td className="dl-project-cell">
                         {r.project_id ? (
                           <Link to={`/projects/${r.project_id}`} className="appr-project">
-                            {[r.project_code, r.project_name].filter(Boolean).join(" · ")}
+                            {r.project_name}
                           </Link>
                         ) : (
-                          "—"
+                          '—'
                         )}
                       </td>
-                      <td>{r.submitted_by_name || "—"}</td>
+                      <td>{r.submitted_by_name || '—'}</td>
                       <td className="dl-date">
                         {fmtDate(r.since)}
                         {waited(r.since) && <div className="appr-sub">{waited(r.since)}</div>}
                       </td>
                       <td>
-                        <Pill tone="warn">{prettyStatus(String(r.status || "").toLowerCase())}</Pill>
+                        <Pill tone="warn">
+                          {prettyStatus(String(r.status || '').toLowerCase())}
+                        </Pill>
                       </td>
                       <td>
                         <ReviewMenu
@@ -134,7 +182,7 @@ export default function MyApprovals() {
         <HistoryDrawer
           type={history.type}
           id={history.id}
-          name={`${history.code} · ${history.type_label}`}
+          name={[recordCode(history), history.type_label].filter(Boolean).join(' · ')}
           version={history.version}
           canReview
           onClose={() => {

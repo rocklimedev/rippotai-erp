@@ -76,7 +76,7 @@ export default function RecordContext({ type, id, listTo, actions, deleteArg, on
   const level = RANK[caps?.level ?? 'view'] ?? 1;
   const canEdit = !!cfg.edit && level >= RANK.edit;
   const canDelete = !!del && level >= RANK.full;
-  const name = ctx ? docCode(type, ctx.number, ctx.project?.code) || meta.label : meta.label;
+  const name = ctx ? docCode(ctx.number) || meta.label : meta.label;
 
   const remove = async () => {
     if (!(await appConfirm(`Delete ${name}? This cannot be undone.`))) return;

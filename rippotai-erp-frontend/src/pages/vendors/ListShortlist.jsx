@@ -1,11 +1,12 @@
-import { appAlert, appConfirm } from "@/lib/app-dialog";
-import React, { useMemo, useState } from "react";
+import { appAlert, appConfirm } from '@/lib/app-dialog';
+import { downloadName } from '@/lib/download-name';
+import React, { useMemo, useState } from 'react';
 import {
   useGetProjectShortlistsQuery,
   useCreateProjectShortlistMutation,
   useDeleteProjectShortlistMutation,
   useLazyExportBothProjectShortlistsQuery,
-} from "../../api/vendors/vendor-shortlist.api"; // adjust path to your api file
+} from '../../api/vendors/vendor-shortlist.api'; // adjust path to your api file
 
 /**
  * ListShortlist
@@ -17,36 +18,27 @@ import {
  *  - projectName?: string
  *  - onOpenShortlist?: (shortlist) => void  // navigate to detail/workspace
  */
-export default function ListShortlist({
-  projectId,
-  projectName,
-  onOpenShortlist,
-}) {
-  const [createType, setCreateType] = useState("VENDOR");
+export default function ListShortlist({ projectId, projectName, onOpenShortlist }) {
+  const [createType, setCreateType] = useState('VENDOR');
 
   const {
     data: shortlists = [],
     isLoading,
     isError,
     refetch,
-  } = useGetProjectShortlistsQuery(
-    { project_id: projectId },
-    { skip: !projectId },
-  );
+  } = useGetProjectShortlistsQuery({ project_id: projectId }, { skip: !projectId });
 
-  const [createShortlist, { isLoading: isCreating }] =
-    useCreateProjectShortlistMutation();
-  const [deleteShortlist, { isLoading: isDeleting }] =
-    useDeleteProjectShortlistMutation();
+  const [createShortlist, { isLoading: isCreating }] = useCreateProjectShortlistMutation();
+  const [deleteShortlist, { isLoading: isDeleting }] = useDeleteProjectShortlistMutation();
   const [triggerExportBoth, { isFetching: isExporting }] =
     useLazyExportBothProjectShortlistsQuery();
 
   const vendorList = useMemo(
-    () => shortlists.find((s) => s.shortlist_type === "VENDOR"),
+    () => shortlists.find((s) => s.shortlist_type === 'VENDOR'),
     [shortlists],
   );
   const materialList = useMemo(
-    () => shortlists.find((s) => s.shortlist_type === "MATERIAL"),
+    () => shortlists.find((s) => s.shortlist_type === 'MATERIAL'),
     [shortlists],
   );
 
@@ -56,25 +48,24 @@ export default function ListShortlist({
       const result = await createShortlist({
         project_id: projectId,
         shortlist_type: type,
-        title: `${type === "VENDOR" ? "Vendor" : "Material"} Shortlist${
-          projectName ? ` – ${projectName}` : ""
+        title: `${type === 'VENDOR' ? 'Vendor' : 'Material'} Shortlist${
+          projectName ? ` – ${projectName}` : ''
         }`,
       }).unwrap();
       if (onOpenShortlist) onOpenShortlist(result);
     } catch (err) {
-      console.error("Create shortlist failed", err);
-      (await appAlert(err?.data?.message || "Failed to create shortlist"));
+      console.error('Create shortlist failed', err);
+      await appAlert(err?.data?.message || 'Failed to create shortlist');
     }
   };
 
   const handleDelete = async (id, type) => {
-    if (!(await appConfirm(`Delete the ${type} shortlist? This cannot be undone.`)))
-      return;
+    if (!(await appConfirm(`Delete the ${type} shortlist? This cannot be undone.`))) return;
     try {
       await deleteShortlist(id).unwrap();
     } catch (err) {
-      console.error("Delete failed", err);
-      (await appAlert(err?.data?.message || "Failed to delete shortlist"));
+      console.error('Delete failed', err);
+      await appAlert(err?.data?.message || 'Failed to delete shortlist');
     }
   };
 
@@ -83,23 +74,25 @@ export default function ListShortlist({
     try {
       const blob = await triggerExportBoth(projectId).unwrap();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `SHORTLIST_${projectId}.xlsx`;
+      a.download = downloadName(
+        [projectName, 'Vendor and Material Shortlists'],
+        'export.xlsx',
+        'Shortlists',
+      );
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Export failed", err);
-      (await appAlert("Failed to export shortlists"));
+      console.error('Export failed', err);
+      await appAlert('Failed to export shortlists');
     }
   };
 
   if (!projectId) {
     return (
       <div className="bc-empty-state text-center py-16">
-        <p className="text-[var(--muted)]">
-          Select a project to view shortlists.
-        </p>
+        <p className="text-[var(--muted)]">Select a project to view shortlists.</p>
       </div>
     );
   }
@@ -125,9 +118,9 @@ export default function ListShortlist({
 
   const cards = [
     {
-      type: "VENDOR",
-      label: "Vendor Shortlist",
-      description: "Contractors, individuals & freelancers by trade",
+      type: 'VENDOR',
+      label: 'Vendor Shortlist',
+      description: 'Contractors, individuals & freelancers by trade',
       data: vendorList,
       icon: (
         <svg
@@ -146,9 +139,9 @@ export default function ListShortlist({
       ),
     },
     {
-      type: "MATERIAL",
-      label: "Material Shortlist",
-      description: "Materials & suppliers by trade",
+      type: 'MATERIAL',
+      label: 'Material Shortlist',
+      description: 'Materials & suppliers by trade',
       data: materialList,
       icon: (
         <svg
@@ -175,7 +168,7 @@ export default function ListShortlist({
         <div className="min-w-0">
           <p className="eyebrow mb-1">Project Shortlists</p>
           <h2 className="text-xl font-semibold text-[var(--ink-green)] truncate">
-            {projectName || "Shortlists"}
+            {projectName || 'Shortlists'}
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -186,7 +179,7 @@ export default function ListShortlist({
               onClick={handleExportBoth}
               disabled={isExporting}
             >
-              {isExporting ? "Exporting…" : "Export Both"}
+              {isExporting ? 'Exporting…' : 'Export Both'}
             </button>
           )}
         </div>
@@ -197,14 +190,10 @@ export default function ListShortlist({
         {cards.map((card) => {
           const exists = Boolean(card.data);
           const entryCount = card.data?.entries?.length ?? 0;
-          const selectedCount =
-            card.data?.entries?.filter((e) => e.is_selected)?.length ?? 0;
+          const selectedCount = card.data?.entries?.filter((e) => e.is_selected)?.length ?? 0;
 
           return (
-            <div
-              key={card.type}
-              className="bc-card p-5 flex flex-col gap-4 min-w-0"
-            >
+            <div key={card.type} className="bc-card p-5 flex flex-col gap-4 min-w-0">
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-12 bg-[var(--mist-soft)] text-[var(--ink-green)]">
                   {card.icon}
@@ -231,9 +220,7 @@ export default function ListShortlist({
                       </span>
                     )}
                     {card.data.is_locked && (
-                      <span className="bc-chip bg-amber-100 text-amber-800">
-                        Locked
-                      </span>
+                      <span className="bc-chip bg-amber-100 text-amber-800">Locked</span>
                     )}
                   </div>
 
@@ -241,9 +228,7 @@ export default function ListShortlist({
                     <button
                       type="button"
                       className="bc-btn-primary flex-1 min-w-[120px]"
-                      onClick={() =>
-                        onOpenShortlist ? onOpenShortlist(card.data) : undefined
-                      }
+                      onClick={() => (onOpenShortlist ? onOpenShortlist(card.data) : undefined)}
                     >
                       Open
                     </button>
@@ -252,11 +237,7 @@ export default function ListShortlist({
                       className="bc-btn-secondary"
                       onClick={() => handleDelete(card.data.id, card.type)}
                       disabled={isDeleting || card.data.is_locked}
-                      title={
-                        card.data.is_locked
-                          ? "Unlock before deleting"
-                          : "Delete shortlist"
-                      }
+                      title={card.data.is_locked ? 'Unlock before deleting' : 'Delete shortlist'}
                     >
                       Delete
                     </button>
@@ -273,7 +254,7 @@ export default function ListShortlist({
                     onClick={() => handleCreate(card.type)}
                     disabled={isCreating}
                   >
-                    {isCreating ? "Creating…" : `Create ${card.label}`}
+                    {isCreating ? 'Creating…' : `Create ${card.label}`}
                   </button>
                 </div>
               )}

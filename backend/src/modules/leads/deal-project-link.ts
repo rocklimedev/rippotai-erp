@@ -48,6 +48,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
 
 export interface DealFacts {
   location?: string | null;
+  googleMapsUrl?: string | null;
   projectTypeId?: string | null;
   size?: string | null;
   budget?: number | null;
@@ -59,6 +60,7 @@ export interface DealFacts {
 /** Deal attribute -> the project columns it feeds. */
 export const DEAL_TO_PROJECT: Record<string, string[]> = {
   location: ['site_location'],
+  googleMapsUrl: ['google_maps_url'],
   type: ['project_type_id'],
   size: ['site_area', 'site_area_unit'],
   amount: ['client_budget'],
@@ -86,6 +88,7 @@ export function projectFactPatch(
 ) {
   const values: Record<string, unknown> = {
     site_location: facts.location,
+    google_maps_url: facts.googleMapsUrl,
     project_type_id: facts.projectTypeId,
     client_budget: facts.budget,
     description: facts.description,
