@@ -101,7 +101,7 @@ export default function LandingShell() {
         data-testid="landing-header"
         className="sticky top-0 z-20 bg-[#EAEEF0]"
       >
-        <div className="h-16 px-4 lg:px-8 max-w-[1440px] mx-auto flex items-center gap-4">
+        <div className="h-16 px-3 sm:px-4 lg:px-8 max-w-[1440px] mx-auto flex items-center gap-2 sm:gap-4">
           <button
             data-testid="inos-logo"
             onClick={() => navigate("/dashboard")}
@@ -130,9 +130,10 @@ export default function LandingShell() {
           <button
             onClick={() => setSearchOpen(true)}
             data-testid="landing-search-trigger"
-            className="flex-1 max-w-[640px] mx-auto flex items-center gap-2 h-11 px-4 rounded-full nm-inset"
+            aria-label="Search"
+            className="flex-1 min-w-0 max-w-[640px] mx-auto flex items-center gap-2 h-11 px-2 sm:px-4 rounded-full nm-inset"
           >
-            <Search size={16} className="text-[#6B7B7C]" />
+            <Search size={16} className="shrink-0 text-[#6B7B7C]" />
             <span className="text-[13px] text-[#6B7B7C] truncate">
               Search projects, clients, BOQs, vendors or documents
             </span>

@@ -9,6 +9,7 @@
 // Rendered as .pd-page sheets, so the shared downloadDocumentPdf turns it into the PDF.
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Printer } from 'lucide-react';
+import { Button, SelectInput } from '@/components/inos';
 import { toast } from 'sonner';
 import monogram from '../../assets/brand/rippotai-monogram.png';
 import { downloadWhenReady, OFFSCREEN_STYLE } from '@/components/print-document/commerce';
@@ -286,23 +287,22 @@ function OffscreenPrint({ docProps, fileName, onDone }) {
 export function PrintChecklistButton({
   checklist,
   projectName,
-  className = 'bc-btn-secondary',
+  className,
   label = 'Print checklist',
 }) {
   const [busy, setBusy] = useState(false);
   const props = checklistPrintProps(checklist, projectName);
   return (
     <>
-      <button
-        type="button"
+      <Button
+        icon={Printer}
         className={className}
         disabled={busy || !checklist}
         onClick={() => setBusy(true)}
         title="A4 checklist with empty tick boxes for site inspection"
       >
-        <Printer size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: '-2px' }} />
         {busy ? 'Preparing…' : label}
-      </button>
+      </Button>
       {busy && (
         <OffscreenPrint
           docProps={props}
@@ -336,22 +336,21 @@ function TemplateLoader({ workHead, onDone }) {
 /** Blank printable checklist from a work-head template (no project). */
 export function PrintTemplateButton({
   workHead,
-  className = 'bc-btn-secondary',
+  className,
   label = 'Print blank checklist',
 }) {
   const [busy, setBusy] = useState(false);
   const done = useCallback(() => setBusy(false), []);
   return (
     <>
-      <button
-        type="button"
+      <Button
+        icon={Printer}
         className={className}
         disabled={busy || !workHead}
         onClick={() => setBusy(true)}
       >
-        <Printer size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: '-2px' }} />
         {busy ? 'Preparing…' : label}
-      </button>
+      </Button>
       {busy && <TemplateLoader workHead={workHead} onDone={done} />}
     </>
   );
@@ -363,13 +362,12 @@ export function PrintBlankChecklist({ templates = [] }) {
   const [workHead, setWorkHead] = useState('');
   if (!usable.length) return null;
   return (
-    <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-      <select
-        className="bc-input"
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <SelectInput
+        className="w-auto max-w-full"
         aria-label="Checklist template to print"
         value={workHead}
         onChange={(e) => setWorkHead(e.target.value)}
-        style={{ height: 36, minWidth: 180 }}
       >
         <option value="">Blank checklist for…</option>
         {usable.map((t) => (
@@ -377,7 +375,7 @@ export function PrintBlankChecklist({ templates = [] }) {
             {t.label} ({t.checkpoint_count})
           </option>
         ))}
-      </select>
+      </SelectInput>
       <PrintTemplateButton workHead={workHead} label="Print blank" />
     </div>
   );

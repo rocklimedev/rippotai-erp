@@ -49,10 +49,16 @@ export class DrawingsService {
       }
       const [requirement] = await this.requirementModel.findOrCreate({
         where: { projectId: dto.projectId, documentTypeId: dto.documentTypeId },
-        defaults: { projectId: dto.projectId, documentTypeId: dto.documentTypeId, requirementType: type.requirementType } as any,
+        defaults: {
+          projectId: dto.projectId,
+          documentTypeId: dto.documentTypeId,
+          requirementType: type.requirementType,
+        } as any,
       });
       if (requirementId && requirementId !== requirement.id) {
-        throw new BadRequestException('Requirement does not match the selected project and drawing type');
+        throw new BadRequestException(
+          'Requirement does not match the selected project and drawing type',
+        );
       }
       requirementId = requirement.id;
     }
@@ -122,22 +128,38 @@ export class DrawingsService {
       throw new BadRequestException('Superseded drawings cannot be approved');
     }
     const revision = await this.revisionModel.findOne({
-      where: { drawingId: id }, order: [['created_at', 'DESC'], ['id', 'DESC']],
+      where: { drawingId: id },
+      order: [
+        ['created_at', 'DESC'],
+        ['id', 'DESC'],
+      ],
     });
     if (!revision || (!revision.storageFilename && !revision.url)) {
-      throw new BadRequestException('Upload a revision file before approving this drawing');
+      throw new BadRequestException(
+        'Upload a revision file before approving this drawing',
+      );
     }
     await revision.update({ status: 'Approved' });
     await drawing.update({ status: 'Approved', approvedBy });
     if (drawing.requirementId && drawing.documentTypeId) {
       const sheets = await this.drawingModel.findAll({
-        where: { projectId: drawing.projectId, documentTypeId: drawing.documentTypeId },
+        where: {
+          projectId: drawing.projectId,
+          documentTypeId: drawing.documentTypeId,
+        },
         attributes: ['status'],
       });
       const current = sheets.filter((sheet) => sheet.status !== 'Superseded');
-      const completed = current.length > 0 && current.every((sheet) => sheet.status === 'Approved');
-      const requirement = await this.requirementModel.findByPk(drawing.requirementId);
-      await requirement?.update({ isCompleted: completed, completedAt: completed ? new Date() : null });
+      const completed =
+        current.length > 0 &&
+        current.every((sheet) => sheet.status === 'Approved');
+      const requirement = await this.requirementModel.findByPk(
+        drawing.requirementId,
+      );
+      await requirement?.update({
+        isCompleted: completed,
+        completedAt: completed ? new Date() : null,
+      });
     }
     await this.gateEngine.invalidateReadinessCache(drawing.projectId);
     return drawing;
@@ -213,7 +235,9 @@ export class DrawingsService {
       issuePurpose: dto.issuePurpose ?? drawing.issuePurpose,
     } as any);
     if (drawing.requirementId && dto.status !== 'Approved') {
-      const requirement = await this.requirementModel.findByPk(drawing.requirementId);
+      const requirement = await this.requirementModel.findByPk(
+        drawing.requirementId,
+      );
       await requirement?.update({ isCompleted: false, completedAt: null });
     }
     await this.gateEngine.invalidateReadinessCache(drawing.projectId);
@@ -272,21 +296,34 @@ export class DrawingsService {
       where: { projectId, documentTypeId },
       include: DRAWING_INCLUDES,
     });
-    const entries = docketEntries(drawings.map((d) => d.get({ plain: true }) as any));
-    if (!entries.length) throw new NotFoundException('No uploaded drawings in this category yet');
+    const entries = docketEntries(
+      drawings.map((d) => d.get({ plain: true }) as any),
+    );
+    if (!entries.length)
+      throw new NotFoundException('No uploaded drawings in this category yet');
     const type = await this.documentTypeModel.findByPk(documentTypeId);
-    const [rows] = await this.drawingModel.sequelize!.query('SELECT name FROM projects WHERE id = :id', {
-      replacements: { id: projectId },
-    });
+    const [rows] = await this.drawingModel.sequelize!.query(
+      'SELECT name FROM projects WHERE id = :id',
+      {
+        replacements: { id: projectId },
+      },
+    );
     const project = String((rows as any[])[0]?.name || 'Project');
     const trade = String(type?.name || 'Drawings');
-    const bytes = await buildDocketPdf(entries, { project, trade }, (f) => this.cdnService.downloadFile(f));
-    const filename = `${trade}-docket-${project}`.replace(/[^\w-]+/g, '-').replace(/-+/g, '-') + '.pdf';
+    const bytes = await buildDocketPdf(entries, { project, trade }, (f) =>
+      this.cdnService.downloadFile(f),
+    );
+    const filename =
+      `${trade}-docket-${project}`
+        .replace(/[^\w-]+/g, '-')
+        .replace(/-+/g, '-') + '.pdf';
     return { buffer: Buffer.from(bytes), filename, count: entries.length };
   }
 
   private computeNextRevisionLabel(drawing: Drawing): string {
-    const labels = (drawing.revisions ?? []).map((r) => String(r.revision || ''));
+    const labels = (drawing.revisions ?? []).map((r) =>
+      String(r.revision || ''),
+    );
     if (labels.length === 0) return 'V0';
     const numbered = labels
       .map((l) => /^V(\d+)$/i.exec(l))
@@ -298,5 +335,4 @@ export class DrawingsService {
     if (last) return String.fromCharCode(last.charCodeAt(0) + 1);
     return `V${labels.length}`;
   }
-
 }

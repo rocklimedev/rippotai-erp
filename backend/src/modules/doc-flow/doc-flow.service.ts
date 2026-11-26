@@ -192,7 +192,57 @@ export class DocFlowService {
       { replacements: { snapshotId, type }, type: QueryTypes.SELECT },
     );
     if (!row) throw new NotFoundException('Revision not found.');
-    return { ...row, data: JSON.parse(row.data || '{}') };
+    const data = JSON.parse(row.data || '{}');
+    if (type !== 'procurement-sheet') return { ...row, data };
+
+    const { procurement_after: saved, ...snapshot } = data;
+    const replacements = { type, id: row.entity_id, version: row.version };
+    const [next] = saved
+      ? []
+      : await this.sequelize.query<any>(
+          `SELECT data FROM document_snapshots
+        WHERE entity_type = :type AND entity_id = :id AND version > :version
+        ORDER BY version ASC LIMIT 1`,
+          { replacements, type: QueryTypes.SELECT },
+        );
+    const nextData = next && JSON.parse(next.data || '{}');
+    const items: any[] =
+      saved?.items ??
+      (nextData
+        ? (nextData.material_procurement_items ?? [])
+        : await this.sequelize.query<any>(
+            `SELECT i.*, p.sheets FROM material_procurement_items i
+           JOIN material_procurements p ON p.id = i.procurement_id
+           WHERE i.procurement_id = :id`,
+            { replacements: { id: row.entity_id }, type: QueryTypes.SELECT },
+          ));
+    const materialIds = [
+      ...new Set(
+        items
+          .map((item) =>
+            item.materialMaster ? null : (item.materialId ?? item.material_id),
+          )
+          .filter(Boolean),
+      ),
+    ];
+    const materials = materialIds.length
+      ? await this.sequelize.query<any>(
+          'SELECT id, name, category, material_code FROM material_masters WHERE id IN (:materialIds)',
+          { replacements: { materialIds }, type: QueryTypes.SELECT },
+        )
+      : [];
+    return {
+      ...row,
+      data: snapshot,
+      procurementComparison: {
+        items,
+        materials,
+        sheets:
+          saved?.sheets ??
+          nextData?.material_procurements?.sheets ??
+          items[0]?.sheets,
+      },
+    };
   }
 
   async review(

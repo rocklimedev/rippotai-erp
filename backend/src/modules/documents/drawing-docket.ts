@@ -30,7 +30,8 @@ export interface DocketDrawing {
 const versionRank = (label: string | null | undefined) => {
   const m = /^V(\d+)$/i.exec(String(label || ''));
   if (m) return Number(m[1]);
-  if (/^[A-Z]$/.test(String(label || ''))) return String(label).charCodeAt(0) - 65;
+  if (/^[A-Z]$/.test(String(label || '')))
+    return String(label).charCodeAt(0) - 65;
   return -1;
 };
 
@@ -39,7 +40,9 @@ export function latestRevision(d: DocketDrawing): DocketRevision | null {
   const list = [...(d.revisions || [])].filter((r) => r.storageFilename);
   if (!list.length) return null;
   list.sort((a, b) => {
-    const t = new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    const t =
+      new Date(b.createdAt || 0).getTime() -
+      new Date(a.createdAt || 0).getTime();
     return t || versionRank(b.revision) - versionRank(a.revision);
   });
   return list[0];
@@ -49,13 +52,20 @@ export function latestRevision(d: DocketDrawing): DocketRevision | null {
 export function docketEntries(drawings: DocketDrawing[]) {
   return drawings
     .map((d) => ({ drawing: d, revision: latestRevision(d) }))
-    .filter((e): e is { drawing: DocketDrawing; revision: DocketRevision } => !!e.revision)
+    .filter(
+      (e): e is { drawing: DocketDrawing; revision: DocketRevision } =>
+        !!e.revision,
+    )
     .sort(
       (a, b) =>
         Number(a.drawing.sequence ?? 0) - Number(b.drawing.sequence ?? 0) ||
-        String(a.drawing.drawingNumber || '').localeCompare(String(b.drawing.drawingNumber || ''), undefined, {
-          numeric: true,
-        }),
+        String(a.drawing.drawingNumber || '').localeCompare(
+          String(b.drawing.drawingNumber || ''),
+          undefined,
+          {
+            numeric: true,
+          },
+        ),
     );
 }
 
@@ -64,7 +74,8 @@ const kindOf = (r: DocketRevision) => {
   const mime = String(r.mime || '').toLowerCase();
   if (mime.includes('pdf') || name.endsWith('.pdf')) return 'pdf';
   if (mime.includes('png') || name.endsWith('.png')) return 'png';
-  if (mime.includes('jpeg') || mime.includes('jpg') || /\.jpe?g$/.test(name)) return 'jpg';
+  if (mime.includes('jpeg') || mime.includes('jpg') || /\.jpe?g$/.test(name))
+    return 'jpg';
   return 'other';
 };
 
@@ -103,22 +114,49 @@ function indexPages(
     page = doc.addPage(A3L);
     y = H - 70;
     if (first) {
-      page.drawText('RIPPOTAI', { x: 60, y, size: 14, font: bold, color: GREEN });
-      y -= 40;
-      page.drawText(fit(bold, `${meta.trade} - Drawing docket`, 26, W - 120), { x: 60, y, size: 26, font: bold, color: GREEN });
-      y -= 26;
-      page.drawText(fit(font, `${meta.project}  |  ${rows.length} drawings  |  latest version of each  |  ${meta.date}`, 12, W - 120), {
+      page.drawText('RIPPOTAI', {
         x: 60,
         y,
-        size: 12,
-        font,
-        color: GREY,
+        size: 14,
+        font: bold,
+        color: GREEN,
       });
       y -= 40;
+      page.drawText(fit(bold, `${meta.trade} - Drawing docket`, 26, W - 120), {
+        x: 60,
+        y,
+        size: 26,
+        font: bold,
+        color: GREEN,
+      });
+      y -= 26;
+      page.drawText(
+        fit(
+          font,
+          `${meta.project}  |  ${rows.length} drawings  |  latest version of each  |  ${meta.date}`,
+          12,
+          W - 120,
+        ),
+        {
+          x: 60,
+          y,
+          size: 12,
+          font,
+          color: GREY,
+        },
+      );
+      y -= 40;
     }
-    heads.forEach((h, i) => page!.drawText(h, { x: xs[i], y, size: 10, font: bold, color: GREEN }));
+    heads.forEach((h, i) =>
+      page!.drawText(h, { x: xs[i], y, size: 10, font: bold, color: GREEN }),
+    );
     y -= 8;
-    page.drawLine({ start: { x: 60, y }, end: { x: W - 60, y }, thickness: 1, color: GREEN });
+    page.drawLine({
+      start: { x: 60, y },
+      end: { x: W - 60, y },
+      thickness: 1,
+      color: GREEN,
+    });
     y -= 18;
   };
   newPage(true);
@@ -126,10 +164,21 @@ function indexPages(
     if (y < 60) newPage(false);
     r.forEach((c, i) => {
       if (!c) return;
-      page!.drawText(fit(font, c, 11, cols[i] - 10), { x: xs[i], y, size: 11, font, color: rgb(0.1, 0.1, 0.1) });
+      page!.drawText(fit(font, c, 11, cols[i] - 10), {
+        x: xs[i],
+        y,
+        size: 11,
+        font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
     });
     y -= 6;
-    page!.drawLine({ start: { x: 60, y }, end: { x: W - 60, y }, thickness: 0.4, color: rgb(0.85, 0.87, 0.86) });
+    page!.drawLine({
+      start: { x: 60, y },
+      end: { x: W - 60, y },
+      thickness: 0.4,
+      color: rgb(0.85, 0.87, 0.86),
+    });
     y -= 16;
   });
 }
@@ -142,7 +191,11 @@ export async function buildDocketPdf(
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const date = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const date = new Date().toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
   doc.setTitle(`${meta.trade} - Drawing docket - ${meta.project}`);
   indexPages(
     doc,
@@ -159,7 +212,8 @@ export async function buildDocketPdf(
   );
 
   for (const { drawing, revision } of entries) {
-    const label = `${drawing.drawingNumber || ''} ${drawing.title || ''} - ${revision.revision || ''}`.trim();
+    const label =
+      `${drawing.drawingNumber || ''} ${drawing.title || ''} - ${revision.revision || ''}`.trim();
     const kind = kindOf(revision);
     try {
       if (kind === 'other') throw new Error('not printable');
@@ -169,7 +223,10 @@ export async function buildDocketPdf(
         const pages = await doc.copyPages(src, src.getPageIndices());
         pages.forEach((p) => doc.addPage(p));
       } else {
-        const img = kind === 'png' ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+        const img =
+          kind === 'png'
+            ? await doc.embedPng(bytes)
+            : await doc.embedJpg(bytes);
         const landscape = img.width >= img.height;
         const [W, H] = landscape ? A3L : [A3L[1], A3L[0]];
         const scale = Math.min((W - 60) / img.width, (H - 80) / img.height, 1);
@@ -180,13 +237,30 @@ export async function buildDocketPdf(
           width: img.width * scale,
           height: img.height * scale,
         });
-        page.drawText(fit(font, label, 10, W - 60), { x: 30, y: H - 30, size: 10, font, color: GREY });
+        page.drawText(fit(font, label, 10, W - 60), {
+          x: 30,
+          y: H - 30,
+          size: 10,
+          font,
+          color: GREY,
+        });
       }
     } catch {
       const page = doc.addPage(A3L);
-      page.drawText(fit(bold, label, 18, A3L[0] - 120), { x: 60, y: A3L[1] - 120, size: 18, font: bold, color: GREEN });
+      page.drawText(fit(bold, label, 18, A3L[0] - 120), {
+        x: 60,
+        y: A3L[1] - 120,
+        size: 18,
+        font: bold,
+        color: GREEN,
+      });
       page.drawText(
-        fit(font, `${revision.filename || 'This file'} cannot be shown in a PDF (CAD or unreadable file) - download it from INOS.`, 12, A3L[0] - 120),
+        fit(
+          font,
+          `${revision.filename || 'This file'} cannot be shown in a PDF (CAD or unreadable file) - download it from INOS.`,
+          12,
+          A3L[0] - 120,
+        ),
         { x: 60, y: A3L[1] - 150, size: 12, font, color: GREY },
       );
     }

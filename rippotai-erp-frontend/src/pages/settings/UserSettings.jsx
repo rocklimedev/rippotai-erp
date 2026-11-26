@@ -11,7 +11,6 @@ import {
   Card,
   Button,
   Toolbar,
-  ToolbarSpacer,
   SearchInput,
   Segmented,
   Pill,
@@ -34,6 +33,7 @@ import {
   humanize,
   plural,
 } from './_admin-ui';
+import './UserSettings.css';
 
 const emailVerified = (user) =>
   Boolean(user.email_verified_at) && user.email_verified_address === user.email;
@@ -47,7 +47,7 @@ export default function UsersSettings() {
     isFetching: loadingUsers,
     error: usersError,
     refetch,
-  } = useGetUsersQuery({}, { skip: !isAdmin });
+  } = useGetUsersQuery({ is_active: true }, { skip: !isAdmin });
 
   const [updateUserMutation] = useUpdateUserMutation();
   const [deleteUserMutation] = useDeleteUserMutation();
@@ -140,16 +140,12 @@ export default function UsersSettings() {
   };
 
   const list = useMemo(() => (Array.isArray(users) ? users : []), [users]);
-  const activeCount = list.filter((u) => u.is_active !== false).length;
   const unverifiedCount = list.filter((u) => !emailVerified(u)).length;
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return list.filter((u) => {
       if (params.get('userId') && String(u.id) !== params.get('userId')) return false;
-      const active = u.is_active !== false;
-      if (statusFilter === 'active' && !active) return false;
-      if (statusFilter === 'inactive' && active) return false;
       if (statusFilter === 'unverified' && emailVerified(u)) return false;
       if (!q) return true;
       return [u.name, u.email, u.job_title, u.role_label, u.role?.name]
@@ -163,7 +159,7 @@ export default function UsersSettings() {
   }
 
   return (
-    <Page>
+    <Page className="users-settings">
       <PageHeader
         crumbs={adminCrumbs('Users')}
         title="Users"
@@ -213,32 +209,26 @@ export default function UsersSettings() {
           onChange={setStatusFilter}
           options={[
             { value: 'all', label: `All · ${list.length}` },
-            { value: 'active', label: `Active · ${activeCount}` },
             { value: 'unverified', label: `Unverified · ${unverifiedCount}` },
-            {
-              value: 'inactive',
-              label: `Inactive · ${list.length - activeCount}`,
-            },
           ]}
         />
-        <ToolbarSpacer />
       </Toolbar>
 
       <Card flush>
         <div className="inos-table-wrap">
-          <table className="inos-table">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th className="adm-hide-sm">Email</th>
-                <th>Role</th>
-                <th className="adm-hide-sm">Joined</th>
-                <th>Status</th>
-                <th>Email verification</th>
-                <th className="actions" aria-label="Actions" />
+          <table className="inos-table users-settings__table" role="table" aria-label="Users">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col">User</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Joined</th>
+                <th scope="col">Status</th>
+                <th scope="col">Email verification</th>
+                <th scope="col" className="actions" aria-label="Actions" />
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {loadingUsers && list.length === 0 ? (
                 <SkeletonRows cols={7} />
               ) : list.length === 0 ? (
@@ -272,8 +262,8 @@ export default function UsersSettings() {
                   const isSelf = u.id === user.id;
                   const verified = emailVerified(u);
                   return (
-                    <tr key={u.id}>
-                      <td>
+                    <tr key={u.id} className="users-settings__row" role="row">
+                      <td className="users-settings__identity" role="cell">
                         <div className="adm-cell-main">
                           <Avatar name={u.name} src={u.avatar_url || undefined} size={36} />
                           <div style={{ minWidth: 0 }}>
@@ -298,8 +288,8 @@ export default function UsersSettings() {
                           </div>
                         </div>
                       </td>
-                      <td className="adm-cell-2 adm-hide-sm">{u.email}</td>
-                      <td>
+                      <td className="adm-cell-2 users-settings__email" role="cell">{u.email}</td>
+                      <td className="users-settings__role" role="cell">
                         {u.role?.name ? (
                           <Pill tone="brand" dot={false}>
                             {humanize(u.role.name)}
@@ -308,11 +298,14 @@ export default function UsersSettings() {
                           <span className="muted">—</span>
                         )}
                       </td>
-                      <td className="adm-cell-2 tabular adm-hide-sm">{fmtDate(u.created_at)}</td>
-                      <td>
+                      <td className="adm-cell-2 tabular users-settings__joined" role="cell">
+                        <span className="users-settings__joined-label">Joined </span>
+                        {fmtDate(u.created_at)}
+                      </td>
+                      <td className="users-settings__status" role="cell">
                         <Pill tone={active ? 'ok' : 'mute'}>{active ? 'Active' : 'Inactive'}</Pill>
                       </td>
-                      <td>
+                      <td className="users-settings__verification" role="cell">
                         <div className="flex flex-col items-start gap-2">
                           <Pill tone={verified ? 'ok' : 'mute'}>
                             {verified ? 'Verified' : 'Unverified'}
@@ -322,7 +315,7 @@ export default function UsersSettings() {
                           )}
                         </div>
                       </td>
-                      <td className="actions">
+                      <td className="actions" role="cell">
                         <UserActionsMenu
                           isSelf={isSelf}
                           isActive={active}
@@ -348,7 +341,7 @@ export default function UsersSettings() {
         </div>
         {list.length > 0 && (
           <div className="adm-table-foot">
-            {plural(visible.length, 'user')} shown · {activeCount} active
+            {plural(visible.length, 'user')} shown · {list.length} active
           </div>
         )}
       </Card>
