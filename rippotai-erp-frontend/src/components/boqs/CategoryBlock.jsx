@@ -6,6 +6,7 @@ import {
   ChevronRight,
   GripVertical,
   MoreHorizontal,
+  Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -45,6 +46,9 @@ export function CategoryBlock({
   onOpenDetail,
   onAddItem,
   onDeleteCat,
+  onRenameCat,
+  canRenameCat,
+  renamingCategory,
   moveControls,
   moveUp,
   moveDown,
@@ -125,9 +129,21 @@ export function CategoryBlock({
             <div className="w-8 h-8 rounded bg-[#1F453B] text-white text-[13px] font-bold flex items-center justify-center">
               {cat.code}
             </div>
-            <h3 className="text-[18px] text-[#333333] flex-1">
-              {cat.name}
-            </h3>
+            <div className="flex flex-1 items-center gap-2">
+              <h3 className="text-[18px] text-[#333333]">{cat.name}</h3>
+              {onRenameCat && (
+                <button
+                  type="button"
+                  className="rounded p-1 hover:bg-[#B5C4B6] disabled:opacity-40"
+                  aria-label={`Rename category ${cat.name}`}
+                  title={canRenameCat ? "Rename category" : "BOQ edit permission is required"}
+                  disabled={!canRenameCat || renamingCategory}
+                  onClick={guarded(() => onRenameCat(cat))}
+                >
+                  <Pencil size={15} aria-hidden />
+                </button>
+              )}
+            </div>
             <div className="text-[11.5px] text-[#B5C4B6]">
               {items.length} items
             </div>

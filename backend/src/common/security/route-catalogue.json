@@ -1012,10 +1012,30 @@
   {
     "module": "boqs",
     "controller": "LibraryController",
+    "handler": "removeCategory",
+    "method": "DELETE",
+    "path": "/library/categories/:id",
+    "permission": "library:delete",
+    "public": false,
+    "file": "src/modules/boqs/library.controller.ts"
+  },
+  {
+    "module": "boqs",
+    "controller": "LibraryController",
     "handler": "removeItem",
     "method": "DELETE",
     "path": "/library/items/:id",
     "permission": "library:delete",
+    "public": false,
+    "file": "src/modules/boqs/library.controller.ts"
+  },
+  {
+    "module": "boqs",
+    "controller": "LibraryController",
+    "handler": "updateCategory",
+    "method": "PATCH",
+    "path": "/library/categories/:id",
+    "permission": "library:update",
     "public": false,
     "file": "src/modules/boqs/library.controller.ts"
   },

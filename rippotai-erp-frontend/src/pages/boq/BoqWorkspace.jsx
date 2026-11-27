@@ -1,4 +1,4 @@
-import { appConfirm } from '@/lib/app-dialog';
+import { appConfirm, appPrompt } from '@/lib/app-dialog';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import BoqDocument, {
   BOQ_VARIANTS,
@@ -61,6 +61,7 @@ import {
   useUpdateBoqMutation,
   useDeleteBoqMutation,
   useAddBoqCategoryMutation,
+  useUpdateBoqCategoryMutation,
   useReorderBoqCategoriesMutation,
   useDeleteBoqCategoryMutation,
   useAddBoqItemMutation,
@@ -100,6 +101,7 @@ export default function BoqWorkspace() {
   const [updateBoq] = useUpdateBoqMutation();
   const [deleteBoq] = useDeleteBoqMutation();
   const [addCategory] = useAddBoqCategoryMutation();
+  const [updateCategory, { isLoading: renamingCategory }] = useUpdateBoqCategoryMutation();
   const [reorderCategories] = useReorderBoqCategoriesMutation();
   const [reorderingCategories, setReorderingCategories] = useState(false);
   const [deleteCategory] = useDeleteBoqCategoryMutation();
@@ -138,7 +140,8 @@ export default function BoqWorkspace() {
   const [pickerFor, setPickerFor] = useState(null);
 
   const disabled = isBoqDisabled(boq);
-  const canReorderCategories = !disabled && user?.permissions?.includes('boq:update');
+  const canEditCategories = user?.permissions?.includes('boq:update');
+  const canReorderCategories = !disabled && canEditCategories;
   const { isOwner, canSubmit, canApprove } = getBoqAccess(boq, user);
   const onLockedEdit = useCallback(() => setLockedOpen(true), []);
 
@@ -345,6 +348,21 @@ export default function BoqWorkspace() {
       await reorderItems({ boqId: id, categoryId: cid, orderedIds }).unwrap();
     } catch {
       toast.error('Reorder failed');
+    }
+  };
+
+  const handleRenameCategory = async (category) => {
+    const name = (await appPrompt('Category name', category.name))?.trim();
+    if (name == null || name === category.name) return;
+    if (!name || name.length > 255) {
+      toast.error('Enter a category name between 1 and 255 characters.');
+      return;
+    }
+    try {
+      await updateCategory({ boqId: id, categoryId: category.id, name }).unwrap();
+      toast.success('Category renamed');
+    } catch (error) {
+      toast.error(error?.data?.message || 'Could not rename category.');
     }
   };
 
@@ -795,6 +813,9 @@ export default function BoqWorkspace() {
                           onOpenDetail={setDetailItem}
                           onAddItem={handleAddItem}
                           onDeleteCat={handleDeleteCategory}
+                          onRenameCat={handleRenameCategory}
+                          canRenameCat={canEditCategories}
+                          renamingCategory={renamingCategory}
                           sortableId={catKey(cat.id)}
                           dragDisabled={!canReorderCategories || reorderingCategories}
                           hideItems={draggingCategory}

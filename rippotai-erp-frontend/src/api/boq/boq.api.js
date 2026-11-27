@@ -442,6 +442,23 @@ export const boqApi = baseApi.injectEndpoints({
       invalidatesTags: ['LIBRARY'],
     }),
 
+    updateLibraryCategory: builder.mutation({
+      query: ({ id, name }) => ({
+        url: `/library/categories/${id}`,
+        method: 'PATCH',
+        body: { name },
+      }),
+      invalidatesTags: ['LIBRARY'],
+    }),
+
+    deleteLibraryCategory: builder.mutation({
+      query: (id) => ({
+        url: `/library/categories/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['LIBRARY'],
+    }),
+
     getLibraryItems: builder.query({
       query: (params) => ({
         url: '/library/items',
@@ -574,6 +591,8 @@ export const {
   useApplyBoqTermsMutation,
   useGetLibraryCategoriesQuery,
   useCreateLibraryCategoryMutation,
+  useUpdateLibraryCategoryMutation,
+  useDeleteLibraryCategoryMutation,
   useGetLibraryItemsQuery,
   useGetLibraryItemQuery,
   useCreateLibraryItemMutation,

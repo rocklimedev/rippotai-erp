@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 967 routes, 935 staff routes and 381 assignable staff capabilities.
+There are 969 routes, 937 staff routes and 381 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -162,7 +162,9 @@ There are 967 routes, 935 staff routes and 381 assignable staff capabilities.
 | boqs | `GET /library/categories` | LibraryController.findCategories | `library:read` | staff |
 | boqs | `GET /library/items` | LibraryController.findItems | `library:read` | staff |
 | boqs | `GET /library/items/:id` | LibraryController.findOneItem | `library:read` | staff |
+| boqs | `DELETE /library/categories/:id` | LibraryController.removeCategory | `library:delete` | staff |
 | boqs | `DELETE /library/items/:id` | LibraryController.removeItem | `library:delete` | staff |
+| boqs | `PATCH /library/categories/:id` | LibraryController.updateCategory | `library:update` | staff |
 | boqs | `PATCH /library/items/:id` | LibraryController.updateItem | `library:update` | staff |
 | brief | `POST /project-briefs` | ProjectBriefsController.create | `project-briefs:create` | staff |
 | brief | `POST /project-briefs/:id/new-version` | ProjectBriefsController.createNewVersion | `project-briefs:create` | staff |

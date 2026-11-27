@@ -12,6 +12,8 @@ import ProjectStructure from '../../pages/projects/ProjectStructure';
 
 import AdminOverview from '@/pages/settings/AdminOverview';
 import CompanyProfile from '@/pages/settings/CompanyProfile';
+import BoqCategories from '@/pages/settings/BoqCategories';
+import VendorsDashboard from '@/pages/vendors/VendorsDashboard';
 
 export const adminConsoleRoutes = [
   {
@@ -42,6 +44,8 @@ export const adminConsoleRoutes = [
         'terms-and-conditions',
         'super-admin',
         'company-profile',
+        'boq-categories',
+        'vendor-database',
       ],
     },
 
@@ -94,6 +98,14 @@ export const adminConsoleRoutes = [
       {
         path: 'estimate-signature',
         element: <EstimateSignature />,
+      },
+      {
+        path: 'boq-categories',
+        element: <BoqCategories />,
+      },
+      {
+        path: 'vendor-database',
+        element: <VendorsDashboard title="Vendor List Database" />,
       },
 
       // =========================================================
