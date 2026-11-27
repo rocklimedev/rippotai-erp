@@ -138,7 +138,7 @@ function StatusChip({ status }) {
   );
 }
 
-export default function VendorsDashboard() {
+export default function VendorsDashboard({ title = "Vendor Database" }) {
   const nav = useNavigate();
 
   const [view, setView] = useState("table");
@@ -302,7 +302,7 @@ export default function VendorsDashboard() {
           </div>
 
           <h1 className="text-[26px] font-bold tracking-tight text-slate-900 sm:text-[30px]">
-            Vendor Database
+            {title}
           </h1>
 
           <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">

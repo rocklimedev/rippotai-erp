@@ -188,6 +188,8 @@ export const APP_MENUS = {
         I('Document Types', 'document-types'),
         I('Project Structure', 'project-structure'),
         I('Estimate Signature', 'estimate-signature'),
+        I('BOQ Categories', 'boq-categories'),
+        I('Vendor List', 'vendor-database'),
       ],
     },
     {

@@ -40,6 +40,18 @@ export class LibraryController {
     return this.libraryService.createCategory(dto);
   }
 
+  @RequirePermission('library:update')
+  @Patch('categories/:id')
+  updateCategory(@Param('id') id: string, @Body() dto: CreateLibraryCategoryDto) {
+    return this.libraryService.updateCategory(id, dto);
+  }
+
+  @RequirePermission('library:delete')
+  @Delete('categories/:id')
+  removeCategory(@Param('id') id: string) {
+    return this.libraryService.removeCategory(id);
+  }
+
   @RequirePermission('library:read')
   @Get('items')
   findItems(@Query() query: QueryLibraryItemsDto) {

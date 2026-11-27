@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Transaction, WhereOptions } from 'sequelize';
 import { LibraryItem } from './models/library-item.model';
@@ -99,7 +99,64 @@ export class LibraryService {
   }
 
   async createCategory(dto: CreateLibraryCategoryDto) {
-    return this.categoryModel.create(dto as LibraryCategory);
+    const name = await this.validateCategoryName(dto.name);
+    return this.categoryModel.create({ name } as LibraryCategory);
+  }
+
+  private async validateCategoryName(value: string, id?: string, transaction?: Transaction) {
+    const name = value.trim();
+    if (!name) throw new BadRequestException('Category name is required');
+    const existing = await this.categoryModel.findOne({
+      where: { name, ...(id ? { id: { [Op.ne]: id } } : {}) },
+      transaction,
+    });
+    if (existing) throw new ConflictException('A category with this name already exists');
+    return name;
+  }
+
+  private async getCategoryForWrite(id: string, transaction: Transaction) {
+    const category = await this.categoryModel.findByPk(id, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!category) throw new NotFoundException('Library category not found');
+    return category;
+  }
+
+  private categoryItemFilter(category: LibraryCategory): WhereOptions<LibraryItem> {
+    return {
+      [Op.or]: [
+        { category_id: category.id },
+        { category_id: null, category_name: category.name },
+      ],
+    };
+  }
+
+  async updateCategory(id: string, dto: CreateLibraryCategoryDto) {
+    return this.categoryModel.sequelize!.transaction(async (transaction) => {
+      const category = await this.getCategoryForWrite(id, transaction);
+      const name = await this.validateCategoryName(dto.name, id, transaction);
+      await this.itemModel.update(
+        { category_id: id, category_name: name },
+        { where: this.categoryItemFilter(category), transaction },
+      );
+      return category.update({ name }, { transaction });
+    });
+  }
+
+  async removeCategory(id: string) {
+    return this.categoryModel.sequelize!.transaction(async (transaction) => {
+      const category = await this.getCategoryForWrite(id, transaction);
+      const itemCount = await this.itemModel.count({
+        where: this.categoryItemFilter(category),
+        transaction,
+      });
+      if (itemCount) {
+        throw new ConflictException('Move or remove this category’s library items before deleting it');
+      }
+      await category.destroy({ transaction });
+      return { id, deleted: true };
+    });
   }
 
   async findItems(query: QueryLibraryItemsDto) {
