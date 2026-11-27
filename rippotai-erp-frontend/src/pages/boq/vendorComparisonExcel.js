@@ -41,7 +41,13 @@ function tradeSheet(ws, source, trade) {
     originalLast,
     6 + Math.max(0, ...trade.vendors.map((v) => v.items.length)),
   );
-  const blocks = Math.max(3, trade.vendors.length);
+  const vendors = new Map(
+    trade.vendors.map((vendor, index) => [vendor.slot ?? index, vendor]),
+  );
+  const blocks = Math.max(3, ...Array.from(vendors.keys(), (slot) => Number(slot) + 1));
+  // Each block uses six visible columns and one hidden lookup column.
+  if (7 * blocks + 1 > 16384)
+    throw new Error(`Too many vendor columns to export ${trade.name} to Excel`);
   const endCol = 6 * blocks; // B:F, H:L, N:R (no BOQ block)
   const helper = endCol + 2;
   const total = last + 1,
@@ -78,7 +84,7 @@ function tradeSheet(ws, source, trade) {
   for (let b = 0; b < blocks; b++) {
     const c = 2 + b * 6;
     const src = 8 + Math.min(b, 2) * 6;
-    const vendor = trade.vendors.find((v, index) => (v.slot ?? index) === b);
+    const vendor = vendors.get(b);
     for (let offset = 0; offset < 6; offset++) {
       ws.getColumn(c + offset).width = source.getColumn(src + offset).width;
       ws.getColumn(c + offset).hidden = false;
@@ -185,14 +191,10 @@ function tradeSheet(ws, source, trade) {
     ),
   );
   const final = trade.vendors.find((v) => v.id === trade.finalised_vendor_id);
-  const chain = Array.from({ length: blocks }, (_, b) =>
-    COL(2 + b * 6),
-  ).reduceRight(
-    (rest, c) => `IF(D3=${c}5,${c}${sum},${rest})`,
-    '"Name mismatch"',
-  );
+  const lastVendorColumn = COL(2 + (blocks - 1) * 6);
+  const vendorName = 'SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(D3,"~","~~"),"*","~*"),"?","~?")';
   ws.getCell("J3").value = {
-    formula: `IF(D3="","",${chain})`,
+    formula: `IF(D3="","",IFERROR(INDEX(B${sum}:${lastVendorColumn}${sum},1,MATCH(${vendorName},B5:${lastVendorColumn}5,0)),"Name mismatch"))`,
     result: final ? quoteTotal(final) : "",
   };
   ws.getCell("D3").dataValidation = {

@@ -146,6 +146,8 @@ test("template expands for additional trades and long quotes, preserving slot po
       },
     ],
   }));
+  const fifth = { ...trades[0].vendors[0], id: "v5", name: "Fifth vendor", slot: 4 };
+  trades[0].vendors.push(fifth);
   const bytes = await buildVendorComparisonWorkbook(template, {
     title: "Growth",
     trades,
@@ -155,6 +157,8 @@ test("template expands for additional trades and long quotes, preserving slot po
   assert.equal(wb.worksheets.length, 33);
   const sheet = wb.worksheets[1];
   assert.equal(sheet.getCell("N5").value, "Third vendor");
+  assert.equal(sheet.getCell("Z5").value, "Fifth vendor");
+  assert.equal(sheet.getCell("Z29").result, 4000);
   assert.equal(sheet.getCell("O26").value, "Line 19");
   assert.equal(sheet.getCell("N29").result, 4000);
   assert.equal(sheet.getCell("J3").result, 4000);
