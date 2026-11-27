@@ -95,6 +95,19 @@ describe('Independent vendor comparisons', () => {
       'must match the shared item',
     );
   });
+  it('saves five vendor quotes on a trade', async () => {
+    const input = body();
+    const trade = input.snapshot.trades[0];
+    const original = trade.vendors[0];
+    trade.vendors = Array.from({ length: 5 }, (_, index) => ({
+      ...original,
+      id: 'vendor-' + index,
+    }));
+    trade.finalised_vendor_id = trade.vendors[4].id;
+    const saved = await service.create(input, 'u');
+    expect(saved.snapshot.trades[0].vendors).toHaveLength(5);
+    expect(saved.snapshot.trades[0].finalised_vendor_id).toBe('vendor-4');
+  });
   it('rejects missing vendor lines and invalid vendor column counts', async () => {
     const input = body();
     const trade = input.snapshot.trades[0] as any;

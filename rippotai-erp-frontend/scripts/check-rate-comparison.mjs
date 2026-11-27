@@ -122,9 +122,8 @@ try {
   );
   assert.ok(
     html.includes("trade-comparison-table") &&
-      html.includes("Vendor 3") &&
-      html.includes("Vendor notes"),
-    "Trade opens one comparison table with grouped vendor columns and notes",
+      html.includes('aria-label="Edit vendor 1"'),
+    "Trade opens the saved quote with shared scope and a header edit control",
   );
   assert.ok(
     html.includes("Saved quote label"),
@@ -139,7 +138,6 @@ try {
     html.includes("₹251"),
     "Vendor totals must be recalculated from restored quotes",
   );
-  assert.match(html, /<tr class="vc-grand"><td[^>]*>Total amount<\/td><td[^>]*>₹251<\/td>/);
   assert.doesNotMatch(html, /GST/);
   assert.ok(
     !html.includes("Original BOQ") && !html.includes("Changed source"),
@@ -210,15 +208,36 @@ try {
       !independent.includes("trade-comparison-table"),
     "Overview opens by default with the workbook summary and finalised totals",
   );
-  const fourSnapshot = structuredClone(newSnapshot); fourSnapshot.trades[0].vendor_column_count = 4;
-  store.dispatch(baseApi.util.upsertQueryEntries([{ endpointName: 'getRateComparison', arg: 'sheet-1', value: { ...sheet, snapshot: fourSnapshot } }]));
-  const four = render('/procurement/vendors/rate-comparison/sheet-1/edit?trade=trade-2', Workspace, '/procurement/vendors/rate-comparison/:id/edit');
-  assert.ok(four.includes('Vendor 4') && four.includes('vc-item-col') && four.includes('Number of vendors'), 'Trade comparison supports four grouped vendor columns');
-  assert.match(four, /\+ Add vendor[\s\S]*Select vendor to add[\s\S]*\+ Add item[\s\S]*trade-comparison-table/);
-  assert.doesNotMatch(four.match(/<table[\s\S]*?<\/table>/)[0], /\+ Add vendor|Enter custom vendor/);
-  assert.equal((four.match(/aria-label="Item description 1"/g) || []).length, 1);
-  assert.match(four, /<input[^>]*aria-label="Quantity 1"[^>]*disabled=""/);
-  assert.match(four, /<option value="Lump" selected="">Lump sum<\/option>/);
+  const fiveSnapshot = structuredClone(newSnapshot);
+  const trade = fiveSnapshot.trades[0];
+  const original = trade.vendors[0];
+  trade.vendors.push(...[null, 900, 1500, 1000].map((rate, index) => ({
+    id: "added-" + index,
+    name: "Added vendor " + (index + 1),
+    slot: index + 2,
+    items: [{ ...original.items[0], rate }],
+  })));
+  store.dispatch(baseApi.util.upsertQueryEntries([{
+    endpointName: "getRateComparison",
+    arg: "sheet-1",
+    value: { ...sheet, snapshot: fiveSnapshot },
+  }]));
+  const five = render("/procurement/vendors/rate-comparison/sheet-1/edit?trade=trade-2",
+    Workspace, "/procurement/vendors/rate-comparison/:id/edit");
+  assert.equal((five.match(/<article class="vc-quote/g) || []).length, 5);
+  assert.equal((five.match(/<article class="vc-quote is-expanded"/g) || []).length, 1);
+  assert.match(five, /Vendor (?:<!-- -->)?5[\s\S]*Added vendor 4/);
+  assert.match(five, /class="vc-quote-rate is-pending"[^>]*>Pending/);
+  assert.match(five, /class="vc-quote-rate is-low"[^>]*>₹900/);
+  assert.match(five, /aria-label="Scroll left"/);
+  assert.match(five, /aria-label="Scroll right"/);
+  assert.match(five, /class="vc-add-vendor"/);
+  assert.match(five, /class="vc-add-tile"/);
+  assert.equal((five.match(/aria-label="Edit vendor [1-5]"/g) || []).length, 5);
+  assert.ok(five.includes("+ Add item"));
+  assert.equal((five.match(/aria-label="Item description 1"/g) || []).length, 1);
+  assert.match(five, /<input[^>]*aria-label="Quantity 1"[^>]*disabled=""/);
+  assert.ok(five.includes('<option value="Lump" selected="">Lump sum</option>'));
   const fresh = render(
     "/procurement/vendors/rate-comparison/new?tab=comparison",
     Workspace,

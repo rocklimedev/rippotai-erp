@@ -69,8 +69,7 @@ export class VendorRateComparisonService {
         !text(trade.id) ||
         tradeIds.has(trade.id) ||
         !text(trade.name) ||
-        !Array.isArray(trade.vendors) ||
-        trade.vendors.length > 4
+        !Array.isArray(trade.vendors)
       )
         throw new BadRequestException('Invalid comparison trade');
       tradeIds.add(trade.id);
