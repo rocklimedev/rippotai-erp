@@ -14,7 +14,10 @@ export class WorkspaceController {
   /** GET /clients/:id/overview — client + projects, documents, payment schedules, notes */
   @RequirePermission('workspace:read')
   @Get('clients/:id/overview')
-  clientOverview(@Param('id') id: string, @CurrentUser() user?: DocumentTypeActor) {
+  clientOverview(
+    @Param('id') id: string,
+    @CurrentUser() user?: DocumentTypeActor,
+  ) {
     return this.svc.clientOverview(id, hiddenDocumentTypes(user));
   }
 
