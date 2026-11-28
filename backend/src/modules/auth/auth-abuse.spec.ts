@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/sequelize';
+import { RoleApp } from '../rbac/models/role-app.model';
 import request from 'supertest';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -61,6 +63,10 @@ describe('Authentication and reset abuse budgets', () => {
       ],
       controllers: [AuthController],
       providers: [
+        {
+          provide: getModelToken(RoleApp),
+          useValue: { findAll: jest.fn().mockResolvedValue([]) },
+        },
         { provide: AuthService, useValue: auth },
         { provide: ForgotPasswordService, useValue: forgot },
         { provide: EmailVerificationService, useValue: {} },
