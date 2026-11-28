@@ -5482,6 +5482,16 @@
   {
     "module": "rbac",
     "controller": "AccessMatrixController",
+    "handler": "setDocumentTypeAccess",
+    "method": "PATCH",
+    "path": "/role-access/:role_id/document-types/:type_id",
+    "permission": "role-permissions:assign",
+    "public": false,
+    "file": "src/modules/rbac/access-matrix.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "AccessMatrixController",
     "handler": "setForRole",
     "method": "PUT",
     "path": "/role-access/:role_id",
@@ -5496,6 +5506,16 @@
     "method": "PATCH",
     "path": "/role-access/:role_id/frontend-routes",
     "permission": "role-permissions:assign",
+    "public": false,
+    "file": "src/modules/rbac/access-matrix.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "AccessMatrixController",
+    "handler": "setLauncherApp",
+    "method": "PATCH",
+    "path": "/role-access/:role_id/launcher/:code",
+    "permission": "role-apps:update",
     "public": false,
     "file": "src/modules/rbac/access-matrix.controller.ts"
   },
