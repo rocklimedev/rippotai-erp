@@ -1,5 +1,7 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { summarizeAccess } from '../rbac/access-catalogue';
+import { InjectModel } from '@nestjs/sequelize';
+import { RoleApp } from '../rbac/models/role-app.model';
 import { Public } from '@/common/decorator/public.decorator';
 import { AuthThrottle } from '@/common/security/auth-throttle.decorator';
 import {
@@ -46,6 +48,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly forgotPasswordService: ForgotPasswordService,
     private readonly emailVerification: EmailVerificationService,
+    @InjectModel(RoleApp) private readonly roleApps: typeof RoleApp,
   ) {}
 
   @RequirePermission('auth:login')
@@ -96,8 +99,23 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: RequestWithUser) {
-    const permissions = (req.user as any)?.permissions ?? [];
-    return { user: { ...req.user, access: summarizeAccess(permissions) } };
+    const permissions = req.user.permissions ?? [];
+    const roleId = req.user.role_id;
+    const apps = roleId
+      ? await this.roleApps.findAll({
+          where: { role_id: roleId },
+          attributes: ['app_code'],
+        })
+      : [];
+    return {
+      user: {
+        ...req.user,
+        access: {
+          ...summarizeAccess(permissions),
+          launcherApps: apps.map(({ app_code }) => app_code),
+        },
+      },
+    };
   }
 
   @RequirePermission('account:renew')

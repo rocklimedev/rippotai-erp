@@ -1,4 +1,8 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { assertDocumentTypeAccess, hiddenDocumentTypes } from '@/common/security/document-type-access';
+import type { DocumentTypeActor } from '@/common/security/document-type-access';
+import { DocumentTypeAccessGuard } from './document-type-access.guard';
 import { downloadDisposition, downloadName } from '@/common/download-name';
 import {
   Body,
@@ -28,6 +32,7 @@ import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { CreateDocumentAttachmentDto } from './dto/create-document-attachment.dto';
 
 @Controller('documents')
+@UseGuards(DocumentTypeAccessGuard)
 export class DocumentsController {
   constructor(
     private readonly documentsService: DocumentsService,
@@ -40,33 +45,35 @@ export class DocumentsController {
 
   @RequirePermission('documents:read')
   @Get('dashboard/stats')
-  getDashboardStats() {
-    return this.documentsDashboardService.getDashboardStats();
+  getDashboardStats(@CurrentUser() user?: DocumentTypeActor) {
+    return this.documentsDashboardService.getDashboardStats(hiddenDocumentTypes(user));
   }
 
   @RequirePermission('documents:read')
   @Get('dashboard/recent')
-  getRecentDocuments(@Query('limit') limit?: string) {
+  getRecentDocuments(@Query('limit') limit?: string, @CurrentUser() user?: DocumentTypeActor) {
     const parsedLimit = limit ? Number(limit) : 6;
 
     return this.documentsDashboardService.getRecentDocuments(
       Number.isFinite(parsedLimit) ? parsedLimit : 6,
+      hiddenDocumentTypes(user),
     );
   }
 
   @RequirePermission('documents:read')
   @Get('dashboard/pending')
-  getPendingDocuments() {
-    return this.documentsDashboardService.getPendingDocuments();
+  getPendingDocuments(@CurrentUser() user?: DocumentTypeActor) {
+    return this.documentsDashboardService.getPendingDocuments(hiddenDocumentTypes(user));
   }
 
   @RequirePermission('documents:read')
   @Get('dashboard/project-wise')
-  getProjectWiseDocuments(@Query('limit') limit?: string) {
+  getProjectWiseDocuments(@Query('limit') limit?: string, @CurrentUser() user?: DocumentTypeActor) {
     const parsedLimit = limit ? Number(limit) : 5;
 
     return this.documentsDashboardService.getProjectWiseDocuments(
       Number.isFinite(parsedLimit) ? parsedLimit : 5,
+      hiddenDocumentTypes(user),
     );
   }
 
@@ -86,7 +93,9 @@ export class DocumentsController {
   create(
     @Body() dto: CreateDocumentDto,
     @UploadedFile() file?: Express.Multer.File,
+    @CurrentUser() user?: DocumentTypeActor,
   ) {
+    assertDocumentTypeAccess(user, dto.documentTypeId, 'create');
     return this.documentsService.create(dto, file);
   }
 
@@ -114,12 +123,14 @@ export class DocumentsController {
     @Query('status') status?: string,
     @Query('category') category?: string,
     @Query('documentTypeId') documentTypeId?: string,
+    @CurrentUser() user?: DocumentTypeActor,
   ) {
     return this.documentsService.findAll({
       projectId,
       status,
       category,
       documentTypeId,
+      hiddenTypeIds: hiddenDocumentTypes(user),
     });
   }
 
@@ -146,7 +157,9 @@ export class DocumentsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateDocumentDto,
+    @CurrentUser() user?: DocumentTypeActor,
   ) {
+    assertDocumentTypeAccess(user, dto.documentTypeId, 'update');
     return this.documentsService.update(id, dto);
   }
 

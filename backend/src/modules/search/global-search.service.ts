@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { hiddenDocumentTypes } from '@/common/security/document-type-access';
 import {
   isSearchAdmin,
   requireSearchPrincipal,
@@ -93,6 +94,7 @@ export class GlobalSearchService {
     const query = this.buildQuery(dto, user);
 
     const body: Record<string, any> = {
+      hiddenDocumentTypeIds: hiddenDocumentTypes(user),
       from,
       size: pageSize,
       query,

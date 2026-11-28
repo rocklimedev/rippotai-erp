@@ -1,3 +1,5 @@
+import { assertDocumentTypeAccess } from '@/common/security/document-type-access';
+import type { DocumentTypeActor } from '@/common/security/document-type-access';
 import {
   belongsToDocumentPhase,
   documentPhaseWhere,
@@ -75,7 +77,7 @@ const ACTIVITY_ACTIONS = {
   GATE_OVERRIDDEN: 'GATE_OVERRIDDEN',
 } as const;
 
-export interface ActorContext {
+export interface ActorContext extends DocumentTypeActor {
   id: string;
   email: string;
   role: string;
@@ -307,11 +309,14 @@ export class CommandCenterService {
     };
   }
 
-  async getPhaseDetail(projectId: string, phaseId: string) {
-    return this.cache.getOrLoad(
+  async getPhaseDetail(projectId: string, phaseId: string, hiddenTypes: string[] = []) {
+    const detail = await this.cache.getOrLoad(
       'phase:' + JSON.stringify([projectId, phaseId]),
       () => this.buildPhaseDetail(projectId, phaseId),
     );
+    return hiddenTypes.length
+      ? { ...detail, docs: detail.docs.filter((doc) => !hiddenTypes.includes(doc.id.toLowerCase())) }
+      : detail;
   }
 
   private getPhaseSummary(projectId: string, phaseId: string) {
@@ -766,10 +771,13 @@ export class CommandCenterService {
     return items.sort((a, b) => Number(b.severe) - Number(a.severe));
   }
 
-  async getDocumentControl() {
-    return this.cache.getOrLoad('getDocumentControl', () =>
+  async getDocumentControl(hiddenTypes: string[] = []) {
+    const control = await this.cache.getOrLoad('getDocumentControl', () =>
       this.buildDocumentControl(),
     );
+    return hiddenTypes.length
+      ? { ...control, missingDocs: control.missingDocs.filter((doc) => !hiddenTypes.includes(doc.id.toLowerCase())) }
+      : control;
   }
 
   private async buildDocumentControl() {
@@ -967,6 +975,7 @@ export class CommandCenterService {
     file: Express.Multer.File,
     actor: ActorContext,
   ) {
+    assertDocumentTypeAccess(actor, dto.documentTypeId, 'create');
     if (!file) throw new BadRequestException('A file is required');
 
     const [project, docType] = await Promise.all([
@@ -1042,6 +1051,7 @@ export class CommandCenterService {
 
     const document = await this.docModel.findByPk(documentId);
     if (!document) throw new NotFoundException('Document not found');
+    assertDocumentTypeAccess(actor, document.documentTypeId, 'approve');
 
     await document.update({
       status: dto.status,

@@ -1,4 +1,6 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { hiddenDocumentTypes } from '@/common/security/document-type-access';
+import type { DocumentTypeActor } from '@/common/security/document-type-access';
 import {
   Body,
   Controller,
@@ -28,7 +30,7 @@ import {
 } from './dto/command-center.dto';
 
 interface AuthedRequest {
-  user: {
+  user: DocumentTypeActor & {
     id: string;
     email: string;
     role: string;
@@ -60,6 +62,7 @@ export class CommandCenterController {
       email: req.user.email,
       role: req.user.roleName ?? req.user.role,
       permissions: req.user.permissions ?? [],
+      document_type_access: req.user.document_type_access,
       isAdmin: req.user.permissions?.includes('documents:approve'),
       name: req.user.name,
       ip: req.ip ?? null,
@@ -90,8 +93,9 @@ export class CommandCenterController {
   getPhaseDetail(
     @Param('projectId') projectId: string,
     @Param('phaseId') phaseId: string,
+    @Req() req?: AuthedRequest,
   ) {
-    return this.commandCenterService.getPhaseDetail(projectId, phaseId);
+    return this.commandCenterService.getPhaseDetail(projectId, phaseId, hiddenDocumentTypes(req?.user));
   }
 
   @RequirePermission('command-center:read')
@@ -102,8 +106,8 @@ export class CommandCenterController {
 
   @RequirePermission('command-center:read')
   @Get('documents')
-  getDocumentControl() {
-    return this.commandCenterService.getDocumentControl();
+  getDocumentControl(@Req() req?: AuthedRequest) {
+    return this.commandCenterService.getDocumentControl(hiddenDocumentTypes(req?.user));
   }
 
   @RequirePermission('command-center:upload')

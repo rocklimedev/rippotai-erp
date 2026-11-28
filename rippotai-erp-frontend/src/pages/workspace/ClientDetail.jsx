@@ -9,6 +9,8 @@ import { useGetWsClientOverviewQuery } from "@/api/workspace/workspace.api";
 import { useDeleteClientMutation } from "@/api/projects/client.api";
 import { NoteCard, NoteEditor } from "./NotesPage";
 import { fmtDate, inr, relTime, daysFromToday, Loading, Meta } from "./shared";
+import { useAuth } from "@/context/AuthContext";
+import { hasPermission } from "@/lib/permissions";
 
 const Table = ({ head, children }) => (
   <div className="inos-table-wrap">
@@ -20,6 +22,8 @@ const Table = ({ head, children }) => (
 );
 
 export default function ClientDetail() {
+  const { user } = useAuth();
+  const canViewFinancialValues = hasPermission(user, "project-financial-values:read");
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, isError } = useGetWsClientOverviewQuery(id);
@@ -84,8 +88,10 @@ export default function ClientDetail() {
         <div style={{ display: "grid", gap: 20, minWidth: 0 }}>
           <Stats>
             <StatTile label="Active projects" value={`${stats.active} / ${data.projects.length}`} icon={<Building2 size={16} />} tone="ok" />
-            <StatTile label="Received" value={inr(stats.paid)} meta={stats.payable ? `of ${inr(stats.payable)} scheduled` : "No schedule yet"} icon={<Wallet size={16} />} tone="info" />
-            <StatTile label="Overdue payments" value={stats.overdue} icon={<Wallet size={16} />} tone={stats.overdue ? "bad" : "ok"} onClick={() => setTab("payments")} />
+            {canViewFinancialValues && <>
+              <StatTile label="Received" value={inr(stats.paid)} meta={stats.payable ? `of ${inr(stats.payable)} scheduled` : "No schedule yet"} icon={<Wallet size={16} />} tone="info" />
+              <StatTile label="Overdue payments" value={stats.overdue} icon={<Wallet size={16} />} tone={stats.overdue ? "bad" : "ok"} onClick={() => setTab("payments")} />
+            </>}
           </Stats>
           <Tabs value={tab} onChange={setTab} options={tabs} />
 
@@ -94,13 +100,13 @@ export default function ClientDetail() {
               {!data.projects.length ? (
                 <EmptyState icon={Building2} title="No projects yet" text="Start the first project for this client." action={<Button variant="primary" icon={Plus} onClick={() => navigate(`/projects/new?client_id=${id}`)}>New project</Button>} />
               ) : (
-                <Table head={["Project", "Phase", "Progress", { label: "Approved", num: true }, "Completion", "Status"]}>
+                <Table head={["Project", "Phase", "Progress", ...(canViewFinancialValues ? [{ label: "Approved", num: true }] : []), "Completion", "Status"]}>
                   {data.projects.map((p) => (
                     <tr key={p.id} className="is-clickable" onClick={() => navigate(`/projects/${p.id}`)}>
                       <td><div style={{ fontWeight: 600 }}>{p.name}</div><Meta>{p.site_location}</Meta></td>
                       <td>{p.current_phase ? String(p.current_phase).replace(/^\d+_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w/, (m) => m.toUpperCase()) : "—"}</td>
                       <td style={{ minWidth: 120 }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 80 }}><Progress value={p.progress_pct} /></div><Meta>{Math.round(p.progress_pct || 0)}%</Meta></div></td>
-                      <td className="num tabular">{inr(p.approved_value)}</td>
+                      {canViewFinancialValues && <td className="num tabular">{inr(p.approved_value)}</td>}
                       <td>{p.expected_completion_date ? fmtDate(p.expected_completion_date) : "—"}</td>
                       <td><StatusPill status={p.status} size="sm" /></td>
                     </tr>
@@ -115,7 +121,7 @@ export default function ClientDetail() {
               {!data.milestones.length ? (
                 <EmptyState icon={Wallet} title="No payment schedule yet" text="Create a payment schedule in Ledger to track what this client owes." action={<Button onClick={() => navigate("/ledger/forms/payment-schedule")}>Create schedule</Button>} />
               ) : (
-                <Table head={["Milestone", "Project", "Due", { label: "Amount", num: true }, { label: "Received", num: true }, "Status"]}>
+                <Table head={["Milestone", "Project", "Due", ...(canViewFinancialValues ? [{ label: "Amount", num: true }, { label: "Received", num: true }] : []), "Status"]}>
                   {data.milestones.map((m) => {
                     const late = m.due_date && daysFromToday(m.due_date) < 0 && Number(m.paid_amount || 0) < Number(m.amount || 0);
                     return (
@@ -123,8 +129,10 @@ export default function ClientDetail() {
                         <td><div style={{ fontWeight: 600 }}>{m.title}</div>{m.percentage != null && <Meta>{Number(m.percentage)}% of contract</Meta>}</td>
                         <td>{m.project_name}</td>
                         <td>{m.due_date ? fmtDate(m.due_date) : "—"} {late && <Pill tone="bad" size="sm">Overdue</Pill>}</td>
-                        <td className="num tabular">{inr(m.amount)}</td>
-                        <td className="num tabular">{Number(m.paid_amount) ? inr(m.paid_amount) : "—"}</td>
+                        {canViewFinancialValues && <>
+                          <td className="num tabular">{inr(m.amount)}</td>
+                          <td className="num tabular">{Number(m.paid_amount) ? inr(m.paid_amount) : "—"}</td>
+                        </>}
                         <td><StatusPill status={m.status} size="sm" /></td>
                       </tr>
                     );

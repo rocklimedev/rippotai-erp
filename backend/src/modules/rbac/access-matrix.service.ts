@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
+import { DOCUMENT_TYPE_LEVELS, DocumentTypeLimits } from '@/common/security/document-type-access';
 import { Sequelize } from 'sequelize-typescript';
 
 import { Role } from './models/role.model';
@@ -15,6 +16,7 @@ import { RoleApp } from './models/role-app.model';
 import { App } from './models/app.model';
 import { ActivityLog } from '../engagement/models/activity-log.model';
 import { ActivityAction } from '@/common/enums';
+import { PROJECT_FINANCIAL_VALUES_PART } from '@/common/security/project-financial-values';
 import { RolePermissionsCache } from './role-permissions-cache';
 import {
   requireActor,
@@ -101,9 +103,17 @@ export class AccessMatrixService {
   }
 
   async catalogue() {
-    const { byPart, unmapped } = await this.ownedPermissions();
+    const [{ byPart, unmapped }, documentTypes] = await Promise.all([
+      this.ownedPermissions(),
+      this.sequelize.query<{ id: string; name: string; phaseName: string }>(
+        `SELECT id, name, phase_name AS phaseName FROM document_types
+          WHERE target_type = 'DOCUMENT' ORDER BY phase_code, sequence, name`,
+        { type: QueryTypes.SELECT },
+      ),
+    ]);
     return {
       levels: ACCESS_LEVELS,
+      documentTypes,
       apps: ACCESS_CATALOGUE.map((app) => ({
         code: app.code,
         name: app.name,
@@ -129,7 +139,7 @@ export class AccessMatrixService {
 
   async getForRole(roleId: string) {
     const role = await this.roleModel.findByPk(roleId, {
-      attributes: ['id', 'name', 'description', 'scope', 'frontend_route_restrictions'],
+      attributes: ['id', 'name', 'description', 'scope', 'frontend_route_restrictions', 'document_type_access'],
     });
     if (!role) throw new NotFoundException('Role not found');
     const [{ byPart }, grants, appRows] = await Promise.all([
@@ -160,7 +170,9 @@ export class AccessMatrixService {
           granted: owned.filter((x) => granted.has(x)),
         };
       });
-      const meaningful = parts.filter((p) => p.maxLevel !== 'none');
+      const meaningful = parts.filter(
+        (p) => p.key !== PROJECT_FINANCIAL_VALUES_PART && p.maxLevel !== 'none',
+      );
       const level = aggregateLevel(meaningful);
       const best = meaningful.reduce(
         (m, p) => Math.max(m, LEVEL_RANK[p.level]),
@@ -225,6 +237,88 @@ export class AccessMatrixService {
     });
   }
 
+  async setLauncherApp(roleId: string, code: string, enabled: unknown, actor: any) {
+    requireActor(actor, 'role-apps:update');
+    const app = ACCESS_CATALOGUE.find((item) => item.code === code && item.launcher);
+    if (!app) throw new NotFoundException('Unknown launcher app');
+    if (typeof enabled !== 'boolean') throw new BadRequestException('Expected enabled to be a boolean');
+
+    return this.sequelize.transaction(async (transaction) => {
+      const role = await this.roleModel.findByPk(roleId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!role) throw new NotFoundException('Role not found');
+      assertProtectedRole(actor, role.name);
+
+      const where = { role_id: roleId, app_code: code };
+      if (enabled) {
+        await this.appModel.findOrCreate({
+          where: { code },
+          defaults: { code, name: app.name, is_active: true } as any,
+          transaction,
+        });
+        await this.roleAppModel.findOrCreate({
+          where,
+          defaults: { ...where, granted_by: actor.id } as any,
+          transaction,
+        });
+      } else {
+        await this.roleAppModel.destroy({ where, transaction });
+      }
+      await this.activity.create({
+        user_id: actor.id,
+        user_email: actor.email,
+        user_role: actor.roleName,
+        action: ActivityAction.USER_PERMISSION_UPDATED,
+        entity_type: 'Role',
+        entity_id: roleId,
+        changes: { operation: 'launcher_app', app_code: code, enabled },
+      } as any, { transaction });
+      return { on_launcher: enabled };
+    });
+  }
+
+  async setDocumentTypeAccess(roleId: string, typeId: string, level: unknown, actor: any) {
+    requireActor(actor, 'role-permissions:assign');
+    if (!DOCUMENT_TYPE_LEVELS.some((option) => option === level)) {
+      throw new BadRequestException('Invalid document type access level');
+    }
+    return this.sequelize.transaction(async (transaction) => {
+      const role = await this.roleModel.findByPk(roleId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!role) throw new NotFoundException('Role not found');
+      assertProtectedRole(actor, role.name);
+      const [type] = await this.sequelize.query<{ id: string }>(
+        "SELECT id FROM document_types WHERE id = :typeId AND target_type = 'DOCUMENT'",
+        { replacements: { typeId }, type: QueryTypes.SELECT, transaction },
+      );
+      if (!type) throw new NotFoundException('Document type not found');
+      const limits = { ...role.document_type_access };
+      const key = type.id.toLowerCase();
+      const previous = limits[key] ?? 'inherit';
+      if (previous === level) return limits;
+      if (DOCUMENT_TYPE_LEVELS.indexOf(level as any) < DOCUMENT_TYPE_LEVELS.indexOf(previous)) {
+        requireActor(actor, 'role-permissions:revoke');
+      }
+      if (level === 'inherit') delete limits[key];
+      else limits[key] = level as DocumentTypeLimits[string];
+      await role.update({ document_type_access: limits }, { transaction });
+      await this.activity.create({
+        user_id: actor.id,
+        user_email: actor.email,
+        user_role: actor.roleName,
+        action: ActivityAction.USER_PERMISSION_UPDATED,
+        entity_type: 'Role',
+        entity_id: roleId,
+        changes: { operation: 'document_type_access', document_type_id: typeId, previous, level },
+      } as any, { transaction });
+      return limits;
+    });
+  }
+
   /** One app's level for every role (per-app "Roles and permissions" page). */
   async getAppAcrossRoles(code: string) {
     const app = ACCESS_CATALOGUE.find((a) => a.code === code);
@@ -253,6 +347,7 @@ export class AccessMatrixService {
       roles: roles.map((role) => {
         const granted = byRole.get(role.id) ?? new Set<string>();
         const parts = app.parts
+          .filter((p) => p.key !== PROJECT_FINANCIAL_VALUES_PART)
           .map((p) => computePartLevel(byPart.get(p.key) ?? [], granted))
           .filter((p) => p.maxLevel !== 'none');
         const level = aggregateLevel(parts);
@@ -276,7 +371,9 @@ export class AccessMatrixService {
       if (!app) throw new BadRequestException(`Unknown app "${code}"`);
       if (!valid.has(level))
         throw new BadRequestException(`Unknown level "${level}"`);
-      for (const p of app.parts) targets.set(p.key, level);
+      for (const p of app.parts) {
+        if (p.key !== PROJECT_FINANCIAL_VALUES_PART) targets.set(p.key, level);
+      }
     }
     for (const [key, level] of Object.entries(dto?.parts ?? {})) {
       if (!findPart(key))
@@ -355,39 +452,6 @@ export class AccessMatrixService {
             granted_by: actor.id,
           })) as any,
           { transaction, ignoreDuplicates: true },
-        );
-
-      // Keep role_apps (launcher list) in step with the catalogue apps.
-      const final = new Set([...current, ...add].filter((p) => !remove.has(p)));
-      const openApps: string[] = [];
-      const closedApps: string[] = [];
-      for (const app of ACCESS_CATALOGUE) {
-        const open = app.parts.some((p) =>
-          (byPart.get(p.key) ?? []).some((x) => final.has(x)),
-        );
-        (open ? openApps : closedApps).push(app.code);
-      }
-      await this.appModel.bulkCreate(
-        ACCESS_CATALOGUE.map((a) => ({
-          code: a.code,
-          name: a.name,
-          is_active: true,
-        })) as any,
-        { ignoreDuplicates: true, transaction },
-      );
-      if (closedApps.length)
-        await this.roleAppModel.destroy({
-          where: { role_id: roleId, app_code: { [Op.in]: closedApps } },
-          transaction,
-        });
-      if (openApps.length)
-        await this.roleAppModel.bulkCreate(
-          openApps.map((app_code) => ({
-            role_id: roleId,
-            app_code,
-            granted_by: actor.id,
-          })) as any,
-          { ignoreDuplicates: true, transaction },
         );
 
       await this.activity.create(

@@ -6,6 +6,7 @@ import './CommandCenter.css';
 import { downloadDocument } from '../hooks/shared';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 import { usePollingInterval, canBackgroundPoll } from '@/hooks/use-polling-interval';
 import PhaseGateButton from '@/components/command-center/PhaseGateButton';
 import ProcurementPanel from '@/components/command-center/ProcurementPanel';
@@ -712,7 +713,7 @@ function ActionRequired({ onOpen }) {
 // COMMERCIAL — GET /command-center/commercial
 // ------------------------------------------------------------
 
-function CommercialPanel({ onOpen }) {
+function CommercialPanel({ onOpen, canViewFinancialValues }) {
   const { data, isLoading, isError, error, refetch } = useGetCommandCenterCommercialQuery(
     undefined,
     { refetchOnMountOrArgChange: 60 },
@@ -734,7 +735,7 @@ function CommercialPanel({ onOpen }) {
 
       {data && (
         <>
-          <Figures
+          {canViewFinancialValues && <Figures
             items={[
               {
                 label: 'Total portfolio value',
@@ -746,7 +747,7 @@ function CommercialPanel({ onOpen }) {
                 tone: 'ok',
               },
             ]}
-          />
+          />}
           <div className="cc-section">
             <p className="cc-detail-head">G5 status across the portfolio</p>
             <div className="cc-g5">
@@ -766,7 +767,7 @@ function CommercialPanel({ onOpen }) {
           </div>
         </>
       )}
-      <ClientCollections />
+      {canViewFinancialValues && <ClientCollections />}
     </Card>
   );
 }
@@ -862,6 +863,7 @@ export default function CommandCenter() {
   const debouncedSearch = useDebouncedValue(search, 300);
   const [expanded, setExpanded] = useState(null);
   const { user } = useAuth();
+  const canViewFinancialValues = hasPermission(user, 'project-financial-values:read');
   const canUpdateTasks = !!user;
   const navigate = useNavigate();
   const [toast, setToast] = useState('');
@@ -1035,14 +1037,14 @@ export default function CommandCenter() {
             setHealthFilter('gate');
           }}
         />
-        <StatTile
+        {canViewFinancialValues && <StatTile
           label="Portfolio value"
           value={kpiLoading && kpi.value == null ? '—' : formatINR(kpi.value)}
           meta="Across active projects"
           icon={<IndianRupee />}
           active={activeTab === 'commercial'}
           onClick={() => setActiveTab('commercial')}
-        />
+        />}
       </Stats>
 
       <div className="cc-main">
@@ -1111,7 +1113,9 @@ export default function CommandCenter() {
         {activeTab === 'procurement' && <ProcurementPanel onOpen={navigate} />}
 
         {/* COMMERCIAL TAB */}
-        {activeTab === 'commercial' && <CommercialPanel onOpen={navigate} />}
+        {activeTab === 'commercial' && (
+          <CommercialPanel onOpen={navigate} canViewFinancialValues={canViewFinancialValues} />
+        )}
 
       </div>
 

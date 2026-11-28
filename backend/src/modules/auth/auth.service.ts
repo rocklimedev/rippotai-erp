@@ -184,6 +184,7 @@ export class AuthService {
       roleName: authToken.user?.role?.name ?? null,
       frontend_route_restrictions:
         authToken.user?.role?.frontend_route_restrictions ?? [],
+      document_type_access: authToken.user?.role?.document_type_access ?? {},
       is_active: authToken.user?.is_active,
       permissions,
       phone: authToken.user?.phone,

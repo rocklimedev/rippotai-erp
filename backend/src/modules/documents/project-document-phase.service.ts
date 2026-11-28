@@ -2,6 +2,8 @@ import { documentPhaseWhere, belongsToDocumentPhase } from './document-phase';
 import { DocumentEvidenceService } from '../gates/conditions/document-evidence.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
+import { visibleDocumentTypeWhere } from '@/common/security/document-type-access';
 import { ProjectPhase } from '../projects/models/project-phase.model';
 import { DocumentType } from './models/document-type.model';
 import { Document } from './models/document.model';
@@ -60,7 +62,7 @@ export class ProjectDocumentPhaseService {
    * The frontend can use the same response whether
    * a project is selected or "All Projects" is selected.
    */
-  async getAllProjectsDocumentPhaseTree() {
+  async getAllProjectsDocumentPhaseTree(hiddenTypes: string[] = []) {
     /* ============================================================
        PROJECTS
     ============================================================ */
@@ -89,6 +91,7 @@ export class ProjectDocumentPhaseService {
 
     const documentTypes = await this.documentTypeModel.findAll({
       where: {
+        ...(hiddenTypes.length ? { id: { [Op.notIn]: hiddenTypes } } : {}),
         isActive: true,
         ...documentPhaseWhere(phases),
       },
@@ -114,6 +117,7 @@ export class ProjectDocumentPhaseService {
     ============================================================ */
 
     const documents = await this.documentModel.findAll({
+      where: visibleDocumentTypeWhere(hiddenTypes),
       attributes: [
         'id',
         'projectId',
@@ -479,7 +483,7 @@ export class ProjectDocumentPhaseService {
    *         └── Document Types
    *               └── Uploaded Documents
    */
-  async getProjectDocumentPhaseList(projectId: string) {
+  async getProjectDocumentPhaseList(projectId: string, hiddenTypes: string[] = []) {
     /*
      * Load all DOCUMENTS phases.
      *
@@ -503,6 +507,7 @@ export class ProjectDocumentPhaseService {
      */
     const documentTypes = await this.documentTypeModel.findAll({
       where: {
+        ...(hiddenTypes.length ? { id: { [Op.notIn]: hiddenTypes } } : {}),
         isActive: true,
         ...documentPhaseWhere(phases),
       },
@@ -528,6 +533,7 @@ export class ProjectDocumentPhaseService {
      */
     const uploadedDocuments = await this.documentModel.findAll({
       where: {
+        ...visibleDocumentTypeWhere(hiddenTypes),
         projectId,
       },
       attributes: ['id', 'documentTypeId', 'status', 'createdAt', 'updatedAt'],

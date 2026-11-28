@@ -8,5 +8,6 @@ export interface RequestWithUser extends Request {
     email: string;
     role: string;
     role_id: string;
+    permissions?: string[];
   };
 }

@@ -141,6 +141,14 @@ export class SearchService {
       body.query ?? { match_all: {} },
       replacements,
     );
+    const hiddenTypes = body.hiddenDocumentTypeIds;
+    const documentAccessFilter = hiddenTypes?.length
+      ? `AND (index_name <> 'documents' OR EXISTS (
+           SELECT 1 FROM documents d WHERE d.id = erp_search_documents.document_id
+             AND (d.document_type_id IS NULL OR d.document_type_id NOT IN (:hiddenTypes))
+         ))`
+      : '';
+    if (hiddenTypes?.length) replacements.hiddenTypes = hiddenTypes;
     let total = 0;
     const buckets = new Map<string, number>();
     let best: any[] = [];
@@ -148,7 +156,7 @@ export class SearchService {
     while (indices.length) {
       const rows = await this.db.query<any>(
         `SELECT sequence_id, index_name, document_id, document FROM erp_search_documents
-         WHERE index_name IN (:indices) AND sequence_id > :cursor AND (${filter})
+         WHERE index_name IN (:indices) AND sequence_id > :cursor AND (${filter}) ${documentAccessFilter}
          ORDER BY sequence_id LIMIT 500`,
         { type: QueryTypes.SELECT, replacements },
       );

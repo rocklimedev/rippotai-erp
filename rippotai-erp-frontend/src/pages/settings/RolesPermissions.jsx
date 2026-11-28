@@ -13,6 +13,8 @@ import {
   useGetRoleAccessCatalogueQuery,
   useGetRoleAccessQuery,
   useSetRoleAccessMutation,
+  useSetLauncherAppMutation,
+  useSetDocumentTypeAccessMutation,
 } from '../../api/users/rbac.api';
 import {
   Page,
@@ -120,9 +122,10 @@ function Legend() {
 }
 
 export default function RolesPermissions() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const canRead = hasPermission(user, 'role-permissions', 'read');
   const canAssign = hasPermission(user, 'role-permissions', 'assign');
+  const canManageApps = hasPermission(user, 'role-apps', 'update');
   const canEditRole = hasPermission(user, 'rbac', 'update');
 
   const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(undefined, {
@@ -142,6 +145,8 @@ export default function RolesPermissions() {
     skip: !canRead || !selectedRoleId,
   });
   const [setRoleAccess] = useSetRoleAccessMutation();
+  const [setLauncherApp] = useSetLauncherAppMutation();
+  const [setDocumentTypeAccess] = useSetDocumentTypeAccessMutation();
   const [createRole, { isLoading: creatingRole }] = useCreateRoleMutation();
   const [updateRole, { isLoading: updatingRole }] = useUpdateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
@@ -193,6 +198,32 @@ export default function RolesPermissions() {
     );
   const setPart = (part, level) =>
     save(part.key, { parts: { [part.key]: level } }, `${part.name}: ${LEVEL_LABEL[level]}`);
+
+  const toggleLauncherApp = async (app, enabled) => {
+    setBusyKey(`launcher:${app.code}`);
+    try {
+      await setLauncherApp({ roleId: selectedRoleId, code: app.code, enabled }).unwrap();
+      if ((user.roleId ?? user.role_id) === selectedRoleId) void refresh();
+      toast.success(enabled ? `${app.name} shown on launcher` : `${app.name} hidden from launcher`);
+    } catch (error) {
+      toast.error(error?.data?.message || "Couldn't update app access");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const changeDocumentType = async (type, level) => {
+    setBusyKey(type.id);
+    try {
+      await setDocumentTypeAccess({ roleId: selectedRoleId, typeId: type.id, level }).unwrap();
+      if ((user.roleId ?? user.role_id) === selectedRoleId) void refresh();
+      toast.success(`Updated access for ${type.name}`);
+    } catch (error) {
+      toast.error(error?.data?.message || "Couldn't update document type access");
+    } finally {
+      setBusyKey(null);
+    }
+  };
 
   const handleCreateRole = async (e) => {
     e.preventDefault();
@@ -263,7 +294,7 @@ export default function RolesPermissions() {
       <PageHeader
         crumbs={adminCrumbs('Roles & permissions')}
         title="Roles & permissions"
-        subtitle="For each role, choose how much it can do in every app — and, if needed, in each document inside it."
+        subtitle="Choose which apps appear on the launcher and set module and document permissions for each role."
         actions={
           canAssign && (
             <Button
@@ -407,7 +438,7 @@ export default function RolesPermissions() {
               >
                 <div className="rp-head">
                   <span>App / document</span>
-                  <span>Access level</span>
+                  <span>Module access level</span>
                 </div>
                 {(catalogue?.apps || []).map((app) => {
                   const a = accessByApp[app.code];
@@ -439,8 +470,21 @@ export default function RolesPermissions() {
                             </span>
                           </span>
                         </button>
+                        {app.launcher && (
+                          <label className="rp-launcher">
+                            <input
+                              type="checkbox"
+                              aria-label={`Show ${app.name} on launcher`}
+                              checked={Boolean(a?.on_launcher)}
+                              disabled={!canManageApps || !a || Boolean(busyKey)
+                                || (isProtected && (user.roleName ?? user.role) !== 'SUPERADMIN')}
+                              onChange={(event) => toggleLauncherApp(app, event.target.checked)}
+                            />
+                            App access
+                          </label>
+                        )}
                         <LevelSelect
-                          label={`${app.name} access level`}
+                          label={`${app.name} module access level`}
                           testId={`rp-level-${app.code}`}
                           value={a?.level || 'none'}
                           disabled={!canAssign || !a || busyKey === app.code}
@@ -510,6 +554,33 @@ export default function RolesPermissions() {
                                     onChange={(lvl) => setPart(part, lvl)}
                                   />
                                 </div>
+                                {part.key === 'projects.documents' && catalogue.documentTypes?.length > 0 && (
+                                  <details className="rp-route-card">
+                                    <summary>Document types</summary>
+                                    <p className="rp-route-hint">Each type inherits the Documents access level unless you set a lower limit.</p>
+                                    {catalogue.documentTypes.map((type) => (
+                                      <label className="rp-document-type" key={type.id}>
+                                        <span className="rp-name">
+                                          <span>{type.name}</span>
+                                          <span className="rp-sub">{type.phaseName}</span>
+                                        </span>
+                                        <select
+                                          className="inos-select rp-level"
+                                          aria-label={`${type.name} document access limit`}
+                                          value={access?.role.document_type_access?.[type.id] ?? 'inherit'}
+                                          disabled={!canAssign || !access || Boolean(busyKey)
+                                            || (isProtected && (user.roleName ?? user.role) !== 'SUPERADMIN')}
+                                          onChange={(event) => changeDocumentType(type, event.target.value)}
+                                        >
+                                          <option value="inherit">Inherit Documents access</option>
+                                          {ACCESS_LEVELS.filter(({ key }) => key !== 'full').map(({ key, label }) => (
+                                            <option key={key} value={key}>{label}</option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                    ))}
+                                  </details>
+                                )}
                                 {routesOpen && paths?.length > 0 && (
                                   <FrontendRouteRestrictions
                                     key={selectedRoleId}
@@ -650,6 +721,8 @@ const CSS = `
 .rp-name { display: grid; gap: 2px; min-width: 0; }
 .rp-sub { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rp-level { width: 230px; flex-shrink: 0; }
+.rp-launcher { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.rp-document-type { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
 .rp-level[data-level="none"] { color: var(--muted); }
 .rp-level[data-level="mixed"] { border-color: #d9a441; }
 .rp-tag { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--mist-soft, #eef2f1); color: var(--text-2); vertical-align: 1px; }

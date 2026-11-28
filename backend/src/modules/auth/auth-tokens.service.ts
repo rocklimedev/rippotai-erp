@@ -174,7 +174,7 @@ export class AuthTokensService {
             {
               model: Role,
               as: 'role',
-              attributes: ['id', 'name', 'frontend_route_restrictions'],
+              attributes: ['id', 'name', 'frontend_route_restrictions', 'document_type_access'],
               ...(includePermissions
                 ? {
                     include: [

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { hiddenDocumentTypes } from '@/common/security/document-type-access';
 import { SearchService } from './search.service';
 import { SuggestItem } from './interfaces/searchable-document.interface';
 import { SuggestQueryDto } from './dto/global-search.dto';
@@ -31,6 +32,7 @@ export class AutocompleteService {
     const filter: any[] = [{ term: { is_deleted: false } }];
 
     const response = await this.searchService.search(SUGGEST_INDICES, {
+      hiddenDocumentTypeIds: hiddenDocumentTypes(user),
       size: limit,
       query: {
         bool: {

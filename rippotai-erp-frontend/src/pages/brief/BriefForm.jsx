@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Page, EmptyState, Button } from "@/components/inos";
 import { useAuth } from "../../context/AuthContext";
+import { hasPermission } from "@/lib/permissions";
 import { BriefSectionForm } from "../../components/BriefSectionForm";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
@@ -58,6 +59,7 @@ export function BriefForm() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const canViewFinancialValues = hasPermission(user, "project-financial-values:read");
   const isEditMode = Boolean(id);
 
   // ==========================================================
@@ -249,7 +251,9 @@ export function BriefForm() {
   // ==========================================================
 
   const buildPayload = () => {
-    return buildProjectBriefPayload(projectId, values);
+    const payload = buildProjectBriefPayload(projectId, values);
+    if (!canViewFinancialValues) delete payload.initialClientBudget;
+    return payload;
   };
 
   // ==========================================================
@@ -373,6 +377,9 @@ export function BriefForm() {
   const sectionsWithProjectTypes = BRIEF_SECTIONS.map((baseSection) => {
     const section = {
       ...baseSection,
+      fields: baseSection.fields?.filter(
+        (field) => canViewFinancialValues || field.key !== "initialClientBudget",
+      ),
       description:
         baseSection.description || SECTION_DESCRIPTIONS[baseSection.key],
     };

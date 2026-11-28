@@ -64,7 +64,7 @@ export class SearchController {
   @RequirePermission('search:read')
   @Get()
   async search(@Query() query: GlobalSearchQueryDto, @Req() req: any) {
-    const user = { id: req.user?.id, role: req.user?.roleName };
+    const user = { id: req.user?.id, role: req.user?.roleName, document_type_access: req.user?.document_type_access };
     return this.globalSearch.search(query, user);
   }
 
@@ -75,7 +75,7 @@ export class SearchController {
   @RequirePermission('search:read')
   @Get('suggest')
   async suggest(@Query() query: SuggestQueryDto, @Req() req: any) {
-    const user = { id: req.user?.id, role: req.user?.roleName };
+    const user = { id: req.user?.id, role: req.user?.roleName, document_type_access: req.user?.document_type_access };
     return {
       suggestions: await this.autocomplete.suggest(query, user),
     };
@@ -308,7 +308,7 @@ export class SearchController {
   }
 
   private async searchEntity(type: string, q: string, req: any) {
-    const user = { id: req.user?.id, role: req.user?.roleName };
+    const user = { id: req.user?.id, role: req.user?.roleName, document_type_access: req.user?.document_type_access };
     if (!q?.trim()) return [];
     const result = await this.globalSearch.search({ q, types: type }, user);
     return result.results.map((hit) => ({

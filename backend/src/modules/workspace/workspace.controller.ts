@@ -2,6 +2,8 @@ import { RequirePermission } from '@/common/decorator/require-permission.decorat
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { hiddenDocumentTypes } from '@/common/security/document-type-access';
+import type { DocumentTypeActor } from '@/common/security/document-type-access';
 import { WorkspaceService } from './workspace.service';
 
 @Controller()
@@ -12,8 +14,8 @@ export class WorkspaceController {
   /** GET /clients/:id/overview — client + projects, documents, payment schedules, notes */
   @RequirePermission('workspace:read')
   @Get('clients/:id/overview')
-  clientOverview(@Param('id') id: string) {
-    return this.svc.clientOverview(id);
+  clientOverview(@Param('id') id: string, @CurrentUser() user?: DocumentTypeActor) {
+    return this.svc.clientOverview(id, hiddenDocumentTypes(user));
   }
 
   /** GET /clients-summary — per-client project counts / values for the directory */

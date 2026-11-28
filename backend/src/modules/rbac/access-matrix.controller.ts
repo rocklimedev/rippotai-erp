@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Put } from '@nestjs/common';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { AccessMatrixService } from './access-matrix.service';
@@ -46,5 +46,27 @@ export class AccessMatrixController {
     @CurrentUser() actor: any,
   ) {
     return this.access.setForRole(roleId, dto, actor);
+  }
+
+  @RequirePermission('role-apps:update')
+  @Patch(':role_id/launcher/:code')
+  setLauncherApp(
+    @Param('role_id') roleId: string,
+    @Param('code') code: string,
+    @Body() dto: { enabled?: unknown },
+    @CurrentUser() actor: any,
+  ) {
+    return this.access.setLauncherApp(roleId, code, dto?.enabled, actor);
+  }
+
+  @RequirePermission('role-permissions:assign')
+  @Patch(':role_id/document-types/:type_id')
+  setDocumentTypeAccess(
+    @Param('role_id') roleId: string,
+    @Param('type_id', ParseUUIDPipe) typeId: string,
+    @Body() dto: { level?: unknown },
+    @CurrentUser() actor: any,
+  ) {
+    return this.access.setDocumentTypeAccess(roleId, typeId, dto?.level, actor);
   }
 }
