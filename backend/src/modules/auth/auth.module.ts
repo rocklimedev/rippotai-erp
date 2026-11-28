@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { RolePermission } from '../rbac/models/role_permission.model';
 import { Permission } from '../rbac/models/permission.model';
+import { RoleApp } from '../rbac/models/role-app.model';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -38,6 +39,7 @@ import { DistributedSecurityModule } from '@/common/security/distributed-securit
     RolePermissionsCacheModule,
     SequelizeModule.forFeature([
       RolePermission,
+      RoleApp,
       Permission,
       User,
       AuthToken,

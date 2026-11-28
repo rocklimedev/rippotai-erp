@@ -1,4 +1,7 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { hiddenDocumentTypes } from '@/common/security/document-type-access';
+import type { DocumentTypeActor } from '@/common/security/document-type-access';
 import {
   Controller,
   Get,
@@ -112,9 +115,10 @@ export class ProjectOverviewController {
   private q<T extends object = Record<string, any>>(
     sql: string,
     projectId: string,
+    hiddenTypes: string[] = [],
   ) {
     return this.sequelize.query<T>(sql, {
-      replacements: { projectId },
+      replacements: { projectId, hiddenTypes },
       type: QueryTypes.SELECT,
     });
   }
@@ -182,7 +186,8 @@ export class ProjectOverviewController {
   /** Delayed tasks and records waiting on an internal approval. */
   @RequirePermission('projects:read')
   @Get(':id/pending-work')
-  async pendingWork(@Param('id', ParseUUIDPipe) projectId: string) {
+  async pendingWork(@Param('id', ParseUUIDPipe) projectId: string, @CurrentUser() user?: DocumentTypeActor) {
+    const hiddenTypes = hiddenDocumentTypes(user);
     const delayed = await this.q(
       `SELECT id, title, due_date FROM tasks
         WHERE project_id = :projectId AND due_date < CURDATE()
@@ -198,8 +203,10 @@ export class ProjectOverviewController {
     const docs = await this.q(
       `SELECT id, title, NULL AS due_date FROM documents
         WHERE project_id = :projectId AND LOWER(status) IN ('submitted','under_review','pending_approval')
+        ${hiddenTypes.length ? 'AND (document_type_id IS NULL OR document_type_id NOT IN (:hiddenTypes))' : ''}
         ORDER BY updated_at DESC LIMIT 20`,
       projectId,
+      hiddenTypes,
     );
     const boqs = await this.q(
       `SELECT id, CONCAT('BOQ: ', title) AS title, NULL AS due_date FROM boqs
@@ -222,10 +229,11 @@ export class ProjectOverviewController {
    */
   @RequirePermission('projects:read')
   @Get(':id/document-hub')
-  async documentHub(@Param('id', ParseUUIDPipe) projectId: string) {
+  async documentHub(@Param('id', ParseUUIDPipe) projectId: string, @CurrentUser() user?: DocumentTypeActor) {
+    const hiddenTypes = hiddenDocumentTypes(user);
     const out: Record<string, HubEntry> = {};
     for (const src of HUB_SOURCES) {
-      out[src.key] = await this.hubEntry(src, projectId);
+      out[src.key] = await this.hubEntry(src, projectId, hiddenTypes);
     }
     return out;
   }
@@ -252,7 +260,7 @@ export class ProjectOverviewController {
     return this.columnsCache.get(table);
   }
 
-  private async hubEntry(src: HubSource, projectId: string): Promise<HubEntry> {
+  private async hubEntry(src: HubSource, projectId: string, hiddenTypes: string[]): Promise<HubEntry> {
     const empty: HubEntry = { count: 0, latest: null };
     const cols = await this.columns(src.table);
     if (!cols || !cols.has('project_id')) return empty;
@@ -262,6 +270,9 @@ export class ProjectOverviewController {
     const title = pick('title', 'name', 'doc_no');
     const list = (codes: string[]) => codes.map((c) => `'${c}'`).join(',');
     const where = ['t.project_id = :projectId'];
+    if (src.table === 'documents' && cols.has('document_type_id') && hiddenTypes.length) {
+      where.push('(t.document_type_id IS NULL OR t.document_type_id NOT IN (:hiddenTypes))');
+    }
     if (cols.has('deleted_at')) where.push('t.deleted_at IS NULL');
     let join = '';
     if (src.typeCodes || src.phaseCode) {
@@ -299,6 +310,7 @@ export class ProjectOverviewController {
       const [count] = await this.q<{ n: number }>(
         `SELECT COUNT(*) AS n FROM ${src.table} t${join} WHERE ${sqlWhere}`,
         projectId,
+        hiddenTypes,
       );
       const n = Number(count?.n) || 0;
       if (!n) return empty;
@@ -306,6 +318,7 @@ export class ProjectOverviewController {
         `SELECT ${select} FROM ${src.table} t${join} WHERE ${sqlWhere}
           ORDER BY ${updated ? `t.${updated}` : 't.id'} DESC LIMIT 1`,
         projectId,
+        hiddenTypes,
       );
       return { count: n, latest: latest ?? null };
     } catch {

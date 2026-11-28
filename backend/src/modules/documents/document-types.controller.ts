@@ -1,4 +1,7 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { hiddenDocumentTypes } from '@/common/security/document-type-access';
+import type { DocumentTypeActor } from '@/common/security/document-type-access';
 import {
   Body,
   Controller,
@@ -54,8 +57,8 @@ export class DocumentTypesController {
 
   @RequirePermission('document-types:read')
   @Get('project-phase-tree')
-  getProjectDocumentPhaseTree() {
-    return this.projectDocumentPhaseService.getAllProjectsDocumentPhaseTree();
+  getProjectDocumentPhaseTree(@CurrentUser() user?: DocumentTypeActor) {
+    return this.projectDocumentPhaseService.getAllProjectsDocumentPhaseTree(hiddenDocumentTypes(user));
   }
 
   /**
@@ -78,9 +81,11 @@ export class DocumentTypesController {
   @Get('projects/:projectId/phases')
   getProjectDocumentPhases(
     @Param('projectId', ParseUUIDPipe) projectId: string,
+    @CurrentUser() user?: DocumentTypeActor,
   ) {
     return this.projectDocumentPhaseService.getProjectDocumentPhaseList(
       projectId,
+      hiddenDocumentTypes(user),
     );
   }
 

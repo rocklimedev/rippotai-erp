@@ -55,4 +55,18 @@ describe('Design and Build dashboards', () => {
     }
     expect(build.some((key) => key.startsWith('ledger.'))).toBe(false);
   });
+
+  it('keeps payment widgets in Ledger and excludes them from Design', () => {
+    const design = getAppConfig('design')!;
+    const ledger = getAppConfig('ledger')!;
+    for (const key of [
+      'ledger.outstanding',
+      'ledger.upcoming_payments',
+      'ledger.overdue_payments',
+    ]) {
+      expect(design.widgets.some((widget) => widget.key === key)).toBe(false);
+      expect(design.defaultLayout.some((item) => item.key === key)).toBe(false);
+      expect(ledger.widgets.some((widget) => widget.key === key)).toBe(true);
+    }
+  });
 });

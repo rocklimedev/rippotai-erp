@@ -44,6 +44,7 @@ import { ProjectDocumentPhaseService } from './project-document-phase.service';
 
 // Controllers
 import { DocumentsController } from './document.controller';
+import { DocumentTypeAccessGuard } from './document-type-access.guard';
 import { DocumentRegisterController } from './document-register.controller';
 import { DocumentTypesController } from './document-types.controller';
 import { DocumentRequirementsController } from './document-requirements.controller';
@@ -117,6 +118,7 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
   // SERVICES
   // ============================================
   providers: [
+    DocumentTypeAccessGuard,
     DocumentsService,
     PdfGeneratorService,
     DocumentRegisterService,

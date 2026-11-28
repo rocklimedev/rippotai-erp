@@ -1338,8 +1338,12 @@ function groupedDashboard(
   sources: string[],
   keys: string[],
   requiredKeys: string[],
+  excludedKeys: string[] = [],
 ): AppDashboardConfig {
-  const widgets = sources.flatMap((app) => DASHBOARD_CONFIG[app].widgets);
+  const excluded = new Set(excludedKeys);
+  const widgets = sources
+    .flatMap((app) => DASHBOARD_CONFIG[app].widgets)
+    .filter((widget) => !excluded.has(widget.key));
   const required = new Set(requiredKeys);
   let x = 0;
   let y = 0;
@@ -1376,15 +1380,13 @@ DASHBOARD_CONFIG.design = groupedDashboard(
     'design_studio.active_projects',
     'design_studio.pending_approvals',
     'crm.total_leads',
-    'ledger.outstanding',
     'design_studio.projects_list',
     'crm.leads_breakdown',
     'design_studio.approvals_list',
-    'ledger.upcoming_payments',
     'design_studio.upcoming_deadlines',
-    'ledger.overdue_payments',
   ],
   ['design_studio.active_projects'],
+  ['ledger.outstanding', 'ledger.upcoming_payments', 'ledger.overdue_payments'],
 );
 
 DASHBOARD_CONFIG.build = groupedDashboard(

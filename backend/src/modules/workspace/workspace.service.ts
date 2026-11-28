@@ -75,7 +75,7 @@ export class WorkspaceService {
       GROUP BY c.id`);
   }
 
-  async clientOverview(id: string) {
+  async clientOverview(id: string, hiddenTypes: string[] = []) {
     const [client] = await this.q(`SELECT * FROM clients WHERE id = :id`, {
       id,
     });
@@ -101,8 +101,10 @@ export class WorkspaceService {
       `SELECT d.id, d.project_id, d.title, d.category, d.doc_type, d.doc_no, d.status, d.mime, d.url,
               d.source_app, d.created_at, d.updated_at, p.name AS project_name
        FROM documents d JOIN projects p ON p.id = d.project_id
-       WHERE d.project_id IN (:ids) ORDER BY d.updated_at DESC LIMIT 100`,
-      { ids },
+       WHERE d.project_id IN (:ids)
+       ${hiddenTypes.length ? 'AND (d.document_type_id IS NULL OR d.document_type_id NOT IN (:hiddenTypes))' : ''}
+       ORDER BY d.updated_at DESC LIMIT 100`,
+      { ids, hiddenTypes },
     );
     const payment_schedules = await this.q(
       `SELECT s.id, s.project_id, s.title, s.status, s.total_contract_value, s.total_payable,

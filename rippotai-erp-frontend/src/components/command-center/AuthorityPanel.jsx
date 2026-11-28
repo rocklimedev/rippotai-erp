@@ -230,6 +230,9 @@ export default function AuthorityPanel({ onOpen }) {
   if (isLoading || !data) {
     return <Card><div className="ap-loading"><RefreshCw className="ap-spin" /> Gathering approvals, money and access…</div></Card>;
   }
+  const canViewFinancialValues = Boolean(data.money);
+  const tabs = canViewFinancialValues ? PRIVATE_TABS : PRIVATE_TABS.filter(({ value }) => value !== "money");
+  const activeTab = !canViewFinancialValues && privateTab === "money" ? "access" : privateTab;
 
   return (
     <div className="ap">
@@ -248,9 +251,9 @@ export default function AuthorityPanel({ onOpen }) {
           </div>
         </div>
         <div className="ap-hero__figures">
-          <div><strong className="tabular">{summary.approvalCount}</strong><span>approvals · {inr(summary.approvalValue)}</span></div>
+          <div><strong className="tabular">{summary.approvalCount}</strong><span>approvals{canViewFinancialValues && ` · ${inr(summary.approvalValue)}`}</span></div>
           <div className={summary.overdue?.count ? "is-bad" : ""}>
-            <strong className="tabular">{inr(summary.overdue?.value || 0)}</strong><span>client payments overdue</span>
+            <strong className="tabular">{canViewFinancialValues ? inr(summary.overdue?.value || 0) : summary.overdue?.count || 0}</strong><span>client payments overdue</span>
           </div>
         </div>
       </section>
@@ -258,11 +261,11 @@ export default function AuthorityPanel({ onOpen }) {
       <Card
         title={<span className="ap-private-title"><Lock aria-hidden /> Only you can see this</span>}
         subtitle="Margins, who has access and what was approved or changed — hidden from every other role."
-        actions={<Tabs value={privateTab} onChange={setPrivateTab} options={PRIVATE_TABS} />}
+        actions={<Tabs value={activeTab} onChange={setPrivateTab} options={tabs} />}
       >
-        {privateTab === "money" && <MoneyView money={data.money} onOpen={onOpen} />}
-        {privateTab === "access" && <AccessView access={data.access} onOpen={onOpen} />}
-        {privateTab === "audit" && <AuditView access={data.access} />}
+        {activeTab === "money" && <MoneyView money={data.money} onOpen={onOpen} />}
+        {activeTab === "access" && <AccessView access={data.access} onOpen={onOpen} />}
+        {activeTab === "audit" && <AuditView access={data.access} />}
       </Card>
     </div>
   );

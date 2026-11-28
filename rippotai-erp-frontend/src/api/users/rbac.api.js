@@ -221,6 +221,24 @@ export const rbacApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["RolePermissions", "RoleApps", "Roles"],
     }),
+    setLauncherApp: builder.mutation({
+      query: ({ roleId, code, enabled }) => ({
+        url: `/role-access/${roleId}/launcher/${code}`,
+        method: "PATCH",
+        body: { enabled },
+      }),
+      invalidatesTags: (_result, error, { roleId }) =>
+        error ? [] : [{ type: "RolePermissions", id: roleId }, "RoleApps"],
+    }),
+    setDocumentTypeAccess: builder.mutation({
+      query: ({ roleId, typeId, level }) => ({
+        url: `/role-access/${roleId}/document-types/${typeId}`,
+        method: "PATCH",
+        body: { level },
+      }),
+      invalidatesTags: (_result, error, { roleId }) =>
+        error ? [] : [{ type: "RolePermissions", id: roleId }],
+    }),
   }),
   overrideExisting: false,
 });
@@ -268,4 +286,6 @@ export const {
   useGetAppRoleAccessQuery,
   useSetFrontendRouteRestrictionMutation,
   useSetRoleAccessMutation,
+  useSetLauncherAppMutation,
+  useSetDocumentTypeAccessMutation,
 } = rbacApi;

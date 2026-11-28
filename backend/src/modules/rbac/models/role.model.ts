@@ -11,6 +11,7 @@ import {
 import { User } from '@/modules/users/models/user.model';
 import { RoleApp } from './role-app.model';
 import { RolePermission } from './role_permission.model';
+import type { DocumentTypeLimits } from '@/common/security/document-type-access';
 @Table({
   tableName: 'roles',
   timestamps: true,
@@ -40,6 +41,9 @@ export class Role extends Model<Role> {
 
   @Column({ type: DataType.JSON, allowNull: true })
   declare frontend_route_restrictions: string[] | null;
+
+  @Column({ type: DataType.JSON, allowNull: true })
+  declare document_type_access: DocumentTypeLimits | null;
 
   // ✅ FIXED RELATION (UUID based)
   @HasMany(() => User, {

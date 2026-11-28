@@ -18,9 +18,13 @@ import {
   StatTile,
 } from '@/components/inos';
 import { useGetWsClientsSummaryQuery } from '@/api/workspace/workspace.api';
+import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 import { useClientsList, inr, relTime, Loading, Meta } from './shared';
 
 export default function ClientsPage() {
+  const { user } = useAuth();
+  const canViewFinancialValues = hasPermission(user, 'project-financial-values:read');
   const navigate = useNavigate();
   const { clients, isLoading } = useClientsList();
   const { data: summary } = useGetWsClientsSummaryQuery();
@@ -218,12 +222,12 @@ export default function ClientsPage() {
                   </div>
                   <Meta>Projects</Meta>
                 </div>
-                <div>
+                {canViewFinancialValues && <div>
                   <div className="tabular" style={{ fontWeight: 700 }}>
                     {inr(c.approved_value || 0)}
                   </div>
                   <Meta>Approved</Meta>
-                </div>
+                </div>}
                 <div style={{ marginLeft: 'auto', alignSelf: 'end' }}>
                   <Meta>
                     {c.last_activity
@@ -245,7 +249,7 @@ export default function ClientsPage() {
                   <th>Phone</th>
                   <th>Email</th>
                   <th className="num">Projects</th>
-                  <th className="num">Approved value</th>
+                  {canViewFinancialValues && <th className="num">Approved value</th>}
                   <th>Status</th>
                 </tr>
               </thead>
@@ -269,7 +273,7 @@ export default function ClientsPage() {
                     <td>{c.phone || '—'}</td>
                     <td>{c.email || '—'}</td>
                     <td className="num tabular">{Number(c.project_count || 0)}</td>
-                    <td className="num tabular">{inr(c.approved_value || 0)}</td>
+                    {canViewFinancialValues && <td className="num tabular">{inr(c.approved_value || 0)}</td>}
                     <td>
                       {Number(c.active_projects) > 0 ? (
                         <Pill tone="ok" size="sm">

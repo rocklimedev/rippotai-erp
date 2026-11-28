@@ -42,6 +42,7 @@ describe('Distributed security failure behavior', () => {
       } as any,
       {} as any,
       {} as any,
+      {} as any,
     );
     const response = { setHeader: jest.fn() };
     await expect(

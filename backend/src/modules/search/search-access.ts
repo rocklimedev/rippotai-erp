@@ -1,6 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
+import type { DocumentTypeActor } from '@/common/security/document-type-access';
 
-export interface SearchUserContext {
+export interface SearchUserContext extends DocumentTypeActor {
   id: string;
   role?: string;
 }

@@ -6,6 +6,8 @@
 // permission names). Setting a level grants every owned permission whose
 // action ranks at or below that level and removes the rest.
 
+import { PROJECT_FINANCIAL_VALUES_PART } from '@/common/security/project-financial-values';
+
 export type AccessLevel = 'none' | 'view' | 'edit' | 'create' | 'full';
 
 export const ACCESS_LEVELS: ReadonlyArray<{
@@ -190,6 +192,12 @@ export const ACCESS_CATALOGUE: AccessApp[] = [
         'Project list, project page, phases',
       ),
       part('projects.clients', 'Clients', ['clients']),
+      part(
+        PROJECT_FINANCIAL_VALUES_PART,
+        'Project financial values',
+        ['project-financial-values'],
+        'Show project budgets, amounts and financial totals in shared screens and reports',
+      ),
       doc('projects.planner', 'Project planner', ['project-planners']),
       part(
         'projects.documents',
@@ -534,8 +542,11 @@ export function summarizeAccess(permissions: string[]) {
   const apps: Record<string, AccessLevel> = {};
   for (const app of ACCESS_CATALOGUE) {
     let best = 0;
-    for (const p of app.parts)
-      best = Math.max(best, LEVEL_RANK[parts[p.key] ?? 'none']);
+    for (const p of app.parts) {
+      if (p.key !== PROJECT_FINANCIAL_VALUES_PART) {
+        best = Math.max(best, LEVEL_RANK[parts[p.key] ?? 'none']);
+      }
+    }
     apps[app.code] = RANK_LEVEL[best];
   }
   return { apps, parts };

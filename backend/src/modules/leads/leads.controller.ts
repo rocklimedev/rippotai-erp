@@ -19,6 +19,16 @@ import type { LeadFilters } from './leads.service';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import type { RequestWithUser } from '@/common/interfaces/request-with-user-interfaces';
+import { PROJECT_FINANCIAL_VALUES_PERMISSION } from '@/common/security/project-financial-values';
+
+function visibleLeadFilters(req: RequestWithUser, filters: LeadFilters): LeadFilters {
+  if (req.user.permissions?.includes(PROJECT_FINANCIAL_VALUES_PERMISSION)) return filters;
+  const { minValue, maxValue, sort, ...rest } = filters;
+  return {
+    ...rest,
+    sort: sort === 'value-asc' || sort === 'value-desc' ? undefined : sort,
+  };
+}
 
 const actorOf = (req: RequestWithUser) => ({
   id: req.user.id,
@@ -38,7 +48,7 @@ export class LeadsController {
   @RequirePermission('leads:read')
   @Get('board')
   getBoard(@Req() req: RequestWithUser, @Query() filters: LeadFilters) {
-    return this.leadsService.getBoard(req.user.id, filters);
+    return this.leadsService.getBoard(req.user.id, visibleLeadFilters(req, filters));
   }
 
   // GET /api/v1/leads/meta — stages, owners, sources, zoho status
@@ -90,8 +100,8 @@ export class LeadsController {
   // GET /api/v1/leads?q=&stage=&owner=&source=&sort=
   @RequirePermission('leads:read')
   @Get()
-  getLeads(@Query() filters: LeadFilters) {
-    return this.leadsService.getLeads(filters);
+  getLeads(@Req() req: RequestWithUser, @Query() filters: LeadFilters) {
+    return this.leadsService.getLeads(visibleLeadFilters(req, filters));
   }
 
   // GET /api/v1/leads/:id — full deal (notes, timeline, tasks, documents)

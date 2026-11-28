@@ -3,8 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { RouteAccessContext } from '@/hooks/use-permission';
-import { APP_META } from '@/config/appNav';
-import { appForPath, canOpenApp, documentAccess, routeRequirement } from '@/lib/permissions';
+import { documentAccess, routeRequirement } from '@/lib/permissions';
 import NoAccess from './NoAccess';
 
 const BANNER = {
@@ -32,20 +31,15 @@ const NEED = { read: 'view', update: 'edit', create: 'create' };
 const FLAG = { read: 'canView', update: 'canEdit', create: 'canCreate' };
 
 /**
- * Central router guard: blocks apps the role cannot open and document routes
- * whose resource/action it lacks; renders record pages read-only for
- * "View only" roles.
+ * Enforces document permissions and renders read-only record pages for
+ * "View only" roles. Launcher visibility is independent.
  */
 export default function RouteAccessGate({ children }) {
   const { user } = useAuth();
   const { pathname, search } = useLocation();
-  const app = appForPath(pathname);
   const req = routeRequirement(pathname, search);
   const access = useMemo(() => (req ? documentAccess(user, req.resource) : null), [user, req]);
 
-  if (app && !canOpenApp(user, app)) {
-    return <NoAccess what={APP_META[app]?.name || 'this app'} need="view" />;
-  }
   if (!req) return children;
   if (!access[FLAG[req.action]]) {
     return <NoAccess what="this document" action={req.action} need={NEED[req.action]} />;

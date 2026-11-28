@@ -20,6 +20,7 @@ import { CreateDocumentAttachmentDto } from './dto/create-document-attachment.dt
 import { CdnService } from '../cdn/cdn.service';
 import { GateEngineService } from '../gates/gate-engine.service';
 import { Project } from '../projects/models/projects.model';
+import { visibleDocumentTypeWhere } from '@/common/security/document-type-access';
 
 const PRE_DESIGN_UPLOAD_TYPES = new Set([
   'PRE_PITCH_PROPOSAL',
@@ -79,8 +80,9 @@ export class DocumentsService {
     status?: string;
     category?: string;
     documentTypeId?: string;
+    hiddenTypeIds?: string[];
   }): Promise<Document[]> {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = visibleDocumentTypeWhere(filters.hiddenTypeIds ?? []);
 
     // Only filter by project when supplied.
     if (filters.projectId) {

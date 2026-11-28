@@ -32,7 +32,7 @@ export const ACCESS_LEVELS = [
 ];
 export const LEVEL_RANK = { none: 0, view: 1, edit: 2, create: 3, full: 4 };
 
-// Launcher apps that are hidden / blocked when the role has no access.
+// App codes with role-controlled launcher visibility.
 export const GATED_APPS = [
   'projects',
   'design',
@@ -58,6 +58,9 @@ export function appLevel(user, app) {
 export function canOpenApp(user, app) {
   if (app === 'automation' && !AUTOMATION_APP_ENABLED) return false;
   if (!GATED_APPS.includes(app)) return true;
+  if (Array.isArray(user?.access?.launcherApps)) {
+    return user.access.launcherApps.includes(app);
+  }
   return appLevel(user, app) !== 'none';
 }
 
@@ -189,8 +192,6 @@ export function filterMenus(menus = [], app, user, toPath) {
     const destination = toPath(app, slug);
     if (!canOpenFrontendRoute(user, destination)) return false;
     const path = destination.split('?')[0];
-    const target = appForPath(path);
-    if (target && !canOpenApp(user, target)) return false;
     const req = routeRequirement(path);
     if (!req) return true;
     const flag = { read: 'canView', update: 'canEdit', create: 'canCreate' }[req.action];

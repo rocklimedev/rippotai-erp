@@ -3,6 +3,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
+import { visibleDocumentTypeWhere } from '@/common/security/document-type-access';
 import { Document } from './models/document.model';
 import { Drawing } from './models/drawing.model';
 
@@ -43,13 +44,14 @@ export class DocumentsDashboardService {
   // Documents + Drawings + Briefs + Site Recce
   // ============================================================
 
-  async getRecentDocuments(limit: number = 6) {
+  async getRecentDocuments(limit: number = 6, hiddenTypes: string[] = []) {
     const [documents, drawings, briefs, recce] = await Promise.all([
       // --------------------------------------------------------
       // DOCUMENTS
       // --------------------------------------------------------
 
       this.documentModel.findAll({
+        where: visibleDocumentTypeWhere(hiddenTypes),
         limit: 4,
 
         order: [['createdAt', 'DESC']],
@@ -165,7 +167,7 @@ export class DocumentsDashboardService {
   // PENDING ITEMS
   // ============================================================
 
-  async getPendingDocuments() {
+  async getPendingDocuments(hiddenTypes: string[] = []) {
     const [docs, drawings, recce] = await Promise.all([
       // --------------------------------------------------------
       // PENDING DOCUMENTS
@@ -173,6 +175,7 @@ export class DocumentsDashboardService {
 
       this.documentModel.count({
         where: {
+          ...visibleDocumentTypeWhere(hiddenTypes),
           status: {
             [Op.in]: ['draft', 'pending'],
           },
@@ -219,14 +222,14 @@ export class DocumentsDashboardService {
   // OVERALL DASHBOARD STATS
   // ============================================================
 
-  async getDashboardStats() {
+  async getDashboardStats(hiddenTypes: string[] = []) {
     const [totalDocs, totalDrawings, totalRecce, totalBriefs] =
       await Promise.all([
         // --------------------------------------------------------
         // DOCUMENTS
         // --------------------------------------------------------
 
-        this.documentModel.count(),
+        this.documentModel.count({ where: visibleDocumentTypeWhere(hiddenTypes) }),
 
         // --------------------------------------------------------
         // DRAWINGS
@@ -264,18 +267,19 @@ export class DocumentsDashboardService {
   // PROJECT-WISE SUMMARY
   // ============================================================
 
-  async getProjectWiseDocuments(limit: number = 5) {
+  async getProjectWiseDocuments(limit: number = 5, hiddenTypes: string[] = []) {
     const safeLimit = Math.min(Math.max(Number(limit) || 5, 1), 50);
     const [rows] = await this.projectModel.sequelize!.query(
       `
       SELECT p.id, p.name,
-        (SELECT COUNT(*) FROM documents d WHERE d.project_id = p.id) AS document_count,
+        (SELECT COUNT(*) FROM documents d WHERE d.project_id = p.id
+          ${hiddenTypes.length ? 'AND (d.document_type_id IS NULL OR d.document_type_id NOT IN (:hiddenTypes))' : ''}) AS document_count,
         (SELECT COUNT(*) FROM drawings dr WHERE dr.project_id = p.id) AS drawing_count
       FROM projects p
       WHERE p.deleted_at IS NULL
       ORDER BY document_count DESC, drawing_count DESC
       LIMIT :limit`,
-      { replacements: { limit: safeLimit } },
+      { replacements: { limit: safeLimit, hiddenTypes } },
     );
     return (rows as Array<Record<string, unknown>>).map((r) => ({
       ...r,
