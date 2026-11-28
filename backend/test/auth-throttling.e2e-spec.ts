@@ -4,6 +4,8 @@ jest.mock('../src/common/security/redis-throttler.storage', () => ({
     jest.requireActual('@nestjs/throttler').ThrottlerStorageService,
 }));
 import { Test } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/sequelize';
+import { RoleApp } from '../src/modules/rbac/models/role-app.model';
 import { ConfigModule } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
 import passport from 'passport';
@@ -87,6 +89,10 @@ describe('Shared auth entry budgets', () => {
       ],
       controllers: [AuthController, AuthTokensController],
       providers: [
+        {
+          provide: getModelToken(RoleApp),
+          useValue: { findAll: jest.fn().mockResolvedValue([]) },
+        },
         { provide: AuthService, useValue: auth },
         { provide: ForgotPasswordService, useValue: forgot },
         { provide: EmailVerificationService, useValue: {} },

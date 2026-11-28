@@ -1,4 +1,6 @@
 import { Test } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/sequelize';
+import { RoleApp } from '../rbac/models/role-app.model';
 import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import { createHash } from 'crypto';
@@ -76,6 +78,10 @@ describe('Closed signup and verified email onboarding', () => {
     const module = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
+        {
+          provide: getModelToken(RoleApp),
+          useValue: { findAll: jest.fn().mockResolvedValue([]) },
+        },
         { provide: AuthService, useValue: auth },
         { provide: EmailVerificationService, useValue: verification },
         { provide: ForgotPasswordService, useValue: {} },
